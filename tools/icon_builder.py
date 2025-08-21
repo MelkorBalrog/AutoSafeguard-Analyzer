@@ -24,7 +24,6 @@ _GEAR_CX = _CUBE_OX + _CUBE_SIZE // 2
 _GEAR_CY = _CUBE_OY + _CUBE_OFFSET + _CUBE_SIZE // 2
 _GEAR_R = 4
 
-
 def _write_ico(path: Path, pixels: List[List[Color]], size: Size = SIZE) -> None:
     """Write *pixels* to *path* as a 32-bit ICO file."""
     width, height = size
@@ -235,7 +234,6 @@ def build_icon_v4(path: Path) -> None:
         teeth_width=2,
     )
     _write_ico(path, pixels)
-
 
 _BUILDERS: Dict[str, Callable[[Path], None]] = {
     "v1": build_icon_v1,

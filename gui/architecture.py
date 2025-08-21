@@ -3635,7 +3635,6 @@ class SysMLDiagramWindow(tk.Frame):
         self.conn_drag_offset: tuple[float, float] | None = None
         self.dragging_conn_mid: tuple[float, float] | None = None
         self.dragging_conn_vec: tuple[float, float] | None = None
-        self.clipboard: SysMLObject | None = None
         self.resizing_obj: SysMLObject | None = None
         self.resize_edge: str | None = None
         self.select_rect_start: tuple[float, float] | None = None
@@ -3807,23 +3806,27 @@ class SysMLDiagramWindow(tk.Frame):
             "<Configure>",
             lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")),
         )
-        self.canvas.bind("<Delete>", self.delete_selected)
         self.canvas.bind("<Motion>", self.on_mouse_move)
         self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
-        self.bind("<Control-c>", self.copy_selected)
-        self.bind("<Control-x>", self.cut_selected)
-        self.bind("<Control-v>", self.paste_selected)
-        if self.app:
-            self.bind("<Control-z>", lambda e: self.app.undo())
+        # Copy, cut, paste, undo, and redo are bound globally on the application
+        # root to ensure each action fires only once. Only Delete remains here.
         self.bind("<Delete>", self.delete_selected)
         # Refresh from the repository whenever the window gains focus
-        self.bind("<FocusIn>", self.refresh_from_repository)
+        self.bind("<FocusIn>", self._on_focus_in)
+        self.canvas.bind("<FocusIn>", self._on_focus_in)
+        if isinstance(self.master, tk.Toplevel):
+            self.master.bind("<FocusIn>", self._on_focus_in)
 
         self.after_idle(self._fit_toolbox)
         self.redraw()
         self.update_property_view()
         if not isinstance(self.master, tk.Toplevel):
             self.pack(fill=tk.BOTH, expand=True)
+
+    def _on_focus_in(self, event=None):
+        if self.app:
+            self.app.active_arch_window = self
+        self.refresh_from_repository(event)
 
     def _fit_toolbox(self) -> None:
         """Resize the toolbox to the smallest width that shows all button text."""
@@ -9289,18 +9292,22 @@ class SysMLDiagramWindow(tk.Frame):
     # Clipboard operations
     # ------------------------------------------------------------
     def copy_selected(self, _event=None):
-        if self.selected_obj:
+        if self.selected_obj and self.app:
             import copy
 
-            self.clipboard = copy.deepcopy(self.selected_obj)
+            diag = self.repo.diagrams.get(self.diagram_id)
+            self.app.diagram_clipboard = copy.deepcopy(self.selected_obj)
+            self.app.diagram_clipboard_type = diag.diag_type if diag else None
 
     def cut_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
             return
-        if self.selected_obj:
+        if self.selected_obj and self.app:
             import copy
 
-            self.clipboard = copy.deepcopy(self.selected_obj)
+            diag = self.repo.diagrams.get(self.diagram_id)
+            self.app.diagram_clipboard = copy.deepcopy(self.selected_obj)
+            self.app.diagram_clipboard_type = diag.diag_type if diag else None
             self.remove_object(self.selected_obj)
             self.selected_obj = None
             self._sync_to_repository()
@@ -9310,10 +9317,18 @@ class SysMLDiagramWindow(tk.Frame):
     def paste_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
             return
-        if self.clipboard:
+        if self.app and getattr(self.app, "diagram_clipboard", None):
+            if self.app.diagram_clipboard_type:
+                diag = self.repo.diagrams.get(self.diagram_id)
+                if diag and diag.diag_type != self.app.diagram_clipboard_type:
+                    messagebox.showwarning(
+                        "Paste",
+                        "Clipboard contains incompatible diagram element.",
+                    )
+                    return
             import copy
 
-            new_obj = copy.deepcopy(self.clipboard)
+            new_obj = copy.deepcopy(self.app.diagram_clipboard)
             new_obj.obj_id = _get_next_id()
             new_obj.x += 20
             new_obj.y += 20
@@ -9638,7 +9653,10 @@ class SysMLDiagramWindow(tk.Frame):
 
     def _sync_to_repository(self) -> None:
         """Persist current objects and connections back to the repository."""
-        self.repo.push_undo_state()
+        self.repo.push_undo_state(sync_app=False)
+        undo = getattr(self.app, "push_undo_state", None)
+        if undo:
+            undo(sync_repo=False)
         diag = self.repo.diagrams.get(self.diagram_id)
         if diag:
             existing_objs = getattr(diag, "objects", [])
@@ -13422,6 +13440,8 @@ class ArchitectureManagerDialog(tk.Frame):
                     properties=props,
                 )
                 diagram.objects.append(obj.__dict__)
+                if getattr(self, "app", None) and hasattr(self.app, "push_undo_state"):
+                    self.app.push_undo_state()
                 return
             if (
                 src_diag
@@ -13441,6 +13461,8 @@ class ArchitectureManagerDialog(tk.Frame):
                     properties=props,
                 )
                 diagram.objects.append(obj.__dict__)
+                if getattr(self, "app", None) and hasattr(self.app, "push_undo_state"):
+                    self.app.push_undo_state()
                 return
             messagebox.showerror("Drop Error", "This item cannot be dropped on that diagram.")
             return
@@ -13451,6 +13473,8 @@ class ArchitectureManagerDialog(tk.Frame):
             repo.add_element_to_diagram(diagram.diag_id, block.elem_id)
             obj = SysMLObject(_get_next_id(), "Block", 50.0, 50.0, element_id=block.elem_id)
             diagram.objects.append(obj.__dict__)
+            if getattr(self, "app", None) and hasattr(self.app, "push_undo_state"):
+                self.app.push_undo_state()
         else:
             messagebox.showerror("Drop Error", "This item cannot be dropped on that diagram.")
 

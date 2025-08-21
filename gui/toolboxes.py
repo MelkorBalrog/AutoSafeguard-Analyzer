@@ -6,6 +6,7 @@ import csv
 import copy
 import textwrap
 import uuid
+from typing import Callable
 
 from gui.tooltip import ToolTip
 from gui.button_utils import add_hover_highlight
@@ -219,6 +220,80 @@ def stripe_rows(tree: ttk.Treeview) -> None:
     tree.tag_configure("odd", background="#ffffff")
     for i, item in enumerate(tree.get_children("")):
         tree.item(item, tags=("even" if i % 2 else "odd",))
+
+
+def enable_treeview_reorder(
+    tree: ttk.Treeview, refresh_callback: Callable | None = None
+) -> tuple[Callable, Callable]:
+    """Enable drag-and-drop row reordering on ``tree``.
+
+    Parameters
+    ----------
+    tree:
+        Treeview widget to augment.
+    refresh_callback:
+        Optional function to invoke after rows have been rearranged. When not
+        provided, the function attempts to update an ``index`` column if present.
+
+    Returns
+    -------
+    tuple[callable, callable]
+        ``(move_up, move_down)`` helper functions that shift the current
+        selection by one row in the respective direction.
+    """
+
+    drag_state = {"item": None}
+
+    def _refresh() -> None:
+        if refresh_callback:
+            refresh_callback()
+        else:
+            cols = []
+            if hasattr(tree, "cget"):
+                try:
+                    cols = list(tree.cget("columns"))
+                except Exception:
+                    cols = []
+            if "index" in cols:
+                for idx, iid in enumerate(tree.get_children(""), start=1):
+                    try:
+                        tree.set(iid, "index", idx)
+                    except Exception:
+                        pass
+
+    def _on_start(event: tk.Event) -> None:
+        drag_state["item"] = tree.identify_row(event.y)
+
+    def _on_drop(event: tk.Event) -> None:
+        item = drag_state.get("item")
+        if not item:
+            return
+        target = tree.identify_row(event.y)
+        if target and target != item:
+            parent = tree.parent(target)
+            index = tree.index(target)
+            tree.move(item, parent, index)
+            _refresh()
+        drag_state["item"] = None
+
+    def _move(delta: int) -> None:
+        sel = tree.selection()
+        if not sel:
+            return
+        item = sel[0]
+        parent = tree.parent(item)
+        index = tree.index(item)
+        siblings = tree.get_children(parent)
+        new_index = max(0, min(len(siblings) - 1, index + delta))
+        if new_index != index:
+            tree.move(item, parent, new_index)
+            _refresh()
+
+    if hasattr(tree, "bind"):
+        tree.bind("<ButtonPress-1>", _on_start, add="+")
+        tree.bind("<ButtonRelease-1>", _on_drop, add="+")
+
+    return lambda: _move(-1), lambda: _move(1)
 
 
 def _total_fit_from_boms(boms):
