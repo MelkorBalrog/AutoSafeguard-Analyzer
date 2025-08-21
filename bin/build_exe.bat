@@ -27,17 +27,9 @@ for %%P in (openpyxl networkx matplotlib reportlab adjustText) do (
     )
 )
 
-REM Ask the user for an optional icon to embed in the executable
-set "ICON_ARG="
-set /P "ICON_PATH=Enter path to .ico icon file (leave blank for none): "
-if defined ICON_PATH (
-    if exist "%ICON_PATH%" (
-        set "ICON_ARG=--icon \"%ICON_PATH%\""
-    ) else (
-        echo Icon not found: %ICON_PATH%
-        echo Continuing without a custom icon.
-    )
-)
+REM Generate application icon
+python tools\icon_builder.py --output "%BIN_DIR%AutoML.ico" >NUL
+set "ICON_ARG=--icon \"%BIN_DIR%AutoML.ico\""
 
 REM Run PyInstaller from the repository root so it can locate launcher.py
 cd /d "%REPO_ROOT%"
