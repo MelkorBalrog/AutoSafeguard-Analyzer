@@ -1,6 +1,8 @@
 from pathlib import Path
 
 from config import load_report_template
+from gsn import GSNDiagram, GSNNode
+from analysis.safety_case import SafetyCase
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -97,9 +99,22 @@ def test_safety_case_template_valid():
     assert {
         "GSR Argumentation",
         "Related Safety Cases",
-        "Fault Tree Analyses (FTA)",
-        "FMEA Analyses",
-        "FMEDA Analyses",
-        "Reliability Analyses",
         "Work Products and Evidence",
     } <= titles
+
+
+def test_safety_case_dynamic_sections():
+    root = GSNNode("G", "Goal")
+    diag = GSNDiagram(root)
+    s1 = GSNNode("S1", "Solution")
+    s1.work_product = "FTA report"
+    s2 = GSNNode("S2", "Solution")
+    s2.work_product = "FMEA"
+    diag.nodes.extend([s1, s2])
+    case = SafetyCase("C", diag)
+    case.collect_solutions()
+    tpl = case.build_report_template()
+    titles = {sec["title"] for sec in tpl["sections"]}
+    assert "Fault Tree Analyses (FTA)" in titles
+    assert "FMEA Analyses" in titles
+    assert "FMEDA Analyses" not in titles

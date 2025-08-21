@@ -3,6 +3,7 @@
     "gsr_argument": "gsr_argument",
     "safety_cases": "safety_cases",
     "fta_diagrams": "analysis:fault_tree",
+    "hazard_analysis_diagrams": "analysis:hazard",
     "fmea_diagrams": "analysis:fmea",
     "fmeda_diagrams": "analysis:fmeda",
     "reliability_analysis": "analysis:reliability",
@@ -11,10 +12,6 @@
   "sections": [
     {"title": "GSR Argumentation", "content": "<gsr_argument>"},
     {"title": "Related Safety Cases", "content": "<safety_cases>"},
-    {"title": "Fault Tree Analyses (FTA)", "content": "<fta_diagrams>"},
-    {"title": "FMEA Analyses", "content": "<fmea_diagrams>"},
-    {"title": "FMEDA Analyses", "content": "<fmeda_diagrams>"},
-    {"title": "Reliability Analyses", "content": "<reliability_analysis>"},
     {"title": "Work Products and Evidence", "content": "<work_products>"}
   ]
 }
