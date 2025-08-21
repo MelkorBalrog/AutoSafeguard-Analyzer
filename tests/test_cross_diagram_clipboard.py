@@ -70,5 +70,6 @@ def test_copy_paste_between_same_type_diagrams():
 
     win2._on_focus_in()
     app.paste_node()
+
     assert len(win2.objects) == 1
     assert win2.objects[0] is not obj
