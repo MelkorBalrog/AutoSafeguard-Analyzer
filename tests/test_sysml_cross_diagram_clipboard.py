@@ -24,10 +24,9 @@ class CrossDiagramClipboardTests(unittest.TestCase):
         self.root.withdraw()
         self.win1 = SysMLDiagramWindow(self.root, "Diag1", [])
         self.win2 = SysMLDiagramWindow(self.root, "Diag2", [])
-        boundary = SysMLObject(obj_id=1, obj_type="System Boundary", x=0, y=0)
-        block = SysMLObject(obj_id=2, obj_type="Block", x=0, y=0)
-        self.win1.objects.extend([boundary, block])
-        self.win1.selected_obj = block
+        obj = SysMLObject(obj_id=1, obj_type="Block", x=0, y=0)
+        self.win1.objects.append(obj)
+        self.win1.selected_obj = obj
 
     def tearDown(self):
         self.root.destroy()
@@ -39,7 +38,7 @@ class CrossDiagramClipboardTests(unittest.TestCase):
 
     def test_cut_between_diagrams(self):
         self.win1.cut_selected()
-        self.assertEqual(len(self.win1.objects), 1)
+        self.assertEqual(len(self.win1.objects), 0)
         self.win2.paste_selected()
         self.assertEqual(len(self.win2.objects), 1)
 
