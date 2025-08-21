@@ -2980,8 +2980,8 @@ class AutoMLApp:
         root.bind("<Control-x>", lambda event: self.cut_node())
         root.bind("<Control-v>", lambda event: self.paste_node())
         root.bind("<Control-p>", lambda event: self.save_diagram_png())
-        root.bind_all("<Control-z>", lambda event: self.undo())
-        root.bind_all("<Control-y>", lambda event: self.redo())
+        root.bind_all("<Control-z>", self._undo_hotkey, add="+")
+        root.bind_all("<Control-y>", self._redo_hotkey, add="+")
         root.bind("<F1>", lambda event: self.show_about())
 
         # Container to hold the auto-hiding explorer tab and main pane
@@ -19165,6 +19165,16 @@ class AutoMLApp:
             if s1 == s2 == stripped:
                 self._undo_stack.pop(-2)
         return True
+
+    def _undo_hotkey(self, event):
+        """Keyboard shortcut handler for undo."""
+        self.undo()
+        return "break"
+
+    def _redo_hotkey(self, event):
+        """Keyboard shortcut handler for redo."""
+        self.redo()
+        return "break"
 
     def undo(self, strategy: str = "v4"):
         """Revert the repository and model data to the previous state."""
