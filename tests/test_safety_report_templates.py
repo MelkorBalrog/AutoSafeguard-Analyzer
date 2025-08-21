@@ -14,6 +14,8 @@ def test_item_definition_template_valid():
     data = _load("item_definition_template.json")
     titles = {sec["title"] for sec in data["sections"]}
     assert {
+        "Item Description",
+        "Assumptions",
         "Use Case Diagrams",
         "Activity Diagrams",
         "Block Diagrams",
@@ -59,3 +61,10 @@ def test_pdf_report_template_includes_diagram_sections():
         "FMEA Analyses",
         "FMEDA Analyses",
     } <= set(titles)
+
+def test_report_template_includes_item_definition_section():
+    data = _load("report_template.json")
+    assert {"item_description", "assumptions"} <= set(data["elements"].keys())
+    section = next(sec for sec in data["sections"] if sec["title"] == "Item Definition")
+    assert "<item_description>" in section["content"]
+    assert "<assumptions>" in section["content"]

@@ -1,5 +1,7 @@
 {
   "elements": {
+    "item_description": "item_description",
+    "assumptions": "assumptions",
     "usecase_diagrams": "diagram:use case",
     "activity_diagrams": "diagram:activity",
     "block_diagrams": "diagram:block",
@@ -9,7 +11,8 @@
     "activity_actions": "activity_actions"
   },
   "sections": [
-    {"title": "Item Definition", "content": "Provide assumptions and item description."},
+    {"title": "Item Description", "content": "<item_description>"},
+    {"title": "Assumptions", "content": "<assumptions>"},
     {"title": "Use Case Diagrams", "content": "<usecase_diagrams>"},
     {"title": "Activity Diagrams", "content": "<activity_diagrams>"},
     {"title": "Block Diagrams", "content": "<block_diagrams>"},

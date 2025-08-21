@@ -116,23 +116,25 @@ def test_generate_pdf_report_handles_extended_placeholders(tmp_path, monkeypatch
                 "elements": {
                     "uc": "diagram:use case",
                     "act": "diagram:activity",
-                    "ibd": "diagram:internal block",
-                    "aa": "activity_actions",
-                    "rm": "req_matrix_alloc",
-                    "pg": "product_goals",
-                    "fsc": "fsc_info",
-                    "tr1": "trace_matrix_pg_fsr",
-                    "tr2": "trace_matrix_fsc",
-                },
-                "sections": [
-                    {
-                        "title": "T",
-                        "content": "<uc><act><ibd><aa><rm><pg><fsc><tr1><tr2>",
-                    }
-                ],
-            }
-        )
+                "ibd": "diagram:internal block",
+                "aa": "activity_actions",
+                "rm": "req_matrix_alloc",
+                "pg": "product_goals",
+                "fsc": "fsc_info",
+                "tr1": "trace_matrix_pg_fsr",
+                "tr2": "trace_matrix_fsc",
+                "desc": "item_description",
+                "asm": "assumptions",
+            },
+            "sections": [
+                {
+                    "title": "T",
+                    "content": "<uc><act><ibd><aa><rm><pg><fsc><tr1><tr2><desc><asm>",
+                }
+            ],
+        }
     )
+)
     monkeypatch.setattr(filedialog, "asksaveasfilename", lambda **k: str(pdf_path))
     monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(template_path))
     monkeypatch.setattr(messagebox, "showinfo", lambda *a, **k: None)

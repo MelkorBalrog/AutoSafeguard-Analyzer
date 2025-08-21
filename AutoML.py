@@ -9387,6 +9387,16 @@ class AutoMLApp:
                     )
                 )
                 return [table]
+            if kind == "item_description":
+                text = getattr(self, "item_definition", {}).get("description", "")
+                if not text:
+                    text = "[item description]"
+                return [Paragraph(text, pdf_styles["Normal"])]
+            if kind == "assumptions":
+                text = getattr(self, "item_definition", {}).get("assumptions", "")
+                if not text:
+                    text = "[assumptions]"
+                return [Paragraph(text, pdf_styles["Normal"])]
             if name in requirement_element_map:
                 req_type, title = requirement_element_map[name]
                 return _make_requirement_table(req_type, title)

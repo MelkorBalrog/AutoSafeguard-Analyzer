@@ -268,11 +268,13 @@ def test_validate_report_template_allows_new_elements():
             "fsc": "fsc_info",
             "tr1": "trace_matrix_pg_fsr",
             "tr2": "trace_matrix_fsc",
+            "desc": "item_description",
+            "asm": "assumptions",
         },
         "sections": [
             {
                 "title": "All",
-                "content": "<aa><rm><pg><fsc><tr1><tr2>",
+                "content": "<aa><rm><pg><fsc><tr1><tr2><desc><asm>",
             }
         ],
     }
