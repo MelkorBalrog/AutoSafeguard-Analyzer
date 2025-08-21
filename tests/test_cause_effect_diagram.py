@@ -53,7 +53,6 @@ PIL_stub.Image = types.SimpleNamespace(new=_image_new)
 PIL_stub.ImageDraw = types.SimpleNamespace(Draw=lambda img: _FakeDraw(img))
 PIL_stub.ImageFont = _FakeFontModule
 PIL_stub.ImageTk = object
-sys.modules.setdefault("PIL", PIL_stub)
 
 # ---------------------------------------------------------------------------
 # Minimal numpy stub supporting the features required by auto_generate_fta_diagram
@@ -97,6 +96,10 @@ sys.modules.setdefault("numpy", numpy_stub)
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from AutoML import AutoMLApp
+import AutoML as _AutoML
+_AutoML.Image = PIL_stub.Image
+_AutoML.ImageDraw = PIL_stub.ImageDraw
+_AutoML.ImageFont = PIL_stub.ImageFont
 
 
 class DummyNode:
@@ -111,8 +114,21 @@ class DummyNode:
 
 class CauseEffectDiagramTests(unittest.TestCase):
     def setUp(self):
+        # Inject PIL stub so AutoML's image utilities work without Pillow
+        self._orig_pil = sys.modules.get("PIL")
+        sys.modules["PIL"] = PIL_stub
+        import AutoML as _AutoML
+        _AutoML.Image = PIL_stub.Image
+        _AutoML.ImageDraw = PIL_stub.ImageDraw
+        _AutoML.ImageFont = PIL_stub.ImageFont
         # Create a minimal AutoMLApp instance without initialising Tk
         self.app = AutoMLApp.__new__(AutoMLApp)
+
+    def tearDown(self):
+        if self._orig_pil is not None:
+            sys.modules["PIL"] = self._orig_pil
+        else:
+            sys.modules.pop("PIL", None)
 
     def test_build_simplified_fta_model_includes_basic_events(self):
         be1 = DummyNode(2, "BASIC EVENT", "Cause 1")
