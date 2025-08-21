@@ -33,6 +33,7 @@ def test_functional_safety_concept_template_valid():
         "Product Goals",
         "Functional Safety Concept",
         "Internal Block Diagrams",
+        "Fault Tree Analyses (FTA)",
         "Functional Safety Requirements",
         "Requirements Allocation Matrix",
         "Traceability Matrix",
@@ -44,6 +45,9 @@ def test_technical_safety_concept_template_valid():
     titles = {sec["title"] for sec in data["sections"]}
     assert {
         "Internal Block Diagrams",
+        "Fault Tree Analyses (FTA)",
+        "FMEA Analyses",
+        "FMEDA Analyses",
         "Technical Safety Requirements",
         "Requirements Allocation Matrix",
         "Traceability to Functional Safety Concept",
