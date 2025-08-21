@@ -3813,6 +3813,9 @@ class SysMLDiagramWindow(tk.Frame):
         self.bind("<Delete>", self.delete_selected)
         # Refresh from the repository whenever the window gains focus
         self.bind("<FocusIn>", self._on_focus_in)
+        self.canvas.bind("<FocusIn>", self._on_focus_in)
+        if isinstance(self.master, tk.Toplevel):
+            self.master.bind("<FocusIn>", self._on_focus_in)
 
         self.after_idle(self._fit_toolbox)
         self.redraw()

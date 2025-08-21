@@ -28,6 +28,8 @@ def make_window(app, repo, diagram_id):
     win.redraw = lambda: None
     win.update_property_view = lambda: None
     win.sort_objects = lambda: None
+    win.refresh_from_repository = lambda e=None: None
+    win._on_focus_in = types.MethodType(SysMLDiagramWindow._on_focus_in, win)
     return win
 
 
@@ -35,8 +37,10 @@ def test_copy_paste_between_same_type_diagrams():
     app = AutoMLApp.__new__(AutoMLApp)
     app.diagram_clipboard = None
     app.diagram_clipboard_type = None
-    app.active_arch_window = None
-
+    app.selected_node = None
+    app.root_node = None
+    app.clipboard_node = None
+    app.cut_mode = False
     repo = DummyRepo("Governance Diagram", "Governance Diagram")
 
     obj = types.SimpleNamespace(
@@ -60,11 +64,12 @@ def test_copy_paste_between_same_type_diagrams():
 
     win2 = make_window(app, repo, 2)
 
-    app.active_arch_window = win1
-    SysMLDiagramWindow.copy_selected(win1)
+    win1._on_focus_in()
+    app.copy_node()
     assert app.diagram_clipboard is not None
 
-    app.active_arch_window = win2
-    SysMLDiagramWindow.paste_selected(win2)
+    win2._on_focus_in()
+    app.paste_node()
+
     assert len(win2.objects) == 1
     assert win2.objects[0] is not obj
