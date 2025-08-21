@@ -10365,12 +10365,9 @@ class AutoMLApp:
                 except tk.TclError:
                     pass
 
-        # Remove any existing FTA tab; it will be created on demand
-        self.canvas_tab = None
-        self.canvas = None
-        self.canvas_frame = None
-        self.hbar = None
-        self.vbar = None
+        # Recreate the FTA tab and canvas
+        self._create_fta_tab()
+        self.canvas.delete("all")
 
         global AutoML_Helper, unique_node_id_counter
         # Reset all repositories and model data
@@ -10409,6 +10406,7 @@ class AutoMLApp:
         self.analysis_tree.delete(*self.analysis_tree.get_children())
         self.update_views()
         self.set_last_saved_state()
+        self.canvas.update()
 
     def compute_occurrence_counts(self):
         counts = {}
@@ -20286,11 +20284,9 @@ class AutoMLApp:
         if getattr(self, "analysis_tree", None):
             self.analysis_tree.delete(*self.analysis_tree.get_children())
 
-        self.canvas_tab = None
-        self.canvas = None
-        self.canvas_frame = None
-        self.hbar = None
-        self.vbar = None
+        self._create_fta_tab()
+        if getattr(self, "canvas", None):
+            self.canvas.delete("all")
 
     def load_model(self):
         import json
