@@ -259,17 +259,6 @@ class SysMLRepository:
         self._redo_stack.clear()
         return True
 
-    def _push_undo_state_v4(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack and self._undo_stack[-1] == state:
-            return False
-        self._undo_stack.append(state)
-        if len(self._undo_stack) >= 3:
-            s1 = self._strip_object_positions(self._undo_stack[-3])
-            s2 = self._strip_object_positions(self._undo_stack[-2])
-            if s1 == s2 == stripped:
-                self._undo_stack.pop(-2)
-        return True
-
     def undo(self, strategy: str = "v4") -> bool:
         """Revert to the most recent saved state."""
         if strategy == "v1":
