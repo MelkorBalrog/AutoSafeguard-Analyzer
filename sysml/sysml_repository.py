@@ -248,23 +248,6 @@ class SysMLRepository:
     def _push_undo_state_v3(self, state: dict, stripped: dict) -> bool:
         if self._undo_stack and self._undo_stack[-1] == state:
             return False
-        if self._undo_stack and self._strip_object_positions(self._undo_stack[-1]) == stripped:
-            if getattr(self, "_move_run_length", 0):
-                self._undo_stack[-1] = state
-            else:
-                self._undo_stack.append(state)
-            self._move_run_length = getattr(self, "_move_run_length", 0) + 1
-            return True
-        self._move_run_length = 0
-        self._undo_stack.append(state)
-        if len(self._undo_stack) > 50:
-            self._undo_stack.pop(0)
-        self._redo_stack.clear()
-        return True
-
-    def _push_undo_state_v4(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack and self._undo_stack[-1] == state:
-            return False
         self._undo_stack.append(state)
         if len(self._undo_stack) >= 3:
             s1 = self._strip_object_positions(self._undo_stack[-3])

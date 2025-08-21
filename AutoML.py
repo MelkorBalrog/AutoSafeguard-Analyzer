@@ -2523,6 +2523,9 @@ class AutoMLApp:
             "Control Flow Diagram": self._create_icon("activity_diag", _color("Control Flow Diagram", "red")),
         }
         self.clipboard_node = None
+        self.diagram_clipboard = None
+        self.diagram_clipboard_type = None
+        self.active_arch_window = None
         self.cut_mode = False
         self.page_history = []
         self.project_properties = {
@@ -18653,6 +18656,11 @@ class AutoMLApp:
             self.selected_node = node
             self.cut_mode = False
             return
+        win = getattr(self, "active_arch_window", None)
+        if win and getattr(win, "selected_obj", None):
+            if getattr(win, "copy_selected", None):
+                win.copy_selected()
+                return
         for ref in list(ARCH_WINDOWS):
             win = ref()
             if win and getattr(win, "selected_obj", None):
@@ -18675,6 +18683,11 @@ class AutoMLApp:
             self.selected_node = node
             self.cut_mode = True
             return
+        win = getattr(self, "active_arch_window", None)
+        if win and getattr(win, "selected_obj", None):
+            if getattr(win, "cut_selected", None):
+                win.cut_selected()
+                return
         for ref in list(ARCH_WINDOWS):
             win = ref()
             if win and getattr(win, "selected_obj", None):
@@ -18753,12 +18766,11 @@ class AutoMLApp:
             )
             self.update_views()
             return
-        for ref in list(ARCH_WINDOWS):
-            win = ref()
-            if win and getattr(win, "clipboard", None):
-                if getattr(win, "paste_selected", None):
-                    win.paste_selected()
-                    return
+        win = getattr(self, "active_arch_window", None)
+        if win and getattr(self, "diagram_clipboard", None):
+            if getattr(win, "paste_selected", None):
+                win.paste_selected()
+                return
         messagebox.showwarning("Paste", "Clipboard is empty.")
  
     def clone_node_preserving_id(self, node):
@@ -19266,7 +19278,9 @@ class AutoMLApp:
             self._undo_stack.pop()
             if not self._undo_stack:
                 self._redo_stack.append(current)
-                return False
+                if len(self._redo_stack) > 20:
+                    self._redo_stack.pop(0)
+                return True
         state = self._undo_stack.pop()
         self._redo_stack.append(current)
         if len(self._redo_stack) > 20:
