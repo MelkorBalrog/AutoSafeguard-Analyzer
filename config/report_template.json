@@ -29,14 +29,22 @@
     "req_product": "req_product",
     "req_legal": "req_legal",
     "req_organizational": "req_organizational",
-    "req_spi": "req_spi"
-    ,
+    "req_spi": "req_spi",
     "block_diagrams": "diagram:block",
     "state_diagrams": "diagram:state",
     "fta_diagrams": "analysis:fault_tree",
     "hazard_analysis_diagrams": "analysis:hazard",
     "fmea_diagrams": "analysis:fmea",
-    "fmeda_diagrams": "analysis:fmeda"
+    "fmeda_diagrams": "analysis:fmeda",
+    "odd_library": "odd_library",
+    "scenario_library": "scenario_library",
+    "reliability_analysis": "analysis:reliability",
+    "mission_profile": "mission_profile",
+    "pmhf_results": "pmhf",
+    "spfm_results": "spfm",
+    "lpfm_results": "lpfm",
+    "dc_results": "dc",
+    "safety_case": "safety_case"
   },
   "sections": [
     {
@@ -46,6 +54,14 @@
     {
       "title": "Item Definition",
       "content": "<item_description><assumptions>"
+    },
+    {
+      "title": "ODD Library",
+      "content": "<odd_library>"
+    },
+    {
+      "title": "Scenario Library",
+      "content": "<scenario_library>"
     },
     {
       "title": "Analyses",
@@ -88,6 +104,30 @@
       "content": "<fmeda_diagrams>"
     },
     {
+      "title": "Reliability Analysis",
+      "content": "<reliability_analysis>"
+    },
+    {
+      "title": "Mission Profile",
+      "content": "<mission_profile>"
+    },
+    {
+      "title": "PMHF Results",
+      "content": "<pmhf_results>"
+    },
+    {
+      "title": "SPFM Results",
+      "content": "<spfm_results>"
+    },
+    {
+      "title": "LPFM Results",
+      "content": "<lpfm_results>"
+    },
+    {
+      "title": "Diagnostic Coverage Results",
+      "content": "<dc_results>"
+    },
+    {
       "title": "FMEA Tables",
       "content": "<fmea_tables>"
     },
@@ -102,6 +142,10 @@
     {
       "title": "Causal Bayesian Networks",
       "content": "<cbn>"
+    },
+    {
+      "title": "Safety Case",
+      "content": "<safety_case>"
     },
     {
       "title": "Vehicle Requirements",
@@ -157,4 +201,3 @@
     }
   ]
 }
-

@@ -116,25 +116,34 @@ def test_generate_pdf_report_handles_extended_placeholders(tmp_path, monkeypatch
                 "elements": {
                     "uc": "diagram:use case",
                     "act": "diagram:activity",
-                "ibd": "diagram:internal block",
-                "aa": "activity_actions",
-                "rm": "req_matrix_alloc",
-                "pg": "product_goals",
-                "fsc": "fsc_info",
-                "tr1": "trace_matrix_pg_fsr",
-                "tr2": "trace_matrix_fsc",
-                "desc": "item_description",
-                "asm": "assumptions",
-            },
-            "sections": [
-                {
-                    "title": "T",
-                    "content": "<uc><act><ibd><aa><rm><pg><fsc><tr1><tr2><desc><asm>",
-                }
-            ],
-        }
+                    "ibd": "diagram:internal block",
+                    "aa": "activity_actions",
+                    "rm": "req_matrix_alloc",
+                    "pg": "product_goals",
+                    "fsc": "fsc_info",
+                    "tr1": "trace_matrix_pg_fsr",
+                    "tr2": "trace_matrix_fsc",
+                    "desc": "item_description",
+                    "asm": "assumptions",
+                    "odd": "odd_library",
+                    "scen": "scenario_library",
+                    "rel": "analysis:reliability",
+                    "mp": "mission_profile",
+                    "pmhf": "pmhf",
+                    "spfm": "spfm",
+                    "lpfm": "lpfm",
+                    "dc": "dc",
+                    "sc": "safety_case",
+                },
+                "sections": [
+                    {
+                        "title": "T",
+                        "content": "<uc><act><ibd><aa><rm><pg><fsc><tr1><tr2><desc><asm><odd><scen><rel><mp><pmhf><spfm><lpfm><dc><sc>",
+                    }
+                ],
+            }
+        )
     )
-)
     monkeypatch.setattr(filedialog, "asksaveasfilename", lambda **k: str(pdf_path))
     monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(template_path))
     monkeypatch.setattr(messagebox, "showinfo", lambda *a, **k: None)

@@ -127,9 +127,10 @@ def test_validate_report_template_allows_analysis_types():
             "fta": "analysis:fault_tree",
             "fmea": "analysis:fmea",
             "fmeda": "analysis:fmeda",
+            "rel": "analysis:reliability",
         },
         "sections": [
-            {"title": "Analyses", "content": "<fta><fmea><fmeda>"}
+            {"title": "Analyses", "content": "<fta><fmea><fmeda><rel>"}
         ],
     }
     assert validate_report_template(cfg) == cfg
