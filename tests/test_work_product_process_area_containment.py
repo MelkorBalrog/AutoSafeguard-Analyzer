@@ -189,6 +189,64 @@ def test_process_area_drag_moves_work_product():
     assert wp.properties.get("py") == "0.0"
 
 
+def test_process_area_drag_preserves_noninteger_offsets():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("Governance Diagram")
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.objects = []
+    win.connections = []
+    win.zoom = 1.0
+    win.sort_objects = lambda: None
+    win._sync_to_repository = lambda: None
+    win.redraw = lambda: None
+    win.app = None
+
+    area = win._place_process_area("Risk Assessment", 0.0, 0.0)
+    wp = win._place_work_product("Risk Assessment", 13.3, 5.7, area=area)
+
+    class DummyCanvas:
+        def canvasx(self, x):
+            return x
+
+        def canvasy(self, y):
+            return y
+
+    win.canvas = DummyCanvas()
+    win.selected_obj = area
+    win.current_tool = "Select"
+    win.drag_offset = (0, 0)
+    win.start = None
+    win.select_rect_start = None
+    win.dragging_conn_mid = None
+    win.selected_conn = None
+    win.dragging_endpoint = None
+    win.dragging_point_index = None
+    win.resizing_obj = None
+
+    class Event1:
+        x = 100
+        y = 50
+
+    win.on_left_drag(Event1())
+
+    win.drag_offset = (0, 0)
+
+    class Event2:
+        x = 150
+        y = 50
+
+    win.on_left_drag(Event2())
+
+    assert win.find_boundary_for_obj(wp) == area
+    assert math.isclose(wp.x, area.x + 13.3)
+    assert math.isclose(wp.y, area.y + 5.7)
+    assert wp.properties.get("px") == "13.3"
+    assert wp.properties.get("py") == "5.7"
+
+
 def test_process_area_multiple_drags_keep_work_product_offset():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()

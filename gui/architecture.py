@@ -5102,8 +5102,12 @@ class SysMLDiagramWindow(tk.Frame):
                         o.x = self.selected_obj.x + offx
                         o.y = self.selected_obj.y + offy
                     elif o.properties.get("boundary") == str(self.selected_obj.obj_id):
-                        o.x += dx
-                        o.y += dy
+                        offx = float(o.properties.get("px", o.x - old_x))
+                        offy = float(o.properties.get("py", o.y - old_y))
+                        o.x = self.selected_obj.x + offx
+                        o.y = self.selected_obj.y + offy
+                        o.properties["px"] = str(offx)
+                        o.properties["py"] = str(offy)
             boundary = self.get_ibd_boundary()
             if boundary:
                 ensure_boundary_contains_parts(boundary, self.objects)
@@ -9290,19 +9294,29 @@ class SysMLDiagramWindow(tk.Frame):
     # Clipboard operations
     # ------------------------------------------------------------
     def copy_selected(self, _event=None):
-        if self.selected_obj:
+        if self.selected_obj and self.selected_obj.obj_type not in (
+            "System Boundary",
+            "Block Boundary",
+        ):
             _clipboard.copy(self.selected_obj)
+        else:
+            messagebox.showwarning("Copy", "Select a non-root node to copy.")
 
     def cut_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
             return
-        if self.selected_obj:
+        if self.selected_obj and self.selected_obj.obj_type not in (
+            "System Boundary",
+            "Block Boundary",
+        ):
             _clipboard.copy(self.selected_obj)
             self.remove_object(self.selected_obj)
             self.selected_obj = None
             self._sync_to_repository()
             self.redraw()
             self.update_property_view()
+        else:
+            messagebox.showwarning("Cut", "Select a non-root node to cut.")
 
     def paste_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
@@ -12024,8 +12038,13 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         # Clamp coordinates to the process area so work products cannot escape.
         obj.x = min(max(obj.x, left), right)
         obj.y = min(max(obj.y, top), bottom)
-        obj.properties["px"] = str(obj.x - area.x)
-        obj.properties["py"] = str(obj.y - area.y)
+
+        def _fmt(v: float) -> str:
+            s = f"{v:.6f}".rstrip("0").rstrip(".")
+            return s + ".0" if "." not in s else s
+
+        obj.properties["px"] = _fmt(obj.x - area.x)
+        obj.properties["py"] = _fmt(obj.y - area.y)
 
     def on_left_press(self, event):  # pragma: no cover - requires tkinter
         if self.repo.diagram_read_only(self.diagram_id):
