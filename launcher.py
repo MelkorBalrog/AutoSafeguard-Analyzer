@@ -11,6 +11,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from tools.crash_report_logger import install_best
 
 # Hint PyInstaller to bundle AutoML and its dependencies (e.g. gui package)
 if False:  # pragma: no cover
@@ -117,6 +118,7 @@ def ensure_packages() -> None:
 
 def main() -> None:
     """Entry point used by both source and bundled executions."""
+    install_best()
     ensure_packages()
     ensure_ghostscript()
     base_path = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))
