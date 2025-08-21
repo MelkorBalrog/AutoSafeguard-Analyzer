@@ -20215,11 +20215,58 @@ class AutoMLApp:
         )
         self.set_last_saved_state()
 
+    def _prompt_save_on_load_v1(self):
+        if not self.has_unsaved_changes():
+            return True
+        if messagebox.askyesno(
+            "Unsaved Changes", "Save changes before loading a different project?"
+        ):
+            self.save_model()
+        return True
+
+    def _prompt_save_on_load_v2(self):
+        if not self.has_unsaved_changes():
+            return True
+        result = messagebox.askokcancel(
+            "Unsaved Changes", "Save changes before loading a different project?"
+        )
+        if not result:
+            return False
+        self.save_model()
+        return True
+
+    def _prompt_save_on_load_v3(self):
+        if not self.has_unsaved_changes():
+            return True
+        result = messagebox.askquestion(
+            "Unsaved Changes", "Save changes before loading a different project?"
+        )
+        if result == "cancel":
+            return False
+        if result == "yes":
+            self.save_model()
+        return True
+
+    def _prompt_save_on_load_v4(self):
+        if not self.has_unsaved_changes():
+            return True
+        result = messagebox.askyesnocancel(
+            "Unsaved Changes", "Save changes before loading a different project?"
+        )
+        if result is None:
+            return False
+        if result:
+            self.save_model()
+        return True
+
     def load_model(self):
         global AutoML_Helper
+        # Prompt user to save unsaved changes before loading a new project
+        if not self._prompt_save_on_load_v4():
+            return
         # Reinitialize the helper so that the counter is reset.
         AutoML_Helper = AutoMLHelper()
-        
+
         path = filedialog.askopenfilename(
             defaultextension=".autml",
             filetypes=[("AutoML Project", "*.autml"), ("JSON", "*.json")],
