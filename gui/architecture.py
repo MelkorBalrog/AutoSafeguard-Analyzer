@@ -9298,6 +9298,14 @@ class SysMLDiagramWindow(tk.Frame):
             diag = self.repo.diagrams.get(self.diagram_id)
             self.app.diagram_clipboard = copy.deepcopy(self.selected_obj)
             self.app.diagram_clipboard_type = diag.diag_type if diag else None
+            parent_name = None
+            if self.selected_obj.obj_type == "Work Product":
+                pid = self.selected_obj.properties.get("parent")
+                if pid:
+                    parent = self.get_object(int(pid))
+                    if parent and parent.obj_type == "System Boundary":
+                        parent_name = parent.properties.get("name")
+            self.app.diagram_clipboard_parent_name = parent_name
 
     def cut_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
@@ -9308,6 +9316,14 @@ class SysMLDiagramWindow(tk.Frame):
             diag = self.repo.diagrams.get(self.diagram_id)
             self.app.diagram_clipboard = copy.deepcopy(self.selected_obj)
             self.app.diagram_clipboard_type = diag.diag_type if diag else None
+            parent_name = None
+            if self.selected_obj.obj_type == "Work Product":
+                pid = self.selected_obj.properties.get("parent")
+                if pid:
+                    parent = self.get_object(int(pid))
+                    if parent and parent.obj_type == "System Boundary":
+                        parent_name = parent.properties.get("name")
+            self.app.diagram_clipboard_parent_name = parent_name
             self.remove_object(self.selected_obj)
             self.selected_obj = None
             self._sync_to_repository()
@@ -9332,6 +9348,19 @@ class SysMLDiagramWindow(tk.Frame):
             new_obj.obj_id = _get_next_id()
             new_obj.x += 20
             new_obj.y += 20
+            if new_obj.obj_type == "Work Product" and getattr(self.app, "diagram_clipboard_parent_name", None):
+                parent_name = self.app.diagram_clipboard_parent_name
+                parent_obj = None
+                if (
+                    self.selected_obj
+                    and self.selected_obj.obj_type == "System Boundary"
+                    and self.selected_obj.properties.get("name") == parent_name
+                ):
+                    parent_obj = self.selected_obj
+                if not parent_obj:
+                    parent_obj = self._place_process_area(parent_name, new_obj.x, new_obj.y)
+                new_obj.properties["parent"] = str(parent_obj.obj_id)
+                self._constrain_to_parent(new_obj, parent_obj)
             if new_obj.obj_type == "System Boundary":
                 self.objects.insert(0, new_obj)
             else:
