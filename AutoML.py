@@ -10365,9 +10365,8 @@ class AutoMLApp:
                 except tk.TclError:
                     pass
 
-        # Recreate the FTA tab and canvas
-        self._create_fta_tab()
-        self.canvas.delete("all")
+        # Reset FTA state without recreating the tab
+        self._reset_fta_state()
 
         global AutoML_Helper, unique_node_id_counter
         # Reset all repositories and model data
@@ -10406,7 +10405,8 @@ class AutoMLApp:
         self.analysis_tree.delete(*self.analysis_tree.get_children())
         self.update_views()
         self.set_last_saved_state()
-        self.canvas.update()
+        if self.canvas:
+            self.canvas.update()
 
     def compute_occurrence_counts(self):
         counts = {}
@@ -18164,6 +18164,15 @@ class AutoMLApp:
         self.canvas.bind("<Double-1>", self.on_canvas_double_click)
         self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
 
+    def _reset_fta_state(self):
+        """Clear references to the FTA tab and its canvas."""
+        self.canvas_tab = None
+        self.canvas_frame = None
+        self.canvas = None
+        self.hbar = None
+        self.vbar = None
+        self.page_diagram = None
+
     def ensure_fta_tab(self):
         """Recreate the FTA tab if it was closed."""
         if not getattr(self, "canvas_tab", None) or not self.canvas_tab.winfo_exists():
@@ -20284,9 +20293,7 @@ class AutoMLApp:
         if getattr(self, "analysis_tree", None):
             self.analysis_tree.delete(*self.analysis_tree.get_children())
 
-        self._create_fta_tab()
-        if getattr(self, "canvas", None):
-            self.canvas.delete("all")
+        self._reset_fta_state()
 
     def load_model(self):
         import json
