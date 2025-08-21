@@ -12169,6 +12169,9 @@ class AutoMLApp:
         parent_node.children.append(new_node)
         new_node.parents.append(parent_node)
         self.update_views()
+        # Capture the post-addition state so future moves can be undone back
+        # to this initial location.
+        self.push_undo_state()
 
     def add_basic_event_from_fmea(self):
         self.push_undo_state()
