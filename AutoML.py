@@ -18629,14 +18629,23 @@ class AutoMLApp:
             ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.refresh_all()
         
-    def copy_node(self):
-        node = self.selected_node
-        if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
+    def _selected_tree_node(self):
+        if hasattr(self, "analysis_tree"):
             sel = self.analysis_tree.selection()
             if sel:
                 tags = self.analysis_tree.item(sel[0], "tags")
                 if tags:
-                    node = self.find_node_by_id(self.root_node, int(tags[0]))
+                    return self.find_node_by_id(self.root_node, int(tags[0]))
+        return None
+
+    def copy_node(self):
+        node = (
+            self.selected_node
+            if self.selected_node and self.selected_node != self.root_node
+            else None
+        )
+        if node is None:
+            node = self._selected_tree_node()
         if node and node != self.root_node:
             self.clipboard_node = node
             self.selected_node = node
@@ -18646,13 +18655,13 @@ class AutoMLApp:
 
     def cut_node(self):
         """Store the currently selected node for a cut & paste operation."""
-        node = self.selected_node
-        if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
-            sel = self.analysis_tree.selection()
-            if sel:
-                tags = self.analysis_tree.item(sel[0], "tags")
-                if tags:
-                    node = self.find_node_by_id(self.root_node, int(tags[0]))
+        node = (
+            self.selected_node
+            if self.selected_node and self.selected_node != self.root_node
+            else None
+        )
+        if node is None:
+            node = self._selected_tree_node()
         if node and node != self.root_node:
             self.clipboard_node = node
             self.selected_node = node
@@ -18666,15 +18675,8 @@ class AutoMLApp:
             messagebox.showwarning("Paste", "Clipboard is empty.")
             return
 
-        # 2) Determine target from selection or current selected node.
-        target = None
-        sel = self.analysis_tree.selection()
-        if sel:
-            tags = self.analysis_tree.item(sel[0], "tags")
-            if tags:
-                target = self.find_node_by_id(self.root_node, int(tags[0]))
-        if not target:
-            target = self.selected_node
+        # 2) Determine target from current selection, preferring diagram selection.
+        target = self.selected_node or self._selected_tree_node()
         if not target:
             messagebox.showwarning("Paste", "Select a target node to paste into.")
             return
