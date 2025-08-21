@@ -9319,6 +9319,74 @@ class AutoMLApp:
                 return _element_cut_sets()
             if kind == "common_cause":
                 return _element_common_cause()
+            if kind == "activity_actions":
+                data = [["Action"], ["Start"], ["Stop"]]
+                table = Table(data, repeatRows=1)
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 8),
+                        ]
+                    )
+                )
+                return [table]
+            if kind == "req_matrix_alloc":
+                data = [["Requirement", "Allocation"], ["REQ-1", "Block A"], ["REQ-2", "Block B"]]
+                table = Table(data, repeatRows=1)
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 8),
+                        ]
+                    )
+                )
+                return [table]
+            if kind == "product_goals":
+                return [
+                    Paragraph("Goal 1", pdf_styles["Normal"]),
+                    Paragraph("Goal 2", pdf_styles["Normal"]),
+                ]
+            if kind == "fsc_info":
+                return [
+                    Paragraph(
+                        "[functional safety concept information]",
+                        pdf_styles["Normal"],
+                    )
+                ]
+            if kind == "trace_matrix_pg_fsr":
+                data = [["Product Goal", "FSR"], ["PG1", "FSR1"], ["PG2", "FSR2"]]
+                table = Table(data, repeatRows=1)
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 8),
+                        ]
+                    )
+                )
+                return [table]
+            if kind == "trace_matrix_fsc":
+                data = [["TSR", "FSR"], ["TSR1", "FSR1"], ["TSR2", "FSR2"]]
+                table = Table(data, repeatRows=1)
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 8),
+                        ]
+                    )
+                )
+                return [table]
             if name in requirement_element_map:
                 req_type, title = requirement_element_map[name]
                 return _make_requirement_table(req_type, title)

@@ -239,3 +239,41 @@ def test_layout_report_template_supports_diagram_and_analysis_types():
     items, _ = layout_report_template(data)
     kinds = [i.get("kind") for i in items if i["type"] == "element"]
     assert "diagram:block" in kinds and "analysis:hazard" in kinds
+
+
+def test_layout_report_template_supports_additional_diagram_types():
+    data = {
+        "elements": {
+            "uc": "diagram:use case",
+            "act": "diagram:activity",
+            "ibd": "diagram:internal block",
+        },
+        "sections": [{"title": "T", "content": "<uc><act><ibd>"}],
+    }
+    items, _ = layout_report_template(data)
+    kinds = [i.get("kind") for i in items if i["type"] == "element"]
+    assert {
+        "diagram:use case",
+        "diagram:activity",
+        "diagram:internal block",
+    } <= set(kinds)
+
+
+def test_validate_report_template_allows_new_elements():
+    cfg = {
+        "elements": {
+            "aa": "activity_actions",
+            "rm": "req_matrix_alloc",
+            "pg": "product_goals",
+            "fsc": "fsc_info",
+            "tr1": "trace_matrix_pg_fsr",
+            "tr2": "trace_matrix_fsc",
+        },
+        "sections": [
+            {
+                "title": "All",
+                "content": "<aa><rm><pg><fsc><tr1><tr2>",
+            }
+        ],
+    }
+    assert validate_report_template(cfg) == cfg
