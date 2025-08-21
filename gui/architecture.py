@@ -9293,22 +9293,65 @@ class SysMLDiagramWindow(tk.Frame):
     # ------------------------------------------------------------
     def copy_selected(self, _event=None):
         if self.selected_obj and self.app:
+            self.app.active_arch_window = self
             import copy
 
             diag = self.repo.diagrams.get(self.diagram_id)
-            self.app.diagram_clipboard = copy.deepcopy(self.selected_obj)
+            if self.selected_obj.obj_type == "System Boundary":
+                children = [
+                    o
+                    for o in self.objects
+                    if o.obj_type == "Work Product"
+                    and o.properties.get("parent") == str(self.selected_obj.obj_id)
+                ]
+                items = [self.selected_obj, *children]
+                self.app.diagram_clipboard = copy.deepcopy(items)
+                self.app.diagram_clipboard_parent_name = None
+            else:
+                self.app.diagram_clipboard = copy.deepcopy(self.selected_obj)
+                parent_name = None
+                if self.selected_obj.obj_type == "Work Product":
+                    pid = self.selected_obj.properties.get("parent")
+                    if pid:
+                        parent = self.get_object(int(pid))
+                        if parent and parent.obj_type == "System Boundary":
+                            parent_name = parent.properties.get("name")
+                self.app.diagram_clipboard_parent_name = parent_name
             self.app.diagram_clipboard_type = diag.diag_type if diag else None
 
     def cut_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
             return
         if self.selected_obj and self.app:
+            self.app.active_arch_window = self
             import copy
 
             diag = self.repo.diagrams.get(self.diagram_id)
-            self.app.diagram_clipboard = copy.deepcopy(self.selected_obj)
+            if self.selected_obj.obj_type == "System Boundary":
+                children = [
+                    o
+                    for o in self.objects
+                    if o.obj_type == "Work Product"
+                    and o.properties.get("parent") == str(self.selected_obj.obj_id)
+                ]
+                items = [self.selected_obj, *children]
+                self.app.diagram_clipboard = copy.deepcopy(items)
+                self.app.diagram_clipboard_parent_name = None
+                for child in children:
+                    self.remove_object(child)
+                self.remove_object(self.selected_obj)
+            else:
+                self.app.diagram_clipboard = copy.deepcopy(self.selected_obj)
+                parent_name = None
+                if self.selected_obj.obj_type == "Work Product":
+                    pid = self.selected_obj.properties.get("parent")
+                    if pid:
+                        parent = self.get_object(int(pid))
+                        if parent and parent.obj_type == "System Boundary":
+                            parent_name = parent.properties.get("name")
+                self.app.diagram_clipboard_parent_name = parent_name
+                self.remove_object(self.selected_obj)
             self.app.diagram_clipboard_type = diag.diag_type if diag else None
-            self.remove_object(self.selected_obj)
             self.selected_obj = None
             self._sync_to_repository()
             self.redraw()
@@ -9317,6 +9360,8 @@ class SysMLDiagramWindow(tk.Frame):
     def paste_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
             return
+        if self.app:
+            self.app.active_arch_window = self
         if self.app and getattr(self.app, "diagram_clipboard", None):
             if self.app.diagram_clipboard_type:
                 diag = self.repo.diagrams.get(self.diagram_id)
@@ -9328,19 +9373,60 @@ class SysMLDiagramWindow(tk.Frame):
                     return
             import copy
 
-            new_obj = copy.deepcopy(self.app.diagram_clipboard)
-            new_obj.obj_id = _get_next_id()
-            new_obj.x += 20
-            new_obj.y += 20
-            if new_obj.obj_type == "System Boundary":
-                self.objects.insert(0, new_obj)
+            clip = self.app.diagram_clipboard
+            if isinstance(clip, list):
+                import copy as _copy
+
+                originals = clip
+                copies = _copy.deepcopy(clip)
+                old_area_id = originals[0].obj_id
+                area = copies[0]
+                area.obj_id = _get_next_id()
+                area.x += 20
+                area.y += 20
+                self.objects.insert(0, area)
+                diag = self.repo.diagrams.get(self.diagram_id)
+                if diag and area.element_id and area.element_id not in diag.elements:
+                    diag.elements.append(area.element_id)
+                for child in copies[1:]:
+                    child.obj_id = _get_next_id()
+                    child.x += 20
+                    child.y += 20
+                    if child.properties.get("parent") == str(old_area_id):
+                        child.properties["parent"] = str(area.obj_id)
+                    self._constrain_to_parent(child, area)
+                    self.objects.append(child)
+                    if diag and child.element_id and child.element_id not in diag.elements:
+                        diag.elements.append(child.element_id)
+                self.sort_objects()
+                self.selected_obj = area
             else:
-                self.objects.append(new_obj)
-            self.sort_objects()
-            diag = self.repo.diagrams.get(self.diagram_id)
-            if diag and new_obj.element_id and new_obj.element_id not in diag.elements:
-                diag.elements.append(new_obj.element_id)
-            self.selected_obj = new_obj
+                new_obj = copy.deepcopy(clip)
+                new_obj.obj_id = _get_next_id()
+                new_obj.x += 20
+                new_obj.y += 20
+                if new_obj.obj_type == "Work Product" and getattr(self.app, "diagram_clipboard_parent_name", None):
+                    parent_name = self.app.diagram_clipboard_parent_name
+                    parent_obj = None
+                    if (
+                        self.selected_obj
+                        and self.selected_obj.obj_type == "System Boundary"
+                        and self.selected_obj.properties.get("name") == parent_name
+                    ):
+                        parent_obj = self.selected_obj
+                    if not parent_obj:
+                        parent_obj = self._place_process_area(parent_name, new_obj.x, new_obj.y)
+                    new_obj.properties["parent"] = str(parent_obj.obj_id)
+                    self._constrain_to_parent(new_obj, parent_obj)
+                if new_obj.obj_type == "System Boundary":
+                    self.objects.insert(0, new_obj)
+                else:
+                    self.objects.append(new_obj)
+                self.sort_objects()
+                diag = self.repo.diagrams.get(self.diagram_id)
+                if diag and new_obj.element_id and new_obj.element_id not in diag.elements:
+                    diag.elements.append(new_obj.element_id)
+                self.selected_obj = new_obj
             self._sync_to_repository()
             self.redraw()
             self.update_property_view()
