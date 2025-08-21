@@ -18638,38 +18638,8 @@ class AutoMLApp:
         elif diag.diag_type == "Control Flow Diagram":
             ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.refresh_all()
-
-    def _clipboard_widget(self):
-        def search(widget):
-            stack = [widget] if widget else []
-            while stack:
-                w = stack.pop()
-                if any(
-                    hasattr(w, m) for m in ("copy_selected", "cut_selected", "paste_selected")
-                ):
-                    return w
-                stack.extend(getattr(w, "winfo_children", lambda: [])())
-            return None
-
-        widget = getattr(self, "root", None)
-        if widget:
-            hit = search(widget.focus_get())
-            if hit:
-                return hit
-        if hasattr(self, "doc_nb"):
-            try:
-                tab = self.doc_nb.nametowidget(self.doc_nb.select())
-            except Exception:
-                tab = None
-            if tab:
-                return search(tab)
-        return None
-
+        
     def copy_node(self):
-        widget = self._clipboard_widget()
-        if widget and hasattr(widget, "copy_selected"):
-            widget.copy_selected()
-            return
         node = self.selected_node
         if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
             sel = self.analysis_tree.selection()
@@ -18686,10 +18656,6 @@ class AutoMLApp:
 
     def cut_node(self):
         """Store the currently selected node for a cut & paste operation."""
-        widget = self._clipboard_widget()
-        if widget and hasattr(widget, "cut_selected"):
-            widget.cut_selected()
-            return
         node = self.selected_node
         if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
             sel = self.analysis_tree.selection()
@@ -18705,10 +18671,6 @@ class AutoMLApp:
             messagebox.showwarning("Cut", "Select a non-root node to cut.")
 
     def paste_node(self):
-        widget = self._clipboard_widget()
-        if widget and hasattr(widget, "paste_selected"):
-            widget.paste_selected()
-            return
         # 1) Ensure clipboard is not empty.
         if not self.clipboard_node:
             messagebox.showwarning("Paste", "Clipboard is empty.")
