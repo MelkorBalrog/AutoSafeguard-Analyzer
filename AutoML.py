@@ -227,6 +227,7 @@ import math
 import sys
 import json
 import tkinter as tk
+from typing import Optional
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui.dialog_utils import askstring_fixed
 from gui import messagebox, logger, add_treeview_scrollbars
@@ -2119,6 +2120,8 @@ class DecompositionDialog(simpledialog.Dialog):
 class AutoMLApp:
     """Main application window for AutoML Analyzer."""
 
+    _instance: Optional["AutoMLApp"] = None
+
     #: Maximum number of characters displayed for a notebook tab title. Longer
     #: titles are truncated with an ellipsis to avoid giant tabs that overflow
     #: the working area.
@@ -2296,6 +2299,7 @@ class AutoMLApp:
         WORK_PRODUCT_PARENTS.setdefault(_wp, "Requirements")
 
     def __init__(self, root):
+        AutoMLApp._instance = self
         self.root = root
         self.top_events = []
         self.selected_node = None
@@ -19055,22 +19059,114 @@ class AutoMLApp:
         current_state = json.dumps(self.export_model_data(), sort_keys=True)
         return current_state != getattr(self, "last_saved_state", None)
 
-    def push_undo_state(self):
+    # ------------------------------------------------------------
+    # Undo support
+    # ------------------------------------------------------------
+    def _strip_object_positions(self, data: dict) -> dict:
+        """Return a copy of *data* without concrete object positions."""
+
+        cleaned = json.loads(json.dumps(data))
+        for diag in cleaned.get("diagrams", []):
+            for obj in diag.get("objects", []):
+                obj.pop("x", None)
+                obj.pop("y", None)
+        return cleaned
+
+    def push_undo_state(self, strategy: str = "v4", sync_repo: bool = True) -> None:
         """Save the current model state for undo operations."""
-        self._undo_stack.append(self.export_model_data(include_versions=False))
-        if len(self._undo_stack) > 20:
+        repo = SysMLRepository.get_instance()
+        if sync_repo:
+            repo.push_undo_state(strategy=strategy, sync_app=False)
+
+        state = self.export_model_data(include_versions=False)
+        stripped = self._strip_object_positions(state)
+
+        if strategy == "v1":
+            changed = self._push_undo_state_v1(state, stripped)
+        elif strategy == "v2":
+            changed = self._push_undo_state_v2(state, stripped)
+        elif strategy == "v3":
+            changed = self._push_undo_state_v3(state, stripped)
+        else:  # v4
+            changed = self._push_undo_state_v4(state, stripped)
+
+        if changed and len(self._undo_stack) > 20:
             self._undo_stack.pop(0)
-        self._redo_stack.clear()
+        if changed:
+            self._redo_stack.clear()
+
+    # Variants for push_undo_state
+    def _push_undo_state_v1(self, state: dict, stripped: dict) -> bool:
+        if self._undo_stack:
+            last = self._undo_stack[-1]
+            if last == state:
+                return False
+            if self._strip_object_positions(last) == stripped:
+                if (
+                    len(self._undo_stack) >= 2
+                    and self._strip_object_positions(self._undo_stack[-2]) == stripped
+                ):
+                    self._undo_stack[-1] = state
+                    return True
+                self._undo_stack.append(state)
+                return True
+        else:
+            self._undo_stack.append(state)
+            return True
+
+        self._undo_stack.append(state)
+        return True
+
+    def _push_undo_state_v2(self, state: dict, stripped: dict) -> bool:
+        if self._undo_stack and self._undo_stack[-1] == state:
+            return False
+        if self._undo_stack and self._strip_object_positions(self._undo_stack[-1]) == stripped:
+            if getattr(self, "_last_move_base", None) == stripped:
+                self._undo_stack[-1] = state
+            else:
+                self._undo_stack.append(state)
+                self._last_move_base = stripped
+            return True
+        self._last_move_base = None
+        self._undo_stack.append(state)
+        return True
+
+    def _push_undo_state_v3(self, state: dict, stripped: dict) -> bool:
+        if self._undo_stack and self._undo_stack[-1] == state:
+            return False
+        if self._undo_stack and self._strip_object_positions(self._undo_stack[-1]) == stripped:
+            if getattr(self, "_move_run_length", 0):
+                self._undo_stack[-1] = state
+            else:
+                self._undo_stack.append(state)
+            self._move_run_length = getattr(self, "_move_run_length", 0) + 1
+            return True
+        self._move_run_length = 0
+        self._undo_stack.append(state)
+        return True
+
+    def _push_undo_state_v4(self, state: dict, stripped: dict) -> bool:
+        if self._undo_stack and self._undo_stack[-1] == state:
+            return False
+        self._undo_stack.append(state)
+        if len(self._undo_stack) >= 3:
+            s1 = self._strip_object_positions(self._undo_stack[-3])
+            s2 = self._strip_object_positions(self._undo_stack[-2])
+            if s1 == s2 == stripped:
+                self._undo_stack.pop(-2)
+        return True
 
     def undo(self):
         """Revert the repository and model data to the previous state."""
         repo = SysMLRepository.get_instance()
-        # Only perform undo if there is a corresponding application state
         if not self._undo_stack:
             return
         current = self.export_model_data(include_versions=False)
-        # Repository may or may not have an accompanying undo state
         repo.undo()
+        if self._undo_stack and self._undo_stack[-1] == current:
+            self._undo_stack.pop()
+        if not self._undo_stack:
+            return
         state = self._undo_stack.pop()
         self._redo_stack.append(current)
         if len(self._redo_stack) > 20:
@@ -19085,14 +19181,15 @@ class AutoMLApp:
     def redo(self):
         """Restore the next state from the redo stack."""
         repo = SysMLRepository.get_instance()
+        if not self._redo_stack:
+            return
         current = self.export_model_data(include_versions=False)
         repo.redo()
-        if self._redo_stack:
-            state = self._redo_stack.pop()
-            self._undo_stack.append(current)
-            if len(self._undo_stack) > 20:
-                self._undo_stack.pop(0)
-            self.apply_model_data(state)
+        state = self._redo_stack.pop()
+        self._undo_stack.append(current)
+        if len(self._undo_stack) > 20:
+            self._undo_stack.pop(0)
+        self.apply_model_data(state)
         for tab in getattr(self, "diagram_tabs", {}).values():
             for child in tab.winfo_children():
                 if hasattr(child, "refresh_from_repository"):
