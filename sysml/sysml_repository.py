@@ -149,21 +149,6 @@ class SysMLRepository:
     # ------------------------------------------------------------
     # Undo support
     # ------------------------------------------------------------
-    def _strip_object_positions(self, data: dict) -> dict:
-        """Return a copy of *data* without concrete object positions.
-
-        The helper is used to determine whether two repository states differ
-        only by object coordinates within diagrams.  When this is the case we
-        can merge the states to keep the undo history compact.
-        """
-
-        cleaned = json.loads(json.dumps(data))
-        for diag in cleaned.get("diagrams", []):
-            for obj in diag.get("objects", []):
-                obj.pop("x", None)
-                obj.pop("y", None)
-        return cleaned
-
     def push_undo_state(self) -> None:
         """Save the current repository state for undo.
 
@@ -174,21 +159,13 @@ class SysMLRepository:
         requiring multiple ``undo`` operations to revert a single move.
         Skipping storage of consecutive identical states keeps the history
         concise and ensures that each user action corresponds to a single
-        undo step.  Additionally, successive states that differ only by object
-        coordinates are coalesced so that dragging an object records only its
-        final position.
+        undo step.
         """
 
         state = self.to_dict()
-        if self._undo_stack:
-            last = self._undo_stack[-1]
-            # Avoid pushing duplicate consecutive states
-            if last == state:
-                return
-            # Merge states that only change object positions
-            if self._strip_object_positions(last) == self._strip_object_positions(state):
-                self._undo_stack[-1] = state
-                return
+        # Avoid pushing duplicate consecutive states
+        if self._undo_stack and self._undo_stack[-1] == state:
+            return
 
         self._undo_stack.append(state)
         # limit history to 50 states to avoid excessive memory use
