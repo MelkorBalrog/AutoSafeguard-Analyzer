@@ -18223,6 +18223,9 @@ class AutoMLApp:
             if hasattr(event.widget, "nametowidget")
             else tab_id
         )
+        gsn_win = getattr(tab, "gsn_window", None)
+        if gsn_win:
+            self.selected_node = gsn_win.diagram.root
         # Propagate recent changes and ensure the active tab reflects them
         self.refresh_all()
         if tab is getattr(self, "_safety_case_tab", None):
@@ -18588,7 +18591,8 @@ class AutoMLApp:
             self.diagram_tabs.pop(diagram.diag_id, None)
         tab = self._new_tab(diagram.root.user_name)
         self.diagram_tabs[diagram.diag_id] = tab
-        GSNDiagramWindow(tab, self, diagram)
+        window = GSNDiagramWindow(tab, self, diagram)
+        setattr(tab, "gsn_window", window)
         self.refresh_all()
 
     def open_arch_window(self, diag_id: str) -> None:
@@ -19083,16 +19087,6 @@ class AutoMLApp:
         current_state = json.dumps(self.export_model_data(), sort_keys=True)
         return current_state != getattr(self, "last_saved_state", None)
 
-    def clear_undo_history(self) -> None:
-        """Remove all undo/redo history for the app and repository."""
-        repo = SysMLRepository.get_instance()
-        repo._undo_stack.clear()
-        repo._redo_stack.clear()
-        if hasattr(self, "_undo_stack"):
-            self._undo_stack.clear()
-        if hasattr(self, "_redo_stack"):
-            self._redo_stack.clear()
-
     # ------------------------------------------------------------
     # Undo support
     # ------------------------------------------------------------
@@ -19239,7 +19233,6 @@ class AutoMLApp:
         if self._undo_stack and self._undo_stack[-1] == current:
             self._undo_stack.pop()
             if not self._undo_stack:
-                self._redo_stack.append(current)
                 return False
         state = self._undo_stack.pop()
         self._redo_stack.append(current)
@@ -19256,7 +19249,6 @@ class AutoMLApp:
         if self._undo_stack and self._undo_stack[-1] == current:
             self._undo_stack.pop()
             if not self._undo_stack:
-                self._redo_stack.append(current)
                 return False
         state = self._undo_stack.pop()
         self._redo_stack.append(current)
@@ -19273,7 +19265,6 @@ class AutoMLApp:
         if self._undo_stack and self._undo_stack[-1] == current:
             self._undo_stack.pop()
             if not self._undo_stack:
-                self._redo_stack.append(current)
                 return False
         state = self._undo_stack.pop()
         self._redo_stack.append(current)
@@ -19290,10 +19281,7 @@ class AutoMLApp:
         if self._undo_stack and self._undo_stack[-1] == current:
             self._undo_stack.pop()
             if not self._undo_stack:
-                self._redo_stack.append(current)
-                if len(self._redo_stack) > 20:
-                    self._redo_stack.pop(0)
-                return True
+                return False
         state = self._undo_stack.pop()
         self._redo_stack.append(current)
         if len(self._redo_stack) > 20:
