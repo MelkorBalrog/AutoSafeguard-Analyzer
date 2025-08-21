@@ -19076,16 +19076,6 @@ class AutoMLApp:
         current_state = json.dumps(self.export_model_data(), sort_keys=True)
         return current_state != getattr(self, "last_saved_state", None)
 
-    def clear_undo_history(self) -> None:
-        """Remove all undo/redo history for the app and repository."""
-        repo = SysMLRepository.get_instance()
-        repo._undo_stack.clear()
-        repo._redo_stack.clear()
-        if hasattr(self, "_undo_stack"):
-            self._undo_stack.clear()
-        if hasattr(self, "_redo_stack"):
-            self._redo_stack.clear()
-
     # ------------------------------------------------------------
     # Undo support
     # ------------------------------------------------------------
@@ -19232,7 +19222,6 @@ class AutoMLApp:
         if self._undo_stack and self._undo_stack[-1] == current:
             self._undo_stack.pop()
             if not self._undo_stack:
-                self._redo_stack.append(current)
                 return False
         state = self._undo_stack.pop()
         self._redo_stack.append(current)
@@ -19249,7 +19238,6 @@ class AutoMLApp:
         if self._undo_stack and self._undo_stack[-1] == current:
             self._undo_stack.pop()
             if not self._undo_stack:
-                self._redo_stack.append(current)
                 return False
         state = self._undo_stack.pop()
         self._redo_stack.append(current)
@@ -19266,7 +19254,6 @@ class AutoMLApp:
         if self._undo_stack and self._undo_stack[-1] == current:
             self._undo_stack.pop()
             if not self._undo_stack:
-                self._redo_stack.append(current)
                 return False
         state = self._undo_stack.pop()
         self._redo_stack.append(current)
@@ -19283,10 +19270,7 @@ class AutoMLApp:
         if self._undo_stack and self._undo_stack[-1] == current:
             self._undo_stack.pop()
             if not self._undo_stack:
-                self._redo_stack.append(current)
-                if len(self._redo_stack) > 20:
-                    self._redo_stack.pop(0)
-                return True
+                return False
         state = self._undo_stack.pop()
         self._redo_stack.append(current)
         if len(self._redo_stack) > 20:
