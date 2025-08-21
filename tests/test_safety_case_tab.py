@@ -39,7 +39,7 @@ def test_open_case_uses_app_tab(monkeypatch):
 
     safety_case_explorer.SafetyCaseExplorer.open_item(explorer)
 
-    assert called["title"] == "Safety Case: MyCase"
+    assert called["title"] == "Safety & Security Report: MyCase"
     assert called["master"].packed is False
     assert called["case"] is case
     assert called.get("packed") is True

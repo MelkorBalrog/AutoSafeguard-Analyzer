@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Data structures for safety & security cases."""
+"""Data structures for safety & security reports."""
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -12,7 +12,7 @@ from config import load_report_template
 
 @dataclass
 class SafetyCase:
-    """Representation of a safety & security case derived from a GSN diagram."""
+    """Representation of a safety & security report derived from a GSN diagram."""
 
     name: str
     diagram: GSNDiagram
@@ -23,10 +23,12 @@ class SafetyCase:
         self.solutions = [n for n in self.diagram.nodes if n.node_type == "Solution"]
 
     def build_report_template(self) -> dict:
-        """Return safety case report template filtered by referenced work products."""
+        """Return safety & security report template filtered by referenced work products."""
 
         base = load_report_template(
-            Path(__file__).resolve().parents[1] / "config" / "safety_case_template.json"
+            Path(__file__).resolve().parents[1]
+            / "config"
+            / "safety_security_report_template.json"
         )
 
         # map lower-case keywords to (element placeholder, section title)
