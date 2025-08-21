@@ -3,7 +3,12 @@ import tkinter.font as tkfont
 from tkinter import ttk
 
 from gui import add_treeview_scrollbars
-from gui.toolboxes import EditableTreeview, configure_table_style, _wrap_val
+from gui.toolboxes import (
+    EditableTreeview,
+    configure_table_style,
+    _wrap_val,
+    enable_treeview_reorder,
+)
 
 
 class TableController(tk.Frame):
@@ -48,6 +53,9 @@ class TableController(tk.Frame):
             self.tree.column(col, width=width, stretch=True)
         add_treeview_scrollbars(self.tree, self)
         self.tree.bind("<Configure>", self._adjust_text, add="+")
+        self._move_up, self._move_down = enable_treeview_reorder(
+            self.tree, self._adjust_text
+        )
 
     # ------------------------------------------------------------------
     def clear(self) -> None:
@@ -95,3 +103,12 @@ class TableController(tk.Frame):
     def adjust_text(self) -> None:
         """Public wrapper for :meth:`_adjust_text`."""
         self._adjust_text()
+
+    # ------------------------------------------------------------------
+    def move_up(self) -> None:
+        """Move the currently selected row one position upwards."""
+        self._move_up()
+
+    def move_down(self) -> None:
+        """Move the currently selected row one position downwards."""
+        self._move_down()

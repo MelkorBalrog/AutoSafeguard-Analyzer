@@ -72,6 +72,22 @@ class ClosableNotebook(ttk.Notebook):
         self.protected: set[str] = set()
         self._drag_data: dict[str, int | None] = {"tab": None, "x": 0, "y": 0}
         self._dragging = False
+
+        # ------------------------------------------------------------------
+        # Data loading/unloading strategy handling
+        # ------------------------------------------------------------------
+        # A small strategy system is used to experiment with different ways of
+        # loading and unloading tab data on focus changes.  The active strategy
+        # is selected via the ``AUTOML_DATA_STRATEGY`` environment variable to
+        # make it easy for tests to exercise all implementations.  Strategy 4
+        # is the default and most feature complete option.
+        import os
+
+        try:
+            self._data_strategy = int(os.environ.get("AUTOML_DATA_STRATEGY", "4"))
+        except ValueError:
+            self._data_strategy = 4
+        self._focused_tab: str | None = None
         # ``_root_bindings`` store identifiers for bindings that temporarily
         # attach to the containing toplevel while a drag operation is active.
         # This ensures that we still receive ``<B1-Motion>`` and
@@ -122,13 +138,13 @@ class ClosableNotebook(ttk.Notebook):
     # ------------------------------------------------------------------
 
     def _on_tab_changed(self, _event: tk.Event) -> None:
-        self._refresh_current_tab()
+        self._handle_tab_focus()
 
     def _on_focus_in(self, _event: tk.Event) -> None:
-        self._refresh_current_tab()
+        self._handle_tab_focus()
 
-    def _refresh_current_tab(self) -> None:
-        """Invoke a refresh method on the currently selected tab if available."""
+    def _handle_tab_focus(self) -> None:
+        """Handle data loading/unloading and refresh for the active tab."""
         current = self.select()
         if not current:
             return
@@ -136,11 +152,76 @@ class ClosableNotebook(ttk.Notebook):
             widget = self.nametowidget(current)
         except Exception:
             return
+
+        # Dispatch to the chosen strategy.  Each strategy aims to only keep the
+        # data for the focused tab in memory.
+        strategies = {
+            1: self._strategy_load_only,
+            2: self._strategy_swap_load_unload,
+            3: self._strategy_event_based,
+            4: self._strategy_swap_event_based,
+        }
+        strategies.get(self._data_strategy, self._strategy_swap_event_based)(widget)
+
+        # Existing refresh behaviour retained for backward compatibility
         for name in ("refresh_from_repository", "populate"):
             method = getattr(widget, name, None)
             if callable(method):
                 method()
                 break
+
+    # ------------------------------------------------------------------
+    # Data loading/unloading strategies
+    # ------------------------------------------------------------------
+
+    def _get_widget(self, widget_id: str) -> tk.Widget | None:
+        try:
+            return self.nametowidget(widget_id)
+        except Exception:
+            return None
+
+    def _call_method(self, widget: tk.Widget | None, name: str) -> None:
+        if not widget:
+            return
+        method = getattr(widget, name, None)
+        if callable(method):
+            method()
+
+    def _strategy_load_only(self, widget: tk.Widget) -> None:
+        """Strategy 1: load data for the active tab only."""
+        self._call_method(widget, "load_data")
+        self._focused_tab = self.select()
+
+    def _strategy_swap_load_unload(self, widget: tk.Widget) -> None:
+        """Strategy 2: load current tab and unload previous tab."""
+        current = self.select()
+        if self._focused_tab and self._focused_tab != current:
+            prev = self._get_widget(self._focused_tab)
+            self._call_method(prev, "unload_data")
+        self._call_method(widget, "load_data")
+        self._focused_tab = current
+
+    def _strategy_event_based(self, widget: tk.Widget) -> None:
+        """Strategy 3: notify tabs via events."""
+        current = self.select()
+        if self._focused_tab and self._focused_tab != current:
+            prev = self._get_widget(self._focused_tab)
+            if prev:
+                prev.event_generate("<<TabUnloaded>>")
+        widget.event_generate("<<TabLoaded>>")
+        self._focused_tab = current
+
+    def _strategy_swap_event_based(self, widget: tk.Widget) -> None:
+        """Strategy 4: combine method calls with events."""
+        current = self.select()
+        if self._focused_tab and self._focused_tab != current:
+            prev = self._get_widget(self._focused_tab)
+            self._call_method(prev, "unload_data")
+            if prev:
+                prev.event_generate("<<TabUnloaded>>")
+        self._call_method(widget, "load_data")
+        widget.event_generate("<<TabLoaded>>")
+        self._focused_tab = current
 
     def _create_close_image(self, size: int = 10) -> tk.PhotoImage:
         img = tk.PhotoImage(width=size, height=size)
