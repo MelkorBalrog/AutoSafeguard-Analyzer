@@ -1,10 +1,14 @@
 {
   "elements": {
-    "sysml_diagrams": "sysml_diagrams",
-    "req_technical_safety": "req_technical_safety"
+    "internal_block_diagrams": "diagram:internal block",
+    "req_matrix": "req_matrix_alloc",
+    "req_technical_safety": "req_technical_safety",
+    "trace_matrix_fsc": "trace_matrix_fsc"
   },
   "sections": [
-    {"title": "System Architecture", "content": "<sysml_diagrams>"},
-    {"title": "Technical Safety Requirements", "content": "<req_technical_safety>"}
+    {"title": "Internal Block Diagrams", "content": "<internal_block_diagrams>"},
+    {"title": "Technical Safety Requirements", "content": "<req_technical_safety>"},
+    {"title": "Requirements Allocation Matrix", "content": "<req_matrix>"},
+    {"title": "Traceability to Functional Safety Concept", "content": "<trace_matrix_fsc>"}
   ]
 }
