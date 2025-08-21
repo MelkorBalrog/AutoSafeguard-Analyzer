@@ -5,9 +5,13 @@
     "product_goals": "product_goals",
     "fsc_info": "fsc_info",
     "req_functional_safety": "req_functional_safety",
+    "req_operational_safety": "req_operational_safety",
+    "req_cybersecurity": "req_cybersecurity",
     "trace_matrix_pg_fsr": "trace_matrix_pg_fsr",
     "fta_diagrams": "analysis:fault_tree",
     "threat_analysis_diagrams": "analysis:threat",
+    "bayesian_network_diagrams": "analysis:bayesian_network",
+    "stpa_diagrams": "analysis:stpa",
     "fi2tc": "fi2tc",
     "tc2fi": "tc2fi",
     "triggering_conditions": "triggering_conditions",
@@ -21,7 +25,7 @@
       "content": "<product_goals>"
     },
     {
-      "title": "Functional Safety Concept",
+      "title": "Functional & Cybersecurity Concept",
       "content": "<fsc_info>"
     },
     {
@@ -45,6 +49,14 @@
       "content": "<threat_analysis_diagrams>"
     },
     {
+      "title": "Bayesian Network Analysis",
+      "content": "<bayesian_network_diagrams>"
+    },
+    {
+      "title": "STPA Analyses",
+      "content": "<stpa_diagrams>"
+    },
+    {
       "title": "FI2TC Mapping",
       "content": "<fi2tc>"
     },
@@ -63,6 +75,14 @@
     {
       "title": "Functional Safety Requirements",
       "content": "<req_functional_safety>"
+    },
+    {
+      "title": "Operational Safety Requirements",
+      "content": "<req_operational_safety>"
+    },
+    {
+      "title": "Cybersecurity Requirements",
+      "content": "<req_cybersecurity>"
     },
     {
       "title": "Requirements Allocation Matrix",
