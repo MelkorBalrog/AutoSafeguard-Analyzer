@@ -20240,56 +20240,57 @@ class AutoMLApp:
         )
         self.set_last_saved_state()
 
-    def _reset_on_load(self):
-        """Close all open windows and clear state before loading a project."""
-
-        if getattr(self, "page_diagram", None) is not None:
-            self.close_page_diagram()
-
-        for tab_id in list(getattr(self.doc_nb, "tabs", lambda: [])()):
-            self.doc_nb._closing_tab = tab_id
-            self.doc_nb.event_generate("<<NotebookTabClosed>>")
-            if tab_id in getattr(self.doc_nb, "tabs", lambda: [])():
-                try:
-                    self.doc_nb.forget(tab_id)
-                except Exception:
-                    pass
-
-        for win in (
-            list(getattr(self, "use_case_windows", []))
-            + list(getattr(self, "activity_windows", []))
-            + list(getattr(self, "block_windows", []))
-            + list(getattr(self, "ibd_windows", []))
+    def _prompt_save_on_load_v1(self):
+        if not self.has_unsaved_changes():
+            return True
+        if messagebox.askyesno(
+            "Unsaved Changes", "Save changes before loading a different project?"
         ):
-            try:
-                win.destroy()
-            except Exception:
-                pass
-        self.use_case_windows = []
-        self.activity_windows = []
-        self.block_windows = []
-        self.ibd_windows = []
+            self.save_model()
+        return True
 
-        global AutoML_Helper, unique_node_id_counter
-        SysMLRepository.reset_instance()
-        AutoML_Helper = AutoMLHelper()
-        unique_node_id_counter = 1
+    def _prompt_save_on_load_v2(self):
+        if not self.has_unsaved_changes():
+            return True
+        result = messagebox.askokcancel(
+            "Unsaved Changes", "Save changes before loading a different project?"
+        )
+        if not result:
+            return False
+        self.save_model()
+        return True
 
-        self.top_events = []
-        self.root_node = None
-        self.selected_node = None
-        self.page_history = []
-        self._undo_stack.clear()
-        self._redo_stack.clear()
-        if getattr(self, "analysis_tree", None):
-            self.analysis_tree.delete(*self.analysis_tree.get_children())
+    def _prompt_save_on_load_v3(self):
+        if not self.has_unsaved_changes():
+            return True
+        result = messagebox.askquestion(
+            "Unsaved Changes", "Save changes before loading a different project?"
+        )
+        if result == "cancel":
+            return False
+        if result == "yes":
+            self.save_model()
+        return True
 
-        self._create_fta_tab()
-        if getattr(self, "canvas", None):
-            self.canvas.delete("all")
+    def _prompt_save_on_load_v4(self):
+        if not self.has_unsaved_changes():
+            return True
+        result = messagebox.askyesnocancel(
+            "Unsaved Changes", "Save changes before loading a different project?"
+        )
+        if result is None:
+            return False
+        if result:
+            self.save_model()
+        return True
 
     def load_model(self):
-        import json
+        global AutoML_Helper
+        # Prompt user to save unsaved changes before loading a new project
+        if not self._prompt_save_on_load_v4():
+            return
+        # Reinitialize the helper so that the counter is reset.
+        AutoML_Helper = AutoMLHelper()
 
         path = filedialog.askopenfilename(
             defaultextension=".autml",
