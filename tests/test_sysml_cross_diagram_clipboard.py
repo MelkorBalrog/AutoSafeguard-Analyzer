@@ -43,5 +43,6 @@ class CrossDiagramClipboardTests(unittest.TestCase):
         self.win2.paste_selected()
         self.assertEqual(len(self.win2.objects), 1)
 
+
 if __name__ == "__main__":
     unittest.main()

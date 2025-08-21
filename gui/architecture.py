@@ -9294,13 +9294,11 @@ class SysMLDiagramWindow(tk.Frame):
     # Clipboard operations
     # ------------------------------------------------------------
     def copy_selected(self, _event=None):
-        objs = self.selected_objs or ([self.selected_obj] if self.selected_obj else [])
-        objs = [o for o in objs if o.obj_type not in ("System Boundary", "Block Boundary")]
-        if not objs:
-            messagebox.showwarning("Copy", "Select a non-root node to copy.")
-            return
-        if len(objs) == 1:
-            obj = objs[0]
+        if self.selected_obj and self.selected_obj.obj_type not in (
+            "System Boundary",
+            "Block Boundary",
+        ):
+            obj = self.selected_obj
             if obj.obj_type == "Work Product":
                 boundary = self.find_boundary_for_obj(obj)
                 if boundary:
@@ -9308,18 +9306,16 @@ class SysMLDiagramWindow(tk.Frame):
                     return
             _clipboard.copy(obj)
         else:
-            _clipboard.copy(objs)
+            messagebox.showwarning("Copy", "Select a non-root node to copy.")
 
     def cut_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
             return
-        objs = self.selected_objs or ([self.selected_obj] if self.selected_obj else [])
-        objs = [o for o in objs if o.obj_type not in ("System Boundary", "Block Boundary")]
-        if not objs:
-            messagebox.showwarning("Cut", "Select a non-root node to cut.")
-            return
-        if len(objs) == 1:
-            obj = objs[0]
+        if self.selected_obj and self.selected_obj.obj_type not in (
+            "System Boundary",
+            "Block Boundary",
+        ):
+            obj = self.selected_obj
             if obj.obj_type == "Work Product":
                 boundary = self.find_boundary_for_obj(obj)
                 if boundary:
@@ -9340,15 +9336,12 @@ class SysMLDiagramWindow(tk.Frame):
                     return
             _clipboard.copy(obj)
             self.remove_object(obj)
+            self.selected_obj = None
+            self._sync_to_repository()
+            self.redraw()
+            self.update_property_view()
         else:
-            _clipboard.copy(objs)
-            for o in objs:
-                self.remove_object(o)
-        self.selected_obj = None
-        self.selected_objs = []
-        self._sync_to_repository()
-        self.redraw()
-        self.update_property_view()
+            messagebox.showwarning("Cut", "Select a non-root node to cut.")
 
     def paste_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
