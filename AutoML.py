@@ -20291,6 +20291,15 @@ class AutoMLApp:
     def load_model(self):
         import json
 
+        if self.has_unsaved_changes():
+            result = messagebox.askyesnocancel(
+                "Unsaved Changes", "Save changes before loading a project?"
+            )
+            if result is None:
+                return
+            if result:
+                self.save_model()
+
         path = filedialog.askopenfilename(
             defaultextension=".autml",
             filetypes=[("AutoML Project", "*.autml"), ("JSON", "*.json")],

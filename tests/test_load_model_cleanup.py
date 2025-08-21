@@ -68,6 +68,7 @@ def test_load_model_invokes_reset(tmp_path, monkeypatch):
     app.apply_model_data = MagicMock()
     app.set_last_saved_state = MagicMock()
     app._reset_on_load = MagicMock()
+    app.has_unsaved_changes = lambda: False
 
     monkeypatch.setattr(AutoML.filedialog, "askopenfilename", lambda **k: str(model))
     monkeypatch.setattr(AutoML.messagebox, "showerror", lambda *a, **k: None)
@@ -76,3 +77,24 @@ def test_load_model_invokes_reset(tmp_path, monkeypatch):
     app._reset_on_load.assert_called_once()
     app.apply_model_data.assert_called_once_with({})
     assert app._loaded_model_paths == [str(model)]
+
+
+def test_load_model_cancel_aborts(monkeypatch):
+    app = AutoMLApp.__new__(AutoMLApp)
+    app.has_unsaved_changes = lambda: True
+    app.save_model = MagicMock()
+    app._reset_on_load = MagicMock()
+    app.apply_model_data = MagicMock()
+    app.set_last_saved_state = MagicMock()
+    app._loaded_model_paths = []
+
+    file_dialog = MagicMock()
+    monkeypatch.setattr(AutoML.filedialog, "askopenfilename", file_dialog)
+    monkeypatch.setattr(AutoML.messagebox, "askyesnocancel", lambda *a, **k: None)
+
+    app.load_model()
+    file_dialog.assert_not_called()
+    app.save_model.assert_not_called()
+    app._reset_on_load.assert_not_called()
+    app.apply_model_data.assert_not_called()
+    assert app._loaded_model_paths == []
