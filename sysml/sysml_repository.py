@@ -167,7 +167,7 @@ class SysMLRepository:
                 obj.pop("y", None)
         return cleaned
 
-    def push_undo_state(self, strategy: str = "v4") -> None:
+    def push_undo_state(self, strategy: str = "v4", sync_app: bool = True) -> None:
         """Save the current repository state for undo.
 
         Four alternative strategies are provided and can be selected via the
@@ -193,6 +193,15 @@ class SysMLRepository:
             if len(self._undo_stack) > 50:
                 self._undo_stack.pop(0)
             self._redo_stack.clear()
+            if sync_app:
+                try:
+                    from AutoML import AutoMLApp
+
+                    app = getattr(AutoMLApp, "_instance", None)
+                    if app:
+                        app.push_undo_state(strategy=strategy, sync_repo=False)
+                except Exception:
+                    pass
 
     # ------------------------------------------------------------
     # Variants for push_undo_state
@@ -257,11 +266,37 @@ class SysMLRepository:
                 self._undo_stack.pop(-2)
         return True
 
-    def undo(self) -> bool:
+    def undo(self, strategy: str = "v4") -> bool:
         """Revert to the most recent saved state."""
+        if strategy == "v1":
+            return self._undo_v1()
+        elif strategy == "v2":
+            return self._undo_v2()
+        elif strategy == "v3":
+            return self._undo_v3()
+        else:
+            return self._undo_v4()
+
+    def redo(self, strategy: str = "v4") -> bool:
+        """Restore the next state from the redo stack."""
+        if strategy == "v1":
+            return self._redo_v1()
+        elif strategy == "v2":
+            return self._redo_v2()
+        elif strategy == "v3":
+            return self._redo_v3()
+        else:
+            return self._redo_v4()
+
+    # Undo/redo variants
+    def _undo_v1(self) -> bool:
         if not self._undo_stack:
             return False
         current = self.to_dict()
+        if self._undo_stack and self._undo_stack[-1] == current:
+            self._undo_stack.pop()
+            if not self._undo_stack:
+                return False
         state = self._undo_stack.pop()
         self._redo_stack.append(current)
         if len(self._redo_stack) > 50:
@@ -269,8 +304,85 @@ class SysMLRepository:
         self.from_dict(state)
         return True
 
-    def redo(self) -> bool:
-        """Restore the next state from the redo stack."""
+    def _undo_v2(self) -> bool:
+        if not self._undo_stack:
+            return False
+        current = self.to_dict()
+        if self._undo_stack and self._undo_stack[-1] == current:
+            self._undo_stack.pop()
+            if not self._undo_stack:
+                return False
+        state = self._undo_stack.pop()
+        self._redo_stack.append(current)
+        if len(self._redo_stack) > 50:
+            self._redo_stack.pop(0)
+        self.from_dict(state)
+        return True
+
+    def _undo_v3(self) -> bool:
+        if not self._undo_stack:
+            return False
+        current = self.to_dict()
+        if self._undo_stack and self._undo_stack[-1] == current:
+            self._undo_stack.pop()
+            if not self._undo_stack:
+                return False
+        state = self._undo_stack.pop()
+        self._redo_stack.append(current)
+        if len(self._redo_stack) > 50:
+            self._redo_stack.pop(0)
+        self.from_dict(state)
+        return True
+
+    def _undo_v4(self) -> bool:
+        if not self._undo_stack:
+            return False
+        current = self.to_dict()
+        if self._undo_stack and self._undo_stack[-1] == current:
+            self._undo_stack.pop()
+            if not self._undo_stack:
+                return False
+        state = self._undo_stack.pop()
+        self._redo_stack.append(current)
+        if len(self._redo_stack) > 50:
+            self._redo_stack.pop(0)
+        self.from_dict(state)
+        return True
+
+    def _redo_v1(self) -> bool:
+        if not self._redo_stack:
+            return False
+        current = self.to_dict()
+        state = self._redo_stack.pop()
+        self._undo_stack.append(current)
+        if len(self._undo_stack) > 50:
+            self._undo_stack.pop(0)
+        self.from_dict(state)
+        return True
+
+    def _redo_v2(self) -> bool:
+        if not self._redo_stack:
+            return False
+        current = self.to_dict()
+        state = self._redo_stack.pop()
+        self._undo_stack.append(current)
+        if len(self._undo_stack) > 50:
+            self._undo_stack.pop(0)
+        self.from_dict(state)
+        return True
+
+    def _redo_v3(self) -> bool:
+        if not self._redo_stack:
+            return False
+        current = self.to_dict()
+        state = self._redo_stack.pop()
+        self._undo_stack.append(current)
+        if len(self._undo_stack) > 50:
+            self._undo_stack.pop(0)
+        self.from_dict(state)
+        return True
+
+    def _redo_v4(self) -> bool:
         if not self._redo_stack:
             return False
         current = self.to_dict()

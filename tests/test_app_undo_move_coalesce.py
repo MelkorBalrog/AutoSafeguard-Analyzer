@@ -1,0 +1,72 @@
+import unittest
+import json
+
+from AutoML import AutoMLApp
+
+
+class AppUndoMoveCoalesceTests(unittest.TestCase):
+    def _make_app(self):
+        app = AutoMLApp.__new__(AutoMLApp)
+        app._undo_stack = []
+        app._redo_stack = []
+        state = {"diagrams": [{"objects": [{"x": 0.0, "y": 0.0}]}]}
+        app._state = state
+
+        def export_model_data(include_versions: bool = False):
+            return json.loads(json.dumps(app._state))
+
+        app.export_model_data = export_model_data
+        app.push_undo_state = AutoMLApp.push_undo_state.__get__(app)
+        return app
+
+    def test_strategies_only_store_first_and_last(self):
+        for strat in ("v1", "v2", "v3", "v4"):
+            with self.subTest(strategy=strat):
+                app = self._make_app()
+                base_len = len(app._undo_stack)
+                app.push_undo_state(strategy=strat)
+                for i in range(1, 5):
+                    app._state["diagrams"][0]["objects"][0]["x"] = float(i)
+                    app._state["diagrams"][0]["objects"][0]["y"] = float(i)
+                    app.push_undo_state(strategy=strat)
+                self.assertEqual(len(app._undo_stack), base_len + 2)
+
+    def test_undo_redo_restore_endpoints(self):
+        from sysml.sysml_repository import SysMLRepository, SysMLDiagram
+
+        for strat in ("v1", "v2", "v3", "v4"):
+            with self.subTest(strategy=strat):
+                SysMLRepository.reset_instance()
+                repo = SysMLRepository.get_instance()
+                diag = SysMLDiagram(diag_id="d", diag_type="Use Case Diagram")
+                repo.diagrams[diag.diag_id] = diag
+                diag.objects.append({"obj_id": 1, "obj_type": "Block", "x": 0.0, "y": 0.0})
+
+                app = AutoMLApp.__new__(AutoMLApp)
+                app._undo_stack = []
+                app._redo_stack = []
+                app.export_model_data = lambda include_versions=False: repo.to_dict()
+                app.apply_model_data = lambda data: repo.from_dict(data)
+                app.push_undo_state = AutoMLApp.push_undo_state.__get__(app)
+                app.undo = AutoMLApp.undo.__get__(app)
+                app.redo = AutoMLApp.redo.__get__(app)
+                app.diagram_tabs = {}
+                app.refresh_all = lambda: None
+
+                app.push_undo_state(strategy=strat)
+                for i in range(1, 5):
+                    diag.objects[0]["x"] = float(i)
+                    diag.objects[0]["y"] = float(i)
+                    app.push_undo_state(strategy=strat)
+
+                app.undo(strategy=strat)
+                self.assertEqual(repo.diagrams[diag.diag_id].objects[0]["x"], 0.0)
+                self.assertEqual(repo.diagrams[diag.diag_id].objects[0]["y"], 0.0)
+
+                app.redo(strategy=strat)
+                self.assertEqual(repo.diagrams[diag.diag_id].objects[0]["x"], 4.0)
+                self.assertEqual(repo.diagrams[diag.diag_id].objects[0]["y"], 4.0)
+
+
+if __name__ == "__main__":
+    unittest.main()
