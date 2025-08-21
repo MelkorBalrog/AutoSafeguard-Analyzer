@@ -18826,6 +18826,11 @@ class AutoMLApp:
             self.selected_node = node
             self.cut_mode = False
             return
+        win = getattr(self, "_cbn_window", None)
+        if win and getattr(win, "selected_node", None):
+            if getattr(win, "copy_selected", None):
+                win.copy_selected()
+                return
         win = getattr(self, "active_arch_window", None)
         if win and getattr(win, "selected_obj", None):
             if getattr(win, "copy_selected", None):
@@ -18853,6 +18858,11 @@ class AutoMLApp:
             self.selected_node = node
             self.cut_mode = True
             return
+        win = getattr(self, "_cbn_window", None)
+        if win and getattr(win, "selected_node", None):
+            if getattr(win, "cut_selected", None):
+                win.cut_selected()
+                return
         win = getattr(self, "active_arch_window", None)
         if win and getattr(win, "selected_obj", None):
             if getattr(win, "cut_selected", None):
@@ -18938,8 +18948,14 @@ class AutoMLApp:
             )
             self.update_views()
             return
-        win = getattr(self, "active_arch_window", None)
         clip_type = getattr(self, "diagram_clipboard_type", None)
+        win = getattr(self, "_cbn_window", None)
+        if win and getattr(self, "diagram_clipboard", None):
+            if not clip_type or clip_type == "Causal Bayesian Network":
+                if getattr(win, "paste_selected", None):
+                    win.paste_selected()
+                    return
+        win = getattr(self, "active_arch_window", None)
         if (
             (not win or (clip_type and self._get_diag_type(win) != clip_type))
             and ARCH_WINDOWS
