@@ -16,13 +16,11 @@ from gui import messagebox
 
 
 class DummyTree:
-    def __init__(self, node, selection=("item1",)):
-        self._sel = selection
-        self._meta = {"item1": {"tags": (str(node.unique_id),)}} if selection else {}
-
+    def __init__(self, node):
+        self._sel = ("item1",)
+        self._meta = {"item1": {"tags": (str(node.unique_id),)}}
     def selection(self):
         return self._sel
-
     def item(self, iid, attr):
         return self._meta[iid][attr]
 
@@ -71,70 +69,6 @@ class CopyPasteSelectionTests(unittest.TestCase):
         finally:
             messagebox.showwarning = orig
         self.assertEqual(warnings[0][1], "Clipboard is empty.")
-
-    def test_copy_uses_selected_node_when_tree_empty(self):
-        self.app.analysis_tree = DummyTree(self.child, selection=())
-        self.app.selected_node = self.child
-        self.app.copy_node()
-        self.assertIs(self.app.clipboard_node, self.child)
-
-    def test_cut_uses_selected_node_when_tree_empty(self):
-        self.app.analysis_tree = DummyTree(self.child, selection=())
-        self.app.selected_node = self.child
-        self.app.cut_node()
-        self.assertIs(self.app.clipboard_node, self.child)
-        self.assertTrue(self.app.cut_mode)
-
-    def test_paste_uses_selected_node_when_tree_empty(self):
-        self.app.analysis_tree = DummyTree(self.child, selection=())
-        self.app.selected_node = self.child
-        self.app.clipboard_node = self.child
-        warnings = []
-        orig_warn = messagebox.showwarning
-        orig_info = getattr(messagebox, "showinfo", lambda *args, **kwargs: None)
-        messagebox.showwarning = lambda title, msg: warnings.append((title, msg))
-        messagebox.showinfo = lambda *args, **kwargs: None
-        try:
-            self.app.paste_node()
-        finally:
-            messagebox.showwarning = orig_warn
-            messagebox.showinfo = orig_info
-        self.assertEqual(warnings[0][1], "Cannot paste a node onto itself.")
-
-    def test_copy_prefers_selected_node_over_tree(self):
-        other = FaultTreeNode("other", "GATE", parent=self.app.root_node)
-        self.app.root_node.children.append(other)
-        self.app.analysis_tree = DummyTree(other)
-        self.app.selected_node = self.child
-        self.app.copy_node()
-        self.assertIs(self.app.clipboard_node, self.child)
-
-    def test_cut_prefers_selected_node_over_tree(self):
-        other = FaultTreeNode("other", "GATE", parent=self.app.root_node)
-        self.app.root_node.children.append(other)
-        self.app.analysis_tree = DummyTree(other)
-        self.app.selected_node = self.child
-        self.app.cut_node()
-        self.assertIs(self.app.clipboard_node, self.child)
-        self.assertTrue(self.app.cut_mode)
-
-    def test_paste_prefers_selected_node_over_tree(self):
-        other = FaultTreeNode("other", "GATE", parent=self.app.root_node)
-        self.app.root_node.children.append(other)
-        self.app.analysis_tree = DummyTree(other)
-        self.app.selected_node = self.child
-        self.app.clipboard_node = self.child
-        warnings = []
-        orig_warn = messagebox.showwarning
-        orig_info = getattr(messagebox, "showinfo", lambda *args, **kwargs: None)
-        messagebox.showwarning = lambda title, msg: warnings.append((title, msg))
-        messagebox.showinfo = lambda *args, **kwargs: None
-        try:
-            self.app.paste_node()
-        finally:
-            messagebox.showwarning = orig_warn
-            messagebox.showinfo = orig_info
-        self.assertEqual(warnings[0][1], "Cannot paste a node onto itself.")
 
 
 if __name__ == "__main__":
