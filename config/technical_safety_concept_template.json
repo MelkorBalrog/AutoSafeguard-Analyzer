@@ -9,6 +9,7 @@
     "fmeda_diagrams": "analysis:fmeda",
     "reliability_analysis": "analysis:reliability",
     "mission_profile": "mission_profile",
+    "functional_modifications": "functional_modifications",
     "pmhf": "pmhf",
     "spfm": "spfm",
     "lpfm": "lpfm",
@@ -38,6 +39,10 @@
     {
       "title": "Mission Profile",
       "content": "<mission_profile>"
+    },
+    {
+      "title": "Functional Modifications",
+      "content": "<functional_modifications>"
     },
     {
       "title": "Technical Safety Requirements",

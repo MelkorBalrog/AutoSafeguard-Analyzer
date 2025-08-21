@@ -7,6 +7,11 @@
     "req_functional_safety": "req_functional_safety",
     "trace_matrix_pg_fsr": "trace_matrix_pg_fsr",
     "fta_diagrams": "analysis:fault_tree",
+    "threat_analysis_diagrams": "analysis:threat",
+    "fi2tc": "fi2tc",
+    "tc2fi": "tc2fi",
+    "triggering_conditions": "triggering_conditions",
+    "functional_insufficiencies": "functional_insufficiencies",
     "odd_library": "odd_library",
     "scenario_library": "scenario_library"
   },
@@ -34,6 +39,26 @@
     {
       "title": "Fault Tree Analyses (FTA)",
       "content": "<fta_diagrams>"
+    },
+    {
+      "title": "Threat Analysis",
+      "content": "<threat_analysis_diagrams>"
+    },
+    {
+      "title": "FI2TC Mapping",
+      "content": "<fi2tc>"
+    },
+    {
+      "title": "TC2FI Mapping",
+      "content": "<tc2fi>"
+    },
+    {
+      "title": "Triggering Conditions",
+      "content": "<triggering_conditions>"
+    },
+    {
+      "title": "Functional Insufficiencies",
+      "content": "<functional_insufficiencies>"
     },
     {
       "title": "Functional Safety Requirements",

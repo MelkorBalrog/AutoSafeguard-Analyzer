@@ -38,6 +38,11 @@ def test_functional_safety_concept_template_valid():
         "Scenario Library",
         "Internal Block Diagrams",
         "Fault Tree Analyses (FTA)",
+        "Threat Analysis",
+        "FI2TC Mapping",
+        "TC2FI Mapping",
+        "Triggering Conditions",
+        "Functional Insufficiencies",
         "Functional Safety Requirements",
         "Requirements Allocation Matrix",
         "Traceability Matrix",
@@ -54,6 +59,7 @@ def test_technical_safety_concept_template_valid():
         "FMEDA Analyses",
         "Reliability Analysis",
         "Mission Profile",
+        "Functional Modifications",
         "Technical Safety Requirements",
         "Requirements Allocation Matrix",
         "Traceability to Functional Safety Concept",
@@ -72,6 +78,7 @@ def test_pdf_report_template_includes_diagram_sections():
         "State Diagrams",
         "Fault Tree Analyses (FTA)",
         "Hazard Analyses",
+        "Threat Analyses",
         "FMEA Analyses",
         "FMEDA Analyses",
         "Reliability Analysis",
@@ -99,9 +106,18 @@ def test_safety_case_template_valid():
     assert {
         "GSR Argumentation",
         "Related Safety Cases",
+        "SPI Table",
         "Work Products and Evidence",
     } <= titles
 
+def test_report_template_includes_trigger_and_insufficiency_sections():
+    data = _load("report_template.json")
+    titles = {sec["title"] for sec in data["sections"]}
+    assert {
+        "Triggering Conditions",
+        "Functional Insufficiencies",
+        "Functional Modifications",
+    } <= titles
 
 def test_safety_case_dynamic_sections():
     root = GSNNode("G", "Goal")

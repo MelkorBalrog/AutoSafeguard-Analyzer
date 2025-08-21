@@ -7,11 +7,13 @@
     "fmea_diagrams": "analysis:fmea",
     "fmeda_diagrams": "analysis:fmeda",
     "reliability_analysis": "analysis:reliability",
-    "work_products": "work_products"
+    "work_products": "work_products",
+    "spi_table": "spi_table"
   },
   "sections": [
     {"title": "GSR Argumentation", "content": "<gsr_argument>"},
     {"title": "Related Safety Cases", "content": "<safety_cases>"},
+    {"title": "SPI Table", "content": "<spi_table>"},
     {"title": "Work Products and Evidence", "content": "<work_products>"}
   ]
 }

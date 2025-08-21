@@ -11,6 +11,8 @@
     "item_description": "item_description",
     "assumptions": "assumptions",
     "top_events": "top_events",
+    "triggering_conditions": "triggering_conditions",
+    "functional_insufficiencies": "functional_insufficiencies",
     "page_diagrams": "page_diagrams",
     "fmea_tables": "fmea_tables",
     "fmeda_tables": "fmeda_tables",
@@ -23,6 +25,7 @@
     "req_technical_safety": "req_technical_safety",
     "req_ai_safety": "req_ai_safety",
     "req_functional_modification": "req_functional_modification",
+    "functional_modifications": "functional_modifications",
     "req_cybersecurity": "req_cybersecurity",
     "req_production": "req_production",
     "req_service": "req_service",
@@ -34,6 +37,7 @@
     "state_diagrams": "diagram:state",
     "fta_diagrams": "analysis:fault_tree",
     "hazard_analysis_diagrams": "analysis:hazard",
+    "threat_analysis_diagrams": "analysis:threat",
     "fmea_diagrams": "analysis:fmea",
     "fmeda_diagrams": "analysis:fmeda",
     "odd_library": "odd_library",
@@ -76,6 +80,14 @@
       "content": "<top_events>"
     },
     {
+      "title": "Triggering Conditions",
+      "content": "<triggering_conditions>"
+    },
+    {
+      "title": "Functional Insufficiencies",
+      "content": "<functional_insufficiencies>"
+    },
+    {
       "title": "Page Diagrams",
       "content": "<page_diagrams>"
     },
@@ -94,6 +106,10 @@
     {
       "title": "Hazard Analyses",
       "content": "<hazard_analysis_diagrams>"
+    },
+    {
+      "title": "Threat Analyses",
+      "content": "<threat_analysis_diagrams>"
     },
     {
       "title": "FMEA Analyses",
@@ -162,6 +178,10 @@
     {
       "title": "Technical Safety Requirements",
       "content": "<req_technical_safety>"
+    },
+    {
+      "title": "Functional Modifications",
+      "content": "<functional_modifications>"
     },
     {
       "title": "AI Safety Requirements",
