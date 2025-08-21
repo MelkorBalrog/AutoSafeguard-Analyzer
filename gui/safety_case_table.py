@@ -72,6 +72,14 @@ class SafetyCaseTable(tk.Frame):
             rowheight=80,
         )
         self.controller.pack(fill=tk.BOTH, expand=True)
+        btns = tk.Frame(self)
+        btns.pack(fill=tk.X)
+        tk.Button(btns, text="Move Up", command=self.controller.move_up).pack(
+            side=tk.LEFT
+        )
+        tk.Button(btns, text="Move Down", command=self.controller.move_down).pack(
+            side=tk.LEFT
+        )
         self.tree = self.controller.tree
 
         self.tree.bind("<Double-1>", self._on_double_click, add="+")

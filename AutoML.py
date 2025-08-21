@@ -19079,8 +19079,10 @@ class AutoMLApp:
         repo = SysMLRepository.get_instance()
         repo._undo_stack.clear()
         repo._redo_stack.clear()
-        self._undo_stack.clear()
-        self._redo_stack.clear()
+        if hasattr(self, "_undo_stack"):
+            self._undo_stack.clear()
+        if hasattr(self, "_redo_stack"):
+            self._redo_stack.clear()
 
     # ------------------------------------------------------------
     # Undo support
