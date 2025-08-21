@@ -10487,7 +10487,6 @@ class AutoMLApp:
                 break
         self.selected_node = clicked_node
         if clicked_node:
-            self.push_undo_state()
             self.dragging_node = clicked_node
             self.drag_offset_x = x - clicked_node.x
             self.drag_offset_y = y - clicked_node.y
@@ -10533,8 +10532,6 @@ class AutoMLApp:
         if self.dragging_node:
             self.dragging_node.x = round(self.dragging_node.x/self.grid_size)*self.grid_size
             self.dragging_node.y = round(self.dragging_node.y/self.grid_size)*self.grid_size
-            self.sync_nodes_by_id(self.dragging_node)
-            self.push_undo_state()
         self.dragging_node = None
         self.drag_offset_x = 0
         self.drag_offset_y = 0
@@ -22444,7 +22441,6 @@ class PageDiagram:
         self.selected_node = clicked_node
         self.app.selected_node = clicked_node
         if clicked_node and clicked_node is not self.root_node:
-            self.app.push_undo_state()
             self.dragging_node = clicked_node
             self.drag_offset_x = x - clicked_node.x
             self.drag_offset_y = y - clicked_node.y
@@ -22485,8 +22481,6 @@ class PageDiagram:
         if self.dragging_node:
             self.dragging_node.x = round(self.dragging_node.x/self.grid_size)*self.grid_size
             self.dragging_node.y = round(self.dragging_node.y/self.grid_size)*self.grid_size
-            self.app.sync_nodes_by_id(self.dragging_node)
-            self.app.push_undo_state()
         self.dragging_node = None
         self.drag_offset_x = 0
         self.drag_offset_y = 0
