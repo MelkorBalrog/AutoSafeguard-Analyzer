@@ -12852,7 +12852,7 @@ class AutoMLApp:
         win = self._safety_concept_tab
         ttk.Label(
             win,
-            text="Functional Safety Concept Description and Assumptions:",
+            text="Functional & Cybersecurity Concept Description and Assumptions:",
         ).pack(anchor="w")
         f_frame = ttk.Frame(win)
         f_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -12864,7 +12864,7 @@ class AutoMLApp:
 
         ttk.Label(
             win,
-            text="Technical Safety Concept Description & Assumptions:",
+            text="Technical & Cybersecurity Concept Description & Assumptions:",
         ).pack(anchor="w")
         t_frame = ttk.Frame(win)
         t_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -12873,11 +12873,6 @@ class AutoMLApp:
         self._tsc_text.configure(yscrollcommand=t_scroll.set)
         self._tsc_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         t_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        ttk.Label(
-            win,
-            text="Cybersecurity Concept Description & Assumptions:",
-        ).pack(anchor="w")
         c_frame = ttk.Frame(win)
         c_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         self._csc_text = tk.Text(c_frame, height=8, wrap="word")

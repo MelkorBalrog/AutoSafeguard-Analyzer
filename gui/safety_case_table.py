@@ -31,7 +31,7 @@ class SafetyCaseTable(tk.Frame):
         self.app = app
         self._node_lookup = {}
         if isinstance(master, tk.Toplevel):
-            master.title(f"Safety Case: {case.name}")
+            master.title(f"Safety & Security Report: {case.name}")
             master.geometry("900x300")
             self.pack(fill=tk.BOTH, expand=True)
 
