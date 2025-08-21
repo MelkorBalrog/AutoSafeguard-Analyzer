@@ -1,13 +1,20 @@
 {
   "elements": {
-    "hazop": "hazop",
-    "risk": "risk",
-    "safety_goals": "safety_goals",
-    "req_functional_safety": "req_functional_safety"
+    "internal_block_diagrams": "diagram:internal block",
+    "req_matrix": "req_matrix_alloc",
+    "product_goals": "product_goals",
+    "fsc_info": "fsc_info",
+    "req_functional_safety": "req_functional_safety",
+    "trace_matrix_pg_fsr": "trace_matrix_pg_fsr",
+    "fta_diagrams": "analysis:fault_tree"
   },
   "sections": [
-    {"title": "Hazard Analysis", "content": "<hazop><risk>"},
-    {"title": "Safety Goals", "content": "<safety_goals>"},
-    {"title": "Functional Safety Requirements", "content": "<req_functional_safety>"}
+    {"title": "Product Goals", "content": "<product_goals>"},
+    {"title": "Functional Safety Concept", "content": "<fsc_info>"},
+    {"title": "Internal Block Diagrams", "content": "<internal_block_diagrams>"},
+    {"title": "Fault Tree Analyses (FTA)", "content": "<fta_diagrams>"},
+    {"title": "Functional Safety Requirements", "content": "<req_functional_safety>"},
+    {"title": "Requirements Allocation Matrix", "content": "<req_matrix>"},
+    {"title": "Traceability Matrix", "content": "<trace_matrix_pg_fsr>"}
   ]
 }

@@ -12,14 +12,64 @@ def _load(name: str):
 
 def test_item_definition_template_valid():
     data = _load("item_definition_template.json")
-    assert "sections" in data and data["sections"]
+    titles = {sec["title"] for sec in data["sections"]}
+    assert {
+        "Item Description",
+        "Assumptions",
+        "Use Case Diagrams",
+        "Activity Diagrams",
+        "Block Diagrams",
+        "Internal Block Diagrams",
+        "Product Requirements",
+        "Vehicle Requirements",
+        "Activity Actions",
+    } <= titles
 
 
 def test_functional_safety_concept_template_valid():
     data = _load("functional_safety_concept_template.json")
-    assert any(sec["title"] == "Safety Goals" for sec in data["sections"])
+    titles = {sec["title"] for sec in data["sections"]}
+    assert {
+        "Product Goals",
+        "Functional Safety Concept",
+        "Internal Block Diagrams",
+        "Fault Tree Analyses (FTA)",
+        "Functional Safety Requirements",
+        "Requirements Allocation Matrix",
+        "Traceability Matrix",
+    } <= titles
 
 
 def test_technical_safety_concept_template_valid():
     data = _load("technical_safety_concept_template.json")
-    assert any("Technical Safety Requirements" in sec["title"] for sec in data["sections"])
+    titles = {sec["title"] for sec in data["sections"]}
+    assert {
+        "Internal Block Diagrams",
+        "Fault Tree Analyses (FTA)",
+        "FMEA Analyses",
+        "FMEDA Analyses",
+        "Technical Safety Requirements",
+        "Requirements Allocation Matrix",
+        "Traceability to Functional Safety Concept",
+    } <= titles
+
+
+def test_pdf_report_template_includes_diagram_sections():
+    data = _load("report_template.json")
+    titles = [sec["title"] for sec in data["sections"]]
+    assert {
+        "Block Diagrams",
+        "State Diagrams",
+        "Fault Tree Analyses (FTA)",
+        "Hazard Analyses",
+        "FMEA Analyses",
+        "FMEDA Analyses",
+    } <= set(titles)
+
+
+def test_report_template_includes_item_definition_section():
+    data = _load("report_template.json")
+    assert {"item_description", "assumptions"} <= set(data["elements"].keys())
+    section = next(sec for sec in data["sections"] if sec["title"] == "Item Definition")
+    assert "<item_description>" in section["content"]
+    assert "<assumptions>" in section["content"]
