@@ -19156,156 +19156,45 @@ class AutoMLApp:
                 self._undo_stack.pop(-2)
         return True
 
-    def undo(self, strategy: str = "v4"):
+    def undo(self):
         """Revert the repository and model data to the previous state."""
         repo = SysMLRepository.get_instance()
-        if strategy == "v1":
-            changed = self._undo_v1(repo)
-        elif strategy == "v2":
-            changed = self._undo_v2(repo)
-        elif strategy == "v3":
-            changed = self._undo_v3(repo)
-        else:
-            changed = self._undo_v4(repo)
-        if not changed:
+        if not self._undo_stack:
             return
+        current = self.export_model_data(include_versions=False)
+        repo.undo()
+        if self._undo_stack and self._undo_stack[-1] == current:
+            self._undo_stack.pop()
+        if not self._undo_stack:
+            return
+        state = self._undo_stack.pop()
+        self._redo_stack.append(current)
+        if len(self._redo_stack) > 20:
+            self._redo_stack.pop(0)
+        self.apply_model_data(state)
         for tab in getattr(self, "diagram_tabs", {}).values():
             for child in tab.winfo_children():
                 if hasattr(child, "refresh_from_repository"):
                     child.refresh_from_repository()
         self.refresh_all()
 
-    def redo(self, strategy: str = "v4"):
+    def redo(self):
         """Restore the next state from the redo stack."""
         repo = SysMLRepository.get_instance()
-        if strategy == "v1":
-            changed = self._redo_v1(repo)
-        elif strategy == "v2":
-            changed = self._redo_v2(repo)
-        elif strategy == "v3":
-            changed = self._redo_v3(repo)
-        else:
-            changed = self._redo_v4(repo)
-        if not changed:
+        if not self._redo_stack:
             return
+        current = self.export_model_data(include_versions=False)
+        repo.redo()
+        state = self._redo_stack.pop()
+        self._undo_stack.append(current)
+        if len(self._undo_stack) > 20:
+            self._undo_stack.pop(0)
+        self.apply_model_data(state)
         for tab in getattr(self, "diagram_tabs", {}).values():
             for child in tab.winfo_children():
                 if hasattr(child, "refresh_from_repository"):
                     child.refresh_from_repository()
         self.refresh_all()
-
-    # Undo/redo variants
-    def _undo_v1(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v1")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                return False
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _undo_v2(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v2")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                return False
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _undo_v3(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v3")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                return False
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _undo_v4(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v4")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                return False
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v1(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v1")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v2(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v2")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v3(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v3")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v4(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v4")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
 
     def confirm_close(self):
         """Prompt to save if there are unsaved changes before closing."""
