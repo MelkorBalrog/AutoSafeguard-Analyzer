@@ -7,6 +7,9 @@ REM Determine important paths
 set "BIN_DIR=%~dp0"
 set "REPO_ROOT=%~dp0.."
 
+REM Run from repository root so relative paths resolve correctly
+cd /d "%REPO_ROOT%"
+
 REM Warn if running a pre-release Python build which may cause PyInstaller errors
 for /f "delims=" %%V in ('python -c "import sys;print(sys.version)"') do set "PYVER=%%V"
 echo %PYVER% | findstr /I "alpha beta candidate rc" >nul
@@ -27,20 +30,10 @@ for %%P in (openpyxl networkx matplotlib reportlab adjustText) do (
     )
 )
 
-REM Ask the user for an optional icon to embed in the executable
-set "ICON_ARG="
-set /P "ICON_PATH=Enter path to .ico icon file (leave blank for none): "
-if defined ICON_PATH (
-    if exist "%ICON_PATH%" (
-        set "ICON_ARG=--icon \"%ICON_PATH%\""
-    ) else (
-        echo Icon not found: %ICON_PATH%
-        echo Continuing without a custom icon.
-    )
-)
+REM Generate application icon
+python tools\icon_builder.py --output "%BIN_DIR%AutoML.ico" >NUL
 
-REM Run PyInstaller from the repository root so it can locate launcher.py
-cd /d "%REPO_ROOT%"
+REM Use PyInstaller to create the executable
 if exist AutoML.spec del AutoML.spec
 pyinstaller --noconfirm --onefile --windowed --name AutoML ^
     --exclude-module scipy ^
@@ -52,7 +45,7 @@ pyinstaller --noconfirm --onefile --windowed --name AutoML ^
     --hidden-import=tkinter.ttk ^
     --add-data "styles;styles" ^
     --add-data "AutoML.py;." ^
-    %ICON_ARG% launcher.py
+    --icon "%BIN_DIR%AutoML.ico" launcher.py
 if errorlevel 1 (
     echo Failed to build executable.
     exit /b %errorlevel%

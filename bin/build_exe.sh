@@ -30,6 +30,9 @@ cd "$SCRIPT_DIR/.."
 # Remove leftover spec file so our options are respected even after a failed build
 rm -f AutoML.spec
 
+# Generate application icon
+python tools/icon_builder.py --output bin/AutoML.ico >/dev/null
+
 # Use PyInstaller to create a single-file executable
 pyinstaller --noconfirm --onefile --windowed \
     --name AutoML \
@@ -41,7 +44,8 @@ pyinstaller --noconfirm --onefile --windowed \
     --hidden-import=tkinter.scrolledtext \
     --hidden-import=tkinter.ttk \
     --add-data "styles:styles" \
-    --add-data "AutoML.py:." launcher.py
+    --add-data "AutoML.py:." \
+    --icon bin/AutoML.ico launcher.py
 
 # Move the resulting executable to the bin directory
 mkdir -p bin
