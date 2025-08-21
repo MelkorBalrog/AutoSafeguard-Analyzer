@@ -104,16 +104,6 @@ def test_validate_report_template_allows_sysml_diagrams():
     }
     assert validate_report_template(cfg) == cfg
 
-
-def test_validate_report_template_diagram_with_analysis():
-    cfg = {
-        "elements": {
-            "d1": {"kind": "diagram", "diagram_type": "block", "analysis": "FMEA"}
-        },
-        "sections": [{"title": "Intro", "content": "<d1>"}],
-    }
-    assert validate_report_template(cfg) == cfg
-
 def test_layout_report_template_basic():
     data = {
         "elements": {"img": "diagram"},

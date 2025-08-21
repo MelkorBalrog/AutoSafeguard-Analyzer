@@ -8482,21 +8482,6 @@ class AutoMLApp:
 
         story = [Paragraph(report_title, styles["Title"]), Spacer(1, 12)]
 
-        def _element_diagram(name: str, diag_type: str | None = None, analysis: str | None = None):
-            img = Image.new("RGB", (400, 200), "white")
-            draw = ImageDraw.Draw(img)
-            draw.rectangle([0, 0, 399, 199], outline="black")
-            label = f"{diag_type or 'Diagram'}: {name}"
-            draw.text((10, 10), label, fill="black")
-            buf = BytesIO()
-            img.save(buf, format="PNG")
-            buf.seek(0)
-            items = [Paragraph(label, pdf_styles["Heading3"]), RLImage(buf)]
-            if analysis:
-                items.append(Paragraph(f"Analysis: {analysis}", pdf_styles["Normal"]))
-            items.append(Spacer(1, 12))
-            return items
-
         def _element_base_matrix():
             header_style = ParagraphStyle(
                 name="SafetyGoalsHeader",
@@ -9267,16 +9252,16 @@ class AutoMLApp:
                 items.append(Spacer(1, 12))
             return items
 
-        def _build_element(name: str, definition):
-            kind = definition
-            diag_type = None
-            analysis = None
-            if isinstance(definition, dict):
-                kind = definition.get("kind")
-                diag_type = definition.get("diagram_type")
-                analysis = definition.get("analysis")
+        def _build_element(name: str, kind: str | None):
             if kind == "diagram":
-                return _element_diagram(name, diag_type, analysis)
+                img = Image.new("RGB", (400, 200), "white")
+                draw = ImageDraw.Draw(img)
+                draw.rectangle([0, 0, 399, 199], outline="black")
+                draw.text((10, 10), name, fill="black")
+                buf = BytesIO()
+                img.save(buf, format="PNG")
+                buf.seek(0)
+                return [RLImage(buf)]
             if kind == "base_matrix":
                 return _element_base_matrix()
             if kind == "discretization":
