@@ -9289,29 +9289,19 @@ class SysMLDiagramWindow(tk.Frame):
     # Clipboard operations
     # ------------------------------------------------------------
     def copy_selected(self, _event=None):
-        if self.selected_obj and self.selected_obj.obj_type not in (
-            "System Boundary",
-            "Block Boundary",
-        ):
+        if self.selected_obj:
             _clipboard.copy(self.selected_obj)
-        else:
-            messagebox.showwarning("Copy", "Select a non-root node to copy.")
 
     def cut_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
             return
-        if self.selected_obj and self.selected_obj.obj_type not in (
-            "System Boundary",
-            "Block Boundary",
-        ):
+        if self.selected_obj:
             _clipboard.copy(self.selected_obj)
             self.remove_object(self.selected_obj)
             self.selected_obj = None
             self._sync_to_repository()
             self.redraw()
             self.update_property_view()
-        else:
-            messagebox.showwarning("Cut", "Select a non-root node to cut.")
 
     def paste_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
