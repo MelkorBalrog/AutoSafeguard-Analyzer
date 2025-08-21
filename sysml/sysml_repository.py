@@ -546,11 +546,22 @@ class SysMLRepository:
         with open(path, "w", encoding="utf-8") as f:
             f.write(self.serialize())
 
-    def load(self, path: str) -> None:
+    def load(self, path: str, strategy: str = "v4") -> None:
         if not os.path.exists(path):
             return
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
+        self._load_data(data)
+        if strategy == "v1":
+            self._reset_history_v1()
+        elif strategy == "v2":
+            self._reset_history_v2()
+        elif strategy == "v3":
+            self._reset_history_v3()
+        else:
+            self._reset_history_v4()
+
+    def _load_data(self, data: dict) -> None:
         self.elements.clear()
         self.relationships.clear()
         self.diagrams.clear()
@@ -571,6 +582,31 @@ class SysMLRepository:
                 break
         if self.root_package is None:
             self.root_package = self.create_element("Package", name="Root")
+
+    def _reset_history_v1(self) -> None:
+        self._undo_stack.clear()
+        self._redo_stack.clear()
+
+    def _reset_history_v2(self) -> None:
+        self._undo_stack.clear()
+        self._redo_stack.clear()
+        self.push_undo_state()
+
+    def _reset_history_v3(self) -> None:
+        self._undo_stack.clear()
+        self._redo_stack.clear()
+        self._last_move_base = None
+        self._move_run_length = 0
+        self.push_undo_state()
+
+    def _reset_history_v4(self) -> None:
+        self._undo_stack.clear()
+        self._redo_stack.clear()
+        self._last_move_base = None
+        self._move_run_length = 0
+        self.push_undo_state()
+        if self._undo_stack:
+            self._undo_stack[0] = self._undo_stack[0]
 
     def create_relationship(
         self,
