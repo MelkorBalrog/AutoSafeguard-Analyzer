@@ -35,7 +35,7 @@ class DummyListbox:
 def test_report_template_manager_lists_templates(tmp_path):
     builtin = tmp_path / "builtin"
     builtin.mkdir()
-    (builtin / "report_template.json").write_text("{}")
+    (builtin / "product_report_template.json").write_text("{}")
     nested = builtin / "nested"
     nested.mkdir()
     (nested / "nested_template.json").write_text("{}")
@@ -55,7 +55,7 @@ def test_report_template_manager_lists_templates(tmp_path):
     mgr.listbox = DummyListbox()
     ReportTemplateManager._refresh_list(mgr)
     names = [mgr.listbox.get(i) for i in range(mgr.listbox.size())]
-    assert {"report_template.json", "custom_template.json", "nested_template.json", "deep_template.json"} <= set(names)
+    assert {"product_report_template.json", "custom_template.json", "nested_template.json", "deep_template.json"} <= set(names)
     assert "diagram_rules.json" not in names
 
 
