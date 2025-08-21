@@ -68,7 +68,6 @@ def test_load_model_invokes_reset(tmp_path, monkeypatch):
     app.apply_model_data = MagicMock()
     app.set_last_saved_state = MagicMock()
     app._reset_on_load = MagicMock()
-    app.has_unsaved_changes = lambda: False
 
     monkeypatch.setattr(AutoML.filedialog, "askopenfilename", lambda **k: str(model))
     monkeypatch.setattr(AutoML.messagebox, "showerror", lambda *a, **k: None)
