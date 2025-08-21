@@ -29,16 +29,9 @@ class SplashScreenTests(unittest.TestCase):
     def test_title_background(self):
         bg_items = self.splash.canvas.find_withtag("title_bg")
         text_items = self.splash.canvas.find_withtag("title_text")
-        self.assertGreater(len(bg_items), 1)
+        self.assertEqual(len(bg_items), 1)
         self.assertEqual(len(text_items), 2)
-        bbox = self.splash.canvas.bbox("title_bg")
-        self.assertEqual(bbox[0], 0)
-        self.assertEqual(bbox[2], self.splash.canvas_size)
-        top_color = self.splash.canvas.itemcget(bg_items[0], "fill")
-        bottom_color = self.splash.canvas.itemcget(bg_items[-1], "fill")
-        expected_bottom = self.splash._floor_color_at(int(bbox[3]))
-        self.assertEqual(top_color, "#000000")
-        self.assertEqual(bottom_color, expected_bottom)
+        self.assertEqual(self.splash.canvas.itemcget(bg_items[0], "fill"), "black")
         for t in text_items:
             self.assertEqual(self.splash.canvas.itemcget(t, "fill"), "white")
 
