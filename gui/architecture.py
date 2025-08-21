@@ -9298,13 +9298,7 @@ class SysMLDiagramWindow(tk.Frame):
             "System Boundary",
             "Block Boundary",
         ):
-            obj = self.selected_obj
-            if obj.obj_type == "Work Product":
-                boundary = self.find_boundary_for_obj(obj)
-                if boundary:
-                    _clipboard.copy([boundary, obj])
-                    return
-            _clipboard.copy(obj)
+            _clipboard.copy(self.selected_obj)
         else:
             messagebox.showwarning("Copy", "Select a non-root node to copy.")
 
@@ -9315,27 +9309,8 @@ class SysMLDiagramWindow(tk.Frame):
             "System Boundary",
             "Block Boundary",
         ):
-            obj = self.selected_obj
-            if obj.obj_type == "Work Product":
-                boundary = self.find_boundary_for_obj(obj)
-                if boundary:
-                    children = [
-                        o
-                        for o in self.objects
-                        if o.properties.get("boundary") == str(boundary.obj_id)
-                        and o.obj_type == "Work Product"
-                    ]
-                    _clipboard.copy([boundary, *children])
-                    for o in children:
-                        self.remove_object(o)
-                    self.remove_object(boundary)
-                    self.selected_obj = None
-                    self._sync_to_repository()
-                    self.redraw()
-                    self.update_property_view()
-                    return
-            _clipboard.copy(obj)
-            self.remove_object(obj)
+            _clipboard.copy(self.selected_obj)
+            self.remove_object(self.selected_obj)
             self.selected_obj = None
             self._sync_to_repository()
             self.redraw()
@@ -9348,31 +9323,19 @@ class SysMLDiagramWindow(tk.Frame):
             return
         obj = _clipboard.paste()
         if obj:
-            objs = obj if isinstance(obj, list) else [obj]
-            new_objs = []
-            id_map: dict[int, int] = {}
-            for o in objs:
-                old_id = o.obj_id
-                o.obj_id = _get_next_id()
-                id_map[old_id] = o.obj_id
-                o.x += 20
-                o.y += 20
-                new_objs.append(o)
-            for o in new_objs:
-                boundary_id = o.properties.get("boundary")
-                if boundary_id and int(boundary_id) in id_map:
-                    o.properties["boundary"] = str(id_map[int(boundary_id)])
-                if o.obj_type == "System Boundary":
-                    self.objects.insert(0, o)
-                else:
-                    self.objects.append(o)
+            new_obj = obj
+            new_obj.obj_id = _get_next_id()
+            new_obj.x += 20
+            new_obj.y += 20
+            if new_obj.obj_type == "System Boundary":
+                self.objects.insert(0, new_obj)
+            else:
+                self.objects.append(new_obj)
             self.sort_objects()
             diag = self.repo.diagrams.get(self.diagram_id)
-            if diag:
-                for o in new_objs:
-                    if o.element_id and o.element_id not in diag.elements:
-                        diag.elements.append(o.element_id)
-            self.selected_obj = new_objs[-1]
+            if diag and new_obj.element_id and new_obj.element_id not in diag.elements:
+                diag.elements.append(new_obj.element_id)
+            self.selected_obj = new_obj
             self._sync_to_repository()
             self.redraw()
             self.update_property_view()
