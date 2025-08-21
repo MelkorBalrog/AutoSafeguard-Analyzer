@@ -97,12 +97,6 @@ def test_validate_report_template_ignores_html_tags():
     assert validate_report_template(cfg) == cfg
 
 
-def test_validate_report_template_allows_sysml_diagrams():
-    cfg = {
-        "elements": {"sys": "sysml_diagrams"},
-        "sections": [{"title": "Intro", "content": "<sys>"}],
-    }
-    assert validate_report_template(cfg) == cfg
 
 def test_layout_report_template_basic():
     data = {
@@ -127,13 +121,27 @@ def test_layout_report_template_ignores_html_tags():
     assert names == ["diag"]
 
 
-def test_layout_report_template_sysml_diagrams_placeholder():
+def test_validate_report_template_allows_analysis_types():
+    cfg = {
+        "elements": {
+            "fta": "analysis:fault_tree",
+            "fmea": "analysis:fmea",
+            "fmeda": "analysis:fmeda",
+        },
+        "sections": [
+            {"title": "Analyses", "content": "<fta><fmea><fmeda>"}
+        ],
+    }
+    assert validate_report_template(cfg) == cfg
+
+
+def test_layout_report_template_fta_placeholder():
     data = {
-        "elements": {"sys": "sysml_diagrams"},
-        "sections": [{"title": "Diagrams", "content": "<sys>"}],
+        "elements": {"fta": "analysis:fault_tree"},
+        "sections": [{"title": "Diagrams", "content": "<fta>"}],
     }
     items, _ = layout_report_template(data)
-    assert any(i["type"] == "element" and i["name"] == "sys" for i in items)
+    assert any(i["type"] == "element" and i["name"] == "fta" for i in items)
 
 
 def test_validate_report_template_requirement_elements():
@@ -221,3 +229,51 @@ def test_layout_report_template_handles_images_and_links():
     items, _ = layout_report_template(data)
     types = [i["type"] for i in items]
     assert "image" in types and "link" in types
+
+
+def test_layout_report_template_supports_diagram_and_analysis_types():
+    data = {
+        "elements": {"bd": "diagram:block", "haz": "analysis:hazard"},
+        "sections": [{"title": "T", "content": "<bd><haz>"}],
+    }
+    items, _ = layout_report_template(data)
+    kinds = [i.get("kind") for i in items if i["type"] == "element"]
+    assert "diagram:block" in kinds and "analysis:hazard" in kinds
+
+
+def test_layout_report_template_supports_additional_diagram_types():
+    data = {
+        "elements": {
+            "uc": "diagram:use case",
+            "act": "diagram:activity",
+            "ibd": "diagram:internal block",
+        },
+        "sections": [{"title": "T", "content": "<uc><act><ibd>"}],
+    }
+    items, _ = layout_report_template(data)
+    kinds = [i.get("kind") for i in items if i["type"] == "element"]
+    assert {
+        "diagram:use case",
+        "diagram:activity",
+        "diagram:internal block",
+    } <= set(kinds)
+
+
+def test_validate_report_template_allows_new_elements():
+    cfg = {
+        "elements": {
+            "aa": "activity_actions",
+            "rm": "req_matrix_alloc",
+            "pg": "product_goals",
+            "fsc": "fsc_info",
+            "tr1": "trace_matrix_pg_fsr",
+            "tr2": "trace_matrix_fsc",
+        },
+        "sections": [
+            {
+                "title": "All",
+                "content": "<aa><rm><pg><fsc><tr1><tr2>",
+            }
+        ],
+    }
+    assert validate_report_template(cfg) == cfg
