@@ -23,7 +23,6 @@ from config import load_diagram_rules, load_json_with_comments
 import json
 from gui.icon_factory import create_icon
 from gui.button_utils import set_uniform_button_width
-import os
 
 from sysml.sysml_spec import SYSML_PROPERTIES
 from analysis.models import (
@@ -68,8 +67,6 @@ _CONFIG = load_diagram_rules(_CONFIG_PATH)
 _REQ_PATTERN_PATH = (
     Path(__file__).resolve().parents[1] / "config/requirement_patterns.json"
 )
-
-RESIZE_STRATEGY = os.getenv("ARCH_WP_RESIZE_STRATEGY", "corner_ratio")
 
 
 def _load_requirement_relations(path: Path = _REQ_PATTERN_PATH) -> list[str]:
@@ -5009,13 +5006,9 @@ class SysMLDiagramWindow(tk.Frame):
                         text_h = self.font.metrics("linespace") * len(label_lines)
                         min_w = max(min_w, (text_w + 10 * self.zoom) / self.zoom)
                         min_h = max(min_h, (text_h + 10 * self.zoom) / self.zoom)
-            old_left = obj.x - obj.width / 2
-            old_top = obj.y - obj.height / 2
-            old_w = obj.width
-            old_h = obj.height
-            left = old_left
+            left = obj.x - obj.width / 2
             right = obj.x + obj.width / 2
-            top = old_top
+            top = obj.y - obj.height / 2
             bottom = obj.y + obj.height / 2
             if "e" in self.resize_edge:
                 new_right = x / self.zoom
@@ -5052,12 +5045,6 @@ class SysMLDiagramWindow(tk.Frame):
             obj.y = (top + bottom) / 2
             obj.width = new_w
             obj.height = new_h
-            if obj.obj_type == "System Boundary":
-                self._reposition_work_products(
-                    obj,
-                    (old_left, old_top, old_w, old_h),
-                    (left, top, new_w, new_h),
-                )
             if obj.obj_type == "Part":
                 update_ports_for_part(obj, self.objects)
             if obj.obj_type == "Block Boundary":
@@ -5103,19 +5090,17 @@ class SysMLDiagramWindow(tk.Frame):
                                 p.x += dx
                                 p.y += dy
             if self.selected_obj.obj_type == "System Boundary":
-                width = self.selected_obj.width
-                height = self.selected_obj.height
-                old_left = old_x - width / 2
-                old_top = old_y - height / 2
-                new_left = self.selected_obj.x - width / 2
-                new_top = self.selected_obj.y - height / 2
-                self._reposition_work_products(
-                    self.selected_obj,
-                    (old_left, old_top, width, height),
-                    (new_left, new_top, width, height),
-                )
                 for o in self.objects:
-                    if o.properties.get("boundary") == str(self.selected_obj.obj_id):
+                    if (
+                        o.obj_type == "Work Product"
+                        and o.properties.get("parent") == str(self.selected_obj.obj_id)
+                    ):
+                        offx = float(o.properties.get("px", o.x - old_x))
+                        offy = float(o.properties.get("py", o.y - old_y))
+                        o.x = self.selected_obj.x + offx
+                        o.y = self.selected_obj.y + offy
+                        self._constrain_to_parent(o, self.selected_obj)
+                    elif o.properties.get("boundary") == str(self.selected_obj.obj_id):
                         o.x += dx
                         o.y += dy
             boundary = self.get_ibd_boundary()
@@ -12043,50 +12028,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         # Clamp coordinates to the process area so work products cannot escape.
         obj.x = min(max(obj.x, left), right)
         obj.y = min(max(obj.y, top), bottom)
-        area_left = area.x - area.width / 2
-        area_top = area.y - area.height / 2
-        obj.properties["px"] = str((obj.x - area_left) / area.width)
-        obj.properties["py"] = str((obj.y - area_top) / area.height)
-
-    def _reposition_work_products(
-        self,
-        area: SysMLObject,
-        old: tuple[float, float, float, float],
-        new: tuple[float, float, float, float],
-        strategy: str = RESIZE_STRATEGY,
-    ) -> None:
-        old_left, old_top, old_w, old_h = old
-        new_left, new_top, new_w, new_h = new
-        old_cx = old_left + old_w / 2
-        old_cy = old_top + old_h / 2
-        new_cx = new_left + new_w / 2
-        new_cy = new_top + new_h / 2
-        for o in self.objects:
-            if (
-                o.obj_type == "Work Product"
-                and o.properties.get("parent") == str(area.obj_id)
-            ):
-                if strategy == "center_ratio":
-                    rx = (o.x - old_cx) / old_w if old_w else 0.0
-                    ry = (o.y - old_cy) / old_h if old_h else 0.0
-                    o.x = new_cx + rx * new_w
-                    o.y = new_cy + ry * new_h
-                elif strategy == "center_offset":
-                    dx = o.x - old_cx
-                    dy = o.y - old_cy
-                    o.x = new_cx + dx
-                    o.y = new_cy + dy
-                elif strategy == "corner_offset":
-                    dx = o.x - old_left
-                    dy = o.y - old_top
-                    o.x = new_left + dx
-                    o.y = new_top + dy
-                else:  # corner_ratio
-                    rx = (o.x - old_left) / old_w if old_w else 0.0
-                    ry = (o.y - old_top) / old_h if old_h else 0.0
-                    o.x = new_left + rx * new_w
-                    o.y = new_top + ry * new_h
-                self._constrain_to_parent(o, area)
+        obj.properties["px"] = str(obj.x - area.x)
+        obj.properties["py"] = str(obj.y - area.y)
 
     def on_left_press(self, event):  # pragma: no cover - requires tkinter
         if self.repo.diagram_read_only(self.diagram_id):
