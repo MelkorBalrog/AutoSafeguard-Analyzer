@@ -101,6 +101,9 @@ class SysMLRepository:
         # maintain undo and redo history of repository snapshots
         self._undo_stack: list[dict] = []
         self._redo_stack: list[dict] = []
+        # helpers for alternative undo strategies
+        self._last_move_base: dict | None = None
+        self._move_run_length = 0
         self.active_phase: Optional[str] = None
         # Phases reused by the currently active lifecycle phase. Elements or
         # diagrams belonging to any of these phases should remain visible even
@@ -149,29 +152,110 @@ class SysMLRepository:
     # ------------------------------------------------------------
     # Undo support
     # ------------------------------------------------------------
-    def push_undo_state(self) -> None:
+    def _strip_object_positions(self, data: dict) -> dict:
+        """Return a copy of *data* without concrete object positions.
+
+        The helper is used to determine whether two repository states differ
+        only by object coordinates within diagrams.  When this is the case we
+        can merge the states to keep the undo history compact.
+        """
+
+        cleaned = json.loads(json.dumps(data))
+        for diag in cleaned.get("diagrams", []):
+            for obj in diag.get("objects", []):
+                obj.pop("x", None)
+                obj.pop("y", None)
+        return cleaned
+
+    def push_undo_state(self, strategy: str = "v4") -> None:
         """Save the current repository state for undo.
 
-        Repeated calls that do not change the repository would otherwise
-        accumulate duplicate snapshots.  This became especially noticeable
-        when dragging objects on a diagram: both the mouse press and the
-        subsequent synchronization wrote the same state to the undo stack,
-        requiring multiple ``undo`` operations to revert a single move.
-        Skipping storage of consecutive identical states keeps the history
-        concise and ensures that each user action corresponds to a single
-        undo step.
+        Four alternative strategies are provided and can be selected via the
+        *strategy* argument.  All strategies ensure that dragging objects on a
+        diagram records only the initial and final positions while keeping the
+        undo history compact.
         """
 
         state = self.to_dict()
-        # Avoid pushing duplicate consecutive states
-        if self._undo_stack and self._undo_stack[-1] == state:
-            return
+        stripped = self._strip_object_positions(state)
+        changed = False
+
+        if strategy == "v1":
+            changed = self._push_undo_state_v1(state, stripped)
+        elif strategy == "v2":
+            changed = self._push_undo_state_v2(state, stripped)
+        elif strategy == "v3":
+            changed = self._push_undo_state_v3(state, stripped)
+        else:  # v4
+            changed = self._push_undo_state_v4(state, stripped)
+
+        if changed:
+            if len(self._undo_stack) > 50:
+                self._undo_stack.pop(0)
+            self._redo_stack.clear()
+
+    # ------------------------------------------------------------
+    # Variants for push_undo_state
+    # ------------------------------------------------------------
+    def _push_undo_state_v1(self, state: dict, stripped: dict) -> bool:
+        if self._undo_stack:
+            last = self._undo_stack[-1]
+            if last == state:
+                return False
+            if self._strip_object_positions(last) == stripped:
+                if (
+                    len(self._undo_stack) >= 2
+                    and self._strip_object_positions(self._undo_stack[-2]) == stripped
+                ):
+                    self._undo_stack[-1] = state
+                    return True
+                self._undo_stack.append(state)
+                return True
+        else:
+            self._undo_stack.append(state)
+            return True
 
         self._undo_stack.append(state)
-        # limit history to 50 states to avoid excessive memory use
-        if len(self._undo_stack) > 50:
-            self._undo_stack.pop(0)
-        self._redo_stack.clear()
+        return True
+
+    def _push_undo_state_v2(self, state: dict, stripped: dict) -> bool:
+        if self._undo_stack and self._undo_stack[-1] == state:
+            return False
+        if self._undo_stack and self._strip_object_positions(self._undo_stack[-1]) == stripped:
+            if self._last_move_base == stripped:
+                self._undo_stack[-1] = state
+            else:
+                self._undo_stack.append(state)
+                self._last_move_base = stripped
+            return True
+        self._last_move_base = None
+        self._undo_stack.append(state)
+        return True
+
+    def _push_undo_state_v3(self, state: dict, stripped: dict) -> bool:
+        if self._undo_stack and self._undo_stack[-1] == state:
+            return False
+        if self._undo_stack and self._strip_object_positions(self._undo_stack[-1]) == stripped:
+            if self._move_run_length:
+                self._undo_stack[-1] = state
+            else:
+                self._undo_stack.append(state)
+            self._move_run_length += 1
+            return True
+        self._move_run_length = 0
+        self._undo_stack.append(state)
+        return True
+
+    def _push_undo_state_v4(self, state: dict, stripped: dict) -> bool:
+        if self._undo_stack and self._undo_stack[-1] == state:
+            return False
+        self._undo_stack.append(state)
+        if len(self._undo_stack) >= 3:
+            s1 = self._strip_object_positions(self._undo_stack[-3])
+            s2 = self._strip_object_positions(self._undo_stack[-2])
+            if s1 == s2 == stripped:
+                self._undo_stack.pop(-2)
+        return True
 
     def undo(self) -> bool:
         """Revert to the most recent saved state."""
