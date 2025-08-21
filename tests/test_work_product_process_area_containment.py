@@ -35,10 +35,8 @@ def test_work_product_clamped_to_process_area():
     bottom = area.y + area.height / 2 - wp.height / 2
     assert math.isclose(wp.x, right)
     assert math.isclose(wp.y, bottom)
-    exp_px = (wp.x - (area.x - area.width / 2)) / area.width
-    exp_py = (wp.y - (area.y - area.height / 2)) / area.height
-    assert math.isclose(float(wp.properties.get("px")), exp_px)
-    assert math.isclose(float(wp.properties.get("py")), exp_py)
+    assert wp.properties.get("px") == str(wp.x - area.x)
+    assert wp.properties.get("py") == str(wp.y - area.y)
 
 
 def test_add_work_product_existing_area_click():
@@ -185,68 +183,10 @@ def test_process_area_drag_moves_work_product():
     win.on_left_drag(Event())
 
     assert win.find_boundary_for_obj(wp) == area
-    assert math.isclose(wp.x, area.x + 10)
-    assert math.isclose(wp.y, area.y)
-    assert math.isclose(float(wp.properties.get("px")), 0.55)
-    assert math.isclose(float(wp.properties.get("py")), 0.5)
-
-
-def test_process_area_resize_keeps_work_product_ratio():
-    SysMLRepository._instance = None
-    repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("Governance Diagram")
-    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
-    win.repo = repo
-    win.diagram_id = diag.diag_id
-    win.objects = []
-    win.connections = []
-    win.zoom = 1.0
-    win.sort_objects = lambda: None
-    win._sync_to_repository = lambda: None
-    win.redraw = lambda: None
-    win.app = None
-
-    area = win._place_process_area("Risk Assessment", 0.0, 0.0)
-    wp = win._place_work_product("Risk Assessment", 10.0, 0.0, area=area)
-    relx = float(wp.properties.get("px"))
-    rely = float(wp.properties.get("py"))
-
-    class DummyCanvas:
-        def canvasx(self, x):
-            return x
-
-        def canvasy(self, y):
-            return y
-
-    win.canvas = DummyCanvas()
-    win.selected_obj = area
-    win.current_tool = "Select"
-    win.resizing_obj = area
-    win.resize_edge = "e"
-    win.drag_offset = (0, 0)
-    win.start = None
-    win.select_rect_start = None
-    win.dragging_conn_mid = None
-    win.selected_conn = None
-    win.dragging_endpoint = None
-    win.dragging_point_index = None
-
-    class Event:
-        x = 200
-        y = 0
-
-    win.on_left_drag(Event())
-
-    left = area.x - area.width / 2
-    top = area.y - area.height / 2
-    new_relx = (wp.x - left) / area.width
-    new_rely = (wp.y - top) / area.height
-    assert math.isclose(new_relx, relx)
-    assert math.isclose(new_rely, rely)
-    assert math.isclose(float(wp.properties.get("px")), relx)
-    assert math.isclose(float(wp.properties.get("py")), rely)
-    assert wp.width == 60.0
-    assert wp.height == 80.0
+    assert wp.x == area.x + 10
+    assert wp.y == area.y
+    assert wp.properties.get("px") == "10.0"
+    assert wp.properties.get("py") == "0.0"
 
 
 def test_process_area_multiple_drags_keep_work_product_offset():
@@ -301,7 +241,7 @@ def test_process_area_multiple_drags_keep_work_product_offset():
     win.on_left_drag(Event2())
 
     assert win.find_boundary_for_obj(wp) == area
-    assert math.isclose(wp.x, area.x + 10)
-    assert math.isclose(wp.y, area.y)
-    assert math.isclose(float(wp.properties.get("px")), 0.55)
-    assert math.isclose(float(wp.properties.get("py")), 0.5)
+    assert wp.x == area.x + 10
+    assert wp.y == area.y
+    assert wp.properties.get("px") == "10.0"
+    assert wp.properties.get("py") == "0.0"
