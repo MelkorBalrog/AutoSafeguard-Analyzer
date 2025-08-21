@@ -271,98 +271,116 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        x, y = self._event_coords(event)
-        tool = self.current_tool
-        if tool == "Variable":
-            self._handle_variable_click(doc, x, y)
-        elif tool in ("Triggering Condition", "Functional Insufficiency"):
-            self._handle_new_condition(doc, x, y, tool)
-        elif tool == "Existing Triggering Condition":
-            self._handle_existing(doc, x, y, self._select_triggering_conditions, "trigger", getattr(self.app, "update_triggering_condition_list", None))
-        elif tool == "Existing Functional Insufficiency":
-            self._handle_existing(doc, x, y, self._select_functional_insufficiencies, "insufficiency", getattr(self.app, "update_functional_insufficiency_list", None))
-        elif tool == "Existing Malfunction":
-            self._handle_existing(doc, x, y, self._select_malfunctions, "malfunction", None)
-        elif tool == "Relationship":
-            name = self._find_node(x, y)
+        if self.current_tool == "Variable":
+            undo = getattr(self.app, "push_undo_state", None)
+            if undo:
+                undo()
+            name = simpledialog.askstring("Variable", "Name:", parent=self)
+            if not name or name in doc.network.nodes:
+                self.select_tool("Select")
+                return
+            x, y = event.x, event.y
+            doc.network.add_node(name, cpd=0.5)
+            doc.positions[name] = (x, y)
+            doc.types[name] = "variable"
+            self._draw_node(name, x, y, "variable")
+            self.select_tool("Select")
+        elif self.current_tool in ("Triggering Condition", "Functional Insufficiency"):
+            prompt = self.current_tool
+            name = simpledialog.askstring(prompt, "Name:", parent=self)
+            if not name or name in doc.network.nodes:
+                self.select_tool("Select")
+                return
+            undo = getattr(self.app, "push_undo_state", None)
+            if undo:
+                undo()
+            x, y = event.x, event.y
+            doc.network.add_node(name, cpd=0.5)
+            doc.positions[name] = (x, y)
+            kind = "trigger" if self.current_tool == "Triggering Condition" else "insufficiency"
+            doc.types[name] = kind
+            self._draw_node(name, x, y, kind)
+            if kind == "trigger" and hasattr(self.app, "update_triggering_condition_list"):
+                self.app.update_triggering_condition_list()
+            elif kind == "insufficiency" and hasattr(
+                self.app, "update_functional_insufficiency_list"
+            ):
+                self.app.update_functional_insufficiency_list()
+            self.select_tool("Select")
+        elif self.current_tool == "Existing Triggering Condition":
+            names = self._select_triggering_conditions()
+            if not names:
+                self.select_tool("Select")
+                return
+            undo = getattr(self.app, "push_undo_state", None)
+            if undo:
+                undo()
+            x, y = event.x, event.y
+            for idx, name in enumerate(names):
+                if name in doc.network.nodes:
+                    continue
+                nx = x + idx * (2 * self.NODE_RADIUS + 10)
+                doc.network.add_node(name, cpd=0.5)
+                doc.positions[name] = (nx, y)
+                doc.types[name] = "trigger"
+                self._draw_node(name, nx, y, "trigger")
+            if hasattr(self.app, "update_triggering_condition_list"):
+                self.app.update_triggering_condition_list()
+            self.select_tool("Select")
+        elif self.current_tool == "Existing Functional Insufficiency":
+            names = self._select_functional_insufficiencies()
+            if not names:
+                self.select_tool("Select")
+                return
+            undo = getattr(self.app, "push_undo_state", None)
+            if undo:
+                undo()
+            x, y = event.x, event.y
+            for idx, name in enumerate(names):
+                if name in doc.network.nodes:
+                    continue
+                nx = x + idx * (2 * self.NODE_RADIUS + 10)
+                doc.network.add_node(name, cpd=0.5)
+                doc.positions[name] = (nx, y)
+                doc.types[name] = "insufficiency"
+                self._draw_node(name, nx, y, "insufficiency")
+            if hasattr(self.app, "update_functional_insufficiency_list"):
+                self.app.update_functional_insufficiency_list()
+        elif self.current_tool == "Existing Malfunction":
+            names = self._select_malfunctions()
+            if not names:
+                return
+            undo = getattr(self.app, "push_undo_state", None)
+            if undo:
+                undo()
+            x, y = event.x, event.y
+            for idx, name in enumerate(names):
+                if name in doc.network.nodes:
+                    continue
+                nx = x + idx * (2 * self.NODE_RADIUS + 10)
+                doc.network.add_node(name, cpd=0.5)
+                doc.positions[name] = (nx, y)
+                doc.types[name] = "malfunction"
+                self._draw_node(name, nx, y, "malfunction")
+        elif self.current_tool == "Relationship":
+            name = self._find_node(event.x, event.y)
             if not name:
                 self.select_tool("Select")
                 return
             self.edge_start = name
             self._highlight_node(None)
-        else:
-            self._handle_select(doc, x, y)
-
-    # ------------------------------------------------------------------
-    def _handle_variable_click(self, doc, x: float, y: float) -> None:
-        undo = getattr(self.app, "push_undo_state", None)
-        if undo:
-            undo()
-        name = simpledialog.askstring("Variable", "Name:", parent=self)
-        if not name or name in doc.network.nodes:
-            self.select_tool("Select")
-            return
-        doc.network.add_node(name, cpd=0.5)
-        doc.positions[name] = (x, y)
-        doc.types[name] = "variable"
-        self._draw_node(name, x, y, "variable")
-        self.select_tool("Select")
-
-    # ------------------------------------------------------------------
-    def _handle_new_condition(self, doc, x: float, y: float, prompt: str) -> None:
-        name = simpledialog.askstring(prompt, "Name:", parent=self)
-        if not name or name in doc.network.nodes:
-            self.select_tool("Select")
-            return
-        undo = getattr(self.app, "push_undo_state", None)
-        if undo:
-            undo()
-        doc.network.add_node(name, cpd=0.5)
-        doc.positions[name] = (x, y)
-        kind = "trigger" if prompt == "Triggering Condition" else "insufficiency"
-        doc.types[name] = kind
-        self._draw_node(name, x, y, kind)
-        if kind == "trigger" and hasattr(self.app, "update_triggering_condition_list"):
-            self.app.update_triggering_condition_list()
-        elif kind == "insufficiency" and hasattr(self.app, "update_functional_insufficiency_list"):
-            self.app.update_functional_insufficiency_list()
-        self.select_tool("Select")
-
-    # ------------------------------------------------------------------
-    def _handle_existing(self, doc, x: float, y: float, selector, kind: str, updater) -> None:
-        names = selector()
-        if not names:
-            self.select_tool("Select")
-            return
-        undo = getattr(self.app, "push_undo_state", None)
-        if undo:
-            undo()
-        for idx, name in enumerate(names):
-            if name in doc.network.nodes:
-                continue
-            nx = x + idx * (2 * self.NODE_RADIUS + 10)
-            doc.network.add_node(name, cpd=0.5)
-            doc.positions[name] = (nx, y)
-            doc.types[name] = kind
-            self._draw_node(name, nx, y, kind)
-        if updater:
-            updater()
-        if kind in {"trigger", "insufficiency", "malfunction"}:
-            self.select_tool("Select")
-
-    # ------------------------------------------------------------------
-    def _handle_select(self, doc, x: float, y: float) -> None:
-        name = self._find_node(x, y)
-        if name:
-            undo = getattr(self.app, "push_undo_state", None)
-            if undo:
-                undo()
-        self.drag_node = name
-        self.drag_offset = (0, 0)
-        self._highlight_node(name)
-        if name:
-            nx, ny = doc.positions.get(name, (0, 0))
-            self.drag_offset = (nx - x, ny - y)
+        else:  # Select tool
+            name = self._find_node(event.x, event.y)
+            if name:
+                undo = getattr(self.app, "push_undo_state", None)
+                if undo:
+                    undo()
+            self.drag_node = name
+            self.drag_offset = (0, 0)
+            self._highlight_node(name)
+            if name:
+                x, y = doc.positions.get(name, (0, 0))
+                self.drag_offset = (x - event.x, y - event.y)
 
     # ------------------------------------------------------------------
     def on_drag(self, event) -> None:
@@ -372,8 +390,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if self.current_tool == "Select" and self.drag_node:
             name = self.drag_node
             old_x, old_y = doc.positions.get(name, (0, 0))
-            ex, ey = self._event_coords(event)
-            x, y = ex + self.drag_offset[0], ey + self.drag_offset[1]
+            x, y = event.x + self.drag_offset[0], event.y + self.drag_offset[1]
             dx, dy = x - old_x, y - old_y
             doc.positions[name] = (x, y)
             oval_id, text_id, fill_tag = self.nodes[name]
@@ -399,15 +416,14 @@ class CausalBayesianNetworkWindow(tk.Frame):
             self._update_scroll_region()
         elif self.current_tool == "Relationship" and self.edge_start:
             x1, y1 = doc.positions.get(self.edge_start, (0, 0))
-            ex, ey = self._event_coords(event)
             if self.temp_edge_line is None:
                 self.temp_edge_line = self.canvas.create_line(
-                    x1, y1, ex, ey, dash=(2, 2)
+                    x1, y1, event.x, event.y, dash=(2, 2)
                 )
                 self.temp_edge_offset = 0
                 self._animate_temp_edge()
             else:
-                self.canvas.coords(self.temp_edge_line, x1, y1, ex, ey)
+                self.canvas.coords(self.temp_edge_line, x1, y1, event.x, event.y)
             self._update_scroll_region()
 
     # ------------------------------------------------------------------
@@ -415,11 +431,10 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        ex, ey = self._event_coords(event)
         if self.current_tool == "Select":
             self.drag_node = None
         elif self.current_tool == "Relationship" and self.edge_start:
-            dst = self._find_node(ex, ey)
+            dst = self._find_node(event.x, event.y)
             src = self.edge_start
             if dst and dst != src:
                 kind_src = doc.types.get(src)
@@ -486,8 +501,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        x, y = self._event_coords(event)
-        name = self._find_node(x, y)
+        name = self._find_node(event.x, event.y)
         if not name:
             return
         undo = getattr(self.app, "push_undo_state", None)
@@ -826,28 +840,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
         return [n.strip() for n in sel.split(",") if n.strip() in mals]
 
     # ------------------------------------------------------------------
-    # Four versions of event coordinate translation --------------------
-    def _event_coords_v1(self, event):
-        return self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
-
-    def _event_coords_v2(self, event):
-        canvas = getattr(event, "widget", self.canvas)
-        return canvas.canvasx(event.x), canvas.canvasy(event.y)
-
-    def _event_coords_v3(self, event):
-        x = getattr(event, "x", 0)
-        y = getattr(event, "y", 0)
-        return self.canvas.canvasx(x), self.canvas.canvasy(y)
-
-    def _event_coords_v4(self, event):
-        canvas = getattr(event, "widget", self.canvas)
-        convx = getattr(canvas, "canvasx", lambda v: v)
-        convy = getattr(canvas, "canvasy", lambda v: v)
-        return convx(getattr(event, "x", 0)), convy(getattr(event, "y", 0))
-
-    _event_coords = _event_coords_v4
-
-    # ------------------------------------------------------------------
     def _find_node(self, x: float, y: float) -> str | None:
         ids = self.canvas.find_overlapping(x, y, x, y)
         for i in ids:
@@ -919,8 +911,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        x, y = self._event_coords(event)
-        name = self._find_node(x, y)
+        name = self._find_node(event.x, event.y)
         if not name:
             return
         menu = tk.Menu(self, tearoff=0)
