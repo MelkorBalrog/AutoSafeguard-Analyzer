@@ -840,10 +840,64 @@ class CausalBayesianNetworkWindow(tk.Frame):
         return [n.strip() for n in sel.split(",") if n.strip() in mals]
 
     # ------------------------------------------------------------------
-    def _find_node(self, x: float, y: float) -> str | None:
-        ids = self.canvas.find_overlapping(x, y, x, y)
+    def _find_node_strategy1(self, x: float, y: float) -> str | None:
+        """Locate a node by checking overlapping canvas items."""
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        ids = self.canvas.find_overlapping(cx - 1, cy - 1, cx + 1, cy + 1)
         for i in ids:
             name = self.id_to_node.get(i)
+            if name:
+                return name
+        return None
+
+    def _find_node_strategy2(self, x: float, y: float) -> str | None:
+        """Locate a node using the closest canvas item."""
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        ids = self.canvas.find_closest(cx, cy)
+        for i in ids:
+            name = self.id_to_node.get(i)
+            if name:
+                return name
+        return None
+
+    def _find_node_strategy3(self, x: float, y: float) -> str | None:
+        """Locate a node by checking drawn ovals' bounding boxes."""
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        for name, (oval_id, _, _) in self.nodes.items():
+            x1, y1, x2, y2 = self.canvas.coords(oval_id)
+            if x1 <= cx <= x2 and y1 <= cy <= y2:
+                return name
+        return None
+
+    def _find_node_strategy4(self, x: float, y: float) -> str | None:
+        """Locate a node using stored positions and a radius check."""
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return None
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        r = self.NODE_RADIUS
+        for name, (nx, ny) in doc.positions.items():
+            if (cx - nx) ** 2 + (cy - ny) ** 2 <= r ** 2:
+                return name
+        return None
+
+    def _find_node(self, x: float, y: float) -> str | None:
+        """Find a node at the given canvas coordinates using multiple strategies."""
+        for strat in (
+            self._find_node_strategy1,
+            self._find_node_strategy2,
+            self._find_node_strategy3,
+            self._find_node_strategy4,
+        ):
+            name = strat(x, y)
             if name:
                 return name
         return None
