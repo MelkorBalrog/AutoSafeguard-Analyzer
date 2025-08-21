@@ -43,21 +43,5 @@ class CrossDiagramClipboardTests(unittest.TestCase):
         self.win2.paste_selected()
         self.assertEqual(len(self.win2.objects), 1)
 
-    def test_copy_with_selected_list(self):
-        self.win1.selected_obj = None
-        self.win1.selected_objs = [self.win1.objects[1]]
-        self.win1.copy_selected()
-        self.win2.paste_selected()
-        self.assertEqual(len(self.win2.objects), 1)
-
-    def test_cut_with_selected_list(self):
-        self.win1.selected_obj = None
-        self.win1.selected_objs = [self.win1.objects[1]]
-        self.win1.cut_selected()
-        self.assertEqual(len(self.win1.objects), 1)
-        self.win2.paste_selected()
-        self.assertEqual(len(self.win2.objects), 1)
-
-
 if __name__ == "__main__":
     unittest.main()

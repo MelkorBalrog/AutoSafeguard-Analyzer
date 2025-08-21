@@ -5097,12 +5097,17 @@ class SysMLDiagramWindow(tk.Frame):
                     ):
                         offx = float(o.properties.get("px", o.x - old_x))
                         offy = float(o.properties.get("py", o.y - old_y))
+                        o.properties.setdefault("px", str(offx))
+                        o.properties.setdefault("py", str(offy))
                         o.x = self.selected_obj.x + offx
                         o.y = self.selected_obj.y + offy
-                        self._constrain_to_parent(o, self.selected_obj)
                     elif o.properties.get("boundary") == str(self.selected_obj.obj_id):
-                        o.x += dx
-                        o.y += dy
+                        offx = float(o.properties.get("px", o.x - old_x))
+                        offy = float(o.properties.get("py", o.y - old_y))
+                        o.x = self.selected_obj.x + offx
+                        o.y = self.selected_obj.y + offy
+                        o.properties["px"] = str(offx)
+                        o.properties["py"] = str(offy)
             boundary = self.get_ibd_boundary()
             if boundary:
                 ensure_boundary_contains_parts(boundary, self.objects)
@@ -12077,8 +12082,13 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         # Clamp coordinates to the process area so work products cannot escape.
         obj.x = min(max(obj.x, left), right)
         obj.y = min(max(obj.y, top), bottom)
-        obj.properties["px"] = str(obj.x - area.x)
-        obj.properties["py"] = str(obj.y - area.y)
+
+        def _fmt(v: float) -> str:
+            s = f"{v:.6f}".rstrip("0").rstrip(".")
+            return s + ".0" if "." not in s else s
+
+        obj.properties["px"] = _fmt(obj.x - area.x)
+        obj.properties["py"] = _fmt(obj.y - area.y)
 
     def on_left_press(self, event):  # pragma: no cover - requires tkinter
         if self.repo.diagram_read_only(self.diagram_id):
