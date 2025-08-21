@@ -13422,6 +13422,8 @@ class ArchitectureManagerDialog(tk.Frame):
                     properties=props,
                 )
                 diagram.objects.append(obj.__dict__)
+                if getattr(self, "app", None) and hasattr(self.app, "push_undo_state"):
+                    self.app.push_undo_state()
                 return
             if (
                 src_diag
@@ -13441,6 +13443,8 @@ class ArchitectureManagerDialog(tk.Frame):
                     properties=props,
                 )
                 diagram.objects.append(obj.__dict__)
+                if getattr(self, "app", None) and hasattr(self.app, "push_undo_state"):
+                    self.app.push_undo_state()
                 return
             messagebox.showerror("Drop Error", "This item cannot be dropped on that diagram.")
             return
@@ -13451,6 +13455,8 @@ class ArchitectureManagerDialog(tk.Frame):
             repo.add_element_to_diagram(diagram.diag_id, block.elem_id)
             obj = SysMLObject(_get_next_id(), "Block", 50.0, 50.0, element_id=block.elem_id)
             diagram.objects.append(obj.__dict__)
+            if getattr(self, "app", None) and hasattr(self.app, "push_undo_state"):
+                self.app.push_undo_state()
         else:
             messagebox.showerror("Drop Error", "This item cannot be dropped on that diagram.")
 
