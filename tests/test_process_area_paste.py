@@ -65,3 +65,39 @@ def test_paste_work_product_creates_process_area():
     new_area = [a for a in areas if a is not area][0]
     assert pasted_wp.properties.get("parent") == str(new_area.obj_id)
     assert new_area.properties.get("name") == "Risk Assessment"
+
+
+def test_copy_process_area_includes_children():
+    win = _setup_window()
+    area = win._place_process_area("Risk Assessment", 0.0, 0.0)
+    wp = win._place_work_product("Risk Assessment", 10.0, 0.0, area=area)
+    win.selected_obj = area
+    win.copy_selected()
+    win.selected_obj = None
+    win.paste_selected()
+    areas = [o for o in win.objects if o.obj_type == "System Boundary"]
+    assert len(areas) == 2
+    wps = [o for o in win.objects if o.obj_type == "Work Product"]
+    assert len(wps) == 2
+    pasted_area = [a for a in areas if a is not area][0]
+    pasted_wp = [o for o in wps if o is not wp][0]
+    assert pasted_wp.properties.get("parent") == str(pasted_area.obj_id)
+
+
+def test_cut_process_area_includes_children():
+    win = _setup_window()
+    area = win._place_process_area("Risk Assessment", 0.0, 0.0)
+    wp = win._place_work_product("Risk Assessment", 10.0, 0.0, area=area)
+    win.selected_obj = area
+    win.cut_selected()
+    assert area not in win.objects
+    assert wp not in win.objects
+    win.selected_obj = None
+    win.paste_selected()
+    areas = [o for o in win.objects if o.obj_type == "System Boundary"]
+    assert len(areas) == 1
+    wps = [o for o in win.objects if o.obj_type == "Work Product"]
+    assert len(wps) == 1
+    new_area = areas[0]
+    new_wp = wps[0]
+    assert new_wp.properties.get("parent") == str(new_area.obj_id)
