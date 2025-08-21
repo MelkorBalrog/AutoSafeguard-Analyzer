@@ -231,27 +231,8 @@ def validate_report_template(data: Any) -> dict[str, Any]:
     if not isinstance(elements, dict):
         raise ValueError("'elements' must be an object")
     for name, kind in elements.items():
-        if not isinstance(name, str):
-            raise ValueError("elements keys must be strings")
-        if isinstance(kind, str):
-            continue
-        if isinstance(kind, dict):
-            k = kind.get("kind")
-            if not isinstance(k, str):
-                raise ValueError(f"element '{name}' missing string 'kind'")
-            if k == "diagram":
-                if "diagram_type" in kind and not isinstance(kind["diagram_type"], str):
-                    raise ValueError(
-                        f"element '{name}' diagram_type must be string"
-                    )
-                if "analysis" in kind and not isinstance(kind["analysis"], str):
-                    raise ValueError(
-                        f"element '{name}' analysis must be string"
-                    )
-            continue
-        raise ValueError(
-            "elements must map names to string types or dictionaries"
-        )
+        if not isinstance(name, str) or not isinstance(kind, str):
+            raise ValueError("elements must map names to string types")
 
     sections = data.get("sections", [])
     if not isinstance(sections, list):
