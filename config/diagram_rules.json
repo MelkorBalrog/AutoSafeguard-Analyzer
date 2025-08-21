@@ -3707,6 +3707,42 @@
       ],
       "subject": "Safety manager"
     },
+    "production requirements": {
+      "action": "define production requirements",
+      "relations": [
+        "Plans",
+        "Develops",
+        "Produces"
+      ],
+      "subject": "Production manager"
+    },
+    "service requirements": {
+      "action": "define service requirements",
+      "relations": [
+        "Plans",
+        "Develops",
+        "Produces"
+      ],
+      "subject": "Service manager"
+    },
+    "operational safety requirements": {
+      "action": "define operational safety requirements",
+      "relations": [
+        "Plans",
+        "Develops",
+        "Produces"
+      ],
+      "subject": "Safety manager"
+    },
+    "decommissioning requirements": {
+      "action": "define decommissioning requirements",
+      "relations": [
+        "Plans",
+        "Develops",
+        "Produces"
+      ],
+      "subject": "Safety manager"
+    },
     "deployment readiness": {
       "action": "verify deployment readiness",
       "relations": [
