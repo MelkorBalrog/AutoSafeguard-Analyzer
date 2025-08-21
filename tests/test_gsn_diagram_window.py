@@ -89,6 +89,7 @@ def test_temp_connection_line_has_arrow_in_context_mode():
 def test_on_release_creates_context_link():
     """Releasing in context mode should mark the relation accordingly."""
     win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    win.zoom = 1.0
     parent = GSNNode("p", "Goal")
     child = GSNNode("c", "Context")
 
@@ -126,6 +127,7 @@ def test_on_release_creates_context_link():
 def test_solved_by_cursor_and_reset():
     """Solved-by connections change the cursor and reset after completion."""
     win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    win.zoom = 1.0
     parent = GSNNode("p", "Goal")
     child = GSNNode("c", "Goal")
 
@@ -221,6 +223,9 @@ def test_click_and_drag_uses_canvas_coordinates():
                 return [1]
             return []
 
+        def find_closest(self, x, y):
+            return [1]
+
         def gettags(self, item):
             return ("node-id",) if item == 1 else ()
 
@@ -282,6 +287,7 @@ def test_right_click_node_shows_menu(monkeypatch):
             "canvasx": lambda self, x: x,
             "canvasy": lambda self, y: y,
             "find_overlapping": lambda self, a, b, c, d: [1],
+            "find_closest": lambda self, x, y: [1],
             "gettags": lambda self, item: (node.unique_id,),
         },
     )()
@@ -312,11 +318,14 @@ def test_right_click_node_shows_menu(monkeypatch):
 def test_right_click_connection_shows_menu(monkeypatch):
     """Right-clicking a connection should show edit and delete options."""
     win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    win.zoom = 1.0
     parent = GSNNode("p", "Goal")
     child = GSNNode("c", "Goal")
     rel_id = win._rel_id(parent, child)
     win.id_to_node = {}
     win.id_to_relation = {rel_id: (parent, child)}
+    win.diagram = GSNDiagram(parent)
+    win.diagram.add_node(child)
     win.canvas = type(
         "CanvasStub",
         (),
@@ -324,6 +333,7 @@ def test_right_click_connection_shows_menu(monkeypatch):
             "canvasx": lambda self, x: x,
             "canvasy": lambda self, y: y,
             "find_overlapping": lambda self, a, b, c, d: [1],
+            "find_closest": lambda self, x, y: [1],
             "gettags": lambda self, item: (rel_id,),
         },
     )()
