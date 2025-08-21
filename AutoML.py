@@ -20284,66 +20284,13 @@ class AutoMLApp:
             self.save_model()
         return True
 
-    def _reset_on_load_v1(self):
-        """Close the page diagram if one is open."""
-        if hasattr(self, "page_diagram") and self.page_diagram is not None:
-            self.close_page_diagram()
-
-    def _reset_on_load_v2(self):
-        """Close open document tabs after v1 cleanup."""
-        self._reset_on_load_v1()
-        if hasattr(self, "doc_nb"):
-            for tab_id in list(self.doc_nb.tabs()):
-                self.doc_nb._closing_tab = tab_id
-                self.doc_nb.event_generate("<<NotebookTabClosed>>")
-                if tab_id in self.doc_nb.tabs():
-                    try:
-                        self.doc_nb.forget(tab_id)
-                    except tk.TclError:
-                        pass
-
-    def _reset_on_load_v3(self):
-        """Reset repositories and in-memory model data after v2 cleanup."""
-        self._reset_on_load_v2()
-        global AutoML_Helper, unique_node_id_counter
-        SysMLRepository.reset_instance()
-        AutoML_Helper = AutoMLHelper()
-        unique_node_id_counter = 1
-        self.zoom = 1.0
-        self.diagram_font.config(size=int(8 * self.zoom))
-        self.top_events = []
-        self.root_node = None
-        self.selected_node = None
-        self.page_history = []
-
-    def _reset_on_load_v4(self):
-        """Perform full reset prior to loading a new project."""
-        self._reset_on_load_v3()
-        self.project_properties = {
-            "pdf_report_name": "AutoML-Analyzer PDF Report",
-            "pdf_detailed_formulas": True,
-            "exposure_probabilities": EXPOSURE_PROBABILITIES.copy(),
-            "controllability_probabilities": CONTROLLABILITY_PROBABILITIES.copy(),
-            "severity_probabilities": SEVERITY_PROBABILITIES.copy(),
-        }
-        update_probability_tables(
-            self.project_properties["exposure_probabilities"],
-            self.project_properties["controllability_probabilities"],
-            self.project_properties["severity_probabilities"],
-        )
-        self.apply_model_data({}, ensure_root=False)
-        self._undo_stack.clear()
-        self._redo_stack.clear()
-        if hasattr(self, "analysis_tree"):
-            self.analysis_tree.delete(*self.analysis_tree.get_children())
-        self.update_views()
-        self.canvas.update()
-        self.set_last_saved_state()
-
     def load_model(self):
+        global AutoML_Helper
         # Prompt user to save unsaved changes before loading a new project
         if not self._prompt_save_on_load_v4():
             return
+        # Reinitialize the helper so that the counter is reset.
+        AutoML_Helper = AutoMLHelper()
 
         path = filedialog.askopenfilename(
             defaultextension=".autml",
@@ -20371,6 +20318,7 @@ class AutoMLApp:
             import base64
             import gzip
             import hashlib
+            import json
 
             password = askstring_fixed(
                 simpledialog,
@@ -20417,7 +20365,7 @@ class AutoMLApp:
                     )
                     return
 
-        self._reset_on_load_v4()
+        self._reset_on_load()
         self.apply_model_data(data)
         self.set_last_saved_state()
         self._loaded_model_paths.append(path)
