@@ -70,6 +70,5 @@ class AppUndoMoveCoalesceTests(unittest.TestCase):
                 self.assertEqual(app._state["diagrams"][0]["objects"][0]["x"], 4.0)
                 self.assertEqual(app._state["diagrams"][0]["objects"][0]["y"], 4.0)
 
-
 if __name__ == "__main__":
     unittest.main()
