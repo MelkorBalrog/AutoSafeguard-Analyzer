@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-"""Data structures for safety & security cases."""
+"""Data structures for safety & security reports."""
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List
 
 from gsn import GSNDiagram, GSNNode
+from config import load_report_template
 
 
 @dataclass
@@ -19,6 +21,45 @@ class SafetyCase:
     def collect_solutions(self) -> None:
         """Populate :attr:`solutions` with all solution nodes from ``diagram``."""
         self.solutions = [n for n in self.diagram.nodes if n.node_type == "Solution"]
+
+    def build_report_template(self) -> dict:
+        """Return safety & security report template filtered by referenced work products."""
+
+        base = load_report_template(
+            Path(__file__).resolve().parents[1]
+            / "config"
+            / "safety_security_report_template.json"
+        )
+
+        # map lower-case keywords to (element placeholder, section title)
+        mapping = {
+            "fta": ("fta_diagrams", "Fault Tree Analyses (FTA)"),
+            "hazard": ("hazard_analysis_diagrams", "Hazard Analyses"),
+            "fmea": ("fmea_diagrams", "FMEA Analyses"),
+            "fmeda": ("fmeda_diagrams", "FMEDA Analyses"),
+            "reliability": ("reliability_analysis", "Reliability Analysis"),
+        }
+
+        referenced = {
+            getattr(sol, "work_product", "").lower()
+            for sol in self.solutions
+            if getattr(sol, "work_product", "")
+        }
+
+        sections = base.get("sections", [])
+        insert_at = len(sections)
+        for idx, sec in enumerate(sections):
+            if sec.get("title") == "Work Products and Evidence":
+                insert_at = idx
+                break
+
+        dynamic = []
+        for key, (element, title) in mapping.items():
+            if any(key in wp for wp in referenced):
+                dynamic.append({"title": title, "content": f"<{element}>"})
+
+        base["sections"] = sections[:insert_at] + dynamic + sections[insert_at:]
+        return base
 
 
 @dataclass

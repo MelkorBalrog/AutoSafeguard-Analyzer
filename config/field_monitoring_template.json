@@ -1,0 +1,8 @@
+{
+  "elements": {
+    "field_monitoring": "field_monitoring"
+  },
+  "sections": [
+    {"title": "Field Monitoring", "content": "<field_monitoring>"}
+  ]
+}

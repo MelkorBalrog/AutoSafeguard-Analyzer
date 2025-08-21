@@ -11978,6 +11978,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         lock_name: bool = True,
         area: SysMLObject | None = None,
     ) -> SysMLObject:
+        if getattr(self.app, "push_undo_state", None):
+            self.app.push_undo_state()
         props = {"name": name}
         if lock_name:
             props["name_locked"] = "1"
@@ -12007,6 +12009,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             self.app.enable_work_product(name)
         if getattr(self.app, "refresh_tool_enablement", None):
             self.app.refresh_tool_enablement()
+        if getattr(self.app, "push_undo_state", None):
+            self.app.push_undo_state()
         return obj
 
     def _place_process_area(self, name: str, x: float, y: float) -> SysMLObject:

@@ -1,13 +1,76 @@
 {
   "elements": {
-    "hazop": "hazop",
-    "risk": "risk",
-    "safety_goals": "safety_goals",
-    "req_functional_safety": "req_functional_safety"
+    "internal_block_diagrams": "diagram:internal block",
+    "req_matrix": "req_matrix_alloc",
+    "product_goals": "product_goals",
+    "fsc_info": "fsc_info",
+    "req_functional_safety": "req_functional_safety",
+    "trace_matrix_pg_fsr": "trace_matrix_pg_fsr",
+    "fta_diagrams": "analysis:fault_tree",
+    "threat_analysis_diagrams": "analysis:threat",
+    "fi2tc": "fi2tc",
+    "tc2fi": "tc2fi",
+    "triggering_conditions": "triggering_conditions",
+    "functional_insufficiencies": "functional_insufficiencies",
+    "odd_library": "odd_library",
+    "scenario_library": "scenario_library"
   },
   "sections": [
-    {"title": "Hazard Analysis", "content": "<hazop><risk>"},
-    {"title": "Safety Goals", "content": "<safety_goals>"},
-    {"title": "Functional Safety Requirements", "content": "<req_functional_safety>"}
+    {
+      "title": "Product Goals",
+      "content": "<product_goals>"
+    },
+    {
+      "title": "Functional Safety Concept",
+      "content": "<fsc_info>"
+    },
+    {
+      "title": "ODD Library",
+      "content": "<odd_library>"
+    },
+    {
+      "title": "Scenario Library",
+      "content": "<scenario_library>"
+    },
+    {
+      "title": "Internal Block Diagrams",
+      "content": "<internal_block_diagrams>"
+    },
+    {
+      "title": "Fault Tree Analyses (FTA)",
+      "content": "<fta_diagrams>"
+    },
+    {
+      "title": "Threat Analysis",
+      "content": "<threat_analysis_diagrams>"
+    },
+    {
+      "title": "FI2TC Mapping",
+      "content": "<fi2tc>"
+    },
+    {
+      "title": "TC2FI Mapping",
+      "content": "<tc2fi>"
+    },
+    {
+      "title": "Triggering Conditions",
+      "content": "<triggering_conditions>"
+    },
+    {
+      "title": "Functional Insufficiencies",
+      "content": "<functional_insufficiencies>"
+    },
+    {
+      "title": "Functional Safety Requirements",
+      "content": "<req_functional_safety>"
+    },
+    {
+      "title": "Requirements Allocation Matrix",
+      "content": "<req_matrix>"
+    },
+    {
+      "title": "Traceability Matrix",
+      "content": "<trace_matrix_pg_fsr>"
+    }
   ]
 }
