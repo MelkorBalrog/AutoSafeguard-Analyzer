@@ -246,14 +246,41 @@ class SysMLRepository:
         return True
 
     def _push_undo_state_v3(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack and self._undo_stack[-1] == state:
-            return
-
+        if self._undo_stack:
+            last = self._undo_stack[-1]
+            if last == state:
+                return False
+            if self._strip_object_positions(last) == stripped:
+                if len(self._undo_stack) >= 2 and self._strip_object_positions(self._undo_stack[-2]) == stripped:
+                    self._undo_stack[-1] = state
+                    return True
+                self._undo_stack.append(state)
+                return True
+        else:
+            self._undo_stack.append(state)
+            return True
         self._undo_stack.append(state)
-        # limit history to 50 states to avoid excessive memory use
         if len(self._undo_stack) > 50:
             self._undo_stack.pop(0)
         self._redo_stack.clear()
+        return True
+
+    def _push_undo_state_v4(self, state: dict, stripped: dict) -> bool:
+        if self._undo_stack:
+            last = self._undo_stack[-1]
+            if last == state:
+                return False
+            if self._strip_object_positions(last) == stripped:
+                if len(self._undo_stack) >= 2 and self._strip_object_positions(self._undo_stack[-2]) == stripped:
+                    self._undo_stack[-1] = state
+                    return True
+                self._undo_stack.append(state)
+                return True
+        else:
+            self._undo_stack.append(state)
+            return True
+        self._undo_stack.append(state)
+        return True
 
     def undo(self, strategy: str = "v4") -> bool:
         """Revert to the most recent saved state."""

@@ -9639,10 +9639,10 @@ class SysMLDiagramWindow(tk.Frame):
 
     def _sync_to_repository(self) -> None:
         """Persist current objects and connections back to the repository."""
-        self.repo.push_undo_state()
         undo = getattr(self.app, "push_undo_state", None)
+        self.repo.push_undo_state(sync_app=False)
         if undo:
-            undo()
+            undo(sync_repo=False)
         diag = self.repo.diagrams.get(self.diagram_id)
         if diag:
             existing_objs = getattr(diag, "objects", [])
@@ -9682,6 +9682,11 @@ class SysMLDiagramWindow(tk.Frame):
                                 o.obj_id == data["obj_id"] for o in self.objects
                             ):
                                 self.objects.append(SysMLObject(**data))
+
+        # Capture the updated repository state for redo operations.
+        self.repo.push_undo_state(sync_app=False)
+        if undo:
+            undo(sync_repo=False)
 
     def refresh_from_repository(self, _event=None) -> None:
         """Reload diagram objects from the repository and redraw."""

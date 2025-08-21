@@ -19258,13 +19258,16 @@ class AutoMLApp:
         repo.undo(strategy="v4")
         if self._undo_stack and self._undo_stack[-1] == current:
             self._undo_stack.pop()
-            if not self._undo_stack:
-                return False
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
+        if self._undo_stack:
+            state = self._undo_stack.pop()
+            self._redo_stack.append(current)
+            if len(self._redo_stack) > 20:
+                self._redo_stack.pop(0)
+            self.apply_model_data(state)
+        else:
+            self._redo_stack.append(current)
+            if len(self._redo_stack) > 20:
+                self._redo_stack.pop(0)
         return True
 
     def _redo_v1(self, repo):
@@ -20215,16 +20218,92 @@ class AutoMLApp:
         )
         self.set_last_saved_state()
 
-    def load_model(self):
-        global AutoML_Helper
-        # Reinitialize the helper so that the counter is reset.
+    def _reset_on_load(self):
+        """Close all open windows and clear state before loading a project."""
+
+        if getattr(self, "page_diagram", None) is not None:
+            self.close_page_diagram()
+
+        for tab_id in list(getattr(self.doc_nb, "tabs", lambda: [])()):
+            self.doc_nb._closing_tab = tab_id
+            self.doc_nb.event_generate("<<NotebookTabClosed>>")
+            if tab_id in getattr(self.doc_nb, "tabs", lambda: [])():
+                try:
+                    self.doc_nb.forget(tab_id)
+                except Exception:
+                    pass
+
+        for win in (
+            list(getattr(self, "use_case_windows", []))
+            + list(getattr(self, "activity_windows", []))
+            + list(getattr(self, "block_windows", []))
+            + list(getattr(self, "ibd_windows", []))
+        ):
+            try:
+                win.destroy()
+            except Exception:
+                pass
+        self.use_case_windows = []
+        self.activity_windows = []
+        self.block_windows = []
+        self.ibd_windows = []
+
+        global AutoML_Helper, unique_node_id_counter
+        SysMLRepository.reset_instance()
         AutoML_Helper = AutoMLHelper()
-        
+        unique_node_id_counter = 1
+
+        self.top_events = []
+        self.root_node = None
+        self.selected_node = None
+        self.page_history = []
+        self._undo_stack.clear()
+        self._redo_stack.clear()
+        if getattr(self, "analysis_tree", None):
+            self.analysis_tree.delete(*self.analysis_tree.get_children())
+
+        self._create_fta_tab()
+        if getattr(self, "canvas", None):
+            self.canvas.delete("all")
+    def _prompt_save_changes_v1(self) -> bool:
+        if not getattr(self, "has_unsaved_changes", lambda: False)():
+            return True
+        if messagebox.askyesno("Load Model", "Save changes before loading new project?"):
+            self.save_model()
+        return True
+
+    def _prompt_save_changes_v2(self) -> bool:
+        if not getattr(self, "has_unsaved_changes", lambda: False)():
+            return True
+        result = messagebox.askyesnocancel(
+            "Load Model", "Save changes before loading new project?"
+        )
+        if result is None:
+            return False
+        if result:
+            self.save_model()
+        return True
+
+    def _prompt_save_changes_v3(self) -> bool:
+        if not getattr(self, "has_unsaved_changes", lambda: False)():
+            return True
+        if messagebox.askokcancel("Load Model", "Save changes before loading new project?"):
+            self.save_model()
+        return True
+
+    def _prompt_save_changes_v4(self) -> bool:
+        return self._prompt_save_changes_v2()
+
+    def load_model(self):
+        import json
+
         path = filedialog.askopenfilename(
             defaultextension=".autml",
             filetypes=[("AutoML Project", "*.autml"), ("JSON", "*.json")],
         )
         if not path:
+            return
+        if not self._prompt_save_changes_v4():
             return
         if path.endswith(".autml"):
             try:
@@ -20293,524 +20372,11 @@ class AutoMLApp:
                     )
                     return
 
+        self._reset_on_load()
         self.apply_model_data(data)
         self.set_last_saved_state()
         self._loaded_model_paths.append(path)
         return
-
-        repo_data = data.get("sysml_repository")
-        if repo_data:
-            repo = SysMLRepository.get_instance()
-            repo.from_dict(repo_data)
-
-        if "top_events" in data:
-            self.top_events = [FaultTreeNode.from_dict(e) for e in data["top_events"]]
-        elif "root_node" in data:
-            root = FaultTreeNode.from_dict(data["root_node"])
-            self.top_events = [root]
-        else:
-            messagebox.showerror("Error", "Invalid model file format.")
-            return
-
-        # Ensure there is at least one FTA root node
-        if not self.top_events:
-            new_root = FaultTreeNode("Vehicle Level Function", "TOP EVENT")
-            new_root.x, new_root.y = 300, 200
-            self.top_events.append(new_root)
-
-        self.root_node = self.top_events[0]
-
-        self.fmeas = []
-        for fmea_data in data.get("fmeas", []):
-            entries = [FaultTreeNode.from_dict(e) for e in fmea_data.get("entries", [])]
-            self.fmeas.append({
-                "name": fmea_data.get("name", "FMEA"),
-                "file": fmea_data.get("file", f"fmea_{len(self.fmeas)}.csv"),
-                "entries": entries,
-                "created": fmea_data.get("created", datetime.datetime.now().isoformat()),
-                "author": fmea_data.get("author", CURRENT_USER_NAME),
-                "modified": fmea_data.get("modified", datetime.datetime.now().isoformat()),
-                "modified_by": fmea_data.get("modified_by", CURRENT_USER_NAME),
-            })
-        if not self.fmeas and "fmea_entries" in data:
-            entries = [FaultTreeNode.from_dict(e) for e in data.get("fmea_entries", [])]
-            self.fmeas.append({"name": "Default FMEA", "file": "fmea_default.csv", "entries": entries})
-
-        self.fmedas = []
-        for doc in data.get("fmedas", []):
-            entries = [FaultTreeNode.from_dict(e) for e in doc.get("entries", [])]
-            self.fmedas.append({
-                "name": doc.get("name", "FMEDA"),
-                "file": doc.get("file", f"fmeda_{len(self.fmedas)}.csv"),
-                "entries": entries,
-                "bom": doc.get("bom", ""),
-                "created": doc.get("created", datetime.datetime.now().isoformat()),
-                "author": doc.get("author", CURRENT_USER_NAME),
-                "modified": doc.get("modified", datetime.datetime.now().isoformat()),
-                "modified_by": doc.get("modified_by", CURRENT_USER_NAME),
-            })
-
-        self.update_failure_list()
-
-        # Link FMEA entries to the fault tree nodes so edits propagate
-        node_map = {}
-        for te in self.top_events:
-            for n in self.get_all_nodes(te):
-                node_map[n.unique_id] = n
-        for entry in self.get_all_fmea_entries():
-            orig = node_map.get(entry.unique_id)
-            if orig and entry is not orig:
-                entry.is_primary_instance = False
-                entry.original = orig
-
-        # Mechanism libraries and selections
-        self.mechanism_libraries = []
-        for lib in data.get("mechanism_libraries", []):
-            mechs = [DiagnosticMechanism(**m) for m in lib.get("mechanisms", [])]
-            self.mechanism_libraries.append(MechanismLibrary(lib.get("name", ""), mechs))
-        self.selected_mechanism_libraries = []
-        for name in data.get("selected_mechanism_libraries", []):
-            found = next((l for l in self.mechanism_libraries if l.name == name), None)
-            if found:
-                self.selected_mechanism_libraries.append(found)
-        if not self.mechanism_libraries:
-            self.load_default_mechanisms()
-
-        # Mission profiles
-        self.mission_profiles = []
-        for mp_data in data.get("mission_profiles", []):
-            try:
-                mp = MissionProfile(**mp_data)
-                total = mp.tau_on + mp.tau_off
-                mp.duty_cycle = mp.tau_on / total if total else 0.0
-                self.mission_profiles.append(mp)
-            except TypeError:
-                pass
-
-        # Reliability analyses
-        self.reliability_analyses = []
-        for ra in data.get("reliability_analyses", []):
-            def load_comp(cdata):
-                comp = ReliabilityComponent(
-                    cdata.get("name", ""),
-                    cdata.get("comp_type", ""),
-                    cdata.get("quantity", 1),
-                    cdata.get("attributes", {}),
-                    cdata.get("qualification", cdata.get("safety_req", "")),
-                    cdata.get("fit", 0.0),
-                    cdata.get("is_passive", False),
-                )
-                comp.sub_boms = [
-                    [load_comp(sc) for sc in bom]
-                    for bom in cdata.get("sub_boms", [])
-                ]
-                return comp
-
-            comps = [load_comp(c) for c in ra.get("components", [])]
-            self.reliability_analyses.append(
-                ReliabilityAnalysis(
-                    ra.get("name", ""),
-                    ra.get("standard", ""),
-                    ra.get("profile", ""),
-                    comps,
-                    ra.get("total_fit", 0.0),
-                    ra.get("spfm", 0.0),
-                    ra.get("lpfm", 0.0),
-                    ra.get("dc", 0.0),
-                )
-            )
-
-        self.hazop_docs = []
-        for d in data.get("hazops", []):
-            entries = []
-            for h in d.get("entries", []):
-                h["safety"] = boolify(h.get("safety", False), False)
-                h["covered"] = boolify(h.get("covered", False), False)
-                entries.append(HazopEntry(**h))
-            self.hazop_docs.append(
-                HazopDoc(d.get("name", f"HAZOP {len(self.hazop_docs)+1}"), entries)
-            )
-        hazop_entries = data.get("hazop_entries")
-        if not self.hazop_docs and hazop_entries:
-            entries = []
-            for h in hazop_entries:
-                h["safety"] = boolify(h.get("safety", False), False)
-                h["covered"] = boolify(h.get("covered", False), False)
-                entries.append(HazopEntry(**h))
-            self.hazop_docs.append(HazopDoc("Default", entries))
-        self.active_hazop = self.hazop_docs[0] if self.hazop_docs else None
-        self.hazop_entries = self.active_hazop.entries if self.active_hazop else []
-
-        self.hara_docs = []
-        for d in data.get("haras", []):
-            entries = []
-            for e in d.get("entries", []):
-                cyber = None
-                cdata = e.get("cyber")
-                if cdata:
-                    cyber = CyberRiskEntry(
-                        damage_scenario=cdata.get("damage_scenario", ""),
-                        threat_scenario=cdata.get("threat_scenario", ""),
-                        attack_vector=cdata.get("attack_vector", ""),
-                        feasibility=cdata.get("feasibility", ""),
-                        financial_impact=cdata.get("financial_impact", ""),
-                        safety_impact=cdata.get("safety_impact", ""),
-                        operational_impact=cdata.get("operational_impact", ""),
-                        privacy_impact=cdata.get("privacy_impact", ""),
-                        cybersecurity_goal=cdata.get("cybersecurity_goal", ""),
-                    )
-                    cyber.attack_paths = cdata.get("attack_paths", [])
-                entries.append(
-                    HaraEntry(
-                        e.get("malfunction", ""),
-                        e.get("hazard", ""),
-                        e.get("scenario", ""),
-                        e.get("severity", 1),
-                        e.get("sev_rationale", ""),
-                        e.get("controllability", 1),
-                        e.get("cont_rationale", ""),
-                        e.get("exposure", 1),
-                        e.get("exp_rationale", ""),
-                        e.get("asil", "QM"),
-                        e.get("safety_goal", ""),
-                        cyber,
-                    )
-                )
-            hazops = d.get("hazops")
-            if not hazops:
-                hazop = d.get("hazop")
-                hazops = [hazop] if hazop else []
-            self.hara_docs.append(
-                HaraDoc(
-                    d.get("name", f"Risk Assessment {len(self.hara_docs)+1}"),
-                    hazops,
-                    entries,
-                    d.get("approved", False),
-                    d.get("status", "draft"),
-                    stpa=d.get("stpa", ""),
-                    threat=d.get("threat", ""),
-                    fi2tc=d.get("fi2tc", ""),
-                    tc2fi=d.get("tc2fi", ""),
-                )
-            )
-        if not self.hara_docs and "hara_entries" in data:
-            hazop_name = self.hazop_docs[0].name if self.hazop_docs else ""
-            entries = []
-            for e in data.get("hara_entries", []):
-                cyber = None
-                cdata = e.get("cyber")
-                if cdata:
-                    cyber = CyberRiskEntry(
-                        damage_scenario=cdata.get("damage_scenario", ""),
-                        threat_scenario=cdata.get("threat_scenario", ""),
-                        attack_vector=cdata.get("attack_vector", ""),
-                        feasibility=cdata.get("feasibility", ""),
-                        financial_impact=cdata.get("financial_impact", ""),
-                        safety_impact=cdata.get("safety_impact", ""),
-                        operational_impact=cdata.get("operational_impact", ""),
-                        privacy_impact=cdata.get("privacy_impact", ""),
-                        cybersecurity_goal=cdata.get("cybersecurity_goal", ""),
-                    )
-                    cyber.attack_paths = cdata.get("attack_paths", [])
-                entries.append(
-                    HaraEntry(
-                        e.get("malfunction", ""),
-                        e.get("hazard", ""),
-                        e.get("scenario", ""),
-                        e.get("severity", 1),
-                        e.get("sev_rationale", ""),
-                        e.get("controllability", 1),
-                        e.get("cont_rationale", ""),
-                        e.get("exposure", 1),
-                        e.get("exp_rationale", ""),
-                        e.get("asil", "QM"),
-                        e.get("safety_goal", ""),
-                        cyber,
-                    )
-                )
-            self.hara_docs.append(
-                HaraDoc(
-                    "Default",
-                    [hazop_name] if hazop_name else [],
-                    entries,
-                    False,
-                    "draft",
-                    stpa="",
-                    threat="",
-                    fi2tc="",
-                    tc2fi="",
-                )
-            )
-        self.active_hara = self.hara_docs[0] if self.hara_docs else None
-        self.hara_entries = self.active_hara.entries if self.active_hara else []
-        self.update_hazard_list()
-
-        self.stpa_docs = []
-        for d in data.get("stpas", []):
-            entries = [
-                StpaEntry(
-                    e.get("action", ""),
-                    e.get("not_providing", ""),
-                    e.get("providing", ""),
-                    e.get("incorrect_timing", ""),
-                    e.get("stopped_too_soon", ""),
-                    e.get("safety_constraints", []),
-                )
-                for e in d.get("entries", [])
-            ]
-            self.stpa_docs.append(
-                StpaDoc(
-                    d.get("name", f"STPA {len(self.stpa_docs)+1}"),
-                    d.get("diagram", ""),
-                    entries,
-                )
-            )
-        if not self.stpa_docs and "stpa_entries" in data:
-            entries = [
-                StpaEntry(
-                    e.get("action", ""),
-                    e.get("not_providing", ""),
-                    e.get("providing", ""),
-                    e.get("incorrect_timing", ""),
-                    e.get("stopped_too_soon", ""),
-                    e.get("safety_constraints", []),
-                )
-                for e in data.get("stpa_entries", [])
-            ]
-            self.stpa_docs.append(StpaDoc("Default", "", entries))
-        self.active_stpa = self.stpa_docs[0] if self.stpa_docs else None
-        self.stpa_entries = self.active_stpa.entries if self.active_stpa else []
-
-        self.threat_docs = []
-        for d in data.get("threat_docs", []):
-            entries = []
-            for e in d.get("entries", []):
-                funcs = []
-                raw_funcs = e.get("functions", [])
-                if raw_funcs and isinstance(raw_funcs[0], dict):
-                    for f in raw_funcs:
-                        dmg_list = []
-                        for ds in f.get("damage_scenarios", []):
-                            threats = []
-                            for t in ds.get("threats", []):
-                                paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
-                                threats.append(
-                                    ThreatScenario(
-                                        t.get("stride", ""),
-                                        t.get("scenario", ""),
-                                        paths,
-                                    )
-                                )
-                            dmg_list.append(
-                                DamageScenario(
-                                    ds.get("scenario", ""), ds.get("dtype", ""), threats
-                                )
-                            )
-                        funcs.append(FunctionThreat(f.get("name", ""), dmg_list))
-                else:
-                    dmg_list = []
-                    for ds in e.get("damage_scenarios", []):
-                        threats = []
-                        for t in ds.get("threats", []):
-                            paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
-                            threats.append(
-                                ThreatScenario(
-                                    t.get("stride", ""),
-                                    t.get("scenario", ""),
-                                    paths,
-                                )
-                            )
-                        dmg_list.append(
-                            DamageScenario(ds.get("scenario", ""), ds.get("dtype", ""), threats)
-                        )
-                    func_names = raw_funcs
-                    if func_names is None:
-                        func = e.get("function")
-                        func_names = [func] if func else []
-                    for name in func_names:
-                        funcs.append(FunctionThreat(name, dmg_list))
-                entries.append(ThreatEntry(e.get("asset", ""), funcs))
-            self.threat_docs.append(
-                ThreatDoc(
-                    d.get("name", f"Threat {len(self.threat_docs)+1}"),
-                    d.get("diagram", ""),
-                    entries,
-                )
-            )
-        self.active_threat = self.threat_docs[0] if self.threat_docs else None
-        self.threat_entries = self.active_threat.entries if self.active_threat else []
-
-        self.fi2tc_docs = []
-        for d in data.get("fi2tc_docs", []):
-            self.fi2tc_docs.append(
-                FI2TCDoc(d.get("name", f"FI2TC {len(self.fi2tc_docs)+1}"), d.get("entries", []))
-            )
-        fi2tc_entries = data.get("fi2tc_entries")
-        if not self.fi2tc_docs and fi2tc_entries:
-            self.fi2tc_docs.append(FI2TCDoc("Default", fi2tc_entries))
-        self.active_fi2tc = self.fi2tc_docs[0] if self.fi2tc_docs else None
-        self.fi2tc_entries = self.active_fi2tc.entries if self.active_fi2tc else []
-
-        self.tc2fi_docs = []
-        for d in data.get("tc2fi_docs", []):
-            self.tc2fi_docs.append(
-                TC2FIDoc(d.get("name", f"TC2FI {len(self.tc2fi_docs)+1}"), d.get("entries", []))
-            )
-        tc2fi_entries = data.get("tc2fi_entries")
-        if not self.tc2fi_docs and tc2fi_entries:
-            self.tc2fi_docs.append(TC2FIDoc("Default", tc2fi_entries))
-        self.active_tc2fi = self.tc2fi_docs[0] if self.tc2fi_docs else None
-        self.tc2fi_entries = self.active_tc2fi.entries if self.active_tc2fi else []
-        self.scenario_libraries = data.get("scenario_libraries", [])
-        self.odd_libraries = data.get("odd_libraries", [])
-        self.faults = data.get("faults", [])
-        for be in self.get_all_basic_events():
-            desc = be.description.strip()
-            if desc and desc not in self.faults:
-                self.faults.append(desc)
-        mals = []
-        for m in data.get("malfunctions", []):
-            append_unique_insensitive(mals, m)
-        self.malfunctions = mals
-        self.hazards = data.get("hazards", [])
-        self.failures = data.get("failures", [])
-        if not self.odd_libraries and "odd_elements" in data:
-            self.odd_libraries = [{"name": "Default", "elements": data.get("odd_elements", [])}]
-        self.update_odd_elements()
-
-        self.fmedas = []
-        for doc in data.get("fmedas", []):
-            entries = [FaultTreeNode.from_dict(e) for e in doc.get("entries", [])]
-            self.fmedas.append({
-                "name": doc.get("name", "FMEDA"),
-                "file": doc.get("file", f"fmeda_{len(self.fmedas)}.csv"),
-                "entries": entries,
-                "bom": doc.get("bom", ""),
-            })
-
-        if getattr(self, "safety_mgmt_toolbox", None):
-            for doc in self.hazop_docs:
-                self._reregister_document("HAZOP", doc.name)
-            for doc in self.hara_docs:
-                self._reregister_document("Risk Assessment", doc.name)
-            for doc in self.stpa_docs:
-                self._reregister_document("STPA", doc.name)
-            for doc in self.threat_docs:
-                self._reregister_document("Threat Analysis", doc.name)
-            for doc in self.fi2tc_docs:
-                self._reregister_document("FI2TC", doc.name)
-            for doc in self.tc2fi_docs:
-                self._reregister_document("TC2FI", doc.name)
-            for doc in self.fmeas:
-                self._reregister_document("FMEA", doc["name"])
-            for doc in self.fmedas:
-                self._reregister_document("FMEDA", doc["name"])
-            for te in self.top_events:
-                self._reregister_document("FTA", te.name)
-
-        # Fix clone references for each top event.
-        for event in self.top_events:
-            AutoML_Helper.fix_clone_references(self.top_events)
-
-        # Update the unique ID counter.
-        AutoML_Helper.update_unique_id_counter_for_top_events(self.top_events)
-        
-        # *** Add this loop to update your global_requirements database ***
-        for event in self.top_events:
-            self.update_global_requirements_from_nodes(event)
-
-        # Propagate ASIL values from risk assessment entries to loaded safety goals
-        if hasattr(self, "hara_entries"):
-            self.sync_hara_to_safety_goals()
-
-        # Load project properties.
-        self._load_project_properties(data)
-        self.item_definition = data.get(
-            "item_definition",
-            getattr(self, "item_definition", {"description": "", "assumptions": ""}),
-        )
-        self.safety_concept = data.get(
-            "safety_concept",
-            getattr(
-                self,
-                "safety_concept",
-                {"functional": "", "technical": "", "cybersecurity": ""},
-            ),
-        )
-        self.reviews = []
-        reviews_data = data.get("reviews")
-        if reviews_data:
-            for rd in reviews_data:
-                participants = [ReviewParticipant(**p) for p in rd.get("participants", [])]
-                comments = [ReviewComment(**c) for c in rd.get("comments", [])]
-                moderators = [ReviewParticipant(**m) for m in rd.get("moderators", [])]
-                if not moderators and rd.get("moderator"):
-                    moderators = [ReviewParticipant(rd.get("moderator"), "", "moderator")]
-                self.reviews.append(
-                    ReviewData(
-                        name=rd.get("name", ""),
-                        description=rd.get("description", ""),
-                        mode=rd.get("mode", "peer"),
-                        moderators=moderators,
-                        participants=participants,
-                        comments=comments,
-                        approved=rd.get("approved", False),
-                        reviewed=rd.get("reviewed", False),
-                        due_date=rd.get("due_date", ""),
-                        closed=rd.get("closed", False),
-                        fta_ids=rd.get("fta_ids", []),
-                        fmea_names=rd.get("fmea_names", []),
-                        fmeda_names=rd.get("fmeda_names", []),
-                        hazop_names=rd.get("hazop_names", []),
-                        hara_names=rd.get("hara_names", []),
-                    )
-                )
-            current = data.get("current_review")
-            self.review_data = None
-            for r in self.reviews:
-                if r.name == current:
-                    self.review_data = r
-                    break
-        else:
-            rd = data.get("review_data")
-            if rd:
-                participants = [ReviewParticipant(**p) for p in rd.get("participants", [])]
-                comments = [ReviewComment(**c) for c in rd.get("comments", [])]
-                moderators = [ReviewParticipant(**m) for m in rd.get("moderators", [])]
-                if not moderators and rd.get("moderator"):
-                    moderators = [ReviewParticipant(rd.get("moderator"), "", "moderator")]
-                review = ReviewData(
-                    name=rd.get("name", "Review 1"),
-                    description=rd.get("description", ""),
-                    mode=rd.get("mode", "peer"),
-                    moderators=moderators,
-                    participants=participants,
-                    comments=comments,
-                    approved=rd.get("approved", False),
-                    reviewed=rd.get("reviewed", False),
-                    due_date=rd.get("due_date", ""),
-                    closed=rd.get("closed", False),
-                    fta_ids=rd.get("fta_ids", []),
-                    fmea_names=rd.get("fmea_names", []),
-                    fmeda_names=rd.get("fmeda_names", []),
-                    hazop_names=rd.get("hazop_names", []),
-                    hara_names=rd.get("hara_names", []),
-                )
-                self.reviews = [review]
-                self.review_data = review
-            else:
-                self.review_data = None
-
-        self.update_hara_statuses()
-        self.update_fta_statuses()
-
-        self.versions = data.get("versions", [])
-
-        self.selected_node = None
-        if hasattr(self, "page_diagram") and self.page_diagram is not None:
-            self.close_page_diagram()
-        self.update_views()
-        self.set_last_saved_state()
 
     def _reregister_document(self, analysis: str, name: str) -> None:
         phase = self.safety_mgmt_toolbox.doc_phases.get(analysis, {}).get(name)
