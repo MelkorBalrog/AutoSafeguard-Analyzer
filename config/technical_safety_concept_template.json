@@ -1,10 +1,11 @@
 {
   "elements": {
-    "sysml_diagrams": "sysml_diagrams",
+    "block_diagrams": "diagram:block",
+    "state_diagrams": "diagram:state",
     "req_technical_safety": "req_technical_safety"
   },
   "sections": [
-    {"title": "System Architecture", "content": "<sysml_diagrams>"},
+    {"title": "System Architecture", "content": "<block_diagrams><state_diagrams>"},
     {"title": "Technical Safety Requirements", "content": "<req_technical_safety>"}
   ]
 }
