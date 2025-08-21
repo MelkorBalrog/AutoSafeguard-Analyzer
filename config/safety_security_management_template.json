@@ -1,0 +1,14 @@
+{
+  "elements": {
+    "governance_diagrams": "governance_diagrams",
+    "gsn_diagrams": "gsn_diagrams",
+    "organizational_requirements": "organizational_requirements",
+    "legal_requirements": "legal_requirements"
+  },
+  "sections": [
+    {"title": "Governance Diagrams", "content": "<governance_diagrams>"},
+    {"title": "GSN Diagrams", "content": "<gsn_diagrams>"},
+    {"title": "Organizational Requirements", "content": "<organizational_requirements>"},
+    {"title": "Legal Requirements", "content": "<legal_requirements>"}
+  ]
+}

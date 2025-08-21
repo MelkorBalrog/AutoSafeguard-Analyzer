@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 from config import load_report_template
 from gsn import GSNDiagram, GSNNode
@@ -24,33 +25,38 @@ def test_item_definition_template_valid():
         "Internal Block Diagrams",
         "Product Requirements",
         "Vehicle Requirements",
+        "Operational Requirements",
         "Activity Actions",
     } <= titles
 
 
-def test_functional_safety_concept_template_valid():
-    data = _load("functional_safety_concept_template.json")
+def test_functional_cybersecurity_concept_template_valid():
+    data = _load("functional_cybersecurity_concept_template.json")
     titles = {sec["title"] for sec in data["sections"]}
     assert {
         "Product Goals",
-        "Functional Safety Concept",
+        "Functional & Cybersecurity Concept",
         "ODD Library",
         "Scenario Library",
         "Internal Block Diagrams",
         "Fault Tree Analyses (FTA)",
         "Threat Analysis",
+        "Bayesian Network Analysis",
+        "STPA Analyses",
         "FI2TC Mapping",
         "TC2FI Mapping",
         "Triggering Conditions",
         "Functional Insufficiencies",
         "Functional Safety Requirements",
+        "Operational Safety Requirements",
+        "Cybersecurity Requirements",
         "Requirements Allocation Matrix",
         "Traceability Matrix",
     } <= titles
 
 
-def test_technical_safety_concept_template_valid():
-    data = _load("technical_safety_concept_template.json")
+def test_technical_cybersecurity_concept_template_valid():
+    data = _load("technical_cybersecurity_concept_template.json")
     titles = {sec["title"] for sec in data["sections"]}
     assert {
         "Internal Block Diagrams",
@@ -60,9 +66,11 @@ def test_technical_safety_concept_template_valid():
         "Reliability Analysis",
         "Mission Profile",
         "Functional Modifications",
+        "Cybersecurity Requirements",
+        "AI Safety Requirements",
         "Technical Safety Requirements",
         "Requirements Allocation Matrix",
-        "Traceability to Functional Safety Concept",
+        "Traceability to Functional & Cybersecurity Concept",
         "PMHF Results",
         "SPFM Results",
         "LPFM Results",
@@ -82,7 +90,7 @@ def test_pdf_report_template_includes_diagram_sections():
         "FMEA Analyses",
         "FMEDA Analyses",
         "Reliability Analysis",
-        "Safety Case",
+        "Safety & Security Report",
     } <= set(titles)
 
 
@@ -100,12 +108,18 @@ def test_report_template_includes_odd_and_scenario_sections():
     assert {"ODD Library", "Scenario Library"} <= titles
 
 
-def test_safety_case_template_valid():
-    data = _load("safety_case_template.json")
+def test_report_template_includes_operational_safety_and_decommissioning_sections():
+    data = _load("report_template.json")
+    titles = {sec["title"] for sec in data["sections"]}
+    assert {"Operational Safety Requirements", "Decommissioning Requirements"} <= titles
+
+
+def test_safety_security_report_template_valid():
+    data = _load("safety_security_report_template.json")
     titles = {sec["title"] for sec in data["sections"]}
     assert {
         "GSR Argumentation",
-        "Related Safety Cases",
+        "Related Safety & Security Reports",
         "SPI Table",
         "Work Products and Evidence",
     } <= titles
@@ -118,6 +132,45 @@ def test_report_template_includes_trigger_and_insufficiency_sections():
         "Functional Insufficiencies",
         "Functional Modifications",
     } <= titles
+
+
+def test_production_service_decommissioning_template_valid():
+    data = _load("production_service_decommissioning_template.json")
+    titles = {sec["title"] for sec in data["sections"]}
+    assert {
+        "Production Requirements",
+        "Service Requirements",
+        "Decommissioning Requirements",
+    } <= titles
+
+
+def test_field_monitoring_template_valid():
+    data = _load("field_monitoring_template.json")
+    titles = {sec["title"] for sec in data["sections"]}
+    assert {"Field Monitoring Requirements"} <= titles
+
+
+def test_safety_security_management_template_valid():
+    data = _load("safety_security_management_template.json")
+    titles = {sec["title"] for sec in data["sections"]}
+    assert {
+        "Governance Diagrams",
+        "GSN Diagrams",
+        "Organizational Requirements",
+        "Legal Requirements",
+    } <= titles
+
+
+def test_diagram_rules_include_lifecycle_requirements():
+    path = BASE_DIR / "config" / "diagram_rules.json"
+    with path.open() as fh:
+        data = json.load(fh)
+    sequences = set(data.get("requirement_sequences", {}))
+    assert {
+        "production requirements",
+        "service requirements",
+        "decommissioning requirements",
+    } <= sequences
 
 def test_safety_case_dynamic_sections():
     root = GSNNode("G", "Goal")

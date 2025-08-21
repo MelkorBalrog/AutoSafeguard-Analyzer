@@ -1,0 +1,12 @@
+{
+  "elements": {
+    "production_requirements": "req_production",
+    "service_requirements": "req_service",
+    "decommissioning_requirements": "req_decommissioning"
+  },
+  "sections": [
+    {"title": "Production Requirements", "content": "<production_requirements>"},
+    {"title": "Service Requirements", "content": "<service_requirements>"},
+    {"title": "Decommissioning Requirements", "content": "<decommissioning_requirements>"}
+  ]
+}

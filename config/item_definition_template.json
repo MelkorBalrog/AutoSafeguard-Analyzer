@@ -8,6 +8,7 @@
     "internal_block_diagrams": "diagram:internal block",
     "req_product": "req_product",
     "req_vehicle": "req_vehicle",
+    "req_operational": "req_operational",
     "activity_actions": "activity_actions"
   },
   "sections": [
@@ -19,6 +20,7 @@
     {"title": "Internal Block Diagrams", "content": "<internal_block_diagrams>"},
     {"title": "Product Requirements", "content": "<req_product>"},
     {"title": "Vehicle Requirements", "content": "<req_vehicle>"},
+    {"title": "Operational Requirements", "content": "<req_operational>"},
     {"title": "Activity Actions", "content": "<activity_actions>"}
   ]
 }

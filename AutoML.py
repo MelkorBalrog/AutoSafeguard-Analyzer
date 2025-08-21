@@ -9211,6 +9211,7 @@ class AutoMLApp:
         requirement_element_map = {
             "req_vehicle": ("vehicle", "Vehicle"),
             "req_operational": ("operational", "Operational"),
+            "req_operational_safety": ("operational safety", "Operational Safety"),
             "req_functional_safety": ("functional safety", "Functional Safety"),
             "req_technical_safety": ("technical safety", "Technical Safety"),
             "req_ai_safety": ("AI safety", "AI Safety"),
@@ -9218,6 +9219,7 @@ class AutoMLApp:
             "req_cybersecurity": ("cybersecurity", "Cybersecurity"),
             "req_production": ("production", "Production"),
             "req_service": ("service", "Service"),
+            "req_decommissioning": ("decommissioning", "Decommissioning"),
             "req_product": ("product", "Product"),
             "req_legal": ("legal", "Legal"),
             "req_organizational": ("organizational", "Organizational"),
@@ -12852,7 +12854,7 @@ class AutoMLApp:
         win = self._safety_concept_tab
         ttk.Label(
             win,
-            text="Functional Safety Concept Description and Assumptions:",
+            text="Functional & Cybersecurity Concept Description and Assumptions:",
         ).pack(anchor="w")
         f_frame = ttk.Frame(win)
         f_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -12864,7 +12866,7 @@ class AutoMLApp:
 
         ttk.Label(
             win,
-            text="Technical Safety Concept Description & Assumptions:",
+            text="Technical & Cybersecurity Concept Description & Assumptions:",
         ).pack(anchor="w")
         t_frame = ttk.Frame(win)
         t_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -12873,11 +12875,6 @@ class AutoMLApp:
         self._tsc_text.configure(yscrollcommand=t_scroll.set)
         self._tsc_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         t_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        ttk.Label(
-            win,
-            text="Cybersecurity Concept Description & Assumptions:",
-        ).pack(anchor="w")
         c_frame = ttk.Frame(win)
         c_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         self._csc_text = tk.Text(c_frame, height=8, wrap="word")

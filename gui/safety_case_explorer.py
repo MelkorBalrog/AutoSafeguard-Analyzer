@@ -81,7 +81,9 @@ class SafetyCaseExplorer(tk.Frame):
             c = style.get_color(name)
             return default if c == "#FFFFFF" else c
 
-        self.case_icon = self._create_icon("shield", _color("Safety Case", "#b8860b"))
+        self.case_icon = self._create_icon(
+            "shield", _color("Safety & Security Report", "#b8860b")
+        )
         self.solution_icon = self._create_icon("shield_check", _color("Solution", "#1e90ff"))
         self.item_map: Dict[str, Tuple[str, object]] = {}
 
@@ -90,7 +92,7 @@ class SafetyCaseExplorer(tk.Frame):
 
     # ------------------------------------------------------------------
     def populate(self):
-        """Fill the tree with safety cases and their solutions."""
+        """Fill the tree with safety & security reports and their solutions."""
         self.item_map.clear()
         self.tree.delete(*self.tree.get_children(""))
         for case in self.library.list_cases():
@@ -118,7 +120,7 @@ class SafetyCaseExplorer(tk.Frame):
 
     # ------------------------------------------------------------------
     def _available_diagrams(self):
-        """Return GSN diagrams visible to the safety case."""
+        """Return GSN diagrams visible to the safety & security report."""
         if not self.app:
             return []
 
@@ -156,12 +158,14 @@ class SafetyCaseExplorer(tk.Frame):
 
     # ------------------------------------------------------------------
     def new_case(self):
-        """Create a new safety case derived from a GSN diagram."""
+        """Create a new safety & security report derived from a GSN diagram."""
         diagrams = self._available_diagrams()
         if not diagrams:
             messagebox.showerror("New Case", "No GSN diagrams available")
             return
-        name = simpledialog.askstring("New Safety Case", "Name:", parent=self)
+        name = simpledialog.askstring(
+            "New Safety & Security Report", "Name:", parent=self
+        )
         if not name:
             return
         diag_names = [d.root.user_name for d in diagrams]
@@ -178,7 +182,7 @@ class SafetyCaseExplorer(tk.Frame):
 
     # ------------------------------------------------------------------
     def edit_case(self):
-        """Rename the selected safety case or change its diagram."""
+        """Rename the selected safety & security report or change its diagram."""
         sel = self.tree.selection()
         if not sel:
             return
@@ -186,7 +190,10 @@ class SafetyCaseExplorer(tk.Frame):
         if typ != "case":
             return
         new_name = simpledialog.askstring(
-            "Rename Safety Case", "Name:", initialvalue=obj.name, parent=self
+            "Rename Safety & Security Report",
+            "Name:",
+            initialvalue=obj.name,
+            parent=self,
         )
         if not new_name:
             return
@@ -226,13 +233,13 @@ class SafetyCaseExplorer(tk.Frame):
             return
         typ, obj = self.item_map.get(sel[0], (None, None))
         if typ == "case":
-            # Prefer opening safety cases within the application's document
-            # notebook so they appear as a new tab in the main working area
-            # instead of a separate window.  The ``SafetyCaseTable`` already
-            # provides scrollbars via its internal ``TableController`` so users
-            # can navigate large cases easily.
+            # Prefer opening reports within the application's document notebook
+            # so they appear as a new tab in the main working area instead of a
+            # separate window. The ``SafetyCaseTable`` already provides
+            # scrollbars via its internal ``TableController`` so users can
+            # navigate large reports easily.
             if self.app and hasattr(self.app, "_new_tab"):
-                tab = self.app._new_tab(f"Safety Case: {obj.name}")
+                tab = self.app._new_tab(f"Safety & Security Report: {obj.name}")
                 table = SafetyCaseTable(tab, obj, app=self.app)
                 table.pack(fill=tk.BOTH, expand=True)
             else:  # Fallback to a new toplevel window if no app context
