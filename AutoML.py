@@ -18939,16 +18939,33 @@ class AutoMLApp:
             self.update_views()
             return
         win = getattr(self, "active_arch_window", None)
-        if not win and ARCH_WINDOWS:
+        clip_type = getattr(self, "diagram_clipboard_type", None)
+        if (
+            (not win or (clip_type and self._get_diag_type(win) != clip_type))
+            and ARCH_WINDOWS
+        ):
             for ref in list(ARCH_WINDOWS):
-                win = ref()
-                if win:
+                candidate = ref()
+                if candidate and (
+                    not clip_type
+                    or self._get_diag_type(candidate) == clip_type
+                ):
+                    win = candidate
                     break
         if win and getattr(self, "diagram_clipboard", None):
             if getattr(win, "paste_selected", None):
                 win.paste_selected()
                 return
         messagebox.showwarning("Paste", "Clipboard is empty.")
+
+    def _get_diag_type(self, win):
+        repo = getattr(win, "repo", None)
+        diag_id = getattr(win, "diagram_id", None)
+        if repo and diag_id:
+            diag = repo.diagrams.get(diag_id)
+            if diag:
+                return diag.diag_type
+        return None
  
     def clone_node_preserving_id(self, node):
         """Return a clone of *node* with a new unique ID.

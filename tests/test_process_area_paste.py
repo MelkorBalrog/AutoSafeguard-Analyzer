@@ -24,9 +24,10 @@ class DummyCanvas:
         return y
 
 
-def _setup_window():
-    SysMLRepository._instance = None
-    repo = SysMLRepository.get_instance()
+def _setup_window(repo=None, app=None):
+    if repo is None:
+        SysMLRepository._instance = None
+        repo = SysMLRepository.get_instance()
     diag = repo.create_diagram("Governance Diagram")
     win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
@@ -40,11 +41,13 @@ def _setup_window():
     win.canvas = DummyCanvas()
     win.font = DummyFont()
     win.selected_obj = None
-    win.app = types.SimpleNamespace(
-        diagram_clipboard=None,
-        diagram_clipboard_type=None,
-        diagram_clipboard_parent_name=None,
-    )
+    if app is None:
+        app = types.SimpleNamespace(
+            diagram_clipboard=None,
+            diagram_clipboard_type=None,
+            diagram_clipboard_parent_name=None,
+        )
+    win.app = app
     return win
 
 
@@ -101,3 +104,27 @@ def test_cut_process_area_includes_children():
     new_area = areas[0]
     new_wp = wps[0]
     assert new_wp.properties.get("parent") == str(new_area.obj_id)
+
+
+def test_cross_diagram_paste_creates_process_area():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    app = types.SimpleNamespace(
+        diagram_clipboard=None,
+        diagram_clipboard_type=None,
+        diagram_clipboard_parent_name=None,
+    )
+    win1 = _setup_window(repo=repo, app=app)
+    win2 = _setup_window(repo=repo, app=app)
+    area = win1._place_process_area("Risk Assessment", 0.0, 0.0)
+    wp = win1._place_work_product("Risk Assessment", 10.0, 0.0, area=area)
+    win1.selected_obj = wp
+    win1.copy_selected()
+    win2.selected_obj = None
+    win2.paste_selected()
+    areas = [o for o in win2.objects if o.obj_type == "System Boundary"]
+    assert len(areas) == 1
+    wps = [o for o in win2.objects if o.obj_type == "Work Product"]
+    assert len(wps) == 1
+    assert wps[0].properties.get("parent") == str(areas[0].obj_id)
+    assert areas[0].properties.get("name") == "Risk Assessment"
