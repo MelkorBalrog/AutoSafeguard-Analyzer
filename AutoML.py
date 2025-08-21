@@ -18694,6 +18694,8 @@ class AutoMLApp:
                 if getattr(win, "cut_selected", None):
                     win.cut_selected()
                 return
+        if getattr(self, "active_arch_window", None) or ARCH_WINDOWS:
+            return
         messagebox.showwarning("Cut", "Select a non-root node to cut.")
 
     def paste_node(self):
