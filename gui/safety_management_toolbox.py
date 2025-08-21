@@ -18,7 +18,7 @@ from gui import messagebox, add_treeview_scrollbars
 from gui.mac_button_style import apply_translucid_button_style
 from gui.icon_factory import create_icon
 from sysml.sysml_repository import SysMLRepository
-from gui.toolboxes import configure_table_style, _wrap_val
+from gui.toolboxes import configure_table_style, _wrap_val, enable_treeview_reorder
 
 
 class SafetyManagementWindow(tk.Frame):
@@ -368,6 +368,7 @@ class SafetyManagementWindow(tk.Frame):
             _fit_columns()
 
         populate(ids)
+        move_up, move_down = enable_treeview_reorder(tree)
         add_treeview_scrollbars(tree, tree_frame)
         tree_frame.pack(fill=tk.BOTH)  # don't expand so button bar has room
 
@@ -492,18 +493,16 @@ class SafetyManagementWindow(tk.Frame):
             btn_frame = ttk.Frame(frame)
             btn_frame.pack(fill=tk.X, pady=4)
             if hasattr(btn_frame, "configure"):
-                tk.Button(btn_frame, text="Add", command=_add).pack(
+                tk.Button(btn_frame, text="Move Up", command=move_up).pack(
                     side=tk.LEFT, padx=2
                 )
-                tk.Button(btn_frame, text="Edit", command=_edit).pack(
+                tk.Button(btn_frame, text="Move Down", command=move_down).pack(
                     side=tk.LEFT, padx=2
                 )
-                tk.Button(btn_frame, text="Remove", command=_remove).pack(
-                    side=tk.LEFT, padx=2
-                )
-                tk.Button(btn_frame, text="Save CSV", command=_save_csv).pack(
-                    side=tk.LEFT, padx=2
-                )
+                tk.Button(btn_frame, text="Add", command=_add).pack(side=tk.LEFT, padx=2)
+                tk.Button(btn_frame, text="Edit", command=_edit).pack(side=tk.LEFT, padx=2)
+                tk.Button(btn_frame, text="Remove", command=_remove).pack(side=tk.LEFT, padx=2)
+                tk.Button(btn_frame, text="Save CSV", command=_save_csv).pack(side=tk.LEFT, padx=2)
 
         frame.refresh_table = populate
         return frame
