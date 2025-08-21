@@ -108,8 +108,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.edges = []  # (line_id, src, dst)
         self.edge_start = None
         self.drag_node = None
-        self._drag_state_saved = False
-        self._drag_moved = False
         self.selected_node = None
         self.selection_rect = None
         self.temp_edge_line = None
@@ -373,10 +371,12 @@ class CausalBayesianNetworkWindow(tk.Frame):
             self._highlight_node(None)
         else:  # Select tool
             name = self._find_node(event.x, event.y)
+            if name:
+                undo = getattr(self.app, "push_undo_state", None)
+                if undo:
+                    undo()
             self.drag_node = name
             self.drag_offset = (0, 0)
-            self._drag_state_saved = False
-            self._drag_moved = False
             self._highlight_node(name)
             if name:
                 x, y = doc.positions.get(name, (0, 0))
@@ -388,12 +388,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if not doc:
             return
         if self.current_tool == "Select" and self.drag_node:
-            if not getattr(self, "_drag_state_saved", False):
-                app = getattr(self, "app", None)
-                undo = getattr(app, "push_undo_state", None)
-                if undo:
-                    undo()
-                self._drag_state_saved = True
             name = self.drag_node
             old_x, old_y = doc.positions.get(name, (0, 0))
             x, y = event.x + self.drag_offset[0], event.y + self.drag_offset[1]
@@ -420,7 +414,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
             if self.selected_node == name and self.selection_rect:
                 self.canvas.coords(self.selection_rect, x - r, y - r, x + r, y + r)
             self._update_scroll_region()
-            self._drag_moved = True
         elif self.current_tool == "Relationship" and self.edge_start:
             x1, y1 = doc.positions.get(self.edge_start, (0, 0))
             if self.temp_edge_line is None:
@@ -440,8 +433,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
             return
         if self.current_tool == "Select":
             self.drag_node = None
-            self._drag_state_saved = False
-            self._drag_moved = False
         elif self.current_tool == "Relationship" and self.edge_start:
             dst = self._find_node(event.x, event.y)
             src = self.edge_start
