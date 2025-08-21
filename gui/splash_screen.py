@@ -210,37 +210,59 @@ class SplashScreen(tk.Toplevel):
             ),
         ]
         bbox = self.canvas.bbox(*text_ids)
-        bg_id = self.canvas.create_rectangle(
-            bbox, fill="black", outline="", tags="title_bg"
-        )
+        x1, y1, x2, y2 = bbox
+        y_start = int(y1 - 5)
+        y_end = int(y2 + 5)
+        # Determine floor color at bottom of the title area for smooth blending
+        bottom_col = self._floor_color_at(y_end)
+        br = int(bottom_col[1:3], 16)
+        bg = int(bottom_col[3:5], 16)
+        bb = int(bottom_col[5:7], 16)
+        # Draw gradient lines from black to the floor color across full width
+        for i, y_line in enumerate(range(y_start, y_end + 1)):
+            ratio = i / (y_end - y_start or 1)
+            r = int(br * ratio)
+            g = int(bg * ratio)
+            b = int(bb * ratio)
+            color = f"#{r:02x}{g:02x}{b:02x}"
+            self.canvas.create_line(
+                0,
+                y_line,
+                self.canvas_size,
+                y_line,
+                fill=color,
+                tags="title_bg",
+            )
         for t_id in text_ids:
-            self.canvas.tag_raise(t_id, bg_id)
+            self.canvas.tag_raise(t_id)
+
+    def _floor_color_at(self, y: int) -> str:
+        """Return floor gradient color at absolute y coordinate."""
+        horizon_ratio = 0.55
+        horizon = int(self.canvas_size * horizon_ratio)
+        steps = self.canvas_size - horizon
+        ratio = (y - horizon) / steps if y >= horizon else 0
+        r = int(144 + (0 - 144) * ratio)
+        g = int(238 + (100 - 238) * ratio)
+        b = int(144 + (0 - 144) * ratio)
+        white_strength = 0.15
+        black_strength = 0.25
+        w = (1 - ratio) * white_strength
+        r = int(r + (255 - r) * w)
+        g = int(g + (255 - g) * w)
+        b = int(b + (255 - b) * w)
+        sh = ratio * black_strength
+        r = int(r * (1 - sh))
+        g = int(g * (1 - sh))
+        b = int(b * (1 - sh))
+        return f"#{r:02x}{g:02x}{b:02x}"
 
     def _draw_floor(self):
         """Add subtle white light near horizon and darker shadow toward bottom."""
         horizon_ratio = 0.55
         horizon = int(self.canvas_size * horizon_ratio)
-        steps = self.canvas_size - horizon
-        white_strength = 0.15
-        black_strength = 0.25
-        for i in range(steps):
-            ratio = i / steps
-            # base gradient from light to dark green
-            r = int(144 + (0 - 144) * ratio)
-            g = int(238 + (100 - 238) * ratio)
-            b = int(144 + (0 - 144) * ratio)
-            # white glow near horizon
-            w = (1 - ratio) * white_strength
-            r = int(r + (255 - r) * w)
-            g = int(g + (255 - g) * w)
-            b = int(b + (255 - b) * w)
-            # black shadow near bottom
-            sh = ratio * black_strength
-            r = int(r * (1 - sh))
-            g = int(g * (1 - sh))
-            b = int(b * (1 - sh))
-            color = f"#{r:02x}{g:02x}{b:02x}"
-            y = horizon + i
+        for y in range(horizon, self.canvas_size):
+            color = self._floor_color_at(y)
             self.canvas.create_line(0, y, self.canvas_size, y, fill=color, tags="floor")
 
     def _project(self, x, y, z):
@@ -376,13 +398,14 @@ class SplashScreen(tk.Toplevel):
             x = self.canvas_size / 2 + r * math.cos(theta)
             y = self.canvas_size / 2 + r * math.sin(theta)
             pts.append((x, y))
-        # Draw expanding outlines for a simple glow effect
-        for width, colour in [(6, "#00ffff"), (4, "#66ffff")]:
+        # Draw expanding outlines for a simple golden glow effect
+        for width, colour in [(6, "#ffd700"), (4, "#fff4b2")]:
             self.canvas.create_polygon(
                 pts, outline=colour, fill="", width=width, tags="gear_glow"
             )
+        # Base gear filled with gold and darker outline
         self.canvas.create_polygon(
-            pts, outline="lightgray", fill="", width=2, tags="gear"
+            pts, outline="#b8860b", fill="#ffd700", width=2, tags="gear"
         )
 
     def _animate(self):
