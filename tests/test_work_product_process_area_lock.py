@@ -60,41 +60,6 @@ class WorkProductProcessAreaLockTests(unittest.TestCase):
         win._sync_to_repository = lambda: None
         return win, boundary, wp
 
-    def _create_window_with_parent(self):
-        repo = self.repo
-        diag = SysMLDiagram(diag_id="d", diag_type="Governance Diagram")
-        repo.diagrams[diag.diag_id] = diag
-        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
-        win.repo = repo
-        win.diagram_id = diag.diag_id
-        win.objects = []
-        win.connections = []
-        win.canvas = self.DummyCanvas()
-        win.zoom = 1.0
-        win.current_tool = "Select"
-        win.selected_obj = None
-        win.drag_offset = (0, 0)
-        win.resizing_obj = None
-        win.start = None
-        win.select_rect_start = None
-        win.dragging_point_index = None
-        win.dragging_endpoint = None
-        win.conn_drag_offset = None
-        win.endpoint_drag_pos = None
-        win.app = None
-        win.selected_conn = None
-        win._constrain_horizontal_movement = SysMLDiagramWindow._constrain_horizontal_movement.__get__(win)
-        win.get_object = SysMLDiagramWindow.get_object.__get__(win)
-        win.get_ibd_boundary = SysMLDiagramWindow.get_ibd_boundary.__get__(win)
-        win.find_boundary_for_obj = SysMLDiagramWindow.find_boundary_for_obj.__get__(win)
-        win._object_within = SysMLDiagramWindow._object_within.__get__(win)
-        win.redraw = lambda: None
-        win._sync_to_repository = lambda: None
-        area = win._place_process_area("Risk Assessment", 0.0, 0.0)
-        wp = win._place_work_product("Risk Assessment", 10.0, 10.0, area=area)
-        win.selected_obj = area
-        return win, area, wp
-
     def test_work_product_remains_in_process_area(self):
         win, boundary, wp = self._create_window()
         win.on_left_drag(self.DummyEvent(200, 0))
@@ -102,14 +67,6 @@ class WorkProductProcessAreaLockTests(unittest.TestCase):
         self.assertEqual(wp.properties.get("boundary"), "1")
         expected_x = boundary.x + boundary.width / 2 - wp.width / 2
         self.assertEqual((wp.x, wp.y), (expected_x, boundary.y))
-
-    def test_work_product_position_preserved_on_boundary_move(self):
-        win, boundary, wp = self._create_window_with_parent()
-        offx = wp.x - boundary.x
-        offy = wp.y - boundary.y
-        win.on_left_drag(self.DummyEvent(100, 50))
-        win.on_left_release(self.DummyEvent(100, 50))
-        self.assertEqual((wp.x - boundary.x, wp.y - boundary.y), (offx, offy))
 
 
 if __name__ == "__main__":

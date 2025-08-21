@@ -5099,15 +5099,10 @@ class SysMLDiagramWindow(tk.Frame):
                         offy = float(o.properties.get("py", o.y - old_y))
                         o.x = self.selected_obj.x + offx
                         o.y = self.selected_obj.y + offy
-                        o.properties["px"] = str(offx)
-                        o.properties["py"] = str(offy)
+                        self._constrain_to_parent(o, self.selected_obj)
                     elif o.properties.get("boundary") == str(self.selected_obj.obj_id):
-                        offx = float(o.properties.get("px", o.x - old_x))
-                        offy = float(o.properties.get("py", o.y - old_y))
-                        o.x = self.selected_obj.x + offx
-                        o.y = self.selected_obj.y + offy
-                        o.properties["px"] = str(offx)
-                        o.properties["py"] = str(offy)
+                        o.x += dx
+                        o.y += dy
             boundary = self.get_ibd_boundary()
             if boundary:
                 ensure_boundary_contains_parts(boundary, self.objects)
