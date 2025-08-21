@@ -88,6 +88,9 @@ REQ_PATTERN_RELATIONS = _load_requirement_relations()
 # Track open Architecture windows so toolbox layouts can refresh when rules change
 ARCH_WINDOWS: set[weakref.ReferenceType] = set()
 
+# Shared clipboard for diagram elements keyed by diagram type
+_DIAGRAM_CLIPBOARDS: Dict[str, "SysMLObject"] = {}
+
 # Diagram types that belong to the generic "Architecture Diagram" work product
 ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
 
@@ -3596,6 +3599,7 @@ class SysMLDiagramWindow(tk.Frame):
         else:
             diagram = self.repo.create_diagram(title, name=title, diag_id=diagram_id)
         self.diagram_id = diagram.diag_id
+        self.diagram_type = diagram.diag_type
         if isinstance(self.master, tk.Toplevel):
             self.master.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -3635,7 +3639,6 @@ class SysMLDiagramWindow(tk.Frame):
         self.conn_drag_offset: tuple[float, float] | None = None
         self.dragging_conn_mid: tuple[float, float] | None = None
         self.dragging_conn_vec: tuple[float, float] | None = None
-        self.clipboard: SysMLObject | None = None
         self.resizing_obj: SysMLObject | None = None
         self.resize_edge: str | None = None
         self.select_rect_start: tuple[float, float] | None = None
@@ -9292,7 +9295,7 @@ class SysMLDiagramWindow(tk.Frame):
         if self.selected_obj:
             import copy
 
-            self.clipboard = copy.deepcopy(self.selected_obj)
+            _DIAGRAM_CLIPBOARDS[self.diagram_type] = copy.deepcopy(self.selected_obj)
 
     def cut_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
@@ -9300,7 +9303,7 @@ class SysMLDiagramWindow(tk.Frame):
         if self.selected_obj:
             import copy
 
-            self.clipboard = copy.deepcopy(self.selected_obj)
+            _DIAGRAM_CLIPBOARDS[self.diagram_type] = copy.deepcopy(self.selected_obj)
             self.remove_object(self.selected_obj)
             self.selected_obj = None
             self._sync_to_repository()
@@ -9310,10 +9313,11 @@ class SysMLDiagramWindow(tk.Frame):
     def paste_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
             return
-        if self.clipboard:
+        clip = _DIAGRAM_CLIPBOARDS.get(self.diagram_type)
+        if clip:
             import copy
 
-            new_obj = copy.deepcopy(self.clipboard)
+            new_obj = copy.deepcopy(clip)
             new_obj.obj_id = _get_next_id()
             new_obj.x += 20
             new_obj.y += 20
