@@ -1608,8 +1608,7 @@ dependency-checking launcher:
 - **Windows:** run `bin\build_exe.bat`
 
 You can invoke these scripts from any directory; they locate the repository
-root automatically. Both generate `AutoML.exe` inside the `bin` directory.
-After building you can launch the application directly or use
+root automatically. Both generate `AutoML.exe` and an installer archive `AutoML_installer.zip` inside the `bin` directory. After building you can launch the application directly or use
 `bin/run_automl.sh` on Unix-like systems or `bin\run_automl.bat` on
 Windows. The bundled executable executes `launcher.py` internally so it
 performs the same dependency installation when run from source.

@@ -57,4 +57,6 @@ rmdir /S /Q build 2>nul
 rmdir /S /Q dist 2>nul
 if exist AutoML.spec del AutoML.spec
 
-echo Executable created at %BIN_DIR%AutoML.exe
+python tools\create_installer.py --exe "%BIN_DIR%AutoML.exe" --output "%BIN_DIR%AutoML_installer.zip"
+
+echo Executable and installer created in %BIN_DIR%

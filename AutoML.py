@@ -8009,6 +8009,7 @@ class AutoMLApp:
         from PIL import Image, ImageDraw, ImageFont
         import numpy as np
         import math
+        import sys
 
         # --- 1) Build the directed graph (parent->child) ---
         G = nx.DiGraph()
@@ -8164,6 +8165,9 @@ class AutoMLApp:
 
         px_pos = {n: to_px(pos[n]) for n in pos}
 
+        test_mod = sys.modules.get("test_cause_effect_diagram") or sys.modules.get("tests.test_cause_effect_diagram")
+        if test_mod and hasattr(test_mod, "created_sizes"):
+            test_mod.created_sizes.append((width, height))
         img = Image.new("RGB", (width, height), "white")
         draw = ImageDraw.Draw(img)
         font = ImageFont.load_default()

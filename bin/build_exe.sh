@@ -50,7 +50,10 @@ pyinstaller --noconfirm --onefile --windowed \
 # Move the resulting executable to the bin directory
 mkdir -p bin
 mv -f dist/AutoML.exe bin/
+# Create installer archive with executable and docs
+python tools/create_installer.py --exe bin/AutoML.exe --output bin/AutoML_installer.zip
+
 # Clean up build artifacts
 rm -rf build dist __pycache__ AutoML.spec
 
-echo "Executable created at bin/AutoML.exe"
+echo "Executable and installer created in bin/"
