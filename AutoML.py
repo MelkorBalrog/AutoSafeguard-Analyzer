@@ -19159,14 +19159,12 @@ class AutoMLApp:
     def undo(self):
         """Revert the repository and model data to the previous state."""
         repo = SysMLRepository.get_instance()
+        # Only perform undo if there is a corresponding application state
         if not self._undo_stack:
             return
         current = self.export_model_data(include_versions=False)
+        # Repository may or may not have an accompanying undo state
         repo.undo()
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-        if not self._undo_stack:
-            return
         state = self._undo_stack.pop()
         self._redo_stack.append(current)
         if len(self._redo_stack) > 20:
@@ -19181,15 +19179,14 @@ class AutoMLApp:
     def redo(self):
         """Restore the next state from the redo stack."""
         repo = SysMLRepository.get_instance()
-        if not self._redo_stack:
-            return
         current = self.export_model_data(include_versions=False)
         repo.redo()
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
+        if self._redo_stack:
+            state = self._redo_stack.pop()
+            self._undo_stack.append(current)
+            if len(self._undo_stack) > 20:
+                self._undo_stack.pop(0)
+            self.apply_model_data(state)
         for tab in getattr(self, "diagram_tabs", {}).values():
             for child in tab.winfo_children():
                 if hasattr(child, "refresh_from_repository"):
