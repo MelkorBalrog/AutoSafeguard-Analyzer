@@ -12038,13 +12038,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         # Clamp coordinates to the process area so work products cannot escape.
         obj.x = min(max(obj.x, left), right)
         obj.y = min(max(obj.y, top), bottom)
-
-        def _fmt(v: float) -> str:
-            s = f"{v:.6f}".rstrip("0").rstrip(".")
-            return s + ".0" if "." not in s else s
-
-        obj.properties["px"] = _fmt(obj.x - area.x)
-        obj.properties["py"] = _fmt(obj.y - area.y)
+        obj.properties["px"] = str(obj.x - area.x)
+        obj.properties["py"] = str(obj.y - area.y)
 
     def on_left_press(self, event):  # pragma: no cover - requires tkinter
         if self.repo.diagram_read_only(self.diagram_id):
