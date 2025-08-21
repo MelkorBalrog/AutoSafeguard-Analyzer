@@ -227,7 +227,7 @@ import math
 import sys
 import json
 import tkinter as tk
-from typing import Optional
+from typing import Any, Optional
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui.dialog_utils import askstring_fixed
 from gui import messagebox, logger, add_treeview_scrollbars
@@ -10487,6 +10487,7 @@ class AutoMLApp:
                 break
         self.selected_node = clicked_node
         if clicked_node:
+            self.push_undo_state()
             self.dragging_node = clicked_node
             self.drag_offset_x = x - clicked_node.x
             self.drag_offset_y = y - clicked_node.y
@@ -10532,6 +10533,8 @@ class AutoMLApp:
         if self.dragging_node:
             self.dragging_node.x = round(self.dragging_node.x/self.grid_size)*self.grid_size
             self.dragging_node.y = round(self.dragging_node.y/self.grid_size)*self.grid_size
+            self.sync_nodes_by_id(self.dragging_node)
+            self.push_undo_state()
         self.dragging_node = None
         self.drag_offset_x = 0
         self.drag_offset_y = 0
@@ -19066,10 +19069,18 @@ class AutoMLApp:
         """Return a copy of *data* without concrete object positions."""
 
         cleaned = json.loads(json.dumps(data))
-        for diag in cleaned.get("diagrams", []):
-            for obj in diag.get("objects", []):
-                obj.pop("x", None)
-                obj.pop("y", None)
+
+        def scrub(obj: Any) -> None:
+            if isinstance(obj, dict):
+                for field in ("x", "y", "modified", "modified_by", "modified_by_email"):
+                    obj.pop(field, None)
+                for value in obj.values():
+                    scrub(value)
+            elif isinstance(obj, list):
+                for item in obj:
+                    scrub(item)
+
+        scrub(cleaned)
         return cleaned
 
     def push_undo_state(self, strategy: str = "v4", sync_repo: bool = True) -> None:
@@ -22441,6 +22452,7 @@ class PageDiagram:
         self.selected_node = clicked_node
         self.app.selected_node = clicked_node
         if clicked_node and clicked_node is not self.root_node:
+            self.app.push_undo_state()
             self.dragging_node = clicked_node
             self.drag_offset_x = x - clicked_node.x
             self.drag_offset_y = y - clicked_node.y
@@ -22481,6 +22493,8 @@ class PageDiagram:
         if self.dragging_node:
             self.dragging_node.x = round(self.dragging_node.x/self.grid_size)*self.grid_size
             self.dragging_node.y = round(self.dragging_node.y/self.grid_size)*self.grid_size
+            self.app.sync_nodes_by_id(self.dragging_node)
+            self.app.push_undo_state()
         self.dragging_node = None
         self.drag_offset_x = 0
         self.drag_offset_y = 0
