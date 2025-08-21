@@ -210,55 +210,37 @@ class SplashScreen(tk.Toplevel):
             ),
         ]
         bbox = self.canvas.bbox(*text_ids)
-        x0, y0, x1, y1 = bbox
-        top = y0 - 5
-        bottom = y1 + 5
-        height = bottom - top
-        for i in range(height):
-            ratio = i / height
-            r, g, b = self._floor_color(top + i)
-            r = int(r * ratio)
-            g = int(g * ratio)
-            b = int(b * ratio)
-            color = f"#{r:02x}{g:02x}{b:02x}"
-            self.canvas.create_line(
-                0,
-                top + i,
-                self.canvas_size,
-                top + i,
-                fill=color,
-                tags="title_bg",
-            )
+        bg_id = self.canvas.create_rectangle(
+            bbox, fill="black", outline="", tags="title_bg"
+        )
         for t_id in text_ids:
-            self.canvas.tag_raise(t_id, "title_bg")
-
-    def _floor_color(self, y: int):
-        horizon_ratio = 0.55
-        horizon = int(self.canvas_size * horizon_ratio)
-        steps = self.canvas_size - horizon
-        white_strength = 0.15
-        black_strength = 0.25
-        ratio = max(0, min((y - horizon) / steps, 1))
-        r = int(144 + (0 - 144) * ratio)
-        g = int(238 + (100 - 238) * ratio)
-        b = int(144 + (0 - 144) * ratio)
-        w = (1 - ratio) * white_strength
-        r = int(r + (255 - r) * w)
-        g = int(g + (255 - g) * w)
-        b = int(b + (255 - b) * w)
-        sh = ratio * black_strength
-        r = int(r * (1 - sh))
-        g = int(g * (1 - sh))
-        b = int(b * (1 - sh))
-        return r, g, b
+            self.canvas.tag_raise(t_id, bg_id)
 
     def _draw_floor(self):
         """Add subtle white light near horizon and darker shadow toward bottom."""
         horizon_ratio = 0.55
         horizon = int(self.canvas_size * horizon_ratio)
-        for y in range(horizon, self.canvas_size):
-            r, g, b = self._floor_color(y)
+        steps = self.canvas_size - horizon
+        white_strength = 0.15
+        black_strength = 0.25
+        for i in range(steps):
+            ratio = i / steps
+            # base gradient from light to dark green
+            r = int(144 + (0 - 144) * ratio)
+            g = int(238 + (100 - 238) * ratio)
+            b = int(144 + (0 - 144) * ratio)
+            # white glow near horizon
+            w = (1 - ratio) * white_strength
+            r = int(r + (255 - r) * w)
+            g = int(g + (255 - g) * w)
+            b = int(b + (255 - b) * w)
+            # black shadow near bottom
+            sh = ratio * black_strength
+            r = int(r * (1 - sh))
+            g = int(g * (1 - sh))
+            b = int(b * (1 - sh))
             color = f"#{r:02x}{g:02x}{b:02x}"
+            y = horizon + i
             self.canvas.create_line(0, y, self.canvas_size, y, fill=color, tags="floor")
 
     def _project(self, x, y, z):
@@ -387,35 +369,20 @@ class SplashScreen(tk.Toplevel):
         inner = 20
         outer = 30
         pts = []
-        cx = self.canvas_size / 2
-        cy = self.canvas_size / 2
         angle = math.radians(self.angle * 2)
         for i in range(teeth * 2):
             r = outer if i % 2 == 0 else inner
             theta = angle + i * math.pi / teeth
-            x = cx + r * math.cos(theta)
-            y = cy + r * math.sin(theta)
+            x = self.canvas_size / 2 + r * math.cos(theta)
+            y = self.canvas_size / 2 + r * math.sin(theta)
             pts.append((x, y))
-        for scale, colour in [(1.2, "#fff8dc"), (1.1, "#ffe680")]:
-            glow = [
-                (cx + (x - cx) * scale, cy + (y - cy) * scale) for x, y in pts
-            ]
-            self.canvas.create_polygon(glow, fill=colour, outline="", tags="gear_glow", stipple="gray50")
+        # Draw expanding outlines for a simple glow effect
+        for width, colour in [(6, "#00ffff"), (4, "#66ffff")]:
+            self.canvas.create_polygon(
+                pts, outline=colour, fill="", width=width, tags="gear_glow"
+            )
         self.canvas.create_polygon(
-            pts, outline="#8b7500", fill="#b8860b", width=2, tags="gear"
-        )
-        inner_pts = [
-            (cx + (x - cx) * 0.7, cy + (y - cy) * 0.7) for x, y in pts
-        ]
-        self.canvas.create_polygon(inner_pts, outline="", fill="#ffd700", tags="gear")
-        self.canvas.create_oval(
-            cx - 5,
-            cy - 5,
-            cx + 5,
-            cy + 5,
-            fill="#fffacd",
-            outline="",
-            tags="gear",
+            pts, outline="lightgray", fill="", width=2, tags="gear"
         )
 
     def _animate(self):
