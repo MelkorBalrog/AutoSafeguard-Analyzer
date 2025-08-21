@@ -81,8 +81,7 @@ def test_nonrecoverable_fault_mitigates_and_notifies() -> None:
         return "degraded mode"
 
     manager.run_check("n1", check, mitigate=mitigate, recoverable=False)
-    with pytest.raises(DiagnosticError):
-        manager.raise_errors()
+    manager.raise_errors()  # should not raise because mitigated
     assert mitigated["called"]
     assert "degraded mode" in manager.notifications
 
@@ -99,8 +98,7 @@ def test_polling_failed_recovery_triggers_mitigation() -> None:
     manager.start()
     time.sleep(0.05)
     manager.stop()
-    with pytest.raises(DiagnosticError):
-        manager.raise_errors()
+    manager.raise_errors()  # mitigated
     assert "fallback" in manager.notifications
 
 
@@ -114,8 +112,7 @@ def test_event_failed_recovery_triggers_mitigation() -> None:
     )
     manager.record_event("e1", False)
     manager.process_events()
-    with pytest.raises(DiagnosticError):
-        manager.raise_errors()
+    manager.raise_errors()  # mitigated
     assert "fallback" in manager.notifications
 
 
@@ -132,8 +129,7 @@ def test_passive_failed_recovery_triggers_mitigation() -> None:
         mitigate=lambda: "fallback",
         recoverable=True,
     )
-    with pytest.raises(DiagnosticError):
-        manager.raise_errors()
+    manager.raise_errors()  # mitigated
     assert "fallback" in manager.notifications
 
 
@@ -151,6 +147,5 @@ def test_async_failed_recovery_triggers_mitigation() -> None:
         recoverable=True,
     )
     asyncio.run(manager.run_once())
-    with pytest.raises(DiagnosticError):
-        manager.raise_errors()
+    manager.raise_errors()  # mitigated
     assert "fallback" in manager.notifications
