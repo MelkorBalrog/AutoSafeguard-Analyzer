@@ -92,6 +92,5 @@ class GSNCloneRelationshipTests(unittest.TestCase):
         self.assertFalse(pasted.is_primary_instance)
         self.assertIs(pasted.original, child.original)
 
-
 if __name__ == "__main__":
     unittest.main()

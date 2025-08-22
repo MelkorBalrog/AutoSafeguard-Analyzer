@@ -196,7 +196,7 @@ class GSNExplorer(tk.Frame):
         name = simpledialog.askstring("New GSN Diagram", "Root goal name:", parent=self)
         if not name or self._diagram_name_exists(name):
             if name:
-                messagebox.showerror("New GSN Diagram", "Diagram name already exists")
+                messagebox.showwarning("New GSN Diagram", "Diagram name already exists")
             return
         undo = getattr(self.app, "push_undo_state", None)
         if undo:
