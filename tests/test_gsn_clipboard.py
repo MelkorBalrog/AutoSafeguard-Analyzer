@@ -81,4 +81,3 @@ def test_gsn_copy_paste_clones_with_independent_positions():
             for attr in attrs:
                 setattr(n, attr, getattr(clone, attr))
     assert root1.description == "new"
-
