@@ -5,10 +5,11 @@ import tkinter as tk
 from tkinter import ttk, simpledialog
 
 from gsn import GSNNode, GSNDiagram, GSNModule
-from gui import format_name_with_phase
+from gui import format_name_with_phase, messagebox
 from gui.style_manager import StyleManager
 from gui.icon_factory import create_icon
 from .name_utils import collect_work_product_names, unique_name_v4
+from . import messagebox
 
 
 class GSNExplorer(tk.Frame):
@@ -195,7 +196,9 @@ class GSNExplorer(tk.Frame):
         name = simpledialog.askstring("New GSN Diagram", "Root goal name:", parent=self)
         if not name:
             return
-        name = self._unique_diagram_name(name)
+        if name in self._all_diagram_names():
+            messagebox.showerror("New GSN Diagram", "Name already exists", parent=self)
+            return
         undo = getattr(self.app, "push_undo_state", None)
         if undo:
             undo()
@@ -320,7 +323,7 @@ class GSNExplorer(tk.Frame):
 
     # ------------------------------------------------------------------
     def _all_diagram_names(self, ignore: GSNDiagram | None = None) -> set[str]:
-        return collect_work_product_names(self.app, ignore)
+        return collect_work_product_names(self.app, ignore, diagram_type="gsn")
 
     # ------------------------------------------------------------------
     def _unique_diagram_name(self, name: str, ignore: GSNDiagram | None = None) -> str:

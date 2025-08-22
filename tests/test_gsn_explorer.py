@@ -4,6 +4,7 @@ import types
 
 from tkinter import simpledialog
 from gsn import GSNNode, GSNDiagram, GSNModule
+from gui import messagebox
 from gui.gsn_explorer import GSNExplorer
 
 
@@ -195,7 +196,7 @@ def test_new_diagram_only_in_module(monkeypatch):
     assert explorer.app.gsn_diagrams == []
 
 
-def test_new_diagram_name_made_unique(monkeypatch):
+def test_new_diagram_rejects_duplicate_name(monkeypatch):
     mod = GSNModule("Pkg")
     existing = GSNDiagram(GSNNode("Goal", "Goal"))
     mod.diagrams.append(existing)
@@ -240,11 +241,13 @@ def test_new_diagram_name_made_unique(monkeypatch):
             break
 
     monkeypatch.setattr(simpledialog, "askstring", lambda *a, **k: "Goal")
+    called = {}
+    monkeypatch.setattr(messagebox, "showerror", lambda *a, **k: called.setdefault("err", True))
 
     GSNExplorer.new_diagram(explorer)
 
-    names = [d.root.user_name for d in mod.diagrams]
-    assert len(names) == len(set(names))
+    assert called.get("err")
+    assert len(mod.diagrams) == 1
 
 
 def test_rename_diagram_makes_name_unique(monkeypatch):

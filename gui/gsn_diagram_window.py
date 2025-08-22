@@ -915,6 +915,47 @@ class GSNDiagramWindow(tk.Frame):
                 continue
         return None
 
+    def _node_from_clipboard_strategy1(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, GSNNode):
+            return clip.clone()
+        return None
+
+    def _node_from_clipboard_strategy2(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, dict):
+            try:
+                return self._reconstruct_node_strategy1(copy.deepcopy(clip))
+            except Exception:
+                return None
+        return None
+
+    def _node_from_clipboard_strategy3(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, dict):
+            try:
+                return self._reconstruct_node_strategy2(copy.deepcopy(clip))
+            except Exception:
+                return None
+        return None
+
+    def _node_from_clipboard_strategy4(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, dict):
+            try:
+                return self._reconstruct_node_strategy3(copy.deepcopy(clip))
+            except Exception:
+                return None
+        return None
+
+    def _node_from_clipboard(self, clip) -> Optional[GSNNode]:
+        for strat in (
+            self._node_from_clipboard_strategy1,
+            self._node_from_clipboard_strategy2,
+            self._node_from_clipboard_strategy3,
+            self._node_from_clipboard_strategy4,
+        ):
+            node = strat(clip)
+            if node:
+                return node
+        return None
+
     def copy_selected(self, _event=None) -> None:
         if not self.app or not self.selected_node:
             return
@@ -947,6 +988,8 @@ class GSNDiagramWindow(tk.Frame):
         node = self._clone_from_clipboard(src)
         if not node:
             return
+        node.x += 20
+        node.y += 20
         self.diagram.add_node(node)
         self.id_to_node[node.unique_id] = node
         self.selected_node = node
