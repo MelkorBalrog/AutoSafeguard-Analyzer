@@ -1469,13 +1469,20 @@ class GSNDrawingHelper(FTADrawingHelper):
         font_obj,
         obj_id,
     ):
-        """Draw the module identifier box used by away elements."""
+        """Draw the module identifier box used by away elements.
+
+        A small folder icon precedes the module name.  If *module_text* is
+        empty, ``"root"`` is displayed.
+        """
+        module_text = module_text or "root"
         padding = 2
         m_width, m_height = self.get_text_size(module_text, font_obj)
-        box_w = max(w * 0.6, m_width + 2 * padding)
+        icon_size = m_height  # square icon matching font height
+        box_w = max(w * 0.6, m_width + icon_size + 3 * padding)
         box_h = m_height + 2 * padding
         left = x - box_w / 2
         right = x + box_w / 2
+        top -= line_width
         bottom = top + box_h
         canvas.create_rectangle(
             left,
@@ -1487,13 +1494,45 @@ class GSNDrawingHelper(FTADrawingHelper):
             width=line_width,
             tags=(obj_id,),
         )
+
+        # Draw folder icon
+        ix1 = left + padding
+        iy1 = top + padding + icon_size * 0.25
+        ix2 = ix1 + icon_size
+        iy2 = bottom - padding
+        canvas.create_rectangle(
+            ix1,
+            iy1,
+            ix2,
+            iy2,
+            fill="lightgrey",
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_polygon(
+            ix1,
+            iy1,
+            ix1,
+            iy1 - icon_size * 0.25,
+            ix1 + icon_size * 0.4,
+            iy1 - icon_size * 0.25,
+            ix1 + icon_size * 0.4,
+            iy1,
+            fill="lightgrey",
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+
+        text_x = ix2 + padding
         canvas.create_text(
-            x,
+            text_x,
             (top + bottom) / 2,
             text=module_text,
             font=font_obj,
-            anchor="center",
-            width=box_w - 2 * padding,
+            anchor="w",
+            width=box_w - (text_x - left) - padding,
             tags=(obj_id,),
         )
         return bottom
@@ -1616,6 +1655,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             top + 2 * radius,
             start=0,
             extent=180,
+            style=tk.CHORD,
             fill=fill,
             outline=outline_color,
             width=line_width,
@@ -1657,24 +1697,29 @@ class GSNDrawingHelper(FTADrawingHelper):
         font_obj=None,
         obj_id: str = "",
     ):
-        """Draw an away context: rectangle with rounded bottom."""
+        """Draw an away context with title and description compartments."""
         outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = self._scaled_font(scale)
         padding = 4
-        t_width, t_height = self.get_text_size(text, font_obj)
-        w = max(scale, t_width + 2 * padding)
-        h = max(scale * 0.6, t_height + 2 * padding)
+        title, desc = (text.split("\n", 1) + [""])[:2]
+        title_w, title_h = self.get_text_size(title, font_obj)
+        desc_w, desc_h = self.get_text_size(desc, font_obj) if desc else (0, 0)
+        w = max(scale, title_w, desc_w) + 2 * padding
+        top_h = title_h + 2 * padding
+        bottom_h = max(desc_h + 2 * padding, top_h)
         radius = w / 2
         left = x - w / 2
         right = x + w / 2
-        rect_top = y - h / 2
-        rect_bottom = y + h / 2 - radius
+        rect_top = y - (top_h + bottom_h) / 2
+        rect_mid = rect_top + top_h
+        rect_bottom = rect_mid + bottom_h - radius
+        # Upper compartment with curved bottom
         canvas.create_rectangle(
             left,
             rect_top,
             right,
-            rect_bottom,
+            rect_mid,
             fill=fill,
             outline=outline_color,
             width=line_width,
@@ -1682,20 +1727,40 @@ class GSNDrawingHelper(FTADrawingHelper):
         )
         canvas.create_arc(
             left,
-            rect_bottom,
+            rect_mid,
             right,
-            rect_bottom + 2 * radius,
+            rect_mid + 2 * radius,
             start=180,
             extent=180,
+            style=tk.CHORD,
             fill=fill,
             outline=outline_color,
             width=line_width,
             tags=(obj_id,),
         )
+        canvas.create_line(
+            left,
+            rect_mid,
+            right,
+            rect_mid,
+            fill=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        # Title and description
         canvas.create_text(
             x,
-            rect_top + (rect_bottom - rect_top) / 2,
-            text=text,
+            rect_top + top_h / 2,
+            text=title,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+            tags=(obj_id,),
+        )
+        canvas.create_text(
+            x,
+            rect_mid + (rect_bottom - rect_mid) / 2,
+            text=desc,
             font=font_obj,
             anchor="center",
             width=w - 2 * padding,
@@ -1705,7 +1770,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         self._draw_module_reference_box(
             canvas,
             x,
-            rect_bottom + 2 * radius,
+            rect_mid + 2 * radius,
             w,
             module_text,
             outline_color,
@@ -1733,14 +1798,17 @@ class GSNDrawingHelper(FTADrawingHelper):
         if font_obj is None:
             font_obj = self._scaled_font(scale)
         padding = 4
-        t_width, t_height = self.get_text_size(text, font_obj)
-        w = max(scale, t_width + 2 * padding)
-        h = max(scale * 0.6, t_height + 2 * padding)
+        title, desc = (text.split("\n", 1) + [""])[:2]
+        title_w, title_h = self.get_text_size(title, font_obj)
+        desc_w, desc_h = self.get_text_size(desc, font_obj) if desc else (0, 0)
+        w = max(scale, title_w, desc_w) + 2 * padding
+        h = max(scale * 0.6, title_h + desc_h + 3 * padding)
         radius = w / 2
         left = x - w / 2
         right = x + w / 2
-        rect_bottom = y + h / 2
         rect_top = y - h / 2 + radius
+        rect_bottom = y + h / 2
+        # Body: rectangle + top arc
         canvas.create_rectangle(
             left,
             rect_top,
@@ -1758,15 +1826,29 @@ class GSNDrawingHelper(FTADrawingHelper):
             rect_top,
             start=0,
             extent=180,
+            style=tk.CHORD,
             fill=fill,
             outline=outline_color,
             width=line_width,
             tags=(obj_id,),
         )
+        # Title in arc region
+        title_y = rect_top - radius / 2
         canvas.create_text(
             x,
-            rect_top + (rect_bottom - rect_top) / 2,
-            text=text,
+            title_y,
+            text=title,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+            tags=(obj_id,),
+        )
+        # Description in rectangle
+        desc_y = rect_top + (rect_bottom - rect_top) / 2
+        canvas.create_text(
+            x,
+            desc_y,
+            text=desc,
             font=font_obj,
             anchor="center",
             width=w - 2 * padding,
@@ -1865,7 +1947,6 @@ class GSNDrawingHelper(FTADrawingHelper):
         **kwargs,
     ):
         self.draw_module_shape(canvas, x, y, scale=scale, **kwargs)
-
 
 # Create a single GSNDrawingHelper object for convenience
 
