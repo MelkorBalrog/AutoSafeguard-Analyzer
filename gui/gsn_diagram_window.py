@@ -8,6 +8,9 @@ import webbrowser
 import os
 import sys
 import subprocess
+import copy
+import json
+import weakref
 from pathlib import Path
 from typing import Optional
 
@@ -19,6 +22,8 @@ from .style_manager import StyleManager
 from .icon_factory import create_icon
 from .button_utils import set_uniform_button_width
 from . import TranslucidButton
+
+GSN_WINDOWS: set[weakref.ReferenceType] = set()
 
 
 class ModuleSelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
@@ -231,8 +236,14 @@ class GSNDiagramWindow(tk.Frame):
         self.canvas.bind("<BackSpace>", self._on_delete)
         # Provide a context menu for nodes and relationships via right-click.
         self.canvas.bind("<Button-3>", self._on_right_click)
+        self.canvas.bind("<FocusIn>", self._on_focus_in)
+        GSN_WINDOWS.add(weakref.ref(self))
         self.refresh()
         self._bind_shortcuts()
+
+    def _on_focus_in(self, _event=None) -> None:
+        if self.app:
+            self.app.active_gsn_window = self
 
     def _fit_toolbox(self) -> None:
         """Resize toolbox to the smallest width that shows all button text."""
@@ -703,13 +714,62 @@ class GSNDiagramWindow(tk.Frame):
             parent.context_children.remove(child)
         self.refresh()
 
-    def _node_at(self, x: float, y: float) -> Optional[GSNNode]:
-        items = self.canvas.find_overlapping(x - 5, y - 5, x + 5, y + 5)
+    def _node_at_strategy1(self, x: float, y: float) -> Optional[GSNNode]:
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        items = self.canvas.find_overlapping(cx - 5, cy - 5, cx + 5, cy + 5)
         for item in items:
             for tag in self.canvas.gettags(item):
                 node = self.id_to_node.get(tag)
                 if node:
                     return node
+        return None
+
+    def _node_at_strategy2(self, x: float, y: float) -> Optional[GSNNode]:
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        items = self.canvas.find_closest(cx, cy)
+        for item in items:
+            for tag in self.canvas.gettags(item):
+                node = self.id_to_node.get(tag)
+                if node:
+                    return node
+        return None
+
+    def _node_at_strategy3(self, x: float, y: float) -> Optional[GSNNode]:
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        for tag, node in self.id_to_node.items():
+            bbox = getattr(self.canvas, "bbox", lambda *_: None)(tag)
+            if not bbox:
+                continue
+            x1, y1, x2, y2 = bbox
+            if x1 <= cx <= x2 and y1 <= cy <= y2:
+                return node
+        return None
+
+    def _node_at_strategy4(self, x: float, y: float) -> Optional[GSNNode]:
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        for node in self.diagram._traverse():
+            if (cx - node.x) ** 2 + (cy - node.y) ** 2 <= (20 * self.zoom) ** 2:
+                return node
+        return None
+
+    def _node_at(self, x: float, y: float) -> Optional[GSNNode]:
+        for strat in (
+            self._node_at_strategy1,
+            self._node_at_strategy2,
+            self._node_at_strategy3,
+            self._node_at_strategy4,
+        ):
+            node = strat(x, y)
+            if node:
+                return node
         return None
 
     def _rel_id(self, parent: GSNNode, child: GSNNode) -> str:
@@ -768,6 +828,138 @@ class GSNDiagramWindow(tk.Frame):
                 parent.context_children.remove(child)
             self._selected_connection = None
             self.refresh()
+        
+    def _clone_node_strategy1(self, node: GSNNode) -> dict | None:
+        return node.to_dict()
+
+    def _clone_node_strategy2(self, node: GSNNode) -> dict | None:
+        return json.loads(json.dumps(node.to_dict()))
+
+    def _clone_node_strategy3(self, node: GSNNode) -> dict | None:
+        return copy.deepcopy(node.to_dict())
+
+    def _clone_node_strategy4(self, node: GSNNode) -> dict | None:
+        return {
+            "unique_id": node.unique_id,
+            "user_name": str(node.user_name),
+            "description": str(node.description),
+            "node_type": str(node.node_type),
+            "x": float(node.x),
+            "y": float(node.y),
+            "children": [c.unique_id for c in node.children],
+            "context": [c.unique_id for c in node.context_children],
+            "is_primary_instance": node.is_primary_instance,
+            "original": node.original.unique_id if node.original else None,
+            "work_product": node.work_product,
+            "evidence_link": node.evidence_link,
+            "spi_target": node.spi_target,
+            "evidence_sufficient": node.evidence_sufficient,
+            "manager_notes": node.manager_notes,
+        }
+
+    def _clone_node(self, node: GSNNode) -> dict | None:
+        for strat in (
+            self._clone_node_strategy1,
+            self._clone_node_strategy2,
+            self._clone_node_strategy3,
+            self._clone_node_strategy4,
+        ):
+            snap = strat(node)
+            if snap:
+                return snap
+        return None
+
+    def _reconstruct_node_strategy1(
+        self, snap: dict, offset=(20, 20)
+    ) -> GSNNode:
+        data = copy.deepcopy(snap)
+        data["x"] = data.get("x", 0) + offset[0]
+        data["y"] = data.get("y", 0) + offset[1]
+        node_map: dict[str, GSNNode] = {}
+        node = GSNNode.from_dict(data, nodes=node_map)
+        GSNNode.resolve_references(node_map)
+        return node
+
+    def _reconstruct_node_strategy2(
+        self, snap: dict, offset=(20, 20)
+    ) -> GSNNode:
+        data = json.loads(json.dumps(snap))
+        data["x"] = data.get("x", 0) + offset[0]
+        data["y"] = data.get("y", 0) + offset[1]
+        node_map: dict[str, GSNNode] = {}
+        node = GSNNode.from_dict(data, nodes=node_map)
+        GSNNode.resolve_references(node_map)
+        return node
+
+    def _reconstruct_node_strategy3(
+        self, snap: dict, offset=(20, 20)
+    ) -> GSNNode:
+        return GSNNode(
+            snap.get("user_name", ""),
+            snap.get("node_type", "Goal"),
+            description=snap.get("description", ""),
+            x=snap.get("x", 0) + offset[0],
+            y=snap.get("y", 0) + offset[1],
+        )
+
+    def _reconstruct_node_strategy4(
+        self, snap: dict, offset=(20, 20)
+    ) -> GSNNode:
+        data = {**snap}
+        data["x"] = data.get("x", 0) + offset[0]
+        data["y"] = data.get("y", 0) + offset[1]
+        return GSNNode.from_dict(data, nodes={})
+
+    def _reconstruct_node(self, snap: dict) -> Optional[GSNNode]:
+        for strat in (
+            self._reconstruct_node_strategy1,
+            self._reconstruct_node_strategy2,
+            self._reconstruct_node_strategy3,
+            self._reconstruct_node_strategy4,
+        ):
+            try:
+                return strat(copy.deepcopy(snap))
+            except Exception:
+                continue
+        return None
+
+    def copy_selected(self, _event=None) -> None:
+        if not self.app or not self.selected_node:
+            return
+        snap = self._clone_node(self.selected_node)
+        if snap:
+            self.app.diagram_clipboard = snap
+            self.app.diagram_clipboard_type = "GSN"
+
+    def cut_selected(self, _event=None) -> None:
+        if not self.app or not self.selected_node:
+            return
+        self.copy_selected()
+        if self.selected_node in self.diagram.nodes:
+            self.diagram.nodes.remove(self.selected_node)
+        for p in list(self.selected_node.parents):
+            if self.selected_node in p.children:
+                p.children.remove(self.selected_node)
+        self.selected_node = None
+        self.refresh()
+
+    def paste_selected(self, _event=None) -> None:
+        if not self.app or not getattr(self.app, "diagram_clipboard", None):
+            return
+        clip_type = getattr(self.app, "diagram_clipboard_type", None)
+        if clip_type and clip_type != "GSN":
+            messagebox.showwarning(
+                "Paste", "Clipboard contains incompatible diagram element."
+            )
+            return
+        snap = copy.deepcopy(self.app.diagram_clipboard)
+        node = self._reconstruct_node(snap)
+        if not node:
+            return
+        self.diagram.add_node(node)
+        self.id_to_node[node.unique_id] = node
+        self.selected_node = node
+        self.refresh()
 
     def zoom_in(self):  # pragma: no cover - GUI interaction stub
         self.zoom *= 1.2
