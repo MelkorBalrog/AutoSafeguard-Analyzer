@@ -45,6 +45,9 @@ class DummyHelper:
     draw_context_shape = draw_goal_shape
     draw_module_shape = draw_goal_shape
     draw_away_module_shape = draw_goal_shape
+    draw_away_context_shape = draw_goal_shape
+    draw_away_assumption_shape = draw_goal_shape
+    draw_away_justification_shape = draw_goal_shape
 
     def draw_solved_by_connection(self, *args, **kwargs):
         pass

@@ -19038,15 +19038,13 @@ class AutoMLApp:
                 self.cut_mode = False
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
-                cloned_node = self._clone_for_paste(self.clipboard_node)
+                cloned_node = self.clipboard_node
                 target.children.append(cloned_node)
                 cloned_node.parents.append(target)
                 if isinstance(cloned_node, GSNNode):
                     diag = self._find_gsn_diagram(target)
                     if diag and cloned_node not in diag.nodes:
                         diag.add_node(cloned_node)
-                cloned_node.x = target.x + 100
-                cloned_node.y = target.y + 100
                 messagebox.showinfo("Paste", "Node pasted successfully (copied).")
             AutoML_Helper.calculate_assurance_recursive(
                 self.root_node,
@@ -19334,6 +19332,9 @@ class AutoMLApp:
             except Exception:
                 continue
 
+    def sync_nodes_by_id(self, updated_node):
+        """Synchronize all nodes (original and clones) sharing an ID.
+
     def _sync_nodes_by_id_strategy1(self, updated_node, attrs):
         clone = updated_node if (not updated_node.is_primary_instance and updated_node.original) else None
         if clone:
@@ -19357,49 +19358,45 @@ class AutoMLApp:
                 self._copy_attrs_no_xy(node, updated_node, attrs)
                 node.display_label = updated_node.display_label + " (clone)"
 
-    def _sync_nodes_by_id_strategy2(self, updated_node, attrs):
-        clone = None
+        attrs = [
+            "node_type",
+            "user_name",
+            "description",
+            "rationale",
+            "quant_value",
+            "gate_type",
+            "severity",
+            "input_subtype",
+            "equation",
+            "detailed_equation",
+            "is_page",
+            "failure_prob",
+            "prob_formula",
+            "failure_mode_ref",
+            "fmea_effect",
+            "fmea_cause",
+            "fmea_severity",
+            "fmea_occurrence",
+            "fmea_detection",
+            "fmea_component",
+            "fmeda_malfunction",
+            "fmeda_safety_goal",
+            "fmeda_diag_cov",
+            "fmeda_fit",
+            "fmeda_spfm",
+            "fmeda_lpfm",
+            "fmeda_fault_type",
+            "fmeda_fault_fraction",
+        ]
+
+        # If a clone was edited, copy its changes to the original before
+        # propagating.
         if not updated_node.is_primary_instance and updated_node.original:
             clone = updated_node
             updated_node = clone.original
             self._copy_attrs_no_xy(updated_node, clone, attrs)
+            # Remove the clone marker before storing the label on the original.
             updated_node.display_label = clone.display_label.replace(" (clone)", "")
-        updated_primary_id = updated_node.unique_id
-        nodes = self.get_all_nodes(self.root_node) + self.get_all_fmea_entries()
-        for node in [n for n in nodes if n not in (updated_node, clone)]:
-            if node.is_primary_instance and node.unique_id == updated_primary_id:
-                self._copy_attrs_no_xy(node, updated_node, attrs)
-                node.display_label = updated_node.display_label
-            elif not node.is_primary_instance and getattr(node, "original", None) and node.original.unique_id == updated_primary_id:
-                self._copy_attrs_no_xy(node, updated_node, attrs)
-                node.display_label = updated_node.display_label + " (clone)"
-
-    def _sync_nodes_by_id_strategy3(self, updated_node, attrs):
-        clone = updated_node if (hasattr(updated_node, "is_primary_instance") and not updated_node.is_primary_instance and getattr(updated_node, "original", None)) else None
-        primary = clone.original if clone else updated_node
-        if clone:
-            self._copy_attrs_no_xy(primary, clone, attrs)
-            primary.display_label = clone.display_label.replace(" (clone)", "")
-        updated_primary_id = primary.unique_id
-        try:
-            nodes = list(self.get_all_nodes(self.root_node)) + list(self.get_all_fmea_entries())
-        except Exception:
-            nodes = []
-        for node in nodes:
-            if node in (primary, clone):
-                continue
-            if node.is_primary_instance and node.unique_id == updated_primary_id:
-                self._copy_attrs_no_xy(node, primary, attrs)
-                node.display_label = primary.display_label
-            elif not node.is_primary_instance and getattr(node, "original", None) and node.original.unique_id == updated_primary_id:
-                self._copy_attrs_no_xy(node, primary, attrs)
-                node.display_label = primary.display_label + " (clone)"
-
-    def _sync_nodes_by_id_strategy4(self, updated_node, attrs):
-        self._sync_nodes_by_id_strategy1(updated_node, attrs)
-
-    def sync_nodes_by_id(self, updated_node):
-        """Synchronize all nodes (original and clones) sharing an ID.
 
         If *updated_node* is a clone, its values are first copied back to the
         original before propagating to all other clones.  If *updated_node* is
@@ -19449,6 +19446,17 @@ class AutoMLApp:
             except Exception:
                 continue
 
+            if node.is_primary_instance:
+                if node.unique_id == updated_primary_id:
+                    self._copy_attrs_no_xy(node, updated_node, attrs)
+                    node.display_label = updated_node.display_label
+            else:
+                # Use the original pointer to compare.
+                if node.original and node.original.unique_id == updated_primary_id:
+                    self._copy_attrs_no_xy(node, updated_node, attrs)
+                    # Append a marker to the display label to indicate this is a clone.
+                    node.display_label = updated_node.display_label + " (clone)"
+                    
     def edit_user_name(self):
         if self.selected_node:
             new_name = simpledialog.askstring("Edit User Name", "Enter new user name:", initialvalue=self.selected_node.user_name)
