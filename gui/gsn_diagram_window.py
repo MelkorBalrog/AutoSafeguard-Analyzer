@@ -828,50 +828,42 @@ class GSNDiagramWindow(tk.Frame):
                 parent.context_children.remove(child)
             self._selected_connection = None
             self.refresh()
-        
 
     def _reconstruct_node_strategy1(
-        self, snap: dict, offset=(20, 20)
+        self, snap: GSNNode, offset=(20, 20)
     ) -> GSNNode:
-        data = copy.deepcopy(snap)
-        data["x"] = data.get("x", 0) + offset[0]
-        data["y"] = data.get("y", 0) + offset[1]
-        node_map: dict[str, GSNNode] = {}
-        node = GSNNode.from_dict(data, nodes=node_map)
-        GSNNode.resolve_references(node_map)
-        return node
+        clone = snap.clone()
+        clone.x = snap.x + offset[0]
+        clone.y = snap.y + offset[1]
+        return clone
 
     def _reconstruct_node_strategy2(
-        self, snap: dict, offset=(20, 20)
+        self, snap: GSNNode, offset=(20, 20)
     ) -> GSNNode:
-        data = json.loads(json.dumps(snap))
-        data["x"] = data.get("x", 0) + offset[0]
-        data["y"] = data.get("y", 0) + offset[1]
-        node_map: dict[str, GSNNode] = {}
-        node = GSNNode.from_dict(data, nodes=node_map)
-        GSNNode.resolve_references(node_map)
-        return node
+        orig = snap if getattr(snap, "is_primary_instance", True) else snap.original
+        clone = orig.clone()
+        clone.x = snap.x + offset[0]
+        clone.y = snap.y + offset[1]
+        return clone
 
     def _reconstruct_node_strategy3(
-        self, snap: dict, offset=(20, 20)
+        self, snap: GSNNode, offset=(20, 20)
     ) -> GSNNode:
-        return GSNNode(
-            snap.get("user_name", ""),
-            snap.get("node_type", "Goal"),
-            description=snap.get("description", ""),
-            x=snap.get("x", 0) + offset[0],
-            y=snap.get("y", 0) + offset[1],
-        )
+        clone = snap.clone()
+        clone.x = float(snap.x) + offset[0]
+        clone.y = float(snap.y) + offset[1]
+        return clone
 
     def _reconstruct_node_strategy4(
-        self, snap: dict, offset=(20, 20)
+        self, snap: GSNNode, offset=(20, 20)
     ) -> GSNNode:
-        data = {**snap}
-        data["x"] = data.get("x", 0) + offset[0]
-        data["y"] = data.get("y", 0) + offset[1]
-        return GSNNode.from_dict(data, nodes={})
+        orig = getattr(snap, "original", snap)
+        clone = orig.clone()
+        clone.x = getattr(snap, "x", 0) + offset[0]
+        clone.y = getattr(snap, "y", 0) + offset[1]
+        return clone
 
-    def _reconstruct_node(self, snap: dict) -> Optional[GSNNode]:
+    def _reconstruct_node(self, snap: GSNNode) -> Optional[GSNNode]:
         for strat in (
             self._reconstruct_node_strategy1,
             self._reconstruct_node_strategy2,
@@ -879,7 +871,7 @@ class GSNDiagramWindow(tk.Frame):
             self._reconstruct_node_strategy4,
         ):
             try:
-                return strat(copy.deepcopy(snap))
+                return strat(snap)
             except Exception:
                 continue
         return None

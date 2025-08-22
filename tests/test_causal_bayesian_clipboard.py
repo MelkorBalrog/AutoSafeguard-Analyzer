@@ -1,5 +1,4 @@
 import types
-import copy
 
 from gui.causal_bayesian_network_window import CausalBayesianNetworkWindow
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
@@ -50,7 +49,7 @@ def test_copy_paste_between_cbn_diagrams():
         win2._reconstruct_node_strategy3,
         win2._reconstruct_node_strategy4,
     ):
-        app.diagram_clipboard = copy.deepcopy(snap1)
+        app.diagram_clipboard = snap1
         doc2.network.nodes.clear()
         doc2.network.parents.clear()
         doc2.network.cpds.clear()
@@ -59,7 +58,9 @@ def test_copy_paste_between_cbn_diagrams():
         name = strat(app.diagram_clipboard, doc2)
         assert name.startswith("A")
         assert name in doc2.network.nodes
-        assert doc2.positions[name] == (snap1["x"] + 20, snap1["y"] + 20)
+        assert doc2.positions[name] == (doc1.positions["A"][0] + 20, doc1.positions["A"][1] + 20)
+        assert doc2.network.cpds[name] is doc1.network.cpds["A"]
+        assert doc2.network.parents[name] is doc1.network.parents["A"]
 
     doc2.network.nodes.clear()
     doc2.network.parents.clear()
@@ -69,7 +70,9 @@ def test_copy_paste_between_cbn_diagrams():
     app.diagram_clipboard = snap1
     win2.paste_selected()
     assert "A" in doc2.network.nodes
-    assert doc2.positions["A"] == (snap1["x"] + 20, snap1["y"] + 20)
+    assert doc2.positions["A"] == (doc1.positions["A"][0] + 20, doc1.positions["A"][1] + 20)
+    assert doc2.network.cpds["A"] is doc1.network.cpds["A"]
+    assert doc2.network.parents["A"] is doc1.network.parents["A"]
 
 
 def test_copy_paste_creates_clone_with_shared_data():

@@ -9,6 +9,7 @@ from gui import format_name_with_phase, messagebox
 from gui.style_manager import StyleManager
 from gui.icon_factory import create_icon
 from .name_utils import collect_work_product_names, unique_name_v4
+from . import messagebox
 
 
 class GSNExplorer(tk.Frame):
