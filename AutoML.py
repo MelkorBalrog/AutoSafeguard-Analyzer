@@ -19151,20 +19151,18 @@ class AutoMLApp:
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
                 target_diag = self._find_gsn_diagram(target)
-                if isinstance(self.clipboard_node, GSNNode):
-                    cloned_node = self._clone_for_paste(self.clipboard_node)
-                    target.children.append(cloned_node)
-                    cloned_node.parents.append(target)
-                    if target_diag and cloned_node not in target_diag.nodes:
-                        target_diag.add_node(cloned_node)
-                    node_for_pos = cloned_node
+                if (
+                    isinstance(self.clipboard_node, GSNNode)
+                    and target in getattr(self.clipboard_node, "parents", [])
+                ):
+                    node_for_pos = self._clone_for_paste(self.clipboard_node)
                 else:
-                    target.children.append(self.clipboard_node)
-                    self.clipboard_node.parents.append(target)
-                    if isinstance(self.clipboard_node, GSNNode):
-                        if target_diag and self.clipboard_node not in target_diag.nodes:
-                            target_diag.add_node(self.clipboard_node)
                     node_for_pos = self.clipboard_node
+                target.children.append(node_for_pos)
+                node_for_pos.parents.append(target)
+                if isinstance(node_for_pos, GSNNode):
+                    if target_diag and node_for_pos not in target_diag.nodes:
+                        target_diag.add_node(node_for_pos)
                 node_for_pos.x = target.x + 100
                 node_for_pos.y = target.y + 100
                 if hasattr(node_for_pos, "display_label"):
