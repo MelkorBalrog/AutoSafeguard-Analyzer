@@ -19233,6 +19233,70 @@ class AutoMLApp:
             except Exception:
                 continue
 
+    def _sync_nodes_by_id_strategy1(self, updated_node, attrs):
+        clone = updated_node if (not updated_node.is_primary_instance and updated_node.original) else None
+        if clone:
+            updated_node = clone.original
+            self._copy_attrs_no_xy(updated_node, clone, attrs)
+            updated_node.display_label = clone.display_label.replace(" (clone)", "")
+        updated_primary_id = updated_node.unique_id
+        nodes_to_check = self.get_all_nodes(self.root_node)
+        nodes_to_check.extend(self.get_all_fmea_entries())
+        for node in nodes_to_check:
+            if node is updated_node or node is clone:
+                continue
+            if node.is_primary_instance and node.unique_id == updated_primary_id:
+                self._copy_attrs_no_xy(node, updated_node, attrs)
+                node.display_label = updated_node.display_label
+            elif (
+                not node.is_primary_instance
+                and node.original
+                and node.original.unique_id == updated_primary_id
+            ):
+                self._copy_attrs_no_xy(node, updated_node, attrs)
+                node.display_label = updated_node.display_label + " (clone)"
+
+    def _sync_nodes_by_id_strategy2(self, updated_node, attrs):
+        clone = None
+        if not updated_node.is_primary_instance and updated_node.original:
+            clone = updated_node
+            updated_node = clone.original
+            self._copy_attrs_no_xy(updated_node, clone, attrs)
+            updated_node.display_label = clone.display_label.replace(" (clone)", "")
+        updated_primary_id = updated_node.unique_id
+        nodes = self.get_all_nodes(self.root_node) + self.get_all_fmea_entries()
+        for node in [n for n in nodes if n not in (updated_node, clone)]:
+            if node.is_primary_instance and node.unique_id == updated_primary_id:
+                self._copy_attrs_no_xy(node, updated_node, attrs)
+                node.display_label = updated_node.display_label
+            elif not node.is_primary_instance and getattr(node, "original", None) and node.original.unique_id == updated_primary_id:
+                self._copy_attrs_no_xy(node, updated_node, attrs)
+                node.display_label = updated_node.display_label + " (clone)"
+
+    def _sync_nodes_by_id_strategy3(self, updated_node, attrs):
+        clone = updated_node if (hasattr(updated_node, "is_primary_instance") and not updated_node.is_primary_instance and getattr(updated_node, "original", None)) else None
+        primary = clone.original if clone else updated_node
+        if clone:
+            self._copy_attrs_no_xy(primary, clone, attrs)
+            primary.display_label = clone.display_label.replace(" (clone)", "")
+        updated_primary_id = primary.unique_id
+        try:
+            nodes = list(self.get_all_nodes(self.root_node)) + list(self.get_all_fmea_entries())
+        except Exception:
+            nodes = []
+        for node in nodes:
+            if node in (primary, clone):
+                continue
+            if node.is_primary_instance and node.unique_id == updated_primary_id:
+                self._copy_attrs_no_xy(node, primary, attrs)
+                node.display_label = primary.display_label
+            elif not node.is_primary_instance and getattr(node, "original", None) and node.original.unique_id == updated_primary_id:
+                self._copy_attrs_no_xy(node, primary, attrs)
+                node.display_label = primary.display_label + " (clone)"
+
+    def _sync_nodes_by_id_strategy4(self, updated_node, attrs):
+        self._sync_nodes_by_id_strategy1(updated_node, attrs)
+
     def sync_nodes_by_id(self, updated_node):
         """Synchronize all nodes (original and clones) sharing an ID.
 
@@ -19272,35 +19336,17 @@ class AutoMLApp:
             "fmeda_fault_fraction",
         ]
 
-        # If a clone was edited, copy its changes to the original before
-        # propagating.
-        if not updated_node.is_primary_instance and updated_node.original:
-            clone = updated_node
-            updated_node = clone.original
-            self._copy_attrs_no_xy(updated_node, clone, attrs)
-            # Remove the clone marker before storing the label on the original.
-            updated_node.display_label = clone.display_label.replace(" (clone)", "")
-
-        updated_primary_id = updated_node.unique_id
-
-        nodes_to_check = self.get_all_nodes(self.root_node)
-        nodes_to_check.extend(self.get_all_fmea_entries())
-
-        for node in nodes_to_check:
-            # Skip the updated node itself.
-            if node is updated_node:
+        for strat in (
+            self._sync_nodes_by_id_strategy1,
+            self._sync_nodes_by_id_strategy2,
+            self._sync_nodes_by_id_strategy3,
+            self._sync_nodes_by_id_strategy4,
+        ):
+            try:
+                strat(updated_node, attrs)
+                break
+            except Exception:
                 continue
-
-            if node.is_primary_instance:
-                if node.unique_id == updated_primary_id:
-                    self._copy_attrs_no_xy(node, updated_node, attrs)
-                    node.display_label = updated_node.display_label
-            else:
-                # Use the original pointer to compare.
-                if node.original and node.original.unique_id == updated_primary_id:
-                    self._copy_attrs_no_xy(node, updated_node, attrs)
-                    # Append a marker to the display label to indicate this is a clone.
-                    node.display_label = updated_node.display_label + " (clone)"
 
     def edit_user_name(self):
         if self.selected_node:
