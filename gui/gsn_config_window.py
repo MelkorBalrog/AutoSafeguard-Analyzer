@@ -187,12 +187,82 @@ class GSNElementConfig(tk.Toplevel):
         self.grab_set()
         self.wait_window(self)
 
+    # ------------------------------------------------------------------
+    def _sync_clones_strategy1(self, original, attrs):
+        for attr in attrs:
+            setattr(original, attr, getattr(self.node, attr))
+        original.is_primary_instance = True
+        original.original = original
+        for n in getattr(self.diagram, "nodes", []):
+            if n is not original and getattr(n, "original", None) is original:
+                for attr in attrs:
+                    setattr(n, attr, getattr(original, attr))
+                n.original = original
+                n.is_primary_instance = False
+
+    def _sync_clones_strategy2(self, original, attrs):
+        values = {a: getattr(self.node, a) for a in attrs}
+        for a, v in values.items():
+            setattr(original, a, v)
+        original.is_primary_instance = True
+        original.original = original
+        clones = [n for n in getattr(self.diagram, "nodes", []) if n is not original and getattr(n, "original", None) is original]
+        for c in clones:
+            for a, v in values.items():
+                setattr(c, a, v)
+            c.original = original
+            c.is_primary_instance = False
+
+    def _sync_clones_strategy3(self, original, attrs):
+        for attr in attrs:
+            value = getattr(self.node, attr)
+            setattr(original, attr, value)
+        original.is_primary_instance = True
+        original.original = original
+        for n in list(getattr(self.diagram, "nodes", [])):
+            if n is original:
+                continue
+            if getattr(n, "original", None) is original:
+                for attr in attrs:
+                    setattr(n, attr, getattr(original, attr))
+                n.original = original
+                n.is_primary_instance = False
+
+    def _sync_clones_strategy4(self, original, attrs):
+        mapping = [(a, getattr(self.node, a)) for a in attrs]
+        for a, v in mapping:
+            setattr(original, a, v)
+        original.is_primary_instance = True
+        original.original = original
+        nodes = getattr(self.diagram, "nodes", [])
+        for n in nodes:
+            if n is original or getattr(n, "original", None) is not original:
+                continue
+            for a, v in mapping:
+                setattr(n, a, getattr(original, a))
+            n.original = original
+            n.is_primary_instance = False
+
+    def _sync_clones(self, original, attrs):
+        for strat in (
+            self._sync_clones_strategy1,
+            self._sync_clones_strategy2,
+            self._sync_clones_strategy3,
+            self._sync_clones_strategy4,
+        ):
+            try:
+                strat(original, attrs)
+                return
+            except Exception:
+                continue
+
     def _on_ok(self):
         self.node.user_name = self.name_var.get()
         self.node.description = self.desc_text.get("1.0", tk.END).strip()
         notes_text = getattr(self, "notes_text", None)
         if notes_text:
             self.node.manager_notes = notes_text.get("1.0", tk.END).strip()
+        attrs = ["user_name", "description", "manager_notes"]
         if self.node.node_type == "Solution":
             # ``GSNElementConfig`` is sometimes instantiated in tests without
             # running ``__init__``.  Guard against missing StringVar
@@ -201,18 +271,15 @@ class GSNElementConfig(tk.Toplevel):
             work_var = getattr(self, "work_var", None)
             link_var = getattr(self, "link_var", None)
             spi_var = getattr(self, "spi_var", None)
-
             if work_var:
                 self.node.work_product = work_var.get()
             if link_var:
                 self.node.evidence_link = link_var.get()
             if spi_var:
                 self.node.spi_target = spi_var.get()
-
-            # determine representative original node if another solution
-            # already uses the same work product and SPI target
+            attrs.extend(["work_product", "evidence_link", "spi_target"])
             original = None
-            for n in self.diagram.nodes:
+            for n in getattr(self.diagram, "nodes", []):
                 if (
                     n is not self.node
                     and n.node_type == "Solution"
@@ -221,43 +288,11 @@ class GSNElementConfig(tk.Toplevel):
                 ):
                     original = n if n.is_primary_instance else n.original
                     break
-
-            # fall back to the node's existing original (or itself) when no
-            # matching solution exists
             if original is None:
                 original = self.node.original or self.node
-
-            # propagate changes from the edited node to the representative
-            # original and all of its clones
-            attrs = (
-                "user_name",
-                "description",
-                "work_product",
-                "evidence_link",
-                "spi_target",
-                "manager_notes",
-            )
-            for attr in attrs:
-                setattr(original, attr, getattr(self.node, attr))
-            original.is_primary_instance = True
-            original.original = original
-
-            for n in self.diagram.nodes:
-                if (
-                    n.node_type == "Solution"
-                    and n is not original
-                    and (
-                        getattr(n, "original", None) is original
-                        or (
-                            getattr(n, "work_product", "")
-                            == original.work_product
-                            and getattr(n, "spi_target", "")
-                            == original.spi_target
-                        )
-                    )
-                ):
-                    for attr in attrs:
-                        setattr(n, attr, getattr(original, attr))
-                    n.original = original
-                    n.is_primary_instance = False
+        else:
+            original = self.node.original or self.node
+        self.node.original = original
+        self.node.is_primary_instance = self.node is original
+        self._sync_clones(original, attrs)
         self.destroy()

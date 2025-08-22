@@ -6,6 +6,8 @@ from typing import List, Optional
 import uuid
 import logging
 
+ALLOWED_AWAY_TYPES = {"Goal", "Solution", "Context", "Assumption", "Justification"}
+
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +117,10 @@ class GSNNode:
         instance, enabling multiple diagram occurrences similar to away
         solutions in GSN 2.0.
         """
+        if self.node_type not in ALLOWED_AWAY_TYPES:
+            raise ValueError(
+                f"Cloning not supported for node type '{self.node_type}'."
+            )
         clone = GSNNode(
             self.user_name,
             self.node_type,
@@ -132,7 +138,15 @@ class GSNNode:
         clone.spi_target = self.spi_target
         clone.manager_notes = self.manager_notes
         if parent is not None:
-            parent.add_child(clone)
+            # Context, Assumption and Justification clones must attach via an
+            # ``in-context-of`` relationship rather than the default
+            # ``solved-by`` link used for goals and solutions.
+            relation = (
+                "context"
+                if self.node_type in {"Context", "Assumption", "Justification"}
+                else "solved"
+            )
+            parent.add_child(clone, relation=relation)
         return clone
 
     # ------------------------------------------------------------------
