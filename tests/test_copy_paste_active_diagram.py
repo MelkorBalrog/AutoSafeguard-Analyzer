@@ -47,7 +47,7 @@ class CopyPasteActiveDiagramTests(unittest.TestCase):
                 if mode == "copy":
                     self.assertEqual(len(diag1.root.children), 1)
                     self.assertEqual(len(diag2.root.children), 1)
-                    self.assertIs(diag2.root.children[0], node)
+                    self.assertIsNot(diag2.root.children[0], node)
                 else:
                     self.assertEqual(len(diag1.root.children), 0)
                     self.assertEqual(len(diag2.root.children), 1)
