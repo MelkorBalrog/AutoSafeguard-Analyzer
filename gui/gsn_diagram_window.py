@@ -888,16 +888,6 @@ class GSNDiagramWindow(tk.Frame):
         if snap is not None:
             self.app.diagram_clipboard = snap
             self.app.diagram_clipboard_type = "GSN"
-            if self.selected_node.parents:
-                parent = self.selected_node.parents[0]
-                rel = (
-                    "context"
-                    if self.selected_node in parent.context_children
-                    else "solved"
-                )
-            else:
-                rel = "solved"
-            self.app.clipboard_relation = rel
 
     def cut_selected(self, _event=None) -> None:
         if not self.app or not self.selected_node:
