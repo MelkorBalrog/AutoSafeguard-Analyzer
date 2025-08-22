@@ -31,9 +31,23 @@ class GSNDiagram:
             self.nodes.append(self.root)
 
     # ------------------------------------------------------------------
+    def ensure_unique_name(self, name: str, self_node: GSNNode | None = None) -> str:
+        """Return a unique node name based on ``name`` within the diagram."""
+        if not name:
+            return name
+        existing = {n.user_name for n in self.nodes if n is not self_node and n.user_name}
+        base = name
+        suffix = 1
+        while name in existing:
+            name = f"{base}_{suffix}"
+            suffix += 1
+        return name
+
     def add_node(self, node: GSNNode) -> None:
         """Register *node* with the diagram without connecting it."""
-        if node not in self.nodes:
+        if all(existing is not node for existing in self.nodes):
+            if getattr(node, "is_primary_instance", True):
+                node.user_name = self.ensure_unique_name(node.user_name, node)
             self.nodes.append(node)
 
     # ------------------------------------------------------------------
@@ -219,6 +233,13 @@ class GSNDiagram:
         padding = 10 * zoom
         base_scale = 60 * zoom
 
+        module_name = ""
+        if not node.is_primary_instance and getattr(node, "original", None):
+            for parent in getattr(node.original, "parents", []):
+                if getattr(parent, "node_type", "") == "Module":
+                    module_name = parent.user_name
+                    break
+
         def _call(method, *args, **kwargs):
             try:
                 method(*args, **kwargs)
@@ -227,6 +248,7 @@ class GSNDiagram:
                 kwargs.pop("top_text", None)
                 kwargs.pop("bottom_text", None)
                 kwargs.pop("font_obj", None)
+                kwargs.pop("module_text", None)
                 method(*args, **kwargs)
 
         if typ == "solution":
@@ -248,16 +270,14 @@ class GSNDiagram:
                 if node.is_primary_instance
                 else self.drawing_helper.draw_away_solution_shape
             )
-            _call(
-                draw_func,
-                canvas,
-                x,
-                y,
-                scale,
-                text=text,
-                font_obj=font_obj,
-                obj_id=node.unique_id,
-            )
+            kwargs = {
+                "text": text,
+                "font_obj": font_obj,
+                "obj_id": node.unique_id,
+            }
+            if not node.is_primary_instance:
+                kwargs["module_text"] = module_name
+            _call(draw_func, canvas, x, y, scale, **kwargs)
         elif typ == "goal":
             ratio = 0.6
             scale = max(base_scale, width + padding, (height + padding) / ratio)
@@ -266,16 +286,14 @@ class GSNDiagram:
                 if node.is_primary_instance
                 else self.drawing_helper.draw_away_goal_shape
             )
-            _call(
-                draw_func,
-                canvas,
-                x,
-                y,
-                scale,
-                text=text,
-                font_obj=font_obj,
-                obj_id=node.unique_id,
-            )
+            kwargs = {
+                "text": text,
+                "font_obj": font_obj,
+                "obj_id": node.unique_id,
+            }
+            if not node.is_primary_instance:
+                kwargs["module_text"] = module_name
+            _call(draw_func, canvas, x, y, scale, **kwargs)
         elif typ == "module":
             ratio = 0.6
             scale = max(base_scale, width + padding, (height + padding) / ratio)
@@ -315,16 +333,22 @@ class GSNDiagram:
                 "justification": self.drawing_helper.draw_justification_shape,
                 "context": self.drawing_helper.draw_context_shape,
             }
-            _call(
-                draw_map[typ],
-                canvas,
-                x,
-                y,
-                scale,
-                text=text,
-                font_obj=font_obj,
-                obj_id=node.unique_id,
-            )
+            if node.is_primary_instance:
+                draw_func = draw_map[typ]
+            else:
+                draw_func = {
+                    "assumption": self.drawing_helper.draw_away_assumption_shape,
+                    "justification": self.drawing_helper.draw_away_justification_shape,
+                    "context": self.drawing_helper.draw_away_context_shape,
+                }[typ]
+            kwargs = {
+                "text": text,
+                "font_obj": font_obj,
+                "obj_id": node.unique_id,
+            }
+            if not node.is_primary_instance:
+                kwargs["module_text"] = module_name
+            _call(draw_func, canvas, x, y, scale, **kwargs)
 
     def _format_text(self, node: GSNNode) -> str:
         """Return node label including description if present."""
