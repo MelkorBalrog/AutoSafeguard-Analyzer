@@ -19262,10 +19262,10 @@ class AutoMLApp:
 
     def _focused_gsn_window(self):
         for strat in (
-            self._gsn_window_strategy1,
-            self._gsn_window_strategy2,
             self._gsn_window_strategy3,
             self._gsn_window_strategy4,
+            self._gsn_window_strategy1,
+            self._gsn_window_strategy2,
         ):
             win = strat()
             if win:

@@ -9,6 +9,9 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from AutoML import AutoMLApp
 from gui.architecture import SysMLDiagramWindow, _get_next_id, SysMLObject, ARCH_WINDOWS
+from gui.gsn_diagram_window import GSNDiagramWindow, GSN_WINDOWS
+from gsn import GSNNode, GSNDiagram
+import weakref
 
 
 class DummyRepo:
@@ -58,6 +61,48 @@ def make_window(app, repo, diagram_id):
     win._place_process_area = _stub_place_process_area
     win._rebuild_toolboxes = lambda: None
     return win
+
+
+def make_gsn_window(app, diagram):
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    win.app = app
+    win.diagram = diagram
+    win.id_to_node = {n.unique_id: n for n in diagram.nodes}
+    win.selected_node = None
+    win.canvas = types.SimpleNamespace(
+        delete=lambda *a, **k: None,
+        find_overlapping=lambda *a, **k: [],
+        find_closest=lambda *a, **k: [],
+        bbox=lambda *a, **k: None,
+        gettags=lambda i: [],
+    )
+    win.refresh = lambda: None
+    win.focus_get = lambda: win if getattr(win, "_focus", False) else None
+    win.winfo_toplevel = lambda: win
+    win._on_focus_in = types.MethodType(GSNDiagramWindow._on_focus_in, win)
+    GSN_WINDOWS.add(weakref.ref(win))
+    return win
+
+
+class DummyNotebook:
+    def __init__(self):
+        self.tabs = {}
+        self._selected = None
+
+    def add(self, name, win):
+        tab = types.SimpleNamespace(gsn_window=win)
+        self.tabs[name] = tab
+        if self._selected is None:
+            self._selected = name
+        return tab
+
+    def select(self, name=None):
+        if name is None:
+            return self._selected
+        self._selected = name
+
+    def nametowidget(self, name):
+        return self.tabs.get(name)
 
 
 def test_copy_paste_between_same_type_diagrams():
@@ -306,3 +351,69 @@ def test_copy_paste_process_area_between_diagrams():
 
     assert len(win2.objects) == 1
     assert win2.objects[0].obj_type == "System Boundary"
+
+
+def test_copy_paste_between_gsn_diagrams():
+    GSN_WINDOWS.clear()
+    app = AutoMLApp.__new__(AutoMLApp)
+    app.diagram_clipboard = None
+    app.diagram_clipboard_type = None
+    app.selected_node = None
+    app.clipboard_node = None
+    app.cut_mode = False
+    root1 = GSNNode("R1", "Goal")
+    child = GSNNode("C1", "Goal")
+    root1.add_child(child)
+    diag1 = GSNDiagram(root1)
+    diag1.add_node(child)
+    root2 = GSNNode("R2", "Goal")
+    diag2 = GSNDiagram(root2)
+    app.gsn_diagrams = [diag1, diag2]
+    app.gsn_modules = []
+    win1 = make_gsn_window(app, diag1)
+    win2 = make_gsn_window(app, diag2)
+    nb = DummyNotebook()
+    nb.add("t1", win1)
+    nb.add("t2", win2)
+    app.doc_nb = nb
+    win1.selected_node = child
+    win1._focus = True
+    nb.select("t1")
+    app.copy_node()
+    nb.select("t2")
+    app.paste_node()
+    assert len(diag2.nodes) == 2
+    assert diag2.nodes[-1].original is child.original
+
+
+def test_cut_paste_between_gsn_diagrams():
+    GSN_WINDOWS.clear()
+    app = AutoMLApp.__new__(AutoMLApp)
+    app.diagram_clipboard = None
+    app.diagram_clipboard_type = None
+    app.selected_node = None
+    app.clipboard_node = None
+    app.cut_mode = False
+    root1 = GSNNode("R1", "Goal")
+    child = GSNNode("C1", "Goal")
+    root1.add_child(child)
+    diag1 = GSNDiagram(root1)
+    diag1.add_node(child)
+    root2 = GSNNode("R2", "Goal")
+    diag2 = GSNDiagram(root2)
+    app.gsn_diagrams = [diag1, diag2]
+    app.gsn_modules = []
+    win1 = make_gsn_window(app, diag1)
+    win2 = make_gsn_window(app, diag2)
+    nb = DummyNotebook()
+    nb.add("t1", win1)
+    nb.add("t2", win2)
+    app.doc_nb = nb
+    win1.selected_node = child
+    win1._focus = True
+    nb.select("t1")
+    app.cut_node()
+    nb.select("t2")
+    app.paste_node()
+    assert child not in diag1.nodes
+    assert any(n.original is child.original for n in diag2.nodes)
