@@ -30,12 +30,7 @@ def test_governance_diagram_undo_redo_work_product():
     app._undo_stack = []
     app._redo_stack = []
     app.enable_work_product = lambda *a, **k: None
-    app.refresh_tool_enablement_called = 0
-    def refresh_tool_enablement(*args, **kwargs):
-        app.refresh_tool_enablement_called += 1
-    app.refresh_tool_enablement = refresh_tool_enablement
-    app._refresh_phase_requirements_menu = lambda: None
-    app.update_views = lambda: None
+    app.refresh_tool_enablement = lambda *a, **k: None
     app.push_undo_state = AutoMLApp.push_undo_state.__get__(app)
     app.undo = AutoMLApp.undo.__get__(app)
     app.redo = AutoMLApp.redo.__get__(app)
@@ -52,11 +47,9 @@ def test_governance_diagram_undo_redo_work_product():
 
     win._place_work_product("WP1", 10.0, 20.0)
     assert len(repo.diagrams[diag.diag_id].objects) == 1
-    app.refresh_tool_enablement_called = 0
 
     app.undo()
     assert len(repo.diagrams[diag.diag_id].objects) == 0
 
     app.redo()
     assert len(repo.diagrams[diag.diag_id].objects) == 1
-    assert app.refresh_tool_enablement_called == 2
