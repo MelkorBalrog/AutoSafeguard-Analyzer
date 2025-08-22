@@ -1457,18 +1457,414 @@ class GSNDrawingHelper(FTADrawingHelper):
             tags=(obj_id,),
         )
 
-    def draw_away_solution_shape(self, canvas, x, y, scale=40.0, **kwargs):
-        self.draw_solution_shape(canvas, x, y, scale=scale, **kwargs)
-        radius = scale / 2
-        self.draw_shared_marker(canvas, x + radius, y - radius, 1)
+    def _draw_module_reference_box(
+        self,
+        canvas,
+        x,
+        top,
+        w,
+        module_text,
+        outline_color,
+        line_width,
+        font_obj,
+        obj_id,
+    ):
+        """Draw the module identifier box used by away elements."""
+        padding = 2
+        m_width, m_height = self.get_text_size(module_text, font_obj)
+        box_w = max(w * 0.6, m_width + 2 * padding)
+        box_h = m_height + 2 * padding
+        left = x - box_w / 2
+        right = x + box_w / 2
+        bottom = top + box_h
+        canvas.create_rectangle(
+            left,
+            top,
+            right,
+            bottom,
+            fill="white",
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_text(
+            x,
+            (top + bottom) / 2,
+            text=module_text,
+            font=font_obj,
+            anchor="center",
+            width=box_w - 2 * padding,
+            tags=(obj_id,),
+        )
+        return bottom
 
-    def draw_away_goal_shape(self, canvas, x, y, scale=60.0, **kwargs):
-        self.draw_goal_shape(canvas, x, y, scale=scale, **kwargs)
-        self.draw_shared_marker(canvas, x + scale / 2, y - scale * 0.3, 1)
+    def draw_away_goal_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Goal",
+        module_text="",
+        fill="lightyellow",
+        outline_color=None,
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        """Draw an away goal shape with module reference."""
+        outline_color = self._resolve_outline(outline_color)
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        padding = 4
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        h = max(scale * 0.6, t_height + 2 * padding)
+        left = x - w / 2
+        top = y - h / 2
+        right = x + w / 2
+        bottom = y + h / 2
+        canvas.create_rectangle(
+            left,
+            top,
+            right,
+            bottom,
+            fill=fill,
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        line_y = top + h * 0.6
+        canvas.create_line(left, line_y, right, line_y, fill=outline_color, width=line_width)
+        module_scale = (bottom - line_y) * 0.5
+        self.draw_module_shape(
+            canvas,
+            x,
+            line_y + (bottom - line_y) / 2,
+            scale=module_scale,
+            text="",
+            fill="lightgray",
+            outline_color=outline_color,
+            line_width=line_width,
+            font_obj=self._scaled_font(module_scale),
+            obj_id=obj_id,
+        )
+        canvas.create_text(
+            x,
+            top + (line_y - top) / 2,
+            text=text,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+            tags=(obj_id,),
+        )
+        box_font = self._scaled_font(scale * 0.4)
+        self._draw_module_reference_box(
+            canvas,
+            x,
+            bottom,
+            w,
+            module_text,
+            outline_color,
+            line_width,
+            box_font,
+            obj_id,
+        )
 
-    def draw_away_module_shape(self, canvas, x, y, scale=60.0, **kwargs):
+    def draw_away_solution_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Solution",
+        module_text="",
+        fill="lightyellow",
+        outline_color=None,
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        """Draw an away solution as a rectangle with a semi-circle on top."""
+        outline_color = self._resolve_outline(outline_color)
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        padding = 4
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        h = max(scale * 0.6, t_height + 2 * padding)
+        radius = w / 2
+        left = x - w / 2
+        rect_top = y - h / 2
+        right = x + w / 2
+        rect_bottom = y + h / 2
+        top = rect_top - radius
+        canvas.create_rectangle(
+            left,
+            rect_top,
+            right,
+            rect_bottom,
+            fill=fill,
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_arc(
+            left,
+            top,
+            right,
+            top + 2 * radius,
+            start=0,
+            extent=180,
+            fill=fill,
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_text(
+            x,
+            rect_top + (rect_bottom - rect_top) / 2,
+            text=text,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+            tags=(obj_id,),
+        )
+        box_font = self._scaled_font(scale * 0.4)
+        self._draw_module_reference_box(
+            canvas,
+            x,
+            rect_bottom,
+            w,
+            module_text,
+            outline_color,
+            line_width,
+            box_font,
+            obj_id,
+        )
+
+    def draw_away_context_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Context",
+        module_text="",
+        fill="lightyellow",
+        outline_color=None,
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        """Draw an away context: rectangle with rounded bottom."""
+        outline_color = self._resolve_outline(outline_color)
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        padding = 4
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        h = max(scale * 0.6, t_height + 2 * padding)
+        radius = w / 2
+        left = x - w / 2
+        right = x + w / 2
+        rect_top = y - h / 2
+        rect_bottom = y + h / 2 - radius
+        canvas.create_rectangle(
+            left,
+            rect_top,
+            right,
+            rect_bottom,
+            fill=fill,
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_arc(
+            left,
+            rect_bottom,
+            right,
+            rect_bottom + 2 * radius,
+            start=180,
+            extent=180,
+            fill=fill,
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_text(
+            x,
+            rect_top + (rect_bottom - rect_top) / 2,
+            text=text,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+            tags=(obj_id,),
+        )
+        box_font = self._scaled_font(scale * 0.4)
+        self._draw_module_reference_box(
+            canvas,
+            x,
+            rect_bottom + 2 * radius,
+            w,
+            module_text,
+            outline_color,
+            line_width,
+            box_font,
+            obj_id,
+        )
+
+    def _draw_away_assumption_or_justification(
+        self,
+        canvas,
+        x,
+        y,
+        scale,
+        text,
+        label,
+        module_text,
+        fill,
+        outline_color,
+        line_width,
+        font_obj,
+        obj_id,
+    ):
+        outline_color = self._resolve_outline(outline_color)
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        padding = 4
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        h = max(scale * 0.6, t_height + 2 * padding)
+        radius = w / 2
+        left = x - w / 2
+        right = x + w / 2
+        rect_bottom = y + h / 2
+        rect_top = y - h / 2 + radius
+        canvas.create_rectangle(
+            left,
+            rect_top,
+            right,
+            rect_bottom,
+            fill=fill,
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_arc(
+            left,
+            rect_top - 2 * radius,
+            right,
+            rect_top,
+            start=0,
+            extent=180,
+            fill=fill,
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_text(
+            x,
+            rect_top + (rect_bottom - rect_top) / 2,
+            text=text,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+            tags=(obj_id,),
+        )
+        label_font = tkFont.Font(font=font_obj)
+        label_font.configure(weight="bold")
+        offset = padding
+        canvas.create_text(
+            right - offset,
+            rect_top - radius + offset,
+            text=label,
+            font=label_font,
+            anchor="ne",
+            tags=(obj_id,),
+        )
+        box_font = self._scaled_font(scale * 0.4)
+        self._draw_module_reference_box(
+            canvas,
+            x,
+            rect_bottom,
+            w,
+            module_text,
+            outline_color,
+            line_width,
+            box_font,
+            obj_id,
+        )
+
+    def draw_away_assumption_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Assumption",
+        module_text="",
+        fill="lightyellow",
+        outline_color=None,
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        """Draw an away assumption shape."""
+        self._draw_away_assumption_or_justification(
+            canvas,
+            x,
+            y,
+            scale,
+            text,
+            "A",
+            module_text,
+            fill,
+            outline_color,
+            line_width,
+            font_obj,
+            obj_id,
+        )
+
+    def draw_away_justification_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Justification",
+        module_text="",
+        fill="lightyellow",
+        outline_color=None,
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        """Draw an away justification shape."""
+        self._draw_away_assumption_or_justification(
+            canvas,
+            x,
+            y,
+            scale,
+            text,
+            "J",
+            module_text,
+            fill,
+            outline_color,
+            line_width,
+            font_obj,
+            obj_id,
+        )
+
+    def draw_away_module_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        **kwargs,
+    ):
         self.draw_module_shape(canvas, x, y, scale=scale, **kwargs)
-        self.draw_shared_marker(canvas, x + scale / 2, y - scale * 0.3, 1)
 
 
 # Create a single GSNDrawingHelper object for convenience

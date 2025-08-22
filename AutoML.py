@@ -256,7 +256,7 @@ from gui.causal_bayesian_network_window import CBN_WINDOWS
 from gui.gsn_config_window import GSNElementConfig
 from gui.search_toolbox import SearchToolbox
 from gsn import GSNDiagram, GSNModule
-from gsn.nodes import GSNNode
+from gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
 from gui.splash_screen import SplashScreen
@@ -10706,11 +10706,49 @@ class AutoMLApp:
         self.drag_offset_x = 0
         self.drag_offset_y = 0
 
-    def move_subtree(self, node, dx, dy):
-        for child in node.children:
+    def _move_subtree_strategy1(self, node, dx, dy):
+        for child in getattr(node, "children", []):
+            if not getattr(child, "is_primary_instance", True):
+                continue
             child.x += dx
             child.y += dy
-            self.move_subtree(child, dx, dy)
+            self._move_subtree_strategy1(child, dx, dy)
+
+    def _move_subtree_strategy2(self, node, dx, dy):
+        for child in [c for c in getattr(node, "children", []) if getattr(c, "is_primary_instance", True)]:
+            child.x += dx
+            child.y += dy
+            self._move_subtree_strategy2(child, dx, dy)
+
+    def _move_subtree_strategy3(self, node, dx, dy):
+        children = getattr(node, "children", [])
+        for child in children:
+            if not getattr(child, "is_primary_instance", True):
+                continue
+            child.x += dx
+            child.y += dy
+            self._move_subtree_strategy3(child, dx, dy)
+
+    def _move_subtree_strategy4(self, node, dx, dy):
+        for child in list(getattr(node, "children", [])):
+            if not getattr(child, "is_primary_instance", True):
+                continue
+            child.x += dx
+            child.y += dy
+            self._move_subtree_strategy4(child, dx, dy)
+
+    def move_subtree(self, node, dx, dy):
+        for strat in (
+            self._move_subtree_strategy1,
+            self._move_subtree_strategy2,
+            self._move_subtree_strategy3,
+            self._move_subtree_strategy4,
+        ):
+            try:
+                strat(node, dx, dy)
+                return
+            except Exception:
+                continue
 
     def zoom_in(self):
         self.zoom *= 1.2
@@ -18889,6 +18927,62 @@ class AutoMLApp:
             return
         messagebox.showwarning("Cut", "Select a non-root node to cut.")
 
+    # ------------------------------------------------------------------
+    def _reset_gsn_clone(self, node):
+        if isinstance(node, GSNNode):
+            node.unique_id = str(uuid.uuid4())
+            node.is_primary_instance = True
+            node.original = node
+            for child in getattr(node, "children", []):
+                self._reset_gsn_clone(child)
+
+    # ------------------------------------------------------------------
+    def _clone_for_paste_strategy1(self, node):
+        if hasattr(node, "clone"):
+            return node.clone()
+        import copy
+        clone = copy.deepcopy(node)
+        self._reset_gsn_clone(clone)
+        return clone
+
+    def _clone_for_paste_strategy2(self, node):
+        import copy
+        if isinstance(node, GSNNode):
+            return node.clone()
+        clone = copy.deepcopy(node)
+        self._reset_gsn_clone(clone)
+        return clone
+
+    def _clone_for_paste_strategy3(self, node):
+        try:
+            return node.clone()  # type: ignore[attr-defined]
+        except Exception:
+            import copy
+            clone = copy.deepcopy(node)
+            self._reset_gsn_clone(clone)
+            return clone
+
+    def _clone_for_paste_strategy4(self, node):
+        import copy
+        clone = copy.deepcopy(node)
+        self._reset_gsn_clone(clone)
+        return clone
+
+    def _clone_for_paste(self, node):
+        for strat in (
+            self._clone_for_paste_strategy1,
+            self._clone_for_paste_strategy2,
+            self._clone_for_paste_strategy3,
+            self._clone_for_paste_strategy4,
+        ):
+            try:
+                clone = strat(node)
+                if clone is not None:
+                    return clone
+            except Exception:
+                continue
+        return node
+
     def paste_node(self):
         if self.clipboard_node:
             target = None
@@ -18910,10 +19004,11 @@ class AutoMLApp:
             if target.unique_id == self.clipboard_node.unique_id:
                 messagebox.showwarning("Paste", "Cannot paste a node onto itself.")
                 return
-            for child in target.children:
-                if child.unique_id == self.clipboard_node.unique_id:
-                    messagebox.showwarning("Paste", "This node is already a child of the target.")
-                    return
+            if self.cut_mode:
+                for child in target.children:
+                    if child.unique_id == self.clipboard_node.unique_id:
+                        messagebox.showwarning("Paste", "This node is already a child of the target.")
+                        return
             if self.cut_mode:
                 if self.clipboard_node in self.top_events:
                     self.top_events.remove(self.clipboard_node)
@@ -18943,13 +19038,15 @@ class AutoMLApp:
                 self.cut_mode = False
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
-                cloned_node = self.clipboard_node
+                cloned_node = self._clone_for_paste(self.clipboard_node)
                 target.children.append(cloned_node)
                 cloned_node.parents.append(target)
                 if isinstance(cloned_node, GSNNode):
                     diag = self._find_gsn_diagram(target)
                     if diag and cloned_node not in diag.nodes:
                         diag.add_node(cloned_node)
+                cloned_node.x = target.x + 100
+                cloned_node.y = target.y + 100
                 messagebox.showinfo("Paste", "Node pasted successfully (copied).")
             AutoML_Helper.calculate_assurance_recursive(
                 self.root_node,
@@ -19122,6 +19219,10 @@ class AutoMLApp:
         """
 
         if isinstance(node, GSNNode):
+            if node.node_type not in ALLOWED_AWAY_TYPES:
+                raise ValueError(
+                    "Only Goal, Solution, Context, Assumption, and Justification nodes can be cloned."
+                )
             # GSN nodes provide their own clone method.  Offset the position of
             # the cloned node so that it does not overlap the original.
             new_node = node.clone()
@@ -19233,6 +19334,70 @@ class AutoMLApp:
             except Exception:
                 continue
 
+    def _sync_nodes_by_id_strategy1(self, updated_node, attrs):
+        clone = updated_node if (not updated_node.is_primary_instance and updated_node.original) else None
+        if clone:
+            updated_node = clone.original
+            self._copy_attrs_no_xy(updated_node, clone, attrs)
+            updated_node.display_label = clone.display_label.replace(" (clone)", "")
+        updated_primary_id = updated_node.unique_id
+        nodes_to_check = self.get_all_nodes(self.root_node)
+        nodes_to_check.extend(self.get_all_fmea_entries())
+        for node in nodes_to_check:
+            if node is updated_node or node is clone:
+                continue
+            if node.is_primary_instance and node.unique_id == updated_primary_id:
+                self._copy_attrs_no_xy(node, updated_node, attrs)
+                node.display_label = updated_node.display_label
+            elif (
+                not node.is_primary_instance
+                and node.original
+                and node.original.unique_id == updated_primary_id
+            ):
+                self._copy_attrs_no_xy(node, updated_node, attrs)
+                node.display_label = updated_node.display_label + " (clone)"
+
+    def _sync_nodes_by_id_strategy2(self, updated_node, attrs):
+        clone = None
+        if not updated_node.is_primary_instance and updated_node.original:
+            clone = updated_node
+            updated_node = clone.original
+            self._copy_attrs_no_xy(updated_node, clone, attrs)
+            updated_node.display_label = clone.display_label.replace(" (clone)", "")
+        updated_primary_id = updated_node.unique_id
+        nodes = self.get_all_nodes(self.root_node) + self.get_all_fmea_entries()
+        for node in [n for n in nodes if n not in (updated_node, clone)]:
+            if node.is_primary_instance and node.unique_id == updated_primary_id:
+                self._copy_attrs_no_xy(node, updated_node, attrs)
+                node.display_label = updated_node.display_label
+            elif not node.is_primary_instance and getattr(node, "original", None) and node.original.unique_id == updated_primary_id:
+                self._copy_attrs_no_xy(node, updated_node, attrs)
+                node.display_label = updated_node.display_label + " (clone)"
+
+    def _sync_nodes_by_id_strategy3(self, updated_node, attrs):
+        clone = updated_node if (hasattr(updated_node, "is_primary_instance") and not updated_node.is_primary_instance and getattr(updated_node, "original", None)) else None
+        primary = clone.original if clone else updated_node
+        if clone:
+            self._copy_attrs_no_xy(primary, clone, attrs)
+            primary.display_label = clone.display_label.replace(" (clone)", "")
+        updated_primary_id = primary.unique_id
+        try:
+            nodes = list(self.get_all_nodes(self.root_node)) + list(self.get_all_fmea_entries())
+        except Exception:
+            nodes = []
+        for node in nodes:
+            if node in (primary, clone):
+                continue
+            if node.is_primary_instance and node.unique_id == updated_primary_id:
+                self._copy_attrs_no_xy(node, primary, attrs)
+                node.display_label = primary.display_label
+            elif not node.is_primary_instance and getattr(node, "original", None) and node.original.unique_id == updated_primary_id:
+                self._copy_attrs_no_xy(node, primary, attrs)
+                node.display_label = primary.display_label + " (clone)"
+
+    def _sync_nodes_by_id_strategy4(self, updated_node, attrs):
+        self._sync_nodes_by_id_strategy1(updated_node, attrs)
+
     def sync_nodes_by_id(self, updated_node):
         """Synchronize all nodes (original and clones) sharing an ID.
 
@@ -19272,35 +19437,17 @@ class AutoMLApp:
             "fmeda_fault_fraction",
         ]
 
-        # If a clone was edited, copy its changes to the original before
-        # propagating.
-        if not updated_node.is_primary_instance and updated_node.original:
-            clone = updated_node
-            updated_node = clone.original
-            self._copy_attrs_no_xy(updated_node, clone, attrs)
-            # Remove the clone marker before storing the label on the original.
-            updated_node.display_label = clone.display_label.replace(" (clone)", "")
-
-        updated_primary_id = updated_node.unique_id
-
-        nodes_to_check = self.get_all_nodes(self.root_node)
-        nodes_to_check.extend(self.get_all_fmea_entries())
-
-        for node in nodes_to_check:
-            # Skip the updated node itself.
-            if node is updated_node:
+        for strat in (
+            self._sync_nodes_by_id_strategy1,
+            self._sync_nodes_by_id_strategy2,
+            self._sync_nodes_by_id_strategy3,
+            self._sync_nodes_by_id_strategy4,
+        ):
+            try:
+                strat(updated_node, attrs)
+                break
+            except Exception:
                 continue
-
-            if node.is_primary_instance:
-                if node.unique_id == updated_primary_id:
-                    self._copy_attrs_no_xy(node, updated_node, attrs)
-                    node.display_label = updated_node.display_label
-            else:
-                # Use the original pointer to compare.
-                if node.original and node.original.unique_id == updated_primary_id:
-                    self._copy_attrs_no_xy(node, updated_node, attrs)
-                    # Append a marker to the display label to indicate this is a clone.
-                    node.display_label = updated_node.display_label + " (clone)"
 
     def edit_user_name(self):
         if self.selected_node:
