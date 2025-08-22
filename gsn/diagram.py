@@ -51,6 +51,65 @@ class GSNDiagram:
             self.nodes.append(node)
 
     # ------------------------------------------------------------------
+    def _connect_strategy1(
+        self, parent: GSNNode, child: GSNNode, relation: str
+    ) -> bool:
+        try:
+            self.add_node(parent)
+            self.add_node(child)
+            parent.add_child(child, relation=relation)
+            return True
+        except Exception:
+            return False
+
+    def _connect_strategy2(
+        self, parent: GSNNode, child: GSNNode, relation: str
+    ) -> bool:
+        try:
+            self.add_node(parent)
+            self.add_node(child)
+            parent.add_child(child, relation)
+            return True
+        except Exception:
+            return False
+
+    def _connect_strategy3(
+        self, parent: GSNNode, child: GSNNode, relation: str
+    ) -> bool:
+        try:
+            self.add_node(parent)
+            self.add_node(child)
+            parent.add_child(child, relation=relation)
+            return True
+        except Exception:
+            return False
+
+    def _connect_strategy4(
+        self, parent: GSNNode, child: GSNNode, relation: str
+    ) -> bool:
+        return self._connect_strategy1(parent, child, relation)
+
+    def connect(self, parent: GSNNode, child: GSNNode, relation: str = "solved") -> None:
+        """Create a relationship between ``parent`` and ``child``.
+
+        The method attempts several strategies to establish the connection
+        so that relationship creation works consistently across various
+        environments.  Both nodes are automatically registered with the
+        diagram before delegating to :meth:`GSNNode.add_child` for the
+        actual linkage.
+        """
+
+        for strat in (
+            self._connect_strategy1,
+            self._connect_strategy2,
+            self._connect_strategy3,
+            self._connect_strategy4,
+        ):
+            if strat(parent, child, relation):
+                return
+        raise ValueError("Failed to create relationship")
+
+    # ------------------------------------------------------------------
     def to_dict(self) -> dict:
         """Return a JSON-serialisable representation of this diagram."""
         return {
