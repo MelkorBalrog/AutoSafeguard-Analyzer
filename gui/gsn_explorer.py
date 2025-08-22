@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk, simpledialog
 
 from gsn import GSNNode, GSNDiagram, GSNModule
-from gui import format_name_with_phase
+from gui import format_name_with_phase, messagebox
 from gui.style_manager import StyleManager
 from gui.icon_factory import create_icon
 from .name_utils import collect_work_product_names, unique_name_v4
@@ -197,7 +197,7 @@ class GSNExplorer(tk.Frame):
         if not name:
             return
         if name in self._all_diagram_names():
-            messagebox.showwarning("New GSN Diagram", "A diagram with this name already exists.")
+            messagebox.showerror("New GSN Diagram", "Name already exists", parent=self)
             return
         undo = getattr(self.app, "push_undo_state", None)
         if undo:

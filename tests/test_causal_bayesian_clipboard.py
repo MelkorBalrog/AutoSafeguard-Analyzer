@@ -74,3 +74,23 @@ def test_copy_paste_between_cbn_diagrams():
     assert doc2.network.cpds["A"] is doc1.network.cpds["A"]
     assert doc2.network.parents["A"] is doc1.network.parents["A"]
 
+
+def test_copy_paste_creates_clone_with_shared_data():
+    doc = CausalBayesianNetworkDoc(name="d")
+    doc.network.add_node("A", cpd=0.5)
+    doc.network.add_node("B", parents=["A"], cpd={(True,): 0.9, (False,): 0.1})
+    doc.positions["A"] = (0, 0)
+    doc.positions["B"] = (0, 0)
+    doc.types["A"] = doc.types["B"] = "variable"
+    app = types.SimpleNamespace(active_cbn=doc, diagram_clipboard=None, diagram_clipboard_type=None)
+    win = _make_window(app, doc)
+    win.selected_node = "B"
+    win.copy_selected()
+    win.paste_selected()
+    clones = [n for n in doc.network.nodes if n.startswith("B") and n != "B"]
+    assert clones
+    clone_name = clones[0]
+    assert doc.network.cpds[clone_name] is doc.network.cpds["B"]
+    assert doc.network.parents[clone_name] is doc.network.parents["B"]
+    doc.network.cpds["B"][(True,)] = 0.8
+    assert doc.network.cpds[clone_name][(True,)] == 0.8

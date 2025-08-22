@@ -828,42 +828,6 @@ class GSNDiagramWindow(tk.Frame):
                 parent.context_children.remove(child)
             self._selected_connection = None
             self.refresh()
-        
-    def _clone_node_strategy1(self, node: GSNNode) -> GSNNode | None:
-        """Return the primary instance of ``node``."""
-        return node if getattr(node, "is_primary_instance", True) else node.original
-
-    def _clone_node_strategy2(self, node: GSNNode) -> GSNNode | None:
-        """Fallback that always resolves to the node's original."""
-        return getattr(node, "original", None) or node
-
-    def _clone_node_strategy3(self, node: GSNNode) -> GSNNode | None:
-        """Resolve via a simple attribute walk."""
-        orig = node
-        if not getattr(orig, "is_primary_instance", True):
-            orig = getattr(orig, "original", orig)
-        return orig
-
-    def _clone_node_strategy4(self, node: GSNNode) -> GSNNode | None:
-        """Iteratively follow ``original`` until reaching the primary node."""
-        orig = node
-        seen = set()
-        while getattr(orig, "original", orig) is not orig and id(orig) not in seen:
-            seen.add(id(orig))
-            orig = getattr(orig, "original", orig)
-        return orig
-
-    def _clone_node(self, node: GSNNode) -> GSNNode | None:
-        for strat in (
-            self._clone_node_strategy1,
-            self._clone_node_strategy2,
-            self._clone_node_strategy3,
-            self._clone_node_strategy4,
-        ):
-            snap = strat(node)
-            if snap:
-                return snap
-        return None
 
     def _reconstruct_node_strategy1(
         self, snap: GSNNode, offset=(20, 20)
@@ -912,13 +876,52 @@ class GSNDiagramWindow(tk.Frame):
                 continue
         return None
 
+    def _node_from_clipboard_strategy1(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, GSNNode):
+            return clip.clone()
+        return None
+
+    def _node_from_clipboard_strategy2(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, dict):
+            try:
+                return self._reconstruct_node_strategy1(copy.deepcopy(clip))
+            except Exception:
+                return None
+        return None
+
+    def _node_from_clipboard_strategy3(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, dict):
+            try:
+                return self._reconstruct_node_strategy2(copy.deepcopy(clip))
+            except Exception:
+                return None
+        return None
+
+    def _node_from_clipboard_strategy4(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, dict):
+            try:
+                return self._reconstruct_node_strategy3(copy.deepcopy(clip))
+            except Exception:
+                return None
+        return None
+
+    def _node_from_clipboard(self, clip) -> Optional[GSNNode]:
+        for strat in (
+            self._node_from_clipboard_strategy1,
+            self._node_from_clipboard_strategy2,
+            self._node_from_clipboard_strategy3,
+            self._node_from_clipboard_strategy4,
+        ):
+            node = strat(clip)
+            if node:
+                return node
+        return None
+
     def copy_selected(self, _event=None) -> None:
         if not self.app or not self.selected_node:
             return
-        snap = self._clone_node(self.selected_node)
-        if snap:
-            self.app.diagram_clipboard = snap
-            self.app.diagram_clipboard_type = "GSN"
+        self.app.diagram_clipboard = self.selected_node
+        self.app.diagram_clipboard_type = "GSN"
 
     def cut_selected(self, _event=None) -> None:
         if not self.app or not self.selected_node:
@@ -941,10 +944,12 @@ class GSNDiagramWindow(tk.Frame):
                 "Paste", "Clipboard contains incompatible diagram element."
             )
             return
-        snap = self.app.diagram_clipboard
-        node = self._reconstruct_node(snap)
+        clip = self.app.diagram_clipboard
+        node = self._node_from_clipboard(clip)
         if not node:
             return
+        node.x += 20
+        node.y += 20
         self.diagram.add_node(node)
         self.id_to_node[node.unique_id] = node
         self.selected_node = node

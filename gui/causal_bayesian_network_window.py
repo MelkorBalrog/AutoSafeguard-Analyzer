@@ -200,9 +200,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         name = simpledialog.askstring("New Analysis", "Name:", parent=self)
         if not name:
             return
-        existing = {d.name for d in getattr(self.app, "cbn_docs", [])}
+        existing = collect_work_product_names(self.app)
         if name in existing:
-            messagebox.showwarning("New Analysis", "An analysis with this name already exists.")
+            messagebox.showerror("New Analysis", "Name already exists", parent=self)
             return
         doc = CausalBayesianNetworkDoc(name)
         if not hasattr(self.app, "cbn_docs"):
@@ -1149,11 +1149,16 @@ class CausalBayesianNetworkWindow(tk.Frame):
         while new_name in doc.network.nodes:
             idx = sum(1 for n in doc.network.nodes if n.startswith(name + "_")) + 1
             new_name = f"{name}_{idx}"
-        doc.network.nodes.append(new_name)
-        doc.network.parents[new_name] = orig_doc.network.parents.get(name, [])
-        doc.network.cpds[new_name] = orig_doc.network.cpds.get(name)
-        doc.positions[new_name] = (x + offset[0], y + offset[1])
-        doc.types[new_name] = orig_doc.types.get(name, "variable")
+        if name in doc.network.nodes:
+            doc.network.add_node(new_name, parents=doc.network.parents[name], cpd=doc.network.cpds[name])
+            doc.network.parents[new_name] = doc.network.parents[name]
+            doc.network.cpds[new_name] = doc.network.cpds[name]
+            kind = doc.types.get(name, snap["kind"])
+        else:
+            doc.network.add_node(new_name, parents=snap["parents"], cpd=copy.deepcopy(snap["cpd"]))
+            kind = snap["kind"]
+        doc.positions[new_name] = (snap["x"] + offset[0], snap["y"] + offset[1])
+        doc.types[new_name] = kind
         return new_name
 
     def _reconstruct_node_strategy2(self, snap: dict, doc, offset=(20, 20)) -> str:
@@ -1164,10 +1169,17 @@ class CausalBayesianNetworkWindow(tk.Frame):
         new_name = name
         while new_name in doc.network.nodes:
             new_name = f"{name}_{idx}"
-            idx += 1
-        doc.network.add_node(new_name, parents=orig_doc.network.parents.get(name, []), cpd=orig_doc.network.cpds.get(name))
-        doc.positions[new_name] = (x + offset[0], y + offset[1])
-        doc.types[new_name] = orig_doc.types.get(name, "variable")
+        doc.network.nodes.append(new_name)
+        if name in doc.network.parents:
+            doc.network.parents[new_name] = doc.network.parents[name]
+            doc.network.cpds[new_name] = doc.network.cpds[name]
+            kind = doc.types.get(name, snap["kind"])
+        else:
+            doc.network.parents[new_name] = list(snap["parents"])
+            doc.network.cpds[new_name] = copy.deepcopy(snap["cpd"])
+            kind = snap["kind"]
+        doc.positions[new_name] = (snap["x"] + offset[0], snap["y"] + offset[1])
+        doc.types[new_name] = kind
         return new_name
 
     def _reconstruct_node_strategy3(self, snap: dict, doc, offset=(20, 20)) -> str:
@@ -1192,13 +1204,22 @@ class CausalBayesianNetworkWindow(tk.Frame):
         new_name = name
         suffix = 1
         while new_name in doc.network.nodes:
-            new_name = f"{name}_{suffix}"
-            suffix += 1
-        doc.network.nodes.append(new_name)
-        doc.network.parents[new_name] = orig_doc.network.parents.get(name, [])
-        doc.network.cpds[new_name] = orig_doc.network.cpds.get(name)
-        doc.positions[new_name] = (x + offset[0], y + offset[1])
-        doc.types[new_name] = orig_doc.types.get(name, "variable")
+            idx = sum(1 for n in doc.network.nodes if n.startswith(name + "_")) + 1
+            new_name = f"{name}_{idx}"
+        parents = [p for p in snap.get("parents", [])]
+        cpd = snap.get("cpd")
+        if isinstance(cpd, dict):
+            cpd = {tuple(k): v for k, v in cpd.items()}
+        if name in doc.network.nodes:
+            doc.network.add_node(new_name, parents=doc.network.parents[name], cpd=doc.network.cpds[name])
+            doc.network.parents[new_name] = doc.network.parents[name]
+            doc.network.cpds[new_name] = doc.network.cpds[name]
+            kind = doc.types.get(name, snap.get("kind", "variable"))
+        else:
+            doc.network.add_node(new_name, parents=parents, cpd=cpd)
+            kind = snap.get("kind", "variable")
+        doc.positions[new_name] = (snap.get("x", 0) + offset[0], snap.get("y", 0) + offset[1])
+        doc.types[new_name] = kind
         return new_name
 
     def _reconstruct_node(self, snap: dict, doc) -> str | None:
