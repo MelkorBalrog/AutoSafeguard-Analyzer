@@ -509,19 +509,45 @@ class GSNDiagramWindow(tk.Frame):
         self._move_subtree(self._drag_node, dx, dy)
         self.refresh()
 
+    def _on_release_strategy1(self, event):
+        return self._node_at(getattr(event, "x", 0), getattr(event, "y", 0))
+
+    def _on_release_strategy2(self, event):
+        x = getattr(event, "x", 0)
+        y = getattr(event, "y", 0)
+        return self._node_at(x, y)
+
+    def _on_release_strategy3(self, event):
+        try:
+            return self._node_at(event.x, event.y)
+        except Exception:
+            return None
+
+    def _on_release_strategy4(self, event):
+        coords = (
+            float(getattr(event, "x", 0)),
+            float(getattr(event, "y", 0)),
+        )
+        return self._node_at(*coords)
+
     def _on_release(self, event):  # pragma: no cover - requires tkinter
-        cx = self.canvas.canvasx(event.x)
-        cy = self.canvas.canvasy(event.y)
         if self._connect_mode and self._connect_parent:
             self.canvas.delete("_temp_conn")
             anim = getattr(self, "_temp_conn_anim", None)
             if anim:
                 self.canvas.after_cancel(anim)
                 self._temp_conn_anim = None
-            node = self._node_at(cx, cy)
+            node = None
+            for strat in (
+                self._on_release_strategy1,
+                self._on_release_strategy2,
+                self._on_release_strategy3,
+                self._on_release_strategy4,
+            ):
+                node = strat(event)
+                if node:
+                    break
             if node and node is not self._connect_parent:
-                # Use the current connect mode to decide whether this is a
-                # solved-by or in-context-of relationship.
                 relation = self._connect_mode
                 app = getattr(self, "app", None)
                 undo = getattr(app, "push_undo_state", None)
@@ -535,7 +561,6 @@ class GSNDiagramWindow(tk.Frame):
                         showerror("Invalid Relationship", str(exc))
             self._connect_mode = None
             self._connect_parent = None
-            # Restore the default cursor once the connection is made.
             configure = getattr(self.canvas, "configure", None)
             if configure:
                 configure(cursor="")
