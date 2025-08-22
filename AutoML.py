@@ -19082,9 +19082,8 @@ class AutoMLApp:
                 self.cut_mode = False
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
-                source_diag = self._find_gsn_diagram(self.clipboard_node)
                 target_diag = self._find_gsn_diagram(target)
-                if isinstance(self.clipboard_node, GSNNode) and source_diag is target_diag:
+                if isinstance(self.clipboard_node, GSNNode):
                     cloned_node = self._clone_for_paste(self.clipboard_node)
                     target.children.append(cloned_node)
                     cloned_node.parents.append(target)
