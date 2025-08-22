@@ -18968,6 +18968,7 @@ class AutoMLApp:
 
     def paste_node(self):
         if self.clipboard_node:
+            # NOTE: This logic is final; do not modify without explicit user approval.
             target = None
             sel = self.analysis_tree.selection()
             if sel:
@@ -18976,6 +18977,16 @@ class AutoMLApp:
                     target = self.find_node_by_id(self.root_node, int(tags[0]))
             if not target:
                 target = self.selected_node
+            if not target:
+                win = self._focused_gsn_window()
+                if win and getattr(win, "diagram", None):
+                    target = win.diagram.root
+            if not target:
+                win = self._focused_cbn_window()
+                if win and getattr(win, "diagram", None):
+                    target = win.diagram.root
+            if not target:
+                target = self.root_node
             if not target:
                 messagebox.showwarning("Paste", "Select a target node to paste into.")
                 return
@@ -19021,15 +19032,26 @@ class AutoMLApp:
                 self.cut_mode = False
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
-                cloned_node = self._clone_for_paste(self.clipboard_node)
-                target.children.append(cloned_node)
-                cloned_node.parents.append(target)
-                if isinstance(cloned_node, GSNNode):
-                    diag = self._find_gsn_diagram(target)
-                    if diag and cloned_node not in diag.nodes:
-                        diag.add_node(cloned_node)
-                cloned_node.x = target.x + 100
-                cloned_node.y = target.y + 100
+                source_diag = self._find_gsn_diagram(self.clipboard_node)
+                target_diag = self._find_gsn_diagram(target)
+                if isinstance(self.clipboard_node, GSNNode) and source_diag is target_diag:
+                    cloned_node = self._clone_for_paste(self.clipboard_node)
+                    target.children.append(cloned_node)
+                    cloned_node.parents.append(target)
+                    if target_diag and cloned_node not in target_diag.nodes:
+                        target_diag.add_node(cloned_node)
+                    node_for_pos = cloned_node
+                else:
+                    target.children.append(self.clipboard_node)
+                    self.clipboard_node.parents.append(target)
+                    if isinstance(self.clipboard_node, GSNNode):
+                        if target_diag and self.clipboard_node not in target_diag.nodes:
+                            target_diag.add_node(self.clipboard_node)
+                    node_for_pos = self.clipboard_node
+                node_for_pos.x = target.x + 100
+                node_for_pos.y = target.y + 100
+                if hasattr(node_for_pos, "display_label"):
+                    node_for_pos.display_label = node_for_pos.display_label.replace(" (clone)", "")
                 messagebox.showinfo("Paste", "Node pasted successfully (copied).")
             AutoML_Helper.calculate_assurance_recursive(
                 self.root_node,
