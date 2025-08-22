@@ -220,25 +220,11 @@ class GSNDiagram:
 
     # ------------------------------------------------------------------
     def _find_module_name(self, node: GSNNode) -> str:
-        """Return the name of the module containing ``node``'s original.
-
-        The search walks up the ancestor chain to handle goals nested beneath
-        other goals or strategies.  The nearest module ancestor's name is
-        returned; if none is found an empty string is yielded allowing callers
-        to fall back to ``root``.
-        """
+        """Return the name of the module containing ``node``'s original."""
         original = getattr(node, "original", node)
-        queue = list(getattr(original, "parents", []))
-        visited: set[int] = set()
-        while queue:
-            parent = queue.pop(0)
-            key = id(parent)
-            if key in visited:
-                continue
-            visited.add(key)
+        for parent in getattr(original, "parents", []):
             if getattr(parent, "node_type", "") == "Module":
                 return getattr(parent, "user_name", "")
-            queue.extend(getattr(parent, "parents", []))
         return ""
 
     # ------------------------------------------------------------------
