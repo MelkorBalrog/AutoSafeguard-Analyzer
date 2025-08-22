@@ -1,14 +1,8 @@
 import types
 
 
-import os
-import sys
-import types
-
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
 from AutoML import AutoMLApp
-from gui.architecture import SysMLDiagramWindow, _get_next_id, SysMLObject
+from gui.architecture import SysMLDiagramWindow, _get_next_id
 
 
 class DummyRepo:
@@ -36,7 +30,6 @@ def make_window(app, repo, diagram_id):
     win.sort_objects = lambda: None
     win.refresh_from_repository = lambda e=None: None
     win._on_focus_in = types.MethodType(SysMLDiagramWindow._on_focus_in, win)
-    win._rebuild_toolboxes = lambda: None
     return win
 
 
@@ -50,14 +43,14 @@ def test_copy_paste_between_same_type_diagrams():
     app.cut_mode = False
     repo = DummyRepo("Governance Diagram", "Governance Diagram")
 
-    obj = SysMLObject(
+    obj = types.SimpleNamespace(
         obj_id=_get_next_id(),
         obj_type="Plan",
         x=0,
         y=0,
-        element_id=None,
         width=80,
         height=40,
+        element_id=None,
         properties={},
         requirements=[],
         locked=False,
