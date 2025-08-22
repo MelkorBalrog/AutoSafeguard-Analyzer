@@ -19474,6 +19474,7 @@ class AutoMLApp:
             "node_type",
             "user_name",
             "description",
+            "manager_notes",
             "rationale",
             "quant_value",
             "gate_type",
