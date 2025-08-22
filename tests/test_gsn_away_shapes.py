@@ -6,7 +6,9 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gsn.nodes import GSNNode
 from gsn.diagram import GSNDiagram
+from gsn.module import GSNModule
 from gui.drawing_helper import GSNDrawingHelper
+import types
 
 class StubCanvas:
     def __init__(self):
@@ -149,3 +151,27 @@ def test_module_box_defaults_to_root():
     )
     texts = [item for item in canvas.items if item[0] == "text"]
     assert any(kwargs.get("text") == "root" for _type, args, kwargs in texts)
+
+
+def test_clone_module_name_follows_module_container():
+    module1 = GSNModule("Pkg1")
+    module2 = GSNModule("Pkg2")
+    orig_root = GSNNode("R1", "Goal")
+    orig = GSNNode("Orig", "Goal")
+    orig_root.add_child(orig)
+    diag1 = GSNDiagram(orig_root)
+    diag1.add_node(orig)
+    clone_root = GSNNode("R2", "Goal")
+    clone = GSNNode("Clone", "Goal", is_primary_instance=False, original=orig)
+    clone_root.add_child(clone)
+    diag2 = GSNDiagram(clone_root)
+    diag2.add_node(clone)
+    module1.diagrams.append(diag1)
+    module2.diagrams.append(diag2)
+    app = types.SimpleNamespace(gsn_diagrams=[], gsn_modules=[module1, module2])
+    diag2.app = app
+    helper = RecordingHelper()
+    diag2.drawing_helper = helper
+    canvas = StubCanvas()
+    diag2.draw(canvas)
+    assert ("goal", "Pkg1") in helper.calls
