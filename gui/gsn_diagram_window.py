@@ -225,6 +225,7 @@ class GSNDiagramWindow(tk.Frame):
         self._drag_offset = (0, 0)
         self._connect_mode: Optional[str] = None
         self._connect_parent: Optional[GSNNode] = None
+        self._pending_add_type: Optional[str] = None
         self.zoom = 1.0
         self._temp_conn_anim = None
         self._temp_conn_offset = 0
@@ -234,6 +235,9 @@ class GSNDiagramWindow(tk.Frame):
         self.canvas.bind("<Double-1>", self._on_double_click)
         self.canvas.bind("<Delete>", self._on_delete)
         self.canvas.bind("<BackSpace>", self._on_delete)
+        self.canvas.bind("<MouseWheel>", self._on_mousewheel)
+        self.canvas.bind("<Button-4>", self._on_mousewheel)
+        self.canvas.bind("<Button-5>", self._on_mousewheel)
         # Provide a context menu for nodes and relationships via right-click.
         self.canvas.bind("<Button-3>", self._on_right_click)
         self.canvas.bind("<FocusIn>", self._on_focus_in)
@@ -320,14 +324,11 @@ class GSNDiagramWindow(tk.Frame):
     # The following methods simply extend the diagram with new nodes.
     # Placement is very rudimentary but sufficient for tests.
     def _add_node(self, node_type: str):  # pragma: no cover - requires tkinter
-        app = getattr(self, "app", None)
-        undo = getattr(app, "push_undo_state", None)
-        if undo:
-            undo()
-        node = GSNNode(node_type, node_type, x=50, y=50)
-        self.diagram.add_node(node)
-        self.selected_node = node
-        self.refresh()
+        """Prepare to add a node once the user clicks a location."""
+        self._pending_add_type = node_type
+        configure = getattr(self.canvas, "configure", None)
+        if configure:
+            configure(cursor="tcross")
 
     def add_goal(self):  # pragma: no cover - requires tkinter
         self._add_node("Goal")
@@ -385,6 +386,25 @@ class GSNDiagramWindow(tk.Frame):
     def _on_click(self, event):  # pragma: no cover - requires tkinter
         cx = self.canvas.canvasx(event.x)
         cy = self.canvas.canvasy(event.y)
+        if getattr(self, "_pending_add_type", None):
+            app = getattr(self, "app", None)
+            undo = getattr(app, "push_undo_state", None)
+            if undo:
+                undo()
+            node = GSNNode(
+                self._pending_add_type,
+                self._pending_add_type,
+                x=cx / self.zoom,
+                y=cy / self.zoom,
+            )
+            self.diagram.add_node(node)
+            self.selected_node = node
+            self._pending_add_type = None
+            configure = getattr(self.canvas, "configure", None)
+            if configure:
+                configure(cursor="")
+            self.refresh()
+            return
         if not hasattr(self, "selected_connection"):
             self.selected_connection = None
         if not hasattr(self, "_selected_conn_id"):
@@ -888,6 +908,16 @@ class GSNDiagramWindow(tk.Frame):
         if snap is not None:
             self.app.diagram_clipboard = snap
             self.app.diagram_clipboard_type = "GSN"
+            if self.selected_node.parents:
+                parent = self.selected_node.parents[0]
+                rel = (
+                    "context"
+                    if self.selected_node in parent.context_children
+                    else "solved"
+                )
+            else:
+                rel = "solved"
+            self.app.clipboard_relation = rel
 
     def cut_selected(self, _event=None) -> None:
         if not self.app or not self.selected_node:
@@ -918,6 +948,14 @@ class GSNDiagramWindow(tk.Frame):
         self.id_to_node[node.unique_id] = node
         self.selected_node = node
         self.refresh()
+
+    def _on_mousewheel(self, event):  # pragma: no cover - requires tkinter
+        delta = getattr(event, "delta", 0)
+        num = getattr(event, "num", 0)
+        if delta > 0 or num == 4:
+            self.zoom_in()
+        else:
+            self.zoom_out()
 
     def zoom_in(self):  # pragma: no cover - GUI interaction stub
         self.zoom *= 1.2
