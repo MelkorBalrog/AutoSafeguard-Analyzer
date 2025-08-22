@@ -19008,7 +19008,7 @@ class AutoMLApp:
                 if tags:
                     target = self.find_node_by_id(self.root_node, int(tags[0]))
             if not target:
-                target = self.selected_node
+                target = self.selected_node or self.root_node
             if not target:
                 messagebox.showwarning("Paste", "Select a target node to paste into.")
                 return
@@ -19710,6 +19710,10 @@ class AutoMLApp:
                 if hasattr(child, "refresh_from_repository"):
                     child.refresh_from_repository()
         self.refresh_all()
+        try:
+            self.apply_governance_rules()
+        except Exception:
+            pass
 
     def redo(self, strategy: str = "v4"):
         """Restore the next state from the redo stack."""
@@ -19723,6 +19727,10 @@ class AutoMLApp:
                 if hasattr(child, "refresh_from_repository"):
                     child.refresh_from_repository()
         self.refresh_all()
+        try:
+            self.apply_governance_rules()
+        except Exception:
+            pass
 
     def clear_undo_history(self) -> None:
         """Remove all undo and redo history."""
@@ -20545,7 +20553,6 @@ class AutoMLApp:
         if not self.odd_libraries and "odd_elements" in data:
             self.odd_libraries = [{"name": "Default", "elements": data.get("odd_elements", [])}]
         self.update_odd_elements()
-        self.apply_governance_rules()
 
         self.fmedas = []
         for doc in data.get("fmedas", []):
@@ -20669,6 +20676,10 @@ class AutoMLApp:
         self.selected_node = None
         if hasattr(self, "page_diagram") and self.page_diagram is not None:
             self.close_page_diagram()
+        try:
+            self.apply_governance_rules()
+        except Exception:
+            pass
         self.update_views()
 
     def save_model(self):
