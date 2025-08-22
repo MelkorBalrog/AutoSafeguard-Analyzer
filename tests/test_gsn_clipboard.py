@@ -1,4 +1,3 @@
-import copy
 import types
 
 from gui.gsn_diagram_window import GSNDiagramWindow, GSNNode, GSNDiagram
@@ -30,13 +29,11 @@ def test_gsn_copy_paste_between_diagrams():
     snap2 = win1._clone_node_strategy2(root1)
     snap3 = win1._clone_node_strategy3(root1)
     snap4 = win1._clone_node_strategy4(root1)
-    assert snap1 == snap2 == snap3 == snap4
-    assert "unique_id" not in snap1
-    assert "original" not in snap1
+    assert snap1 is snap2 is snap3 is snap4 is root1
 
     win1.selected_node = root1
     win1.copy_selected()
-    assert app.diagram_clipboard == snap1
+    assert app.diagram_clipboard is snap1
     assert app.diagram_clipboard_type == "GSN"
 
     root2 = GSNNode("B", "Goal", x=0, y=0)
@@ -49,11 +46,14 @@ def test_gsn_copy_paste_between_diagrams():
         win2._reconstruct_node_strategy3,
         win2._reconstruct_node_strategy4,
     ):
-        app.diagram_clipboard = copy.deepcopy(snap1)
+        app.diagram_clipboard = snap1
         node = strat(app.diagram_clipboard)
-        assert node.x == snap1["x"] + 20
-        assert node.y == snap1["y"] + 20
+        assert node.x == root1.x + 20
+        assert node.y == root1.y + 20
+        assert node.original is root1
 
     app.diagram_clipboard = snap1
     win2.paste_selected()
     assert len(diag2.nodes) == 2
+    new_node = next(n for n in diag2.nodes if n is not root2)
+    assert new_node.original is root1
