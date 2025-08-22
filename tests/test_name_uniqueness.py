@@ -23,18 +23,18 @@ def test_unique_name_variants() -> None:
     assert unique_name_v4("A", existing) not in existing
 
 
-def test_cross_type_uniqueness() -> None:
+def test_same_name_allowed_across_types() -> None:
     root = GSNNode("Shared", "Goal")
     gsn_diag = GSNDiagram(root)
-    cbn_doc = CausalBayesianNetworkDoc("Existing")
-    app = SimpleNamespace(gsn_diagrams=[gsn_diag], gsn_modules=[], cbn_docs=[cbn_doc])
+    app = SimpleNamespace(gsn_diagrams=[gsn_diag], gsn_modules=[], cbn_docs=[])
 
-    names = collect_work_product_names(app)
-    new_cbn = unique_name_v4("Shared", names)
-    assert new_cbn != "Shared"
-    app.cbn_docs.append(CausalBayesianNetworkDoc(new_cbn))
+    names_cbn = collect_work_product_names(app, diagram_type="cbn")
+    assert unique_name_v4("Shared", names_cbn) == "Shared"
+    cbn_doc = CausalBayesianNetworkDoc("Shared")
+    app.cbn_docs.append(cbn_doc)
 
-    new_gsn_name = unique_name_v4(
-        "Existing", collect_work_product_names(app, ignore=gsn_diag)
-    )
-    assert new_gsn_name not in {"Existing", new_cbn}
+    names_gsn = collect_work_product_names(app, ignore=gsn_diag, diagram_type="gsn")
+    assert unique_name_v4("Shared", names_gsn) == "Shared"
+
+    names_cbn = collect_work_product_names(app, diagram_type="cbn")
+    assert unique_name_v4("Shared", names_cbn) != "Shared"
