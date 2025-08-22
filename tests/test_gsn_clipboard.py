@@ -36,5 +36,5 @@ def test_gsn_copy_paste_between_diagrams():
 
     win2.paste_selected()
     assert len(diag2.nodes) == 2
-    clone = [n for n in diag2.nodes if n is not root2][0]
-    assert clone.original is root1.original
+    clone = diag2.nodes[1]
+    assert clone.original is root1
