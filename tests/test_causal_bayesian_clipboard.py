@@ -72,4 +72,3 @@ def test_cbn_copy_paste_shared_properties_independent_position():
 
     doc2.types["B"] = "Triggering Condition"
     assert doc1.types["B"] == "Triggering Condition"
-

@@ -7,6 +7,7 @@ import copy
 import json
 
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
+from .name_utils import collect_work_product_names, unique_name_v4
 from gui import messagebox, TranslucidButton
 from gui.tooltip import ToolTip
 from gui.drawing_helper import FTADrawingHelper
@@ -201,6 +202,10 @@ class CausalBayesianNetworkWindow(tk.Frame):
             if name:
                 messagebox.showwarning("New Analysis", "Analysis name already exists")
             return
+        existing = collect_work_product_names(self.app)
+        if name in existing:
+            messagebox.showerror("New Analysis", "Name already exists", parent=self)
+            return
         doc = CausalBayesianNetworkDoc(name)
         if not hasattr(self.app, "cbn_docs"):
             self.app.cbn_docs = []
@@ -230,8 +235,10 @@ class CausalBayesianNetworkWindow(tk.Frame):
         new = simpledialog.askstring("Rename Analysis", "Name:", initialvalue=old, parent=self)
         if not new or new == old:
             return
-        for doc in getattr(self.app, "cbn_docs", []):
+        docs = getattr(self.app, "cbn_docs", [])
+        for doc in docs:
             if doc.name == old:
+                new = unique_name_v4(new, collect_work_product_names(self.app, ignore=doc))
                 doc.name = new
                 toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
                 if toolbox:

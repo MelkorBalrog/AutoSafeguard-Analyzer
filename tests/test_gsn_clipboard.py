@@ -18,7 +18,6 @@ def _make_window(app, diag):
     win.refresh = lambda: None
     return win
 
-
 def test_gsn_copy_paste_clones_with_independent_positions():
     root1 = GSNNode("A", "Goal", x=0, y=0)
     diag1 = GSNDiagram(root1)
@@ -35,7 +34,6 @@ def test_gsn_copy_paste_clones_with_independent_positions():
     snap3 = win1._clone_node_strategy3(root1)
     snap4 = win1._clone_node_strategy4(root1)
     assert snap1 is snap2 is snap3 is snap4 is root1
-
     win1.selected_node = root1
     win1.copy_selected()
     assert app.diagram_clipboard is root1
@@ -81,4 +79,3 @@ def test_gsn_copy_paste_clones_with_independent_positions():
             for attr in attrs:
                 setattr(n, attr, getattr(clone, attr))
     assert root1.description == "new"
-
