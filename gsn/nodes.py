@@ -6,6 +6,8 @@ from typing import List, Optional
 import uuid
 import logging
 
+ALLOWED_AWAY_TYPES = {"Goal", "Solution", "Context", "Assumption", "Justification"}
+
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +117,10 @@ class GSNNode:
         instance, enabling multiple diagram occurrences similar to away
         solutions in GSN 2.0.
         """
+        if self.node_type not in ALLOWED_AWAY_TYPES:
+            raise ValueError(
+                f"Cloning not supported for node type '{self.node_type}'."
+            )
         clone = GSNNode(
             self.user_name,
             self.node_type,

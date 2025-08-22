@@ -31,9 +31,23 @@ class GSNDiagram:
             self.nodes.append(self.root)
 
     # ------------------------------------------------------------------
+    def ensure_unique_name(self, name: str, self_node: GSNNode | None = None) -> str:
+        """Return a unique node name based on ``name`` within the diagram."""
+        if not name:
+            return name
+        existing = {n.user_name for n in self.nodes if n is not self_node and n.user_name}
+        base = name
+        suffix = 1
+        while name in existing:
+            name = f"{base}_{suffix}"
+            suffix += 1
+        return name
+
     def add_node(self, node: GSNNode) -> None:
         """Register *node* with the diagram without connecting it."""
-        if node not in self.nodes:
+        if all(existing is not node for existing in self.nodes):
+            if getattr(node, "is_primary_instance", True):
+                node.user_name = self.ensure_unique_name(node.user_name, node)
             self.nodes.append(node)
 
     # ------------------------------------------------------------------
@@ -249,6 +263,54 @@ class GSNDiagram:
         return None
 
     # ------------------------------------------------------------------
+    def _find_module_name_strategy1(self, node: GSNNode) -> str:
+        for parent in getattr(getattr(node, "original", node), "parents", []):
+            if getattr(parent, "node_type", "") == "Module":
+                return getattr(parent, "user_name", "")
+        return ""
+
+    def _find_module_name_strategy2(self, node: GSNNode) -> str:
+        for parent in getattr(node, "parents", []):
+            if getattr(parent, "node_type", "") == "Module":
+                return getattr(parent, "user_name", "")
+        return ""
+
+    def _find_module_name_strategy3(self, node: GSNNode) -> str:
+        parents = []
+        if getattr(node, "original", None):
+            parents.extend(getattr(node.original, "parents", []))
+        parents.extend(getattr(node, "parents", []))
+        for parent in parents:
+            if getattr(parent, "node_type", "") == "Module":
+                return getattr(parent, "user_name", "")
+        return ""
+
+    def _find_module_name_strategy4(self, node: GSNNode) -> str:
+        try:
+            return next(
+                p.user_name
+                for p in getattr(getattr(node, "original", node), "parents", [])
+                if getattr(p, "node_type", "") == "Module"
+            )
+        except StopIteration:
+            return ""
+
+    def _find_module_name(self, node: GSNNode) -> str:
+        for strat in (
+            self._find_module_name_strategy1,
+            self._find_module_name_strategy2,
+            self._find_module_name_strategy3,
+            self._find_module_name_strategy4,
+        ):
+            try:
+                name = strat(node)
+                if name:
+                    return name
+            except Exception:
+                continue
+        return ""
+
+    # ------------------------------------------------------------------
     def _draw_node(self, canvas, node: GSNNode, zoom: float) -> None:  # pragma: no cover - requires tkinter
         x, y = node.x * zoom, node.y * zoom
         typ = node.node_type.lower()
@@ -263,6 +325,10 @@ class GSNDiagram:
         padding = 10 * zoom
         base_scale = 60 * zoom
 
+        module_name = ""
+        if not node.is_primary_instance:
+            module_name = self._find_module_name(node)
+
         def _call(method, *args, **kwargs):
             try:
                 method(*args, **kwargs)
@@ -271,6 +337,7 @@ class GSNDiagram:
                 kwargs.pop("top_text", None)
                 kwargs.pop("bottom_text", None)
                 kwargs.pop("font_obj", None)
+                kwargs.pop("module_text", None)
                 method(*args, **kwargs)
 
         if typ == "solution":
