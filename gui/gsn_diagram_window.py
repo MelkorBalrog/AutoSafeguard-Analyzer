@@ -225,6 +225,7 @@ class GSNDiagramWindow(tk.Frame):
         self._drag_offset = (0, 0)
         self._connect_mode: Optional[str] = None
         self._connect_parent: Optional[GSNNode] = None
+        self._pending_add_type: Optional[str] = None
         self.zoom = 1.0
         self._temp_conn_anim = None
         self._temp_conn_offset = 0
@@ -234,6 +235,9 @@ class GSNDiagramWindow(tk.Frame):
         self.canvas.bind("<Double-1>", self._on_double_click)
         self.canvas.bind("<Delete>", self._on_delete)
         self.canvas.bind("<BackSpace>", self._on_delete)
+        self.canvas.bind("<MouseWheel>", self._on_mousewheel)
+        self.canvas.bind("<Button-4>", self._on_mousewheel)
+        self.canvas.bind("<Button-5>", self._on_mousewheel)
         # Provide a context menu for nodes and relationships via right-click.
         self.canvas.bind("<Button-3>", self._on_right_click)
         self.canvas.bind("<FocusIn>", self._on_focus_in)
@@ -320,14 +324,11 @@ class GSNDiagramWindow(tk.Frame):
     # The following methods simply extend the diagram with new nodes.
     # Placement is very rudimentary but sufficient for tests.
     def _add_node(self, node_type: str):  # pragma: no cover - requires tkinter
-        app = getattr(self, "app", None)
-        undo = getattr(app, "push_undo_state", None)
-        if undo:
-            undo()
-        node = GSNNode(node_type, node_type, x=50, y=50)
-        self.diagram.add_node(node)
-        self.selected_node = node
-        self.refresh()
+        """Prepare to add a node once the user clicks a location."""
+        self._pending_add_type = node_type
+        configure = getattr(self.canvas, "configure", None)
+        if configure:
+            configure(cursor="tcross")
 
     def add_goal(self):  # pragma: no cover - requires tkinter
         self._add_node("Goal")
@@ -383,13 +384,33 @@ class GSNDiagramWindow(tk.Frame):
             configure(cursor="hand2")
 
     def _on_click(self, event):  # pragma: no cover - requires tkinter
-        cx = self.canvas.canvasx(event.x)
-        cy = self.canvas.canvasy(event.y)
+        raw_x, raw_y = event.x, event.y
+        cx = self.canvas.canvasx(raw_x)
+        cy = self.canvas.canvasy(raw_y)
+        if getattr(self, "_pending_add_type", None):
+            app = getattr(self, "app", None)
+            undo = getattr(app, "push_undo_state", None)
+            if undo:
+                undo()
+            node = GSNNode(
+                self._pending_add_type,
+                self._pending_add_type,
+                x=cx / self.zoom,
+                y=cy / self.zoom,
+            )
+            self.diagram.add_node(node)
+            self.selected_node = node
+            self._pending_add_type = None
+            configure = getattr(self.canvas, "configure", None)
+            if configure:
+                configure(cursor="")
+            self.refresh()
+            return
         if not hasattr(self, "selected_connection"):
             self.selected_connection = None
         if not hasattr(self, "_selected_conn_id"):
             self._selected_conn_id = ""
-        node = self._node_at(cx, cy)
+        node = self._node_at(raw_x, raw_y)
         connection = self._connection_at(cx, cy)
         app = getattr(self, "app", None)
         if self._connect_mode:
@@ -580,9 +601,10 @@ class GSNDiagramWindow(tk.Frame):
                 webbrowser.open(name)
 
     def _on_double_click(self, event):  # pragma: no cover - requires tkinter
-        cx = self.canvas.canvasx(event.x)
-        cy = self.canvas.canvasy(event.y)
-        node = self._node_at(cx, cy)
+        raw_x, raw_y = event.x, event.y
+        cx = self.canvas.canvasx(raw_x)
+        cy = self.canvas.canvasy(raw_y)
+        node = self._node_at(raw_x, raw_y)
         if node:
             if node.node_type == "Solution":
                 link = getattr(node, "evidence_link", "")
@@ -727,15 +749,35 @@ class GSNDiagramWindow(tk.Frame):
         return None
 
     def _node_at_strategy2(self, x: float, y: float) -> Optional[GSNNode]:
+        """Return node using the closest item only when the pointer is over it.
+
+        The original implementation simply returned the closest canvas item
+        regardless of the click position.  ``Canvas.find_closest`` always
+        yields an item which meant that clicking on empty space would
+        incorrectly select the nearest node.  To avoid random selections we
+        now verify that the pointer actually lies within the bounding box of
+        the closest item before looking up the corresponding node.
+        """
+
         canvasx = getattr(self.canvas, "canvasx", lambda v: v)
         canvasy = getattr(self.canvas, "canvasy", lambda v: v)
         cx, cy = canvasx(x), canvasy(y)
-        items = self.canvas.find_closest(cx, cy)
-        for item in items:
-            for tag in self.canvas.gettags(item):
-                node = self.id_to_node.get(tag)
-                if node:
-                    return node
+        for item in self.canvas.find_closest(cx, cy):
+            bbox = getattr(self.canvas, "bbox", lambda *_: None)(item)
+            if bbox:
+                x1, y1, x2, y2 = bbox
+                if x1 <= cx <= x2 and y1 <= cy <= y2:
+                    node = self._node_from_canvas_item(item)
+                    if node:
+                        return node
+        return None
+
+    def _node_from_canvas_item(self, item) -> Optional[GSNNode]:
+        """Return the node associated with a canvas item, if any."""
+        for tag in self.canvas.gettags(item):
+            node = self.id_to_node.get(tag)
+            if node:
+                return node
         return None
 
     def _node_at_strategy3(self, x: float, y: float) -> Optional[GSNNode]:
@@ -755,7 +797,10 @@ class GSNDiagramWindow(tk.Frame):
         canvasx = getattr(self.canvas, "canvasx", lambda v: v)
         canvasy = getattr(self.canvas, "canvasy", lambda v: v)
         cx, cy = canvasx(x), canvasy(y)
-        for node in self.diagram._traverse():
+        diagram = getattr(self, "diagram", None)
+        if diagram is None:
+            return None
+        for node in diagram._traverse():
             if (cx - node.x) ** 2 + (cy - node.y) ** 2 <= (20 * self.zoom) ** 2:
                 return node
         return None
@@ -888,6 +933,16 @@ class GSNDiagramWindow(tk.Frame):
         if snap is not None:
             self.app.diagram_clipboard = snap
             self.app.diagram_clipboard_type = "GSN"
+            if self.selected_node.parents:
+                parent = self.selected_node.parents[0]
+                rel = (
+                    "context"
+                    if self.selected_node in parent.context_children
+                    else "solved"
+                )
+            else:
+                rel = "solved"
+            self.app.clipboard_relation = rel
 
     def cut_selected(self, _event=None) -> None:
         if not self.app or not self.selected_node:
@@ -918,6 +973,14 @@ class GSNDiagramWindow(tk.Frame):
         self.id_to_node[node.unique_id] = node
         self.selected_node = node
         self.refresh()
+
+    def _on_mousewheel(self, event):  # pragma: no cover - requires tkinter
+        delta = getattr(event, "delta", 0)
+        num = getattr(event, "num", 0)
+        if delta > 0 or num == 4:
+            self.zoom_in()
+        else:
+            self.zoom_out()
 
     def zoom_in(self):  # pragma: no cover - GUI interaction stub
         self.zoom *= 1.2
