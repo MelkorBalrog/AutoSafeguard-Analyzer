@@ -281,6 +281,22 @@ class GSNDiagramWindow(tk.Frame):
         set_uniform_button_width(self.toolbox)
 
     # ------------------------------------------------------------------
+    def _sync_from_originals(self) -> None:
+        """Synchronise cloned nodes with their original counterparts."""
+        for node in getattr(self.diagram, "nodes", []):
+            original = getattr(node, "original", None)
+            if original and original is not node:
+                node.user_name = original.user_name
+                node.description = original.description
+                node.manager_notes = getattr(original, "manager_notes", "")
+
+    # ------------------------------------------------------------------
+    def refresh_from_repository(self) -> None:  # pragma: no cover - requires tkinter
+        """Refresh the diagram and sync cloned nodes on tab activation."""
+        self._sync_from_originals()
+        self.refresh()
+
+    # ------------------------------------------------------------------
     def refresh(self):  # pragma: no cover - requires tkinter
         # Ensure the diagram has access to the application for SPI lookups
         setattr(self.diagram, "app", getattr(self, "app", None))
