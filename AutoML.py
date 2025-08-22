@@ -19492,7 +19492,10 @@ class AutoMLApp:
             self._copy_attrs_no_xy(updated_node, clone, attrs)
             updated_node.display_label = clone.display_label.replace(" (clone)", "")
         updated_primary_id = updated_node.unique_id
-        nodes_to_check = self.get_all_nodes(self.root_node)
+        try:
+            nodes_to_check = list(self.get_all_nodes_in_model())
+        except Exception:
+            nodes_to_check = list(self.get_all_nodes(self.root_node))
         nodes_to_check.extend(self.get_all_fmea_entries())
         for node in nodes_to_check:
             if node is updated_node or node is clone:
@@ -19516,7 +19519,11 @@ class AutoMLApp:
             self._copy_attrs_no_xy(updated_node, clone, attrs)
             updated_node.display_label = clone.display_label.replace(" (clone)", "")
         updated_primary_id = updated_node.unique_id
-        nodes = self.get_all_nodes(self.root_node) + self.get_all_fmea_entries()
+        try:
+            nodes = list(self.get_all_nodes_in_model())
+        except Exception:
+            nodes = list(self.get_all_nodes(self.root_node))
+        nodes += list(self.get_all_fmea_entries())
         for node in [n for n in nodes if n not in (updated_node, clone)]:
             if node.is_primary_instance and node.unique_id == updated_primary_id:
                 self._copy_attrs_no_xy(node, updated_node, attrs)
@@ -19533,9 +19540,16 @@ class AutoMLApp:
             primary.display_label = clone.display_label.replace(" (clone)", "")
         updated_primary_id = primary.unique_id
         try:
-            nodes = list(self.get_all_nodes(self.root_node)) + list(self.get_all_fmea_entries())
+            nodes = list(self.get_all_nodes_in_model())
         except Exception:
-            nodes = []
+            try:
+                nodes = list(self.get_all_nodes(self.root_node))
+            except Exception:
+                nodes = []
+        try:
+            nodes += list(self.get_all_fmea_entries())
+        except Exception:
+            pass
         for node in nodes:
             if node in (primary, clone):
                 continue

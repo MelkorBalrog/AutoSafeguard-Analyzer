@@ -24,10 +24,16 @@ class GSNCloneSyncNotesTests(unittest.TestCase):
         self.original = GSNNode("Orig", "Goal")
         self.clone = self.original.clone()
 
+        # Simulate a traversal that misses detached clones (real-world bug)
         def all_nodes(_self, node=None):
+            return [self.original]
+
+        # Model-wide query still sees both nodes
+        def all_nodes_in_model(_self):
             return [self.original, self.clone]
 
         self.app.get_all_nodes = types.MethodType(all_nodes, self.app)
+        self.app.get_all_nodes_in_model = types.MethodType(all_nodes_in_model, self.app)
         self.app.get_all_fmea_entries = types.MethodType(lambda _self: [], self.app)
         self.app.root_node = self.original
 
