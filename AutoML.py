@@ -18947,7 +18947,11 @@ class AutoMLApp:
             node.unique_id = str(uuid.uuid4())
             node.is_primary_instance = True
             node.original = node
-            for child in getattr(node, "children", []):
+            old_children = list(getattr(node, "children", []))
+            node.children = []
+            node.parents = []
+            node.context_children = []
+            for child in old_children:
                 self._reset_gsn_clone(child)
 
     # ------------------------------------------------------------------
