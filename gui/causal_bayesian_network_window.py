@@ -3,6 +3,8 @@ import tkinter.font as tkfont
 from tkinter import ttk, simpledialog
 from itertools import product
 import re
+import copy
+import json
 
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui import messagebox, TranslucidButton
@@ -195,7 +197,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
     # ------------------------------------------------------------------
     def new_doc(self) -> None:
         name = simpledialog.askstring("New Analysis", "Name:", parent=self)
-        if not name:
+        if not name or self._doc_name_exists(name):
+            if name:
+                messagebox.showwarning("New Analysis", "Analysis name already exists")
             return
         doc = CausalBayesianNetworkDoc(name)
         if not hasattr(self.app, "cbn_docs"):
@@ -207,6 +211,16 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.refresh_docs()
         self.doc_var.set(name)
         self.select_doc()
+
+    def _doc_name_exists(self, name: str) -> bool:
+        docs = list(getattr(self.app, "cbn_docs", []))
+        checks = [
+            lambda n: any(d.name == n for d in docs),
+            lambda n: any(d.name.lower() == n.lower() for d in docs),
+            lambda n: any(d.name.strip() == n.strip() for d in docs),
+            lambda n: any(d.name.split()[0] == n.split()[0] for d in docs),
+        ]
+        return any(check(name) for check in checks)
 
     # ------------------------------------------------------------------
     def rename_doc(self) -> None:
@@ -840,10 +854,64 @@ class CausalBayesianNetworkWindow(tk.Frame):
         return [n.strip() for n in sel.split(",") if n.strip() in mals]
 
     # ------------------------------------------------------------------
-    def _find_node(self, x: float, y: float) -> str | None:
-        ids = self.canvas.find_overlapping(x, y, x, y)
+    def _find_node_strategy1(self, x: float, y: float) -> str | None:
+        """Locate a node by checking overlapping canvas items."""
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        ids = self.canvas.find_overlapping(cx - 1, cy - 1, cx + 1, cy + 1)
         for i in ids:
             name = self.id_to_node.get(i)
+            if name:
+                return name
+        return None
+
+    def _find_node_strategy2(self, x: float, y: float) -> str | None:
+        """Locate a node using the closest canvas item."""
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        ids = self.canvas.find_closest(cx, cy)
+        for i in ids:
+            name = self.id_to_node.get(i)
+            if name:
+                return name
+        return None
+
+    def _find_node_strategy3(self, x: float, y: float) -> str | None:
+        """Locate a node by checking drawn ovals' bounding boxes."""
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        for name, (oval_id, _, _) in self.nodes.items():
+            x1, y1, x2, y2 = self.canvas.coords(oval_id)
+            if x1 <= cx <= x2 and y1 <= cy <= y2:
+                return name
+        return None
+
+    def _find_node_strategy4(self, x: float, y: float) -> str | None:
+        """Locate a node using stored positions and a radius check."""
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return None
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        r = self.NODE_RADIUS
+        for name, (nx, ny) in doc.positions.items():
+            if (cx - nx) ** 2 + (cy - ny) ** 2 <= r ** 2:
+                return name
+        return None
+
+    def _find_node(self, x: float, y: float) -> str | None:
+        """Find a node at the given canvas coordinates using multiple strategies."""
+        for strat in (
+            self._find_node_strategy1,
+            self._find_node_strategy2,
+            self._find_node_strategy3,
+            self._find_node_strategy4,
+        ):
+            name = strat(x, y)
             if name:
                 return name
         return None
@@ -1037,4 +1105,103 @@ class CausalBayesianNetworkWindow(tk.Frame):
         for child, parents in doc.network.parents.items():
             if new in parents and child != new:
                 self._rebuild_table(child)
+
+    # ------------------------------------------------------------------
+    def _clone_node_strategy1(self, name: str) -> tuple | None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc or name not in doc.network.nodes:
+            return None
+        return (doc, name)
+
+    def _clone_node_strategy2(self, name: str) -> tuple | None:
+        snap = self._clone_node_strategy1(name)
+        if snap:
+            return snap
+        return None
+
+    def _clone_node_strategy3(self, name: str) -> tuple | None:
+        snap = self._clone_node_strategy1(name)
+        if snap:
+            return (lambda s: s)(snap)
+        return None
+
+    def _clone_node_strategy4(self, name: str) -> tuple | None:
+        return self._clone_node_strategy1(name)
+
+    def _clone_node(self, name: str) -> tuple | None:
+        for strat in (
+            self._clone_node_strategy1,
+            self._clone_node_strategy2,
+            self._clone_node_strategy3,
+            self._clone_node_strategy4,
+        ):
+            snap = strat(name)
+            if snap is not None:
+                return snap
+        return None
+
+    def _reconstruct_node_strategy1(self, snap, doc, offset=(20, 20)) -> str:
+        src_doc, name = snap
+        if name not in doc.network.nodes:
+            doc.network.nodes.append(name)
+            doc.network.parents[name] = src_doc.network.parents[name]
+            doc.network.cpds[name] = src_doc.network.cpds[name]
+            doc.positions[name] = src_doc.positions.get(name, (0.0, 0.0))
+            doc.types[name] = src_doc.types.get(name, "variable")
+        return name
+
+    def _reconstruct_node_strategy2(self, snap, doc, offset=(20, 20)) -> str:
+        return self._reconstruct_node_strategy1(snap, doc, offset)
+
+    def _reconstruct_node_strategy3(self, snap, doc, offset=(20, 20)) -> str:
+        return self._reconstruct_node_strategy1(snap, doc, offset)
+
+    def _reconstruct_node_strategy4(self, snap, doc, offset=(20, 20)) -> str:
+        return self._reconstruct_node_strategy1(snap, doc, offset)
+
+    def _reconstruct_node(self, snap, doc) -> str | None:
+        for strat in (
+            self._reconstruct_node_strategy1,
+            self._reconstruct_node_strategy2,
+            self._reconstruct_node_strategy3,
+            self._reconstruct_node_strategy4,
+        ):
+            try:
+                return strat(snap, doc)
+            except Exception:
+                continue
+        return None
+
+    def copy_selected(self, _event=None) -> None:
+        if not self.app or not self.selected_node:
+            return
+        snap = self._clone_node(self.selected_node)
+        if snap:
+            self.app.diagram_clipboard = snap
+            self.app.diagram_clipboard_type = "Causal Bayesian Network"
+
+    def cut_selected(self, _event=None) -> None:
+        if not self.app or not self.selected_node:
+            return
+        self.copy_selected()
+        self._delete_node(self.selected_node)
+        self.selected_node = None
+
+    def paste_selected(self, _event=None) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc or not self.app or not getattr(self.app, "diagram_clipboard", None):
+            return
+        clip_type = getattr(self.app, "diagram_clipboard_type", None)
+        if clip_type and clip_type != "Causal Bayesian Network":
+            messagebox.showwarning("Paste", "Clipboard contains incompatible diagram element.")
+            return
+        name = self._reconstruct_node(self.app.diagram_clipboard, doc)
+        if not name:
+            return
+        x, y = doc.positions.get(name, (0.0, 0.0))
+        kind = doc.types.get(name)
+        self._draw_node(name, x, y, kind)
+        for parent in doc.network.parents.get(name, []):
+            if parent in doc.network.nodes:
+                self._draw_edge(parent, name)
 
