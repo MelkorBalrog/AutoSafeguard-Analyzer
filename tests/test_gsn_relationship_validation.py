@@ -21,3 +21,12 @@ def test_assumption_cannot_have_children():
     goal = GSNNode("g", "Goal")
     with pytest.raises(ValueError):
         assump.add_child(goal)
+
+
+@pytest.mark.parametrize("parent", ["Context", "Assumption", "Justification"])
+@pytest.mark.parametrize("child", ["Context", "Assumption", "Justification"])
+def test_annotation_context_links_allowed(parent, child):
+    p = GSNNode("p", parent)
+    c = GSNNode("c", child)
+    p.add_child(c, relation="context")
+    assert c in p.context_children

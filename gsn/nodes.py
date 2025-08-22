@@ -93,6 +93,9 @@ class GSNNode:
                 "Strategy": {"Context", "Assumption", "Justification"},
                 "Solution": {"Context", "Assumption", "Justification"},
                 "Module": {"Context", "Assumption", "Justification"},
+                "Context": {"Context", "Assumption", "Justification"},
+                "Assumption": {"Context", "Assumption", "Justification"},
+                "Justification": {"Context", "Assumption", "Justification"},
             }
             if self.node_type not in allowed or child.node_type not in allowed[self.node_type]:
                 raise ValueError(
