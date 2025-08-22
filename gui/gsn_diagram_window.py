@@ -409,7 +409,7 @@ class GSNDiagramWindow(tk.Frame):
             self.selected_connection = None
         if not hasattr(self, "_selected_conn_id"):
             self._selected_conn_id = ""
-        node = self._node_at(cx, cy)
+        node = self._node_at(event.x, event.y)
         connection = self._connection_at(cx, cy)
         app = getattr(self, "app", None)
         if self._connect_mode:
@@ -752,6 +752,12 @@ class GSNDiagramWindow(tk.Frame):
         cx, cy = canvasx(x), canvasy(y)
         items = self.canvas.find_closest(cx, cy)
         for item in items:
+            bbox = getattr(self.canvas, "bbox", lambda *_: None)(item)
+            if bbox:
+                x1, y1, x2, y2 = bbox
+                margin = 5
+                if not (x1 - margin <= cx <= x2 + margin and y1 - margin <= cy <= y2 + margin):
+                    continue
             for tag in self.canvas.gettags(item):
                 node = self.id_to_node.get(tag)
                 if node:
@@ -775,7 +781,8 @@ class GSNDiagramWindow(tk.Frame):
         canvasx = getattr(self.canvas, "canvasx", lambda v: v)
         canvasy = getattr(self.canvas, "canvasy", lambda v: v)
         cx, cy = canvasx(x), canvasy(y)
-        for node in self.diagram._traverse():
+        traverse = getattr(getattr(self, "diagram", None), "_traverse", lambda: [])
+        for node in traverse():
             if (cx - node.x) ** 2 + (cy - node.y) ** 2 <= (20 * self.zoom) ** 2:
                 return node
         return None
