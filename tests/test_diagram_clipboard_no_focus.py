@@ -6,7 +6,7 @@ import weakref
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from AutoML import AutoMLApp
-from gui.architecture import SysMLDiagramWindow, _get_next_id, ARCH_WINDOWS, SysMLObject
+from gui.architecture import SysMLDiagramWindow, _get_next_id, ARCH_WINDOWS
 from gui import messagebox
 
 
@@ -30,7 +30,6 @@ def make_window(app, repo):
     win.redraw = lambda: None
     win.update_property_view = lambda: None
     win.sort_objects = lambda: None
-    win._rebuild_toolboxes = lambda: None
     return win
 
 
@@ -44,14 +43,14 @@ def test_paste_without_active_window_uses_clipboard():
     app.cut_mode = False
 
     repo = DummyRepo()
-    obj = SysMLObject(
+    obj = types.SimpleNamespace(
         obj_id=_get_next_id(),
         obj_type="Plan",
         x=0,
         y=0,
-        element_id=None,
         width=80,
         height=40,
+        element_id=None,
         properties={},
         requirements=[],
         locked=False,
