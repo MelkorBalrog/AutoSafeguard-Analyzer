@@ -18945,9 +18945,11 @@ class AutoMLApp:
     def _reset_gsn_clone(self, node):
         if isinstance(node, GSNNode):
             node.unique_id = str(uuid.uuid4())
-            node.is_primary_instance = True
-            node.original = node
-            for child in getattr(node, "children", []):
+            old_children = list(getattr(node, "children", []))
+            node.children = []
+            node.parents = []
+            node.context_children = []
+            for child in old_children:
                 self._reset_gsn_clone(child)
 
     # ------------------------------------------------------------------
@@ -19063,9 +19065,8 @@ class AutoMLApp:
                 self.cut_mode = False
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
-                source_diag = self._find_gsn_diagram(self.clipboard_node)
                 target_diag = self._find_gsn_diagram(target)
-                if isinstance(self.clipboard_node, GSNNode) and source_diag is target_diag:
+                if isinstance(self.clipboard_node, GSNNode):
                     cloned_node = self._clone_for_paste(self.clipboard_node)
                     target.children.append(cloned_node)
                     cloned_node.parents.append(target)
@@ -19131,29 +19132,43 @@ class AutoMLApp:
             pass
         return getattr(win, "has_focus", False)
 
+    def _window_in_selected_tab(self, win):
+        nb = getattr(self, "doc_nb", None)
+        if not nb:
+            return True
+        try:
+            sel = nb.select()
+            if sel:
+                tab = nb.nametowidget(sel)
+                if getattr(tab, "gsn_window", None) is win:
+                    return True
+        except Exception:
+            pass
+        return False
+
     def _gsn_window_strategy1(self):
         win = getattr(self, "active_gsn_window", None)
-        if win and self._window_has_focus(win):
+        if win and (self._window_has_focus(win) or self._window_in_selected_tab(win)):
             return win
         return None
 
     def _gsn_window_strategy2(self):
         for ref in list(GSN_WINDOWS):
             win = ref()
-            if win and self._window_has_focus(win):
+            if win and (self._window_has_focus(win) or self._window_in_selected_tab(win)):
                 return win
         return None
 
     def _gsn_window_strategy3(self):
         win = getattr(self, "active_gsn_window", None)
-        if win:
+        if win and self._window_in_selected_tab(win):
             return win
         return None
 
     def _gsn_window_strategy4(self):
         for ref in list(GSN_WINDOWS):
             win = ref()
-            if win:
+            if win and self._window_in_selected_tab(win):
                 return win
         return None
 
@@ -19449,6 +19464,7 @@ class AutoMLApp:
             "node_type",
             "user_name",
             "description",
+            "manager_notes",
             "rationale",
             "quant_value",
             "gate_type",
