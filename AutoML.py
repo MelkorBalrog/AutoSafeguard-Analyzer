@@ -19038,11 +19038,15 @@ class AutoMLApp:
                     self.clipboard_node.is_page = False
                     self.clipboard_node.input_subtype = "Failure"
                 self.clipboard_node.is_primary_instance = True
-                if getattr(self, "clipboard_relation", "solved") == "context":
-                    target.context_children.append(self.clipboard_node)
+                relation = getattr(self, "clipboard_relation", "solved")
+                if hasattr(target, "add_child"):
+                    target.add_child(self.clipboard_node, relation=relation)
                 else:
-                    target.children.append(self.clipboard_node)
-                self.clipboard_node.parents.append(target)
+                    if relation == "context":
+                        target.context_children.append(self.clipboard_node)
+                    else:
+                        target.children.append(self.clipboard_node)
+                    self.clipboard_node.parents.append(target)
                 if isinstance(self.clipboard_node, GSNNode):
                     old_diag = self._find_gsn_diagram(self.clipboard_node)
                     new_diag = self._find_gsn_diagram(target)
@@ -19060,11 +19064,15 @@ class AutoMLApp:
                 cloned_node = self._clone_for_paste(self.clipboard_node)
                 if cloned_node is None:
                     return
-                if getattr(self, "clipboard_relation", "solved") == "context":
-                    target.context_children.append(cloned_node)
+                relation = getattr(self, "clipboard_relation", "solved")
+                if hasattr(target, "add_child"):
+                    target.add_child(cloned_node, relation=relation)
                 else:
-                    target.children.append(cloned_node)
-                cloned_node.parents.append(target)
+                    if relation == "context":
+                        target.context_children.append(cloned_node)
+                    else:
+                        target.children.append(cloned_node)
+                    cloned_node.parents.append(target)
                 if isinstance(cloned_node, GSNNode):
                     diag = self._find_gsn_diagram(target)
                     if diag and cloned_node not in diag.nodes:

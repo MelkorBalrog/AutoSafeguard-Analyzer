@@ -1700,100 +1700,27 @@ class GSNDrawingHelper(FTADrawingHelper):
         font_obj=None,
         obj_id: str = "",
     ):
-        """Draw an away context where the upper half mirrors the standard
-        context shape and the lower half is a square description box."""
+        """Draw an away context with a flat top and rounded bottom."""
 
         outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = self._scaled_font(scale)
         padding = 4
-        title, desc = (text.split("\n", 1) + [""])[:2]
-        title_w, title_h = self.get_text_size(title, font_obj)
-        desc_w, desc_h = self.get_text_size(desc, font_obj) if desc else (0, 0)
-        w = max(scale, title_w, desc_w) + 2 * padding
-        top_h = max(scale * 0.3, title_h + 2 * padding)
-        bottom_h = max(scale * 0.3, desc_h + 2 * padding)
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        rect_h = max(scale * 0.5, t_height + 2 * padding)
+        arc_h = w * 0.3
         left = x - w / 2
         right = x + w / 2
-        rect_top = y - (top_h + bottom_h) / 2
-        rect_mid = rect_top + top_h
-        rect_bottom = rect_mid + bottom_h
-        radius = top_h / 2
+        rect_top = y - (rect_h + arc_h) / 2
+        rect_bottom = rect_top + rect_h
+        arc_top = rect_bottom - arc_h
+        arc_bottom = rect_bottom + arc_h
 
-        # Upper half resembling a normal context shape
-        canvas.create_rectangle(
-            left + radius,
-            rect_top,
-            right - radius,
-            rect_mid,
-            fill=fill,
-            outline="",
-            width=0,
-            tags=(obj_id,),
-        )
-        canvas.create_oval(
-            left,
-            rect_top,
-            left + top_h,
-            rect_mid,
-            fill=fill,
-            outline="",
-            width=0,
-            tags=(obj_id,),
-        )
-        canvas.create_oval(
-            right - top_h,
-            rect_top,
-            right,
-            rect_mid,
-            fill=fill,
-            outline="",
-            width=0,
-            tags=(obj_id,),
-        )
-        canvas.create_line(
-            left + radius,
-            rect_top,
-            right - radius,
-            rect_top,
-            fill=outline_color,
-            width=line_width,
-        )
-        canvas.create_line(
-            left,
-            rect_mid,
-            right,
-            rect_mid,
-            fill=outline_color,
-            width=line_width,
-        )
-        canvas.create_arc(
-            left,
-            rect_top,
-            left + top_h,
-            rect_mid,
-            start=90,
-            extent=180,
-            style=tk.ARC,
-            outline=outline_color,
-            width=line_width,
-        )
-        canvas.create_arc(
-            right - top_h,
-            rect_top,
-            right,
-            rect_mid,
-            start=270,
-            extent=180,
-            style=tk.ARC,
-            outline=outline_color,
-            width=line_width,
-        )
-
-        # Lower rectangular description area fused with upper shape
+        # Base rectangle
         canvas.create_rectangle(
             left,
-            rect_mid - line_width,
+            rect_top,
             right,
             rect_bottom,
             fill=fill,
@@ -1802,20 +1729,36 @@ class GSNDrawingHelper(FTADrawingHelper):
             tags=(obj_id,),
         )
 
+        # Rounded bottom
+        canvas.create_arc(
+            left,
+            arc_top,
+            right,
+            arc_bottom,
+            start=180,
+            extent=180,
+            style=tk.CHORD,
+            fill=fill,
+            outline="",
+            tags=(obj_id,),
+        )
+        canvas.create_arc(
+            left,
+            arc_top,
+            right,
+            arc_bottom,
+            start=180,
+            extent=180,
+            style=tk.ARC,
+            outline=outline_color,
+            width=line_width,
+        )
+
         # Text placement
         canvas.create_text(
             x,
-            rect_top + top_h / 2,
-            text=title,
-            font=font_obj,
-            anchor="center",
-            width=w - 2 * padding,
-            tags=(obj_id,),
-        )
-        canvas.create_text(
-            x,
-            rect_mid + bottom_h / 2,
-            text=desc,
+            rect_top + rect_h / 2,
+            text=text,
             font=font_obj,
             anchor="center",
             width=w - 2 * padding,
@@ -1826,7 +1769,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         self._draw_module_reference_box(
             canvas,
             x,
-            rect_bottom,
+            arc_bottom,
             w,
             module_text,
             outline_color,
@@ -1854,17 +1797,17 @@ class GSNDrawingHelper(FTADrawingHelper):
         if font_obj is None:
             font_obj = self._scaled_font(scale)
         padding = 4
-        title, desc = (text.split("\n", 1) + [""])[:2]
-        title_w, title_h = self.get_text_size(title, font_obj)
-        desc_w, desc_h = self.get_text_size(desc, font_obj) if desc else (0, 0)
-        w = max(scale, title_w, desc_w) + 2 * padding
-        h = max(scale * 0.6, title_h + desc_h + 3 * padding)
-        radius = w / 2
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        rect_h = max(scale * 0.5, t_height + 2 * padding)
+        arc_h = w * 0.3
         left = x - w / 2
         right = x + w / 2
-        rect_top = y - h / 2 + radius
-        rect_bottom = y + h / 2
-        # Body: rectangle + top arc
+        arc_top = y - (arc_h + rect_h) / 2
+        rect_top = arc_top + arc_h
+        rect_bottom = rect_top + rect_h
+
+        # Body rectangle
         canvas.create_rectangle(
             left,
             rect_top,
@@ -1875,54 +1818,55 @@ class GSNDrawingHelper(FTADrawingHelper):
             width=line_width,
             tags=(obj_id,),
         )
+
+        # Semi-ellipse cap
         canvas.create_arc(
             left,
-            rect_top - 2 * radius,
+            arc_top,
             right,
-            rect_top,
+            arc_top + 2 * arc_h,
             start=0,
             extent=180,
             style=tk.CHORD,
             fill=fill,
+            outline="",
+            tags=(obj_id,),
+        )
+        canvas.create_arc(
+            left,
+            arc_top,
+            right,
+            arc_top + 2 * arc_h,
+            start=0,
+            extent=180,
+            style=tk.ARC,
             outline=outline_color,
             width=line_width,
-            tags=(obj_id,),
         )
-        # Title in arc region
-        title_y = rect_top - radius / 2
+
+        # Text in rectangle
         canvas.create_text(
             x,
-            title_y,
-            text=title,
+            rect_top + rect_h / 2,
+            text=text,
             font=font_obj,
             anchor="center",
             width=w - 2 * padding,
             tags=(obj_id,),
         )
-        # Description in rectangle
-        desc_y = rect_top + (rect_bottom - rect_top) / 2
-        canvas.create_text(
-            x,
-            desc_y,
-            text=desc,
-            font=font_obj,
-            anchor="center",
-            width=w - 2 * padding,
-            tags=(obj_id,),
-        )
+
+        # A/J label at top-right of the semi-ellipse
         label_font = tkFont.Font(font=font_obj)
         label_font.configure(weight="bold")
-        offset = padding
-        # Position the label at the very top-right corner of the semicircle
-        # so the "A"/"J" marker sits on the arc rather than inside it.
         canvas.create_text(
-            right - offset,
-            rect_top - 2 * radius + offset,
+            right - padding,
+            arc_top + padding,
             text=label,
             font=label_font,
             anchor="ne",
             tags=(obj_id,),
         )
+
         box_font = self._scaled_font(scale * 0.4)
         self._draw_module_reference_box(
             canvas,
