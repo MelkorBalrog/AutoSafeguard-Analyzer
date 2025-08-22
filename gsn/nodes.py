@@ -138,7 +138,15 @@ class GSNNode:
         clone.spi_target = self.spi_target
         clone.manager_notes = self.manager_notes
         if parent is not None:
-            parent.add_child(clone)
+            # Context, Assumption and Justification clones must attach via an
+            # ``in-context-of`` relationship rather than the default
+            # ``solved-by`` link used for goals and solutions.
+            relation = (
+                "context"
+                if self.node_type in {"Context", "Assumption", "Justification"}
+                else "solved"
+            )
+            parent.add_child(clone, relation=relation)
         return clone
 
     # ------------------------------------------------------------------
