@@ -222,9 +222,13 @@ class GSNDiagram:
     def _find_module_name(self, node: GSNNode) -> str:
         """Return the name of the module containing ``node``'s original."""
         original = getattr(node, "original", node)
-        for parent in getattr(original, "parents", []):
-            if getattr(parent, "node_type", "") == "Module":
-                return getattr(parent, "user_name", "")
+        parents = [
+            p for p in getattr(original, "parents", []) if getattr(p, "node_type", "") == "Module"
+        ]
+        for parent in parents:
+            name = getattr(parent, "user_name", "")
+            if parent is not self.root and name.lower() != "root":
+                return name
         return ""
 
     # ------------------------------------------------------------------
