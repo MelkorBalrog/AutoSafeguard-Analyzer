@@ -18851,99 +18851,7 @@ class AutoMLApp:
         elif diag.diag_type == "Control Flow Diagram":
             ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.refresh_all()
-
-    # ------------------------------------------------------------------
-    def _child_relation_strategy1(self, parent, node):
-        ctx = getattr(parent, "context_children", [])
-        return "context" if node in ctx else "solved"
-
-    def _child_relation_strategy2(self, parent, node):
-        try:
-            return "context" if node in parent.context_children else "solved"
-        except Exception:
-            return "solved"
-
-    def _child_relation_strategy3(self, parent, node):
-        ctx = getattr(parent, "context_children", None)
-        if ctx is not None and node in ctx:
-            return "context"
-        return "solved"
-
-    def _child_relation_strategy4(self, parent, node):
-        return "context" if hasattr(parent, "context_children") and node in parent.context_children else "solved"
-
-    def _child_relation(self, parent, node):
-        for strat in (
-            self._child_relation_strategy1,
-            self._child_relation_strategy2,
-            self._child_relation_strategy3,
-            self._child_relation_strategy4,
-        ):
-            try:
-                rel = strat(parent, node)
-                if rel:
-                    return rel
-            except Exception:
-                continue
-        return "solved"
-
-    # ------------------------------------------------------------------
-    def _attach_child_strategy1(self, target, node, relation):
-        if hasattr(target, "add_child"):
-            target.add_child(node, relation=relation)
-        else:
-            if relation == "context" and hasattr(target, "context_children"):
-                target.context_children.append(node)
-            else:
-                target.children.append(node)
-            if hasattr(node, "parents"):
-                node.parents.append(target)
-
-    def _attach_child_strategy2(self, target, node, relation):
-        try:
-            target.add_child(node, relation=relation)
-        except Exception:
-            if relation == "context" and hasattr(target, "context_children"):
-                target.context_children.append(node)
-            else:
-                getattr(target, "children", []).append(node)
-            if hasattr(node, "parents") and target not in node.parents:
-                node.parents.append(target)
-
-    def _attach_child_strategy3(self, target, node, relation):
-        ctx_list = getattr(target, "context_children", [])
-        child_list = getattr(target, "children", [])
-        if relation == "context" and ctx_list is not None:
-            ctx_list.append(node)
-        else:
-            child_list.append(node)
-        if hasattr(node, "parents") and target not in node.parents:
-            node.parents.append(target)
-
-    def _attach_child_strategy4(self, target, node, relation):
-        try:
-            if relation == "context" and hasattr(target, "context_children"):
-                target.context_children.append(node)
-            else:
-                target.children.append(node)
-            if hasattr(node, "parents") and target not in node.parents:
-                node.parents.append(target)
-        except Exception:
-            pass
-
-    def _attach_child(self, target, node, relation):
-        for strat in (
-            self._attach_child_strategy1,
-            self._attach_child_strategy2,
-            self._attach_child_strategy3,
-            self._attach_child_strategy4,
-        ):
-            try:
-                strat(target, node, relation)
-                return
-            except Exception:
-                continue
-
+        
     def copy_node(self):
         node = self.selected_node
         if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
@@ -18958,7 +18866,8 @@ class AutoMLApp:
             self.cut_mode = False
             if node.parents:
                 parent = node.parents[0]
-                rel = self._child_relation(parent, node)
+                context_children = getattr(parent, "context_children", [])
+                rel = "context" if node in context_children else "solved"
             else:
                 rel = "solved"
             self.clipboard_relation = rel
@@ -19001,7 +18910,8 @@ class AutoMLApp:
             self.cut_mode = True
             if node.parents:
                 parent = node.parents[0]
-                rel = self._child_relation(parent, node)
+                context_children = getattr(parent, "context_children", [])
+                rel = "context" if node in context_children else "solved"
             else:
                 rel = "solved"
             self.clipboard_relation = rel
@@ -19117,12 +19027,7 @@ class AutoMLApp:
                     if child.unique_id == self.clipboard_node.unique_id:
                         messagebox.showwarning("Paste", "This node is already a child of the target.")
                         return
-            relation = getattr(self, "clipboard_relation", "solved")
             if self.cut_mode:
-                for child in target.children:
-                    if child.unique_id == self.clipboard_node.unique_id:
-                        messagebox.showwarning("Paste", "This node is already a child of the target.")
-                        return
                 if self.clipboard_node in self.top_events:
                     self.top_events.remove(self.clipboard_node)
                 for p in list(self.clipboard_node.parents):
@@ -19135,7 +19040,15 @@ class AutoMLApp:
                     self.clipboard_node.is_page = False
                     self.clipboard_node.input_subtype = "Failure"
                 self.clipboard_node.is_primary_instance = True
-                self._attach_child(target, self.clipboard_node, relation)
+                relation = getattr(self, "clipboard_relation", "solved")
+                if hasattr(target, "add_child"):
+                    target.add_child(self.clipboard_node, relation=relation)
+                else:
+                    if relation == "context":
+                        target.context_children.append(self.clipboard_node)
+                    else:
+                        target.children.append(self.clipboard_node)
+                    self.clipboard_node.parents.append(target)
                 if isinstance(self.clipboard_node, GSNNode):
                     old_diag = self._find_gsn_diagram(self.clipboard_node)
                     new_diag = self._find_gsn_diagram(target)
@@ -19152,32 +19065,31 @@ class AutoMLApp:
             else:
                 source_diag = self._find_gsn_diagram(self.clipboard_node)
                 target_diag = self._find_gsn_diagram(target)
-                if source_diag is target_diag:
+                if isinstance(self.clipboard_node, GSNNode) and source_diag is target_diag:
                     cloned_node = self._clone_for_paste(self.clipboard_node)
-                    if cloned_node is None:
-                        return
-                    self._attach_child(target, cloned_node, relation)
-                    if isinstance(cloned_node, GSNNode):
-                        if target_diag and cloned_node not in target_diag.nodes:
-                            target_diag.add_node(cloned_node)
-                    cloned_node.x = target.x + 100
-                    cloned_node.y = target.y + 100
-                    messagebox.showinfo("Paste", "Node pasted successfully (copied).")
+                    target.children.append(cloned_node)
+                    cloned_node.parents.append(target)
+                    if target_diag and cloned_node not in target_diag.nodes:
+                        target_diag.add_node(cloned_node)
+                    node_for_pos = cloned_node
                 else:
-                    node = self.clipboard_node
-                    self._attach_child(target, node, relation)
-                    if isinstance(node, GSNNode):
-                        if target_diag and node not in target_diag.nodes:
-                            target_diag.add_node(node)
-                    node.x = target.x + 100
-                    node.y = target.y + 100
-                    messagebox.showinfo("Paste", "Node pasted successfully (copied).")
+                    target.children.append(self.clipboard_node)
+                    self.clipboard_node.parents.append(target)
+                    if isinstance(self.clipboard_node, GSNNode):
+                        if target_diag and self.clipboard_node not in target_diag.nodes:
+                            target_diag.add_node(self.clipboard_node)
+                    node_for_pos = self.clipboard_node
+                node_for_pos.x = target.x + 100
+                node_for_pos.y = target.y + 100
+                if hasattr(node_for_pos, "display_label"):
+                    node_for_pos.display_label = node_for_pos.display_label.replace(" (clone)", "")
+                messagebox.showinfo("Paste", "Node pasted successfully (copied).")
             try:
                 AutoML_Helper.calculate_assurance_recursive(
                     self.root_node,
                     self.top_events,
                 )
-            except Exception:
+            except AttributeError:
                 pass
             self.update_views()
             return
