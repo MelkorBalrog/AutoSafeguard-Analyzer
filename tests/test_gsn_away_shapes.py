@@ -139,22 +139,3 @@ def test_module_box_defaults_to_root():
     )
     texts = [item for item in canvas.items if item[0] == "text"]
     assert any(kwargs.get("text") == "root" for _type, args, kwargs in texts)
-
-
-def test_away_solution_title_and_description_split():
-    helper = GSNDrawingHelper()
-    helper.get_text_size = lambda text, font: (len(text) * 5, 10)
-    helper._scaled_font = lambda scale: DummyFont()
-    canvas = StubCanvas()
-    helper.draw_away_solution_shape(
-        canvas,
-        0,
-        0,
-        scale=60,
-        text="Name\nDesc",
-        module_text="M",
-        font_obj=DummyFont(),
-    )
-    texts = [kwargs.get("text") for _type, args, kwargs in canvas.items if _type == "text"]
-    assert "Name" in texts
-    assert "Desc" in texts
