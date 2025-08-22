@@ -19,3 +19,4 @@ def test_connect_context_relationship(typ):
     diag.connect(parent, child, relation="context")
     assert child in parent.context_children
     assert child in diag.nodes
+
