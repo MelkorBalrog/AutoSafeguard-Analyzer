@@ -44,8 +44,8 @@ class RecordingHelper:
     def draw_away_justification_shape(self, canvas, x, y, scale, text="", module_text="", font_obj=None, obj_id=""):
         self.calls.append(("justification", module_text))
     # Unused stubs
-    def draw_goal_shape(self, *a, **k):
-        pass
+    def draw_goal_shape(self, canvas, x, y, scale, text="", module_text="", font_obj=None, obj_id=""):
+        self.calls.append(("goal_primary", module_text))
     def draw_solution_shape(self, *a, **k):
         pass
     def draw_module_shape(self, *a, **k):
@@ -90,6 +90,16 @@ def test_away_shapes_without_module_identifier():
     canvas = StubCanvas()
     diag.draw(canvas)
     assert helper.calls[0] == ("goal", "")
+
+
+def test_goal_clone_with_original_but_primary_flag_draws_away_shape():
+    original = GSNNode("Orig", "Goal")
+    clone = GSNNode("Clone", "Goal", original=original)
+    helper = RecordingHelper()
+    diag = GSNDiagram(clone, drawing_helper=helper)
+    canvas = StubCanvas()
+    diag.draw(canvas)
+    assert helper.calls[0][0] == "goal"
 
 
 class DummyFont:

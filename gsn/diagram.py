@@ -281,8 +281,9 @@ class GSNDiagram:
         padding = 10 * zoom
         base_scale = 60 * zoom
 
+        is_primary = node.is_primary_instance and getattr(node, "original", node) is node
         module_name = ""
-        if not node.is_primary_instance:
+        if not is_primary:
             module_name = self._find_module_name(node)
 
         def _call(method, *args, **kwargs):
@@ -312,7 +313,7 @@ class GSNDiagram:
             scale = max(base_scale, max(t_width, t_height) + 2 * padding)
             draw_func = (
                 self.drawing_helper.draw_solution_shape
-                if node.is_primary_instance
+                if is_primary
                 else self.drawing_helper.draw_away_solution_shape
             )
             kwargs = {
@@ -320,7 +321,7 @@ class GSNDiagram:
                 "font_obj": font_obj,
                 "obj_id": node.unique_id,
             }
-            if not node.is_primary_instance:
+            if not is_primary:
                 kwargs["module_text"] = module_name
             _call(draw_func, canvas, x, y, scale, **kwargs)
         elif typ == "goal":
@@ -328,7 +329,7 @@ class GSNDiagram:
             scale = max(base_scale, width + padding, (height + padding) / ratio)
             draw_func = (
                 self.drawing_helper.draw_goal_shape
-                if node.is_primary_instance
+                if is_primary
                 else self.drawing_helper.draw_away_goal_shape
             )
             kwargs = {
@@ -336,7 +337,7 @@ class GSNDiagram:
                 "font_obj": font_obj,
                 "obj_id": node.unique_id,
             }
-            if not node.is_primary_instance:
+            if not is_primary:
                 kwargs["module_text"] = module_name
             _call(draw_func, canvas, x, y, scale, **kwargs)
         elif typ == "module":
@@ -368,27 +369,28 @@ class GSNDiagram:
         elif typ in {"assumption", "justification", "context"}:
             ratio = 0.5
             scale = max(base_scale, width + padding, (height + padding) / ratio)
-            draw_map = {
-                "assumption": self.drawing_helper.draw_assumption_shape,
-                "justification": self.drawing_helper.draw_justification_shape,
-                "context": self.drawing_helper.draw_context_shape,
-            }
-            if node.is_primary_instance:
-                draw_func = draw_map[typ]
-            else:
-                draw_func = {
-                    "assumption": self.drawing_helper.draw_away_assumption_shape,
-                    "justification": self.drawing_helper.draw_away_justification_shape,
-                    "context": self.drawing_helper.draw_away_context_shape,
-                }[typ]
+            draw_func = self._context_draw_func(typ, is_primary)
             kwargs = {
                 "text": text,
                 "font_obj": font_obj,
                 "obj_id": node.unique_id,
             }
-            if not node.is_primary_instance:
+            if not is_primary:
                 kwargs["module_text"] = module_name
             _call(draw_func, canvas, x, y, scale, **kwargs)
+
+    def _context_draw_func(self, typ: str, is_primary: bool):
+        if is_primary:
+            return {
+                "assumption": self.drawing_helper.draw_assumption_shape,
+                "justification": self.drawing_helper.draw_justification_shape,
+                "context": self.drawing_helper.draw_context_shape,
+            }[typ]
+        return {
+            "assumption": self.drawing_helper.draw_away_assumption_shape,
+            "justification": self.drawing_helper.draw_away_justification_shape,
+            "context": self.drawing_helper.draw_away_context_shape,
+        }[typ]
 
     def _format_text(self, node: GSNNode) -> str:
         """Return node label including description if present."""

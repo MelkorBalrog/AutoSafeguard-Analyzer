@@ -27,6 +27,14 @@ class CloneGSNNodeTests(unittest.TestCase):
         self.assertEqual(clone.y, original.y + 100)
         self.assertNotEqual(clone.unique_id, original.unique_id)
 
+    def test_clone_context_attaches_to_parent(self):
+        app = AutoMLApp.__new__(AutoMLApp)
+        parent = GSNNode("Parent", "Goal")
+        ctx = GSNNode("Ctx", "Context")
+        clone = app.clone_node_preserving_id(ctx, parent)
+        self.assertIn(clone, parent.context_children)
+        self.assertIn(parent, clone.parents)
+
 
 if __name__ == "__main__":  # pragma: no cover - manual test execution
     unittest.main()
