@@ -65,6 +65,8 @@ class GSNCopyPasteTests(unittest.TestCase):
         self.assertEqual(len(self.other.children), 1)
         cloned = self.other.children[0]
         self.assertIsNot(cloned, self.child)
+        self.assertNotEqual(cloned.unique_id, self.child.unique_id)
+        self.assertIs(cloned.original, self.child.original)
         self.assertIn(cloned, self.diagram.nodes)
 
 
