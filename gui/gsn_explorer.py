@@ -323,7 +323,7 @@ class GSNExplorer(tk.Frame):
 
     # ------------------------------------------------------------------
     def _all_diagram_names(self, ignore: GSNDiagram | None = None) -> set[str]:
-        return collect_work_product_names(self.app, ignore)
+        return collect_work_product_names(self.app, ignore, diagram_type="gsn")
 
     # ------------------------------------------------------------------
     def _unique_diagram_name(self, name: str, ignore: GSNDiagram | None = None) -> str:
