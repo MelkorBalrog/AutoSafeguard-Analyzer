@@ -181,12 +181,7 @@ def _setup_window():
     app.active_cbn = doc
     win.app = app
     win._find_node = lambda x, y: next(
-        (
-            n
-            for n, pos_list in doc.positions.items()
-            for (nx, ny) in pos_list
-            if abs(nx - x) <= win.NODE_RADIUS and abs(ny - y) <= win.NODE_RADIUS
-        ),
+        (n for n, (nx, ny) in doc.positions.items() if abs(nx - x) <= win.NODE_RADIUS and abs(ny - y) <= win.NODE_RADIUS),
         None,
     )
     return win, doc
@@ -221,7 +216,7 @@ def _setup_window_real():
 def test_fill_moves_with_node():
     win, doc = _setup_window()
     doc.network.add_node("A", cpd=0.5)
-    doc.positions["A"] = [(0, 0)]
+    doc.positions["A"] = (0, 0)
     win._draw_node("A", 0, 0)
     win.drag_node = "A"
     win.drag_offset = (0, 0)
@@ -241,7 +236,7 @@ def test_fill_tag_sanitizes_name():
     finally:
         cbn_mod.simpledialog.askstring = orig
     assert "Node 1" in doc.network.nodes
-    _, _, tag = win.nodes["Node 1"][0]
+    _, _, tag = win.nodes["Node 1"]
     assert tag == "fill_Node_1"
 
 
@@ -259,13 +254,13 @@ def test_node_selectable_from_fill_area():
     win.drawing_helper._fill_gradient_circle = capture
 
     doc.network.add_node("A", cpd=0.5)
-    doc.positions["A"] = [(0, 0)]
+    doc.positions["A"] = (0, 0)
     win._draw_node("A", 0, 0)
 
     fill_id = captured[0]
     win.canvas.find_overlapping = lambda *a, **k: [fill_id]
 
-    assert win._find_node(0, 0) == ("A", 0)
+    assert win._find_node(0, 0) == "A"
 
 
 def test_table_resizes_for_new_rows():
@@ -275,7 +270,7 @@ def test_table_resizes_for_new_rows():
     win.tables["A"] = (1, frame, tree)
     doc.network.nodes.add("A")
     doc.network.parents["A"] = ["P1"]
-    doc.positions["A"] = [(0, 0)]
+    doc.positions["A"] = (0, 0)
 
     win._update_table("A")
     first_height = win.canvas.last_configure.get("height")
@@ -298,7 +293,7 @@ def test_table_auto_fills_missing_rows():
     win.tables["A"] = (1, frame, tree)
     doc.network.nodes.add("A")
     doc.network.parents["A"] = ["P1", "P2"]
-    doc.positions["A"] = [(0, 0)]
+    doc.positions["A"] = (0, 0)
     # only one CPD entry; others should default to 0.25
     doc.network.cpds["A"] = {(True, False): 0.2}
     win._update_table("A")
@@ -327,10 +322,10 @@ def test_node_colors_by_type():
 def test_node_label_includes_stereotype():
     win, doc = _setup_window()
     doc.network.add_node("A", cpd=0.5)
-    doc.positions["A"] = [(0, 0)]
+    doc.positions["A"] = (0, 0)
     doc.types["A"] = "variable"
     win._draw_node("A", 0, 0, "variable")
-    _, text_id, _ = win.nodes["A"][0]
+    _, text_id, _ = win.nodes["A"]
     assert win.canvas.items[text_id]["text"] == "<<variable>>\nA"
 
 def test_click_adds_existing_malfunction_nodes():
@@ -395,8 +390,8 @@ def test_update_all_tables_refreshes_dependencies():
 def test_drag_relationship_creates_edge():
     win, doc = _setup_window()
     doc.network.nodes.update({"A", "B"})
-    doc.positions["A"] = [(0, 0)]
-    doc.positions["B"] = [(100, 0)]
+    doc.positions["A"] = (0, 0)
+    doc.positions["B"] = (100, 0)
     win._draw_node("A", 0, 0)
     win._draw_node("B", 100, 0)
     win.current_tool = "Relationship"
@@ -413,8 +408,8 @@ def test_disallow_insufficiency_to_trigger_relationship():
 
     win, doc = _setup_window()
     doc.network.nodes.update({"FI", "TC"})
-    doc.positions["FI"] = [(0, 0)]
-    doc.positions["TC"] = [(100, 0)]
+    doc.positions["FI"] = (0, 0)
+    doc.positions["TC"] = (100, 0)
     doc.types["FI"] = "insufficiency"
     doc.types["TC"] = "trigger"
     win._draw_node("FI", 0, 0, "insufficiency")
@@ -435,8 +430,8 @@ def test_disallow_malfunction_relationship():
 
     win, doc = _setup_window()
     doc.network.nodes.update({"M", "V"})
-    doc.positions["M"] = [(0, 0)]
-    doc.positions["V"] = [(100, 0)]
+    doc.positions["M"] = (0, 0)
+    doc.positions["V"] = (100, 0)
     doc.types["M"] = "malfunction"
     doc.types["V"] = "variable"
     win._draw_node("M", 0, 0, "malfunction")
@@ -474,8 +469,8 @@ def test_joint_probabilities_refresh_on_parent_change():
     cbn.add_node("B", parents=["A"], cpd={(True,): 0.5, (False,): 0.1})
     tree_a = DummyTree(); frame_a = DummyFrame(tree_a); win.tables["A"] = (1, frame_a, tree_a)
     tree_b = DummyTree(); frame_b = DummyFrame(tree_b); win.tables["B"] = (2, frame_b, tree_b)
-    doc.positions["A"] = [(0, 0)]
-    doc.positions["B"] = [(0, 0)]
+    doc.positions["A"] = (0, 0)
+    doc.positions["B"] = (0, 0)
 
     win._update_all_tables()
     assert tree_b.rows[0][-1] == f"{0.8 * 0.1:.3f}"
@@ -536,7 +531,7 @@ def test_delete_node_from_diagram_only():
 
     win, doc = _setup_window()
     doc.network.add_node("A", cpd=0.5)
-    doc.positions["A"] = [(0, 0)]
+    doc.positions["A"] = (0, 0)
     doc.types["A"] = "variable"
     win._draw_node("A", 0, 0)
     orig = cbn_mod.messagebox.askyesno
@@ -558,8 +553,8 @@ def test_delete_node_from_model():
     doc.network.add_node("B", cpd=0.5)
     doc.network.parents["B"] = ["A"]
     doc.network.cpds["B"] = {(True,): 0.5, (False,): 0.5}
-    doc.positions["A"] = [(0, 0)]
-    doc.positions["B"] = [(100, 0)]
+    doc.positions["A"] = (0, 0)
+    doc.positions["B"] = (100, 0)
     doc.types["A"] = doc.types["B"] = "variable"
     win._draw_node("A", 0, 0)
     win._draw_node("B", 100, 0)
