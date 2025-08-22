@@ -220,22 +220,10 @@ class GSNDiagram:
 
     # ------------------------------------------------------------------
     def _find_module_name_strategy1(self, node: GSNNode) -> str:
-        app = getattr(self, "app", None)
-        if not app:
-            return ""
-        target = getattr(node, "original", node)
-
-        def _search(modules):
-            for mod in modules:
-                for diag in getattr(mod, "diagrams", []):
-                    if target in getattr(diag, "nodes", []):
-                        return getattr(mod, "name", "")
-                result = _search(getattr(mod, "modules", []))
-                if result:
-                    return result
-            return ""
-
-        return _search(getattr(app, "gsn_modules", []))
+        for parent in getattr(getattr(node, "original", node), "parents", []):
+            if getattr(parent, "node_type", "") == "Module":
+                return getattr(parent, "user_name", "")
+        return ""
 
     def _find_module_name_strategy2(self, node: GSNNode) -> str:
         for parent in getattr(node, "parents", []):
@@ -244,12 +232,6 @@ class GSNDiagram:
         return ""
 
     def _find_module_name_strategy3(self, node: GSNNode) -> str:
-        for parent in getattr(getattr(node, "original", node), "parents", []):
-            if getattr(parent, "node_type", "") == "Module":
-                return getattr(parent, "user_name", "")
-        return ""
-
-    def _find_module_name_strategy4(self, node: GSNNode) -> str:
         parents = []
         if getattr(node, "original", None):
             parents.extend(getattr(node.original, "parents", []))
@@ -258,6 +240,16 @@ class GSNDiagram:
             if getattr(parent, "node_type", "") == "Module":
                 return getattr(parent, "user_name", "")
         return ""
+
+    def _find_module_name_strategy4(self, node: GSNNode) -> str:
+        try:
+            return next(
+                p.user_name
+                for p in getattr(getattr(node, "original", node), "parents", [])
+                if getattr(p, "node_type", "") == "Module"
+            )
+        except StopIteration:
+            return ""
 
     def _find_module_name(self, node: GSNNode) -> str:
         for strat in (
