@@ -211,7 +211,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         name = simpledialog.askstring("New Analysis", "Name:", parent=self)
         if not name or self._doc_name_exists(name):
             if name:
-                messagebox.showwarning("New Analysis", "Analysis name already exists")
+                messagebox.showerror("New Analysis", "Analysis name already exists")
             return
         doc = CausalBayesianNetworkDoc(name)
         if not hasattr(self.app, "cbn_docs"):
