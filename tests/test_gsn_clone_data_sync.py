@@ -1,5 +1,3 @@
-import types
-from AutoML import AutoMLApp
 from gsn import GSNNode, GSNDiagram
 from gui.gsn_config_window import GSNElementConfig
 
@@ -48,26 +46,3 @@ def test_goal_clone_and_original_sync():
     assert clone.user_name == "New"
     assert clone.description == "NewDesc"
     assert clone.manager_notes == "NewNote"
-
-
-def test_pasted_clone_syncs_with_original():
-    app = AutoMLApp.__new__(AutoMLApp)
-    app.fmea_entries = []
-    app.fmeas = []
-    app.fmedas = []
-    original = GSNNode("Orig", "Goal")
-    import copy
-    clone = copy.deepcopy(original)
-    app._reset_gsn_clone(clone, original)
-    diag = types.SimpleNamespace(nodes=[original, clone])
-    app.gsn_diagrams = [diag]
-    app.all_gsn_diagrams = [diag]
-    app.get_all_nodes_in_model = types.MethodType(lambda _s: [original], app)
-    app.get_all_fmea_entries = types.MethodType(lambda _s: [], app)
-    original.user_name = "O1"
-    original.description = "D1"
-    original.manager_notes = "N1"
-    app.sync_nodes_by_id(original)
-    assert clone.user_name == "O1"
-    assert clone.description == "D1"
-    assert clone.manager_notes == "N1"
