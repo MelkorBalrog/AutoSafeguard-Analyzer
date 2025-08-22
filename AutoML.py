@@ -251,7 +251,7 @@ from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.gsn_explorer import GSNExplorer
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_case_explorer import SafetyCaseExplorer
-from gui.gsn_diagram_window import GSNDiagramWindow, GSN_WINDOWS
+from gui.gsn_diagram_window import GSNDiagramWindow
 from gui.gsn_config_window import GSNElementConfig
 from gui.search_toolbox import SearchToolbox
 from gsn import GSNDiagram, GSNModule
@@ -18831,17 +18831,6 @@ class AutoMLApp:
             if getattr(win, "copy_selected", None):
                 win.copy_selected()
                 return
-        win = getattr(self, "active_gsn_window", None)
-        if win and getattr(win, "selected_node", None):
-            if getattr(win, "copy_selected", None):
-                win.copy_selected()
-                return
-        for ref in list(GSN_WINDOWS):
-            win = ref()
-            if win and getattr(win, "selected_node", None):
-                if getattr(win, "copy_selected", None):
-                    win.copy_selected()
-                return
         win = getattr(self, "active_arch_window", None)
         if win and getattr(win, "selected_obj", None):
             if getattr(win, "copy_selected", None):
@@ -18873,17 +18862,6 @@ class AutoMLApp:
         if win and getattr(win, "selected_node", None):
             if getattr(win, "cut_selected", None):
                 win.cut_selected()
-                return
-        win = getattr(self, "active_gsn_window", None)
-        if win and getattr(win, "selected_node", None):
-            if getattr(win, "cut_selected", None):
-                win.cut_selected()
-                return
-        for ref in list(GSN_WINDOWS):
-            win = ref()
-            if win and getattr(win, "selected_node", None):
-                if getattr(win, "cut_selected", None):
-                    win.cut_selected()
                 return
         win = getattr(self, "active_arch_window", None)
         if win and getattr(win, "selected_obj", None):
@@ -18974,26 +18952,6 @@ class AutoMLApp:
         win = getattr(self, "_cbn_window", None)
         if win and getattr(self, "diagram_clipboard", None):
             if not clip_type or clip_type == "Causal Bayesian Network":
-                if getattr(win, "paste_selected", None):
-                    win.paste_selected()
-                    return
-        win = getattr(self, "active_gsn_window", None)
-        if win and getattr(self, "diagram_clipboard", None):
-            if not clip_type or clip_type == "GSN":
-                if getattr(win, "paste_selected", None):
-                    win.paste_selected()
-                    return
-        if (
-            (not win or (clip_type and clip_type != "GSN"))
-            and GSN_WINDOWS
-        ):
-            for ref in list(GSN_WINDOWS):
-                candidate = ref()
-                if candidate and (not clip_type or clip_type == "GSN"):
-                    win = candidate
-                    break
-        if win and getattr(self, "diagram_clipboard", None):
-            if not clip_type or clip_type == "GSN":
                 if getattr(win, "paste_selected", None):
                     win.paste_selected()
                     return
