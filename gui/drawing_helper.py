@@ -1867,7 +1867,6 @@ class GSNDrawingHelper(FTADrawingHelper):
     ):
         self.draw_module_shape(canvas, x, y, scale=scale, **kwargs)
 
-
 # Create a single GSNDrawingHelper object for convenience
 
 gsn_drawing_helper = GSNDrawingHelper()
