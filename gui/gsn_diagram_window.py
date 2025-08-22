@@ -828,6 +828,96 @@ class GSNDiagramWindow(tk.Frame):
                 parent.context_children.remove(child)
             self._selected_connection = None
             self.refresh()
+        
+    def _clone_node_strategy1(self, node: GSNNode) -> GSNNode | None:
+        return getattr(node, "original", node)
+
+    def _clone_node_strategy2(self, node: GSNNode) -> GSNNode | None:
+        return node.original if hasattr(node, "original") else node
+
+    def _clone_node_strategy3(self, node: GSNNode) -> GSNNode | None:
+        return (getattr(node, "original", None) or node)
+
+    def _clone_node_strategy4(self, node: GSNNode) -> GSNNode | None:
+        return getattr(node, "original", node)
+
+    def _clone_node(self, node: GSNNode) -> GSNNode | None:
+        for strat in (
+            self._clone_node_strategy1,
+            self._clone_node_strategy2,
+            self._clone_node_strategy3,
+            self._clone_node_strategy4,
+        ):
+            snap = strat(node)
+            if snap is not None:
+                return snap
+        return None
+
+    def _reconstruct_node_strategy1(self, snap: GSNNode, offset=(20, 20)) -> GSNNode:
+        clone = snap.clone()
+        clone.x = snap.x + offset[0]
+        clone.y = snap.y + offset[1]
+        return clone
+
+    def _reconstruct_node_strategy2(self, snap: GSNNode, offset=(30, 30)) -> GSNNode:
+        return self._reconstruct_node_strategy1(snap, offset)
+
+    def _reconstruct_node_strategy3(self, snap: GSNNode, offset=(40, 40)) -> GSNNode:
+        return self._reconstruct_node_strategy1(snap, offset)
+
+    def _reconstruct_node_strategy4(self, snap: GSNNode, offset=(50, 50)) -> GSNNode:
+        return self._reconstruct_node_strategy1(snap, offset)
+
+    def _reconstruct_node(self, snap: GSNNode) -> Optional[GSNNode]:
+        for strat in (
+            self._reconstruct_node_strategy1,
+            self._reconstruct_node_strategy2,
+            self._reconstruct_node_strategy3,
+            self._reconstruct_node_strategy4,
+        ):
+            try:
+                return strat(snap)
+            except Exception:
+                continue
+        return None
+
+    def copy_selected(self, _event=None) -> None:
+        if not self.app or not self.selected_node:
+            return
+        snap = self._clone_node(self.selected_node)
+        if snap is not None:
+            self.app.diagram_clipboard = snap
+            self.app.diagram_clipboard_type = "GSN"
+
+    def cut_selected(self, _event=None) -> None:
+        if not self.app or not self.selected_node:
+            return
+        self.copy_selected()
+        if self.selected_node in self.diagram.nodes:
+            self.diagram.nodes.remove(self.selected_node)
+        for p in list(self.selected_node.parents):
+            if self.selected_node in p.children:
+                p.children.remove(self.selected_node)
+        self.selected_node = None
+        self.refresh()
+
+    def paste_selected(self, _event=None) -> None:
+        if not self.app or not getattr(self.app, "diagram_clipboard", None):
+            return
+        clip_type = getattr(self.app, "diagram_clipboard_type", None)
+        if clip_type and clip_type != "GSN":
+            messagebox.showwarning(
+                "Paste", "Clipboard contains incompatible diagram element."
+            )
+            return
+        node = self._reconstruct_node(self.app.diagram_clipboard)
+        if not node:
+            return
+        if node not in self.diagram.nodes:
+            self.diagram.add_node(node)
+        self.id_to_node[node.unique_id] = node
+        self.selected_node = node
+        self.refresh()
 
     def _reconstruct_node_strategy1(
         self, snap: GSNNode, offset=(20, 20)

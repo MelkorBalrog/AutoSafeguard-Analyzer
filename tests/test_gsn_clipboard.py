@@ -18,13 +18,22 @@ def _make_window(app, diag):
     win.refresh = lambda: None
     return win
 
-
-def test_gsn_copy_paste_between_diagrams():
+def test_gsn_copy_paste_clones_with_independent_positions():
     root1 = GSNNode("A", "Goal", x=0, y=0)
     diag1 = GSNDiagram(root1)
-    app = types.SimpleNamespace(diagram_clipboard=None, diagram_clipboard_type=None)
+    app = types.SimpleNamespace(
+        diagram_clipboard=None,
+        diagram_clipboard_type=None,
+        gsn_diagrams=[diag1],
+        gsn_modules=[],
+    )
     win1 = _make_window(app, diag1)
 
+    snap1 = win1._clone_node_strategy1(root1)
+    snap2 = win1._clone_node_strategy2(root1)
+    snap3 = win1._clone_node_strategy3(root1)
+    snap4 = win1._clone_node_strategy4(root1)
+    assert snap1 is snap2 is snap3 is snap4 is root1
     win1.selected_node = root1
     win1.copy_selected()
     assert app.diagram_clipboard is root1
@@ -32,9 +41,41 @@ def test_gsn_copy_paste_between_diagrams():
 
     root2 = GSNNode("B", "Goal", x=0, y=0)
     diag2 = GSNDiagram(root2)
+    app.gsn_diagrams.append(diag2)
     win2 = _make_window(app, diag2)
 
+    clones = [
+        win2._reconstruct_node_strategy1(root1),
+        win2._reconstruct_node_strategy2(root1),
+        win2._reconstruct_node_strategy3(root1),
+        win2._reconstruct_node_strategy4(root1),
+    ]
+    for c in clones:
+        assert c is not root1
+        assert c.original is root1
+
     win2.paste_selected()
-    assert len(diag2.nodes) == 2
-    clone = [n for n in diag2.nodes if n is not root2][0]
-    assert clone.original is root1.original
+    clone = diag2.nodes[-1]
+    assert clone is not root1
+    assert clone.original is root1
+    assert (clone.x, clone.y) == (root1.x + 20, root1.y + 20)
+
+    clone.x += 30
+    clone.y += 40
+    assert (root1.x, root1.y) == (0, 0)
+
+    clone.description = "new"
+    original = clone.original
+    attrs = (
+        "user_name",
+        "description",
+        "work_product",
+        "evidence_link",
+        "spi_target",
+        "manager_notes",
+    )
+    for n in diag1.nodes + diag2.nodes:
+        if getattr(n, "original", n) is original:
+            for attr in attrs:
+                setattr(n, attr, getattr(clone, attr))
+    assert root1.description == "new"

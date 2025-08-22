@@ -18954,15 +18954,13 @@ class AutoMLApp:
                 self.cut_mode = False
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
-                cloned_node = self.clone_node_preserving_id(self.clipboard_node)
+                cloned_node = self.clipboard_node
                 target.children.append(cloned_node)
                 cloned_node.parents.append(target)
                 if isinstance(cloned_node, GSNNode):
                     diag = self._find_gsn_diagram(target)
-                    if diag:
+                    if diag and cloned_node not in diag.nodes:
                         diag.add_node(cloned_node)
-                cloned_node.x = target.x + 100
-                cloned_node.y = target.y + 100
                 messagebox.showinfo("Paste", "Node pasted successfully (copied).")
             AutoML_Helper.calculate_assurance_recursive(
                 self.root_node,
