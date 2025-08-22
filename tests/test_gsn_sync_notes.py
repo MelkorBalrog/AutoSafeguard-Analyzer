@@ -40,8 +40,12 @@ class GSNCloneSyncNotesTests(unittest.TestCase):
         self.assertEqual(self.original.description, "Desc")
         self.assertEqual(self.original.manager_notes, "Note")
 
+        self.original.user_name = "OrigUpdated"
+        self.original.description = "OrigDesc"
         self.original.manager_notes = "NewNote"
         self.app.sync_nodes_by_id(self.original)
+        self.assertEqual(self.clone.user_name, "OrigUpdated")
+        self.assertEqual(self.clone.description, "OrigDesc")
         self.assertEqual(self.clone.manager_notes, "NewNote")
 
 
