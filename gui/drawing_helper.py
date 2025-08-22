@@ -1627,38 +1627,34 @@ class GSNDrawingHelper(FTADrawingHelper):
         font_obj=None,
         obj_id: str = "",
     ):
-        """Draw an away solution as a semi-circle with rectangular body."""
+        """Draw an away solution as a rectangle with a semi-circle on top."""
         outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = self._scaled_font(scale)
         padding = 4
-        title, desc = (text.split("\n", 1) + [""])[:2]
-        title_w, title_h = self.get_text_size(title, font_obj)
-        desc_w, desc_h = self.get_text_size(desc, font_obj) if desc else (0, 0)
-        w = max(scale, title_w, desc_w) + 2 * padding
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        h = max(scale * 0.6, t_height + 2 * padding)
         radius = w / 2
-        rect_h = max(scale * 0.3, desc_h + 2 * padding)
-        total_h = radius + rect_h
         left = x - w / 2
-        top = y - total_h / 2
-        rect_top = top + radius
-        rect_bottom = rect_top + rect_h
-        # Description rectangle
+        rect_top = y - h / 2
+        right = x + w / 2
+        rect_bottom = y + h / 2
+        top = rect_top - radius
         canvas.create_rectangle(
             left,
             rect_top,
-            left + w,
+            right,
             rect_bottom,
             fill=fill,
             outline=outline_color,
             width=line_width,
             tags=(obj_id,),
         )
-        # Top semicircle
         canvas.create_arc(
             left,
             top,
-            left + w,
+            right,
             top + 2 * radius,
             start=0,
             extent=180,
@@ -1668,20 +1664,10 @@ class GSNDrawingHelper(FTADrawingHelper):
             width=line_width,
             tags=(obj_id,),
         )
-        # Title and description
         canvas.create_text(
             x,
-            top + radius / 2,
-            text=title,
-            font=font_obj,
-            anchor="center",
-            width=w - 2 * padding,
-            tags=(obj_id,),
-        )
-        canvas.create_text(
-            x,
-            rect_top + rect_h / 2,
-            text=desc,
+            rect_top + (rect_bottom - rect_top) / 2,
+            text=text,
             font=font_obj,
             anchor="center",
             width=w - 2 * padding,
@@ -1699,6 +1685,270 @@ class GSNDrawingHelper(FTADrawingHelper):
             box_font,
             obj_id,
         )
+
+    def draw_away_context_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Context",
+        module_text="",
+        fill="lightyellow",
+        outline_color=None,
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        """Draw an away context with a flat top and rounded bottom."""
+
+        outline_color = self._resolve_outline(outline_color)
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        padding = 4
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        rect_h = max(scale * 0.5, t_height + 2 * padding)
+        arc_h = w * 0.3
+        left = x - w / 2
+        right = x + w / 2
+        rect_top = y - (rect_h + arc_h) / 2
+        rect_bottom = rect_top + rect_h
+        arc_top = rect_bottom - arc_h
+        arc_bottom = rect_bottom + arc_h
+
+        # Base rectangle
+        canvas.create_rectangle(
+            left,
+            rect_top,
+            right,
+            rect_bottom,
+            fill=fill,
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+
+        # Rounded bottom
+        canvas.create_arc(
+            left,
+            arc_top,
+            right,
+            arc_bottom,
+            start=180,
+            extent=180,
+            style=tk.CHORD,
+            fill=fill,
+            outline="",
+            tags=(obj_id,),
+        )
+        canvas.create_arc(
+            left,
+            arc_top,
+            right,
+            arc_bottom,
+            start=180,
+            extent=180,
+            style=tk.ARC,
+            outline=outline_color,
+            width=line_width,
+        )
+
+        # Text placement
+        canvas.create_text(
+            x,
+            rect_top + rect_h / 2,
+            text=text,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+            tags=(obj_id,),
+        )
+
+        box_font = self._scaled_font(scale * 0.4)
+        self._draw_module_reference_box(
+            canvas,
+            x,
+            arc_bottom,
+            w,
+            module_text,
+            outline_color,
+            line_width,
+            box_font,
+            obj_id,
+        )
+
+    def _draw_away_assumption_or_justification(
+        self,
+        canvas,
+        x,
+        y,
+        scale,
+        text,
+        label,
+        module_text,
+        fill,
+        outline_color,
+        line_width,
+        font_obj,
+        obj_id,
+    ):
+        outline_color = self._resolve_outline(outline_color)
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        padding = 4
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        rect_h = max(scale * 0.5, t_height + 2 * padding)
+        arc_h = w * 0.3
+        left = x - w / 2
+        right = x + w / 2
+        arc_top = y - (arc_h + rect_h) / 2
+        rect_top = arc_top + arc_h
+        rect_bottom = rect_top + rect_h
+
+        # Body rectangle
+        canvas.create_rectangle(
+            left,
+            rect_top,
+            right,
+            rect_bottom,
+            fill=fill,
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+
+        # Semi-ellipse cap
+        canvas.create_arc(
+            left,
+            arc_top,
+            right,
+            arc_top + 2 * arc_h,
+            start=0,
+            extent=180,
+            style=tk.CHORD,
+            fill=fill,
+            outline="",
+            tags=(obj_id,),
+        )
+        canvas.create_arc(
+            left,
+            arc_top,
+            right,
+            arc_top + 2 * arc_h,
+            start=0,
+            extent=180,
+            style=tk.ARC,
+            outline=outline_color,
+            width=line_width,
+        )
+
+        # Text in rectangle
+        canvas.create_text(
+            x,
+            rect_top + rect_h / 2,
+            text=text,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+            tags=(obj_id,),
+        )
+
+        # A/J label at top-right of the semi-ellipse
+        label_font = tkFont.Font(font=font_obj)
+        label_font.configure(weight="bold")
+        canvas.create_text(
+            right - padding,
+            arc_top + padding,
+            text=label,
+            font=label_font,
+            anchor="ne",
+            tags=(obj_id,),
+        )
+
+        box_font = self._scaled_font(scale * 0.4)
+        self._draw_module_reference_box(
+            canvas,
+            x,
+            rect_bottom,
+            w,
+            module_text,
+            outline_color,
+            line_width,
+            box_font,
+            obj_id,
+        )
+
+    def draw_away_assumption_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Assumption",
+        module_text="",
+        fill="lightyellow",
+        outline_color=None,
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        """Draw an away assumption shape."""
+        self._draw_away_assumption_or_justification(
+            canvas,
+            x,
+            y,
+            scale,
+            text,
+            "A",
+            module_text,
+            fill,
+            outline_color,
+            line_width,
+            font_obj,
+            obj_id,
+        )
+
+    def draw_away_justification_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Justification",
+        module_text="",
+        fill="lightyellow",
+        outline_color=None,
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        """Draw an away justification shape."""
+        self._draw_away_assumption_or_justification(
+            canvas,
+            x,
+            y,
+            scale,
+            text,
+            "J",
+            module_text,
+            fill,
+            outline_color,
+            line_width,
+            font_obj,
+            obj_id,
+        )
+
+    def draw_away_module_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        **kwargs,
+    ):
+        self.draw_module_shape(canvas, x, y, scale=scale, **kwargs)
 
     def draw_away_context_shape(
         self,
