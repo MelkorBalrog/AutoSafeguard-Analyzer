@@ -60,7 +60,6 @@ def test_on_click_selects_node_and_drag_moves_only_clone():
     win.edges = []
     win.NODE_RADIUS = 10
     win._position_table = lambda *a, **k: None
-    win._drag_table = lambda *a, **k: None
     win._update_scroll_region = lambda: None
     win._highlight_node = lambda node: setattr(win, "selected_node", node)
     win.selection_rect = None
@@ -96,7 +95,6 @@ def test_dragging_clone_moves_only_its_fill():
     win.edges = []
     win.NODE_RADIUS = 10
     win._position_table = lambda *a, **k: None
-    win._drag_table = lambda *a, **k: None
     win._update_scroll_region = lambda: None
     win._highlight_node = lambda node: setattr(win, "selected_node", node)
     win.selection_rect = None

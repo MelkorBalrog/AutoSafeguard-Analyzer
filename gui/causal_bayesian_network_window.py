@@ -439,7 +439,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
                     tx = x2 - dx / dist * r
                     ty = y2 - dy / dist * r
                     self.canvas.coords(line_id, sx, sy, tx, ty)
-            self._drag_table(name, idx, x, y)
+            self._position_table(name, x, y)
             if self.selected_node == (name, idx) and self.selection_rect:
                 self.canvas.coords(self.selection_rect, x - r, y - r, x + r, y + r)
             self._update_scroll_region()
@@ -798,38 +798,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.canvas.coords(win, x + r + 10, y - h / 2)
 
     # ------------------------------------------------------------------
-    def _drag_table_strategy1(self, name: str, idx: int, x: float, y: float) -> None:
-        self._position_table(name, idx, x, y)
-
-    def _drag_table_strategy2(self, name: str, idx: int, x: float, y: float) -> None:
-        if self._get_table(name, idx):
-            self._position_table(name, idx, x, y)
-
-    def _drag_table_strategy3(self, name: str, idx: int, x: float, y: float) -> None:
-        if not self._get_table(name, idx):
-            self._place_table(name, idx)
-        self._position_table(name, idx, x, y)
-
-    def _drag_table_strategy4(self, name: str, idx: int, x: float, y: float) -> None:
-        try:
-            self._update_table(name, idx)
-        finally:
-            self._position_table(name, idx, x, y)
-
-    def _drag_table(self, name: str, idx: int, x: float, y: float) -> None:
-        for strat in (
-            self._drag_table_strategy1,
-            self._drag_table_strategy2,
-            self._drag_table_strategy3,
-            self._drag_table_strategy4,
-        ):
-            try:
-                strat(name, idx, x, y)
-                break
-            except Exception:
-                continue
-
-    # ------------------------------------------------------------------
     def _update_all_tables(self) -> None:
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
@@ -1041,6 +1009,44 @@ class CausalBayesianNetworkWindow(tk.Frame):
             node = strat(x, y)
             if node:
                 return node
+        return None
+
+    def _find_node_strategy3(self, x: float, y: float) -> str | None:
+        """Locate a node by checking drawn ovals' bounding boxes."""
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        for name, (oval_id, _, _) in self.nodes.items():
+            x1, y1, x2, y2 = self.canvas.coords(oval_id)
+            if x1 <= cx <= x2 and y1 <= cy <= y2:
+                return name
+        return None
+
+    def _find_node_strategy4(self, x: float, y: float) -> str | None:
+        """Locate a node using stored positions and a radius check."""
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return None
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        r = self.NODE_RADIUS
+        for name, (nx, ny) in doc.positions.items():
+            if (cx - nx) ** 2 + (cy - ny) ** 2 <= r ** 2:
+                return name
+        return None
+
+    def _find_node(self, x: float, y: float) -> str | None:
+        """Find a node at the given canvas coordinates using multiple strategies."""
+        for strat in (
+            self._find_node_strategy1,
+            self._find_node_strategy2,
+            self._find_node_strategy3,
+            self._find_node_strategy4,
+        ):
+            name = strat(x, y)
+            if name:
+                return name
         return None
 
     # ------------------------------------------------------------------
