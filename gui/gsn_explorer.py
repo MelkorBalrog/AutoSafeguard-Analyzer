@@ -8,6 +8,7 @@ from gsn import GSNNode, GSNDiagram, GSNModule
 from gui import format_name_with_phase
 from gui.style_manager import StyleManager
 from gui.icon_factory import create_icon
+from .name_utils import collect_work_product_names, unique_name_v4
 
 
 class GSNExplorer(tk.Frame):
@@ -194,6 +195,7 @@ class GSNExplorer(tk.Frame):
         name = simpledialog.askstring("New GSN Diagram", "Root goal name:", parent=self)
         if not name:
             return
+        name = self._unique_diagram_name(name)
         undo = getattr(self.app, "push_undo_state", None)
         if undo:
             undo()
@@ -246,6 +248,7 @@ class GSNExplorer(tk.Frame):
         elif typ == "diagram":
             new = simpledialog.askstring("Rename Diagram", "Name:", initialvalue=obj.root.user_name, parent=self)
             if new:
+                new = self._unique_diagram_name(new, ignore=obj)
                 undo = getattr(self.app, "push_undo_state", None)
                 if undo:
                     undo()
@@ -314,6 +317,15 @@ class GSNExplorer(tk.Frame):
                 if obj in child.parents:
                     child.parents.remove(obj)
         self.populate()
+
+    # ------------------------------------------------------------------
+    def _all_diagram_names(self, ignore: GSNDiagram | None = None) -> set[str]:
+        return collect_work_product_names(self.app, ignore)
+
+    # ------------------------------------------------------------------
+    def _unique_diagram_name(self, name: str, ignore: GSNDiagram | None = None) -> str:
+        existing = self._all_diagram_names(ignore)
+        return unique_name_v4(name, existing)
 
     # ------------------------------------------------------------------
     def _collect_diagrams(self, module: GSNModule):
