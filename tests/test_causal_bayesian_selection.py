@@ -26,15 +26,15 @@ def test_find_node_strategies_with_scroll():
 
     win = object.__new__(CausalBayesianNetworkWindow)
     win.canvas = CanvasStub()
-    win.id_to_node = {1: "A"}
-    win.nodes = {"A": (1, None, "fill_A")}
+    win.id_to_node = {1: ("A", 0)}
+    win.nodes = {"A": [(1, None, "fill_A")]}
     win.NODE_RADIUS = 10
     win.app = types.SimpleNamespace(
-        active_cbn=types.SimpleNamespace(positions={"A": (110, 15)})
+        active_cbn=types.SimpleNamespace(positions={"A": [(110, 15)]})
     )
 
-    assert win._find_node_strategy1(10, 15) == "A"
-    assert win._find_node_strategy2(10, 15) == "A"
-    assert win._find_node_strategy3(10, 15) == "A"
-    assert win._find_node_strategy4(10, 15) == "A"
-    assert win._find_node(10, 15) == "A"
+    assert win._find_node_strategy1(10, 15) == ("A", 0)
+    assert win._find_node_strategy2(10, 15) == ("A", 0)
+    assert win._find_node_strategy3(10, 15) == ("A", 0)
+    assert win._find_node_strategy4(10, 15) == ("A", 0)
+    assert win._find_node(10, 15) == ("A", 0)
