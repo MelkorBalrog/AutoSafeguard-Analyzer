@@ -243,8 +243,6 @@ class GSNDiagramWindow(tk.Frame):
         self.canvas.bind("<FocusIn>", self._on_focus_in)
         GSN_WINDOWS.add(weakref.ref(self))
         self.refresh()
-        # Synchronise clones when the tab becomes active
-        self.bind("<<TabLoaded>>", self._on_tab_loaded, True)
         self._bind_shortcuts()
 
     def _on_focus_in(self, _event=None) -> None:
@@ -314,58 +312,6 @@ class GSNDiagramWindow(tk.Frame):
     # ------------------------------------------------------------------
     def redraw(self):
         self.canvas.configure(bg=StyleManager.get_instance().canvas_bg)
-        self.refresh()
-
-    # ------------------------------------------------------------------
-    def _sync_all_clones_strategy1(self) -> None:
-        sync = getattr(self.app, "sync_nodes_by_id", None)
-        if not sync:
-            return
-        originals = set()
-        for n in getattr(self.diagram, "nodes", []):
-            base = n.original if (not n.is_primary_instance and getattr(n, "original", None)) else n
-            originals.add(base)
-        for orig in originals:
-            sync(orig)
-
-    def _sync_all_clones_strategy2(self) -> None:
-        sync = getattr(self.app, "sync_nodes_by_id", None)
-        if not sync:
-            return
-        for n in getattr(self.diagram, "nodes", []):
-            sync(n if n.is_primary_instance else n.original)
-
-    def _sync_all_clones_strategy3(self) -> None:
-        sync = getattr(self.app, "sync_nodes_by_id", None)
-        if not sync:
-            return
-        seen = set()
-        for n in getattr(self.diagram, "nodes", []):
-            base = n.original if (not n.is_primary_instance and getattr(n, "original", None)) else n
-            if id(base) in seen:
-                continue
-            seen.add(id(base))
-            sync(base)
-
-    def _sync_all_clones_strategy4(self) -> None:
-        self._sync_all_clones_strategy1()
-
-    def _sync_all_clones(self) -> None:
-        for strat in (
-            self._sync_all_clones_strategy1,
-            self._sync_all_clones_strategy2,
-            self._sync_all_clones_strategy3,
-            self._sync_all_clones_strategy4,
-        ):
-            try:
-                strat()
-                return
-            except Exception:
-                continue
-
-    def _on_tab_loaded(self, _event=None) -> None:
-        """Synchronise nodes with their originals when the tab is activated."""
-        self._sync_all_clones()
         self.refresh()
 
     # ------------------------------------------------------------------
