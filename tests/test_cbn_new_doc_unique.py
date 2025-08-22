@@ -15,7 +15,7 @@ def test_new_doc_rejects_duplicate_name(monkeypatch):
     win.doc_var = types.SimpleNamespace(set=lambda *a, **k: None)
     monkeypatch.setattr(simpledialog, "askstring", lambda *a, **k: "Existing")
     called = {}
-    monkeypatch.setattr(messagebox, "showerror", lambda *a, **k: called.setdefault("err", True))
+    monkeypatch.setattr(messagebox, "showwarning", lambda *a, **k: called.setdefault("warn", True))
     win.new_doc()
-    assert called.get("err")
+    assert called.get("warn")
     assert len(app.cbn_docs) == 1
