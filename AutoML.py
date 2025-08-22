@@ -251,7 +251,8 @@ from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.gsn_explorer import GSNExplorer
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_case_explorer import SafetyCaseExplorer
-from gui.gsn_diagram_window import GSNDiagramWindow
+from gui.gsn_diagram_window import GSNDiagramWindow, GSN_WINDOWS
+from gui.causal_bayesian_network_window import CBN_WINDOWS
 from gui.gsn_config_window import GSNElementConfig
 from gui.search_toolbox import SearchToolbox
 from gsn import GSNDiagram, GSNModule
@@ -18826,6 +18827,16 @@ class AutoMLApp:
             self.selected_node = node
             self.cut_mode = False
             return
+        win = self._focused_cbn_window()
+        if win and getattr(win, "selected_node", None):
+            if getattr(win, "copy_selected", None):
+                win.copy_selected()
+                return
+        win = self._focused_gsn_window()
+        if win and getattr(win, "selected_node", None):
+            if getattr(win, "copy_selected", None):
+                win.copy_selected()
+                return
         win = getattr(self, "active_arch_window", None)
         if win and getattr(win, "selected_obj", None):
             if getattr(win, "copy_selected", None):
@@ -18853,6 +18864,16 @@ class AutoMLApp:
             self.selected_node = node
             self.cut_mode = True
             return
+        win = self._focused_cbn_window()
+        if win and getattr(win, "selected_node", None):
+            if getattr(win, "cut_selected", None):
+                win.cut_selected()
+                return
+        win = self._focused_gsn_window()
+        if win and getattr(win, "selected_node", None):
+            if getattr(win, "cut_selected", None):
+                win.cut_selected()
+                return
         win = getattr(self, "active_arch_window", None)
         if win and getattr(win, "selected_obj", None):
             if getattr(win, "cut_selected", None):
@@ -18922,15 +18943,13 @@ class AutoMLApp:
                 self.cut_mode = False
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
-                cloned_node = self.clone_node_preserving_id(self.clipboard_node)
+                cloned_node = self.clipboard_node
                 target.children.append(cloned_node)
                 cloned_node.parents.append(target)
                 if isinstance(cloned_node, GSNNode):
                     diag = self._find_gsn_diagram(target)
-                    if diag:
+                    if diag and cloned_node not in diag.nodes:
                         diag.add_node(cloned_node)
-                cloned_node.x = target.x + 100
-                cloned_node.y = target.y + 100
                 messagebox.showinfo("Paste", "Node pasted successfully (copied).")
             AutoML_Helper.calculate_assurance_recursive(
                 self.root_node,
@@ -18938,20 +18957,20 @@ class AutoMLApp:
             )
             self.update_views()
             return
-        win = getattr(self, "active_arch_window", None)
         clip_type = getattr(self, "diagram_clipboard_type", None)
-        if (
-            (not win or (clip_type and self._get_diag_type(win) != clip_type))
-            and ARCH_WINDOWS
-        ):
-            for ref in list(ARCH_WINDOWS):
-                candidate = ref()
-                if candidate and (
-                    not clip_type
-                    or self._get_diag_type(candidate) == clip_type
-                ):
-                    win = candidate
-                    break
+        win = self._focused_cbn_window()
+        if win and getattr(self, "diagram_clipboard", None):
+            if not clip_type or clip_type == "Causal Bayesian Network":
+                if getattr(win, "paste_selected", None):
+                    win.paste_selected()
+                    return
+        win = self._focused_gsn_window()
+        if win and getattr(self, "diagram_clipboard", None):
+            if not clip_type or clip_type == "GSN":
+                if getattr(win, "paste_selected", None):
+                    win.paste_selected()
+                    return
+        win = self._focused_arch_window(clip_type)
         if win and getattr(self, "diagram_clipboard", None):
             if getattr(win, "paste_selected", None):
                 win.paste_selected()
@@ -18965,6 +18984,131 @@ class AutoMLApp:
             diag = repo.diagrams.get(diag_id)
             if diag:
                 return diag.diag_type
+        return None
+
+    def _window_has_focus(self, win):
+        try:
+            focused = win.focus_get()
+            if focused and focused.winfo_toplevel() is win.winfo_toplevel():
+                return True
+        except Exception:
+            pass
+        return getattr(win, "has_focus", False)
+
+    def _gsn_window_strategy1(self):
+        win = getattr(self, "active_gsn_window", None)
+        if win and self._window_has_focus(win):
+            return win
+        return None
+
+    def _gsn_window_strategy2(self):
+        for ref in list(GSN_WINDOWS):
+            win = ref()
+            if win and self._window_has_focus(win):
+                return win
+        return None
+
+    def _gsn_window_strategy3(self):
+        win = getattr(self, "active_gsn_window", None)
+        if win:
+            return win
+        return None
+
+    def _gsn_window_strategy4(self):
+        for ref in list(GSN_WINDOWS):
+            win = ref()
+            if win:
+                return win
+        return None
+
+    def _focused_gsn_window(self):
+        for strat in (
+            self._gsn_window_strategy1,
+            self._gsn_window_strategy2,
+            self._gsn_window_strategy3,
+            self._gsn_window_strategy4,
+        ):
+            win = strat()
+            if win:
+                return win
+        return None
+
+    def _cbn_window_strategy1(self):
+        win = getattr(self, "_cbn_window", None)
+        if win and self._window_has_focus(win):
+            return win
+        return None
+
+    def _cbn_window_strategy2(self):
+        for ref in list(CBN_WINDOWS):
+            win = ref()
+            if win and self._window_has_focus(win):
+                return win
+        return None
+
+    def _cbn_window_strategy3(self):
+        win = getattr(self, "_cbn_window", None)
+        if win:
+            return win
+        return None
+
+    def _cbn_window_strategy4(self):
+        for ref in list(CBN_WINDOWS):
+            win = ref()
+            if win:
+                return win
+        return None
+
+    def _focused_cbn_window(self):
+        for strat in (
+            self._cbn_window_strategy1,
+            self._cbn_window_strategy2,
+            self._cbn_window_strategy3,
+            self._cbn_window_strategy4,
+        ):
+            win = strat()
+            if win:
+                return win
+        return None
+
+    def _arch_window_strategy1(self, clip_type=None):
+        win = getattr(self, "active_arch_window", None)
+        if win and (not clip_type or self._get_diag_type(win) == clip_type):
+            if self._window_has_focus(win):
+                return win
+        return None
+
+    def _arch_window_strategy2(self, clip_type=None):
+        for ref in list(ARCH_WINDOWS):
+            win = ref()
+            if win and (not clip_type or self._get_diag_type(win) == clip_type):
+                if self._window_has_focus(win):
+                    return win
+        return None
+
+    def _arch_window_strategy3(self, clip_type=None):
+        win = getattr(self, "active_arch_window", None)
+        if win and (not clip_type or self._get_diag_type(win) == clip_type):
+            return win
+        return None
+
+    def _arch_window_strategy4(self, clip_type=None):
+        for ref in list(ARCH_WINDOWS):
+            win = ref()
+            if win and (not clip_type or self._get_diag_type(win) == clip_type):
+                return win
+        return None
+
+    def _focused_arch_window(self, clip_type=None):
+        for strat in (
+            self._arch_window_strategy1,
+            self._arch_window_strategy2,
+            self._arch_window_strategy3,
+            self._arch_window_strategy4,
+        ):
+            win = strat(clip_type)
+            if win:
+                return win
         return None
  
     def clone_node_preserving_id(self, node):
@@ -19034,6 +19178,61 @@ class AutoMLApp:
 
         return _search_modules(getattr(self, "gsn_modules", []))
 
+    def _copy_attrs_no_xy_strategy1(self, target, source, attrs):
+        tx, ty = getattr(target, "x", None), getattr(target, "y", None)
+        for attr in attrs:
+            setattr(target, attr, getattr(source, attr, None))
+        if tx is not None:
+            target.x = tx
+        if ty is not None:
+            target.y = ty
+
+    def _copy_attrs_no_xy_strategy2(self, target, source, attrs):
+        tx, ty = getattr(target, "x", None), getattr(target, "y", None)
+        values = {a: getattr(source, a, None) for a in attrs if hasattr(source, a)}
+        for a, v in values.items():
+            setattr(target, a, v)
+        if tx is not None:
+            target.x = tx
+        if ty is not None:
+            target.y = ty
+
+    def _copy_attrs_no_xy_strategy3(self, target, source, attrs):
+        tx, ty = getattr(target, "x", None), getattr(target, "y", None)
+        for attr in attrs:
+            if attr in {"x", "y"}:
+                continue
+            setattr(target, attr, getattr(source, attr, None))
+        if tx is not None:
+            target.x = tx
+        if ty is not None:
+            target.y = ty
+
+    def _copy_attrs_no_xy_strategy4(self, target, source, attrs):
+        tx, ty = getattr(target, "x", None), getattr(target, "y", None)
+        for attr in attrs:
+            try:
+                setattr(target, attr, getattr(source, attr))
+            except Exception:
+                continue
+        if tx is not None:
+            target.x = tx
+        if ty is not None:
+            target.y = ty
+
+    def _copy_attrs_no_xy(self, target, source, attrs):
+        for strat in (
+            self._copy_attrs_no_xy_strategy1,
+            self._copy_attrs_no_xy_strategy2,
+            self._copy_attrs_no_xy_strategy3,
+            self._copy_attrs_no_xy_strategy4,
+        ):
+            try:
+                strat(target, source, attrs)
+                return
+            except Exception:
+                continue
+
     def sync_nodes_by_id(self, updated_node):
         """Synchronize all nodes (original and clones) sharing an ID.
 
@@ -19042,45 +19241,43 @@ class AutoMLApp:
         the original, the values are simply pushed to all clones.
         """
 
+        attrs = [
+            "node_type",
+            "user_name",
+            "description",
+            "rationale",
+            "quant_value",
+            "gate_type",
+            "severity",
+            "input_subtype",
+            "equation",
+            "detailed_equation",
+            "is_page",
+            "failure_prob",
+            "prob_formula",
+            "failure_mode_ref",
+            "fmea_effect",
+            "fmea_cause",
+            "fmea_severity",
+            "fmea_occurrence",
+            "fmea_detection",
+            "fmea_component",
+            "fmeda_malfunction",
+            "fmeda_safety_goal",
+            "fmeda_diag_cov",
+            "fmeda_fit",
+            "fmeda_spfm",
+            "fmeda_lpfm",
+            "fmeda_fault_type",
+            "fmeda_fault_fraction",
+        ]
+
         # If a clone was edited, copy its changes to the original before
         # propagating.
         if not updated_node.is_primary_instance and updated_node.original:
             clone = updated_node
             updated_node = clone.original
-
-            attrs = [
-                "node_type",
-                "user_name",
-                "description",
-                "rationale",
-                "quant_value",
-                "gate_type",
-                "severity",
-                "input_subtype",
-                "equation",
-                "detailed_equation",
-                "is_page",
-                "failure_prob",
-                "prob_formula",
-                "failure_mode_ref",
-                "fmea_effect",
-                "fmea_cause",
-                "fmea_severity",
-                "fmea_occurrence",
-                "fmea_detection",
-                "fmea_component",
-                "fmeda_malfunction",
-                "fmeda_safety_goal",
-                "fmeda_diag_cov",
-                "fmeda_fit",
-                "fmeda_spfm",
-                "fmeda_lpfm",
-                "fmeda_fault_type",
-                "fmeda_fault_fraction",
-            ]
-            for attr in attrs:
-                setattr(updated_node, attr, getattr(clone, attr))
-
+            self._copy_attrs_no_xy(updated_node, clone, attrs)
             # Remove the clone marker before storing the label on the original.
             updated_node.display_label = clone.display_label.replace(" (clone)", "")
 
@@ -19096,68 +19293,14 @@ class AutoMLApp:
 
             if node.is_primary_instance:
                 if node.unique_id == updated_primary_id:
-                    node.node_type = updated_node.node_type
-                    node.user_name = updated_node.user_name
-                    node.description = updated_node.description
-                    node.rationale = updated_node.rationale
-                    node.quant_value = updated_node.quant_value
-                    node.gate_type = updated_node.gate_type
-                    node.severity = updated_node.severity
-                    node.input_subtype = updated_node.input_subtype
+                    self._copy_attrs_no_xy(node, updated_node, attrs)
                     node.display_label = updated_node.display_label
-                    node.equation = updated_node.equation
-                    node.detailed_equation = updated_node.detailed_equation
-                    node.is_page = updated_node.is_page
-                    node.failure_prob = updated_node.failure_prob
-                    node.prob_formula = updated_node.prob_formula
-                    node.failure_mode_ref = updated_node.failure_mode_ref
-                    node.fmea_effect = updated_node.fmea_effect
-                    node.fmea_cause = updated_node.fmea_cause
-                    node.fmea_severity = updated_node.fmea_severity
-                    node.fmea_occurrence = updated_node.fmea_occurrence
-                    node.fmea_detection = updated_node.fmea_detection
-                    node.fmea_component = updated_node.fmea_component
-                    node.fmeda_malfunction = updated_node.fmeda_malfunction
-                    node.fmeda_safety_goal = updated_node.fmeda_safety_goal
-                    node.fmeda_diag_cov = updated_node.fmeda_diag_cov
-                    node.fmeda_fit = updated_node.fmeda_fit
-                    node.fmeda_spfm = updated_node.fmeda_spfm
-                    node.fmeda_lpfm = updated_node.fmeda_lpfm
-                    node.fmeda_fault_type = updated_node.fmeda_fault_type
-                    node.fmeda_fault_fraction = updated_node.fmeda_fault_fraction
             else:
                 # Use the original pointer to compare.
                 if node.original and node.original.unique_id == updated_primary_id:
-                    node.user_name = updated_node.user_name
-                    node.description = updated_node.description
-                    node.rationale = updated_node.rationale
-                    node.quant_value = updated_node.quant_value
-                    node.gate_type = updated_node.gate_type
-                    node.severity = updated_node.severity
-                    node.input_subtype = updated_node.input_subtype
+                    self._copy_attrs_no_xy(node, updated_node, attrs)
                     # Append a marker to the display label to indicate this is a clone.
                     node.display_label = updated_node.display_label + " (clone)"
-                    node.equation = updated_node.equation
-                    node.detailed_equation = updated_node.detailed_equation
-                    # **The key change: update the page flag on clones as well.**
-                    node.is_page = updated_node.is_page
-                    node.failure_prob = updated_node.failure_prob
-                    node.prob_formula = updated_node.prob_formula
-                    node.failure_mode_ref = updated_node.failure_mode_ref
-                    node.fmea_effect = updated_node.fmea_effect
-                    node.fmea_cause = updated_node.fmea_cause
-                    node.fmea_severity = updated_node.fmea_severity
-                    node.fmea_occurrence = updated_node.fmea_occurrence
-                    node.fmea_detection = updated_node.fmea_detection
-                    node.fmea_component = updated_node.fmea_component
-                    node.fmeda_malfunction = updated_node.fmeda_malfunction
-                    node.fmeda_safety_goal = updated_node.fmeda_safety_goal
-                    node.fmeda_diag_cov = updated_node.fmeda_diag_cov
-                    node.fmeda_fit = updated_node.fmeda_fit
-                    node.fmeda_spfm = updated_node.fmeda_spfm
-                    node.fmeda_lpfm = updated_node.fmeda_lpfm
-                    node.fmeda_fault_type = updated_node.fmeda_fault_type
-                    node.fmeda_fault_fraction = updated_node.fmeda_fault_fraction
 
     def edit_user_name(self):
         if self.selected_node:
