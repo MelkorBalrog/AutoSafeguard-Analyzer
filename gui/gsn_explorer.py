@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk, simpledialog
 
 from gsn import GSNNode, GSNDiagram, GSNModule
-from gui import format_name_with_phase
+from gui import format_name_with_phase, messagebox
 from gui.style_manager import StyleManager
 from gui.icon_factory import create_icon
 
@@ -192,7 +192,9 @@ class GSNExplorer(tk.Frame):
         if not self.app:
             return
         name = simpledialog.askstring("New GSN Diagram", "Root goal name:", parent=self)
-        if not name:
+        if not name or self._diagram_name_exists(name):
+            if name:
+                messagebox.showwarning("New GSN Diagram", "Diagram name already exists")
             return
         undo = getattr(self.app, "push_undo_state", None)
         if undo:
@@ -209,6 +211,25 @@ class GSNExplorer(tk.Frame):
         else:
             self.app.gsn_diagrams.append(diag)
         self.populate()
+
+    def _diagram_name_exists(self, name: str) -> bool:
+        if not self.app:
+            return False
+        diags = list(getattr(self.app, "gsn_diagrams", []))
+
+        def _collect(mods):
+            for m in mods:
+                diags.extend(m.diagrams)
+                _collect(getattr(m, "modules", []))
+
+        _collect(getattr(self.app, "gsn_modules", []))
+        checks = [
+            lambda n: any(d.root.user_name == n for d in diags),
+            lambda n: any(d.root.user_name.lower() == n.lower() for d in diags),
+            lambda n: any(d.root.user_name.strip() == n.strip() for d in diags),
+            lambda n: any(d.root.user_name.split()[0] == n.split()[0] for d in diags),
+        ]
+        return any(check(name) for check in checks)
 
     # ------------------------------------------------------------------
     def new_module(self):
