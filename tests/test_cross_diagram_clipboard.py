@@ -176,6 +176,95 @@ def test_copy_paste_task_between_governance_diagrams():
     assert any(o.obj_type == "Task" for o in win2.objects)
 
 
+def test_copy_paste_governance_with_selected_node():
+    ARCH_WINDOWS.clear()
+    app = AutoMLApp.__new__(AutoMLApp)
+    app.diagram_clipboard = None
+    app.diagram_clipboard_type = None
+    # Simulate leftover selected node from another analysis
+    app.selected_node = types.SimpleNamespace(node_type="Event", parents=[])
+    app.root_node = object()
+    app.clipboard_node = None
+    app.cut_mode = False
+    repo = DummyRepo("Governance Diagram", "Governance Diagram")
+
+    obj = SysMLObject(
+        obj_id=_get_next_id(),
+        obj_type="Plan",
+        x=0,
+        y=0,
+        element_id=None,
+        width=80,
+        height=40,
+        properties={},
+        requirements=[],
+        locked=False,
+        hidden=False,
+        collapsed={},
+    )
+
+    win1 = make_window(app, repo, 1)
+    win1.objects = [obj]
+    win1.selected_obj = obj
+
+    win2 = make_window(app, repo, 2)
+
+    win1._on_focus_in()
+    app.copy_node()
+    assert app.diagram_clipboard is not None
+    assert app.clipboard_node is None
+
+    win2._on_focus_in()
+    app.paste_node()
+
+    assert len(win2.objects) == 1
+    assert win2.objects[0].obj_type == "Plan"
+
+
+def test_cut_paste_between_governance_diagrams():
+    ARCH_WINDOWS.clear()
+    app = AutoMLApp.__new__(AutoMLApp)
+    app.diagram_clipboard = None
+    app.diagram_clipboard_type = None
+    app.selected_node = None
+    app.root_node = None
+    app.clipboard_node = None
+    app.cut_mode = False
+    repo = DummyRepo("Governance Diagram", "Governance Diagram")
+
+    obj = SysMLObject(
+        obj_id=_get_next_id(),
+        obj_type="Plan",
+        x=0,
+        y=0,
+        element_id=None,
+        width=80,
+        height=40,
+        properties={},
+        requirements=[],
+        locked=False,
+        hidden=False,
+        collapsed={},
+    )
+
+    win1 = make_window(app, repo, 1)
+    win1.objects = [obj]
+    win1.selected_obj = obj
+
+    win2 = make_window(app, repo, 2)
+
+    win1._on_focus_in()
+    app.cut_node()
+    assert app.diagram_clipboard is not None
+
+    win2._on_focus_in()
+    app.paste_node()
+
+    assert len(win1.objects) == 0
+    assert len(win2.objects) == 1
+    assert win2.objects[0].obj_type == "Plan"
+
+
 def test_copy_paste_process_area_between_diagrams():
     ARCH_WINDOWS.clear()
     app = AutoMLApp.__new__(AutoMLApp)

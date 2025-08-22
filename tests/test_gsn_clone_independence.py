@@ -1,0 +1,66 @@
+import types
+import os
+import sys
+
+sys.modules.setdefault("PIL", types.ModuleType("PIL"))
+sys.modules.setdefault("PIL.Image", types.ModuleType("PIL.Image"))
+sys.modules.setdefault("PIL.ImageDraw", types.ModuleType("PIL.ImageDraw"))
+sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
+sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from gsn import GSNNode, GSNDiagram
+from AutoML import AutoMLApp
+
+
+def _make_app(root, diagram):
+    app = AutoMLApp.__new__(AutoMLApp)
+    app.root_node = root
+    app.top_events = []
+    app.analysis_tree = types.SimpleNamespace(selection=lambda: [], item=lambda *a, **k: {})
+    app.cut_mode = False
+    app.selected_node = root
+    app.update_views = lambda: None
+    app._find_gsn_diagram = lambda n: diagram
+    return app
+
+
+def test_paste_clone_is_away_and_independent():
+    root = GSNNode("Root", "Goal", x=0, y=0)
+    child = GSNNode("Child", "Goal", x=10, y=10)
+    root.add_child(child)
+    diagram = GSNDiagram(root)
+
+    app = _make_app(root, diagram)
+    app.clipboard_node = child
+    app.paste_node()
+
+    clone = root.children[-1]
+    assert clone is not child
+    assert not clone.is_primary_instance
+
+    clone.x += 50
+    clone.y += 60
+    AutoMLApp.sync_nodes_by_id(app, clone)
+
+    assert (root.x, root.y) == (0, 0)
+    assert (clone.x, clone.y) == (150, 160)
+
+
+def test_only_name_description_notes_sync():
+    root = GSNNode("Root", "Goal")
+    clone = root.clone()
+    diagram = GSNDiagram(root)
+    diagram.add_node(clone)
+
+    app = _make_app(root, diagram)
+
+    clone.user_name = "C"
+    clone.description = "desc"
+    clone.manager_notes = "note"
+    clone.spi_target = "SPI"
+    AutoMLApp.sync_nodes_by_id(app, clone)
+
+    assert (root.user_name, root.description, root.manager_notes) == ("C", "desc", "note")
+    assert root.spi_target == ""
