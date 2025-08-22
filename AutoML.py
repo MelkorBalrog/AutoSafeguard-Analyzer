@@ -18975,7 +18975,7 @@ class AutoMLApp:
                 if tags:
                     target = self.find_node_by_id(self.root_node, int(tags[0]))
             if not target:
-                target = self.selected_node
+                target = self.selected_node or self.root_node
             if not target:
                 messagebox.showwarning("Paste", "Select a target node to paste into.")
                 return
