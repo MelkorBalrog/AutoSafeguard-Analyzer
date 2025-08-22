@@ -9656,17 +9656,6 @@ class SysMLDiagramWindow(tk.Frame):
             self.redraw()
             self.update_property_view()
 
-    def _remove_wp_and_disable(self, name: str, wp) -> None:
-        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
-        removed = False
-        if toolbox:
-            diag = self.repo.diagrams.get(self.diagram_id)
-            diagram_name = diag.name if diag else ""
-            removed = toolbox.remove_work_product(diagram_name, name)
-        if removed and toolbox and not toolbox.is_enabled(name):
-            getattr(self.app, "disable_work_product", lambda *_: None)(name)
-        self.remove_element_model(wp)
-
     def delete_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
             return
@@ -9699,7 +9688,13 @@ class SysMLDiagramWindow(tk.Frame):
                     else:
                         for wp in wps:
                             name = wp.properties.get("name", "")
-                            self._remove_wp_and_disable(name, wp)
+                            getattr(self.app, "disable_work_product", lambda *_: None)(name)
+                            toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                            if toolbox:
+                                diag = self.repo.diagrams.get(self.diagram_id)
+                                diagram_name = diag.name if diag else ""
+                                toolbox.remove_work_product(diagram_name, name)
+                            self.remove_element_model(wp)
                         self.remove_element_model(obj)
                     continue
                 if obj.obj_type == "Work Product":
@@ -9711,7 +9706,12 @@ class SysMLDiagramWindow(tk.Frame):
                                 f"Cannot delete work product '{name}' with existing artifacts.",
                             )
                             continue
-                    self._remove_wp_and_disable(name, obj)
+                    getattr(self.app, "disable_work_product", lambda *_: None)(name)
+                    toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                    if toolbox:
+                        diag = self.repo.diagrams.get(self.diagram_id)
+                        diagram_name = diag.name if diag else ""
+                        toolbox.remove_work_product(diagram_name, name)
                 elif obj.obj_type == "System Boundary":
                     children = [
                         o
@@ -9731,7 +9731,13 @@ class SysMLDiagramWindow(tk.Frame):
                     else:
                         for wp in children:
                             name = wp.properties.get("name", "")
-                            self._remove_wp_and_disable(name, wp)
+                            getattr(self.app, "disable_work_product", lambda *_: None)(name)
+                            toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                            if toolbox:
+                                diag = self.repo.diagrams.get(self.diagram_id)
+                                diagram_name = diag.name if diag else ""
+                                toolbox.remove_work_product(diagram_name, name)
+                            self.remove_element_model(wp)
                         self.remove_element_model(obj)
                         continue
                 if obj.obj_type == "Part":
