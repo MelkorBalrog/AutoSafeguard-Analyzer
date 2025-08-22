@@ -18972,12 +18972,6 @@ class AutoMLApp:
                     return
         win = self._focused_arch_window(clip_type)
         if win and getattr(self, "diagram_clipboard", None):
-            if not clip_type or clip_type == "GSN":
-                if getattr(win, "paste_selected", None):
-                    win.paste_selected()
-                    return
-        win = self._focused_arch_window(clip_type)
-        if win and getattr(self, "diagram_clipboard", None):
             if getattr(win, "paste_selected", None):
                 win.paste_selected()
                 return

@@ -111,7 +111,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
 
         # allow multiple instances of the same model node on a diagram
         self.nodes = {}  # name -> list[(oval_id, text_id, fill_tag)]
-        self.tables = {}  # name -> (window_id, frame, treeview)
+        self.tables = {}  # name -> list[(window_id, frame, treeview)]
         self.id_to_node = {}  # canvas id -> (name, index)
         self.edges = []  # (line_id, src, dst)
         self.edge_start = None
@@ -212,10 +212,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if not name or self._doc_name_exists(name):
             if name:
                 messagebox.showwarning("New Analysis", "Analysis name already exists")
-            return
-        existing = collect_work_product_names(self.app, diagram_type="cbn")
-        if name in existing:
-            messagebox.showerror("New Analysis", "Name already exists", parent=self)
             return
         doc = CausalBayesianNetworkDoc(name)
         if not hasattr(self.app, "cbn_docs"):
@@ -652,7 +648,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.id_to_node[text] = (name, idx)
         for fid in fill_ids:
             self.id_to_node[fid] = (name, idx)
-        self._place_table(name)
+        self._place_table(name, idx)
         self._update_scroll_region()
 
     # ------------------------------------------------------------------
@@ -674,7 +670,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._update_scroll_region()
 
     # ------------------------------------------------------------------
-    def _place_table(self, name: str) -> None:
+    def _place_table(self, name: str, idx: int) -> None:
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
@@ -714,20 +710,63 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 f"and {name} is True"
             )
         ToolTip(tree, info)
-        tree.bind("<Double-1>", lambda e, n=name: self.edit_cpd_row(n))
+        tree.bind("<Double-1>", lambda e, n=name, i=idx: self.edit_cpd_row(n, i))
         win = self.canvas.create_window(0, 0, window=frame, anchor="nw")
-        self.tables[name] = (win, frame, tree)
-        self._update_table(name)
-        x, y = doc.positions.get(name, [(0, 0)])[0]
-        self._position_table(name, x, y)
+        tables = self.tables.setdefault(name, [])
+        while len(tables) <= idx:
+            tables.append(None)
+        if tables[idx]:
+            old_win, old_frame, _ = tables[idx]
+            self.canvas.delete(old_win)
+            old_frame.destroy()
+        tables[idx] = (win, frame, tree)
+        self._update_table(name, idx)
+        x, y = doc.positions.get(name, [(0, 0)])[idx]
+        self._position_table(name, idx, x, y)
         self._update_scroll_region()
 
     # ------------------------------------------------------------------
-    def _update_table(self, name: str) -> None:
+    def _table_lookup_strategy1(self, name: str, idx: int):
+        try:
+            return self.tables[name][idx]
+        except Exception:
+            return None
+
+    def _table_lookup_strategy2(self, name: str, idx: int):
+        tables = self.tables.get(name)
+        if tables and idx < len(tables):
+            return tables[idx]
+        return None
+
+    def _table_lookup_strategy3(self, name: str, idx: int):
+        if name in self.tables:
+            tables = self.tables[name]
+            return tables[idx] if idx < len(tables) else None
+        return None
+
+    def _table_lookup_strategy4(self, name: str, idx: int):
+        tables = self.tables.get(name, [])
+        return next((t for i, t in enumerate(tables) if i == idx), None)
+
+    def _get_table(self, name: str, idx: int):
+        for strat in (
+            self._table_lookup_strategy1,
+            self._table_lookup_strategy2,
+            self._table_lookup_strategy3,
+            self._table_lookup_strategy4,
+        ):
+            tbl = strat(name, idx)
+            if tbl:
+                return tbl
+        return None
+
+    # ------------------------------------------------------------------
+    def _update_table(self, name: str, idx: int) -> None:
         doc = getattr(self.app, "active_cbn", None)
-        if not doc or name not in self.tables:
+        tbl = self._get_table(name, idx)
+        if not doc or not tbl:
             return
-        win, frame, tree = self.tables[name]
+        win, frame, tree = tbl
         tree.delete(*tree.get_children())
         parents = doc.network.parents.get(name, [])
         rows = doc.network.cpd_rows(name)
@@ -743,14 +782,15 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.canvas.itemconfigure(
             win, width=frame.winfo_reqwidth(), height=frame.winfo_reqheight()
         )
-        x, y = doc.positions.get(name, [(0, 0)])[0]
-        self._position_table(name, x, y)
+        x, y = doc.positions.get(name, [(0, 0)])[idx]
+        self._position_table(name, idx, x, y)
 
     # ------------------------------------------------------------------
-    def _position_table(self, name: str, x: float, y: float) -> None:
-        if name not in self.tables:
+    def _position_table(self, name: str, idx: int, x: float, y: float) -> None:
+        tbl = self._get_table(name, idx)
+        if not tbl:
             return
-        win, frame, _ = self.tables[name]
+        win, frame, _ = tbl
         frame.update_idletasks()
         w, h = frame.winfo_reqwidth(), frame.winfo_reqheight()
         r = self.NODE_RADIUS
@@ -762,26 +802,21 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        for node in doc.network.nodes:
-            self._update_table(node)
+        for name, tables in self.tables.items():
+            for idx, tbl in enumerate(tables):
+                if tbl:
+                    self._update_table(name, idx)
 
     # ------------------------------------------------------------------
     def _rebuild_table(self, name: str) -> None:
-        if name in self.tables:
-            win, frame, _ = self.tables.pop(name)
-            self.canvas.delete(win)
-            frame.destroy()
-        self._place_table(name)
-
-    # ------------------------------------------------------------------
-    def _update_all_tables(self) -> None:
-        """Update probability tables for all nodes in the active document."""
         doc = getattr(self.app, "active_cbn", None)
-        if not doc:
-            return
-        for node in doc.network.nodes:
-            if node in self.tables:
-                self._update_table(node)
+        if name in self.tables:
+            for win, frame, _ in self.tables.pop(name):
+                self.canvas.delete(win)
+                frame.destroy()
+        count = len(doc.positions.get(name, [])) if doc else 0
+        for idx in range(count):
+            self._place_table(name, idx)
 
     # ------------------------------------------------------------------
     def add_cpd_row(self, name: str) -> None:
@@ -818,12 +853,13 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._update_all_tables()
 
     # ------------------------------------------------------------------
-    def edit_cpd_row(self, name: str) -> None:
+    def edit_cpd_row(self, name: str, idx: int) -> None:
         doc = getattr(self.app, "active_cbn", None)
-        if not doc or name not in self.tables:
+        tbl = self._get_table(name, idx)
+        if not doc or not tbl:
             return
         parents = doc.network.parents.get(name, [])
-        _, _, tree = self.tables[name]
+        _, _, tree = tbl
         item = tree.focus()
         if not item:
             return
@@ -975,18 +1011,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 return node
         return None
 
-    def _find_node_strategy2(self, x: float, y: float) -> str | None:
-        """Locate a node using the closest canvas item."""
-        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
-        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
-        cx, cy = canvasx(x), canvasy(y)
-        ids = self.canvas.find_closest(cx, cy)
-        for i in ids:
-            name = self.id_to_node.get(i)
-            if name:
-                return name
-        return None
-
     def _find_node_strategy3(self, x: float, y: float) -> str | None:
         """Locate a node by checking drawn ovals' bounding boxes."""
         canvasx = getattr(self.canvas, "canvasx", lambda v: v)
@@ -1029,8 +1053,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
     def load_doc(self) -> None:
         self.canvas.delete("all")
         self.nodes.clear()
-        for _, frame, _ in self.tables.values():
-            frame.destroy()
+        for tables in self.tables.values():
+            for _, frame, _ in tables:
+                frame.destroy()
         self.tables.clear()
         self.id_to_node.clear()
         self.edges.clear()
@@ -1160,8 +1185,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 self.id_to_node.pop(text_id, None)
         self.nodes.pop(name, None)
         if name in self.tables:
-            win, _, _ = self.tables.pop(name)
-            self.canvas.delete(win)
+            for win, frame, _ in self.tables.pop(name):
+                self.canvas.delete(win)
+                frame.destroy()
         doc.positions.pop(name, None)
         doc.types.pop(name, None)
         if self.selected_node and self.selected_node[0] == name:
@@ -1185,6 +1211,10 @@ class CausalBayesianNetworkWindow(tk.Frame):
             doc.network.parents[child] = [new if p == old else p for p in parents]
         doc.positions[new] = doc.positions.pop(old)
         doc.types[new] = doc.types.pop(old)
+        tables = self.tables.pop(old, [])
+        for win, frame, _ in tables:
+            self.canvas.delete(win)
+            frame.destroy()
         instances = self.nodes.pop(old, [])
         find_withtag = getattr(self.canvas, "find_withtag", None)
         new_instances = []
@@ -1362,3 +1392,4 @@ class CausalBayesianNetworkWindow(tk.Frame):
         for parent in doc.network.parents.get(name, []):
             if parent in doc.network.nodes:
                 self._draw_edge(parent, name, 0, idx)
+

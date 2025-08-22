@@ -272,12 +272,12 @@ def test_table_resizes_for_new_rows():
     win, doc = _setup_window()
     tree = DummyTree()
     frame = DummyFrame(tree)
-    win.tables["A"] = (1, frame, tree)
+    win.tables["A"] = [(1, frame, tree)]
     doc.network.nodes.add("A")
     doc.network.parents["A"] = ["P1"]
     doc.positions["A"] = [(0, 0)]
 
-    win._update_table("A")
+    win._update_table("A", 0)
     first_height = win.canvas.last_configure.get("height")
     assert frame.update_idletasks_called
 
@@ -285,7 +285,7 @@ def test_table_resizes_for_new_rows():
     # present from the start
     frame.update_idletasks_called = False
     doc.network.cpds["A"] = {(True,): 0.1, (False,): 0.2}
-    win._update_table("A")
+    win._update_table("A", 0)
     second_height = win.canvas.last_configure.get("height")
     assert frame.update_idletasks_called
     assert second_height == first_height
@@ -295,13 +295,13 @@ def test_table_auto_fills_missing_rows():
     win, doc = _setup_window()
     tree = DummyTree()
     frame = DummyFrame(tree)
-    win.tables["A"] = (1, frame, tree)
+    win.tables["A"] = [(1, frame, tree)]
     doc.network.nodes.add("A")
     doc.network.parents["A"] = ["P1", "P2"]
     doc.positions["A"] = [(0, 0)]
     # only one CPD entry; others should default to 0.25
     doc.network.cpds["A"] = {(True, False): 0.2}
-    win._update_table("A")
+    win._update_table("A", 0)
     assert tree.height == 4
     assert len(tree.rows) == 4
     # two parent columns plus a single probability column
@@ -472,8 +472,8 @@ def test_joint_probabilities_refresh_on_parent_change():
     cbn = doc.network
     cbn.add_node("A", cpd=0.2)
     cbn.add_node("B", parents=["A"], cpd={(True,): 0.5, (False,): 0.1})
-    tree_a = DummyTree(); frame_a = DummyFrame(tree_a); win.tables["A"] = (1, frame_a, tree_a)
-    tree_b = DummyTree(); frame_b = DummyFrame(tree_b); win.tables["B"] = (2, frame_b, tree_b)
+    tree_a = DummyTree(); frame_a = DummyFrame(tree_a); win.tables["A"] = [(1, frame_a, tree_a)]
+    tree_b = DummyTree(); frame_b = DummyFrame(tree_b); win.tables["B"] = [(2, frame_b, tree_b)]
     doc.positions["A"] = [(0, 0)]
     doc.positions["B"] = [(0, 0)]
 

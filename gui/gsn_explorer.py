@@ -198,9 +198,6 @@ class GSNExplorer(tk.Frame):
             if name:
                 messagebox.showwarning("New GSN Diagram", "Diagram name already exists")
             return
-        if name in self._all_diagram_names():
-            messagebox.showerror("New GSN Diagram", "Name already exists", parent=self)
-            return
         undo = getattr(self.app, "push_undo_state", None)
         if undo:
             undo()
