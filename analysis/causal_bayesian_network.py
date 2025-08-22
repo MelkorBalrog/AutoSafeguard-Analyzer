@@ -264,6 +264,5 @@ class CausalBayesianNetworkDoc:
 
     name: str
     network: CausalBayesianNetwork = field(default_factory=CausalBayesianNetwork)
-    # allow multiple on-diagram clones with independent coordinates
-    positions: Dict[str, List[Tuple[float, float]]] = field(default_factory=dict)
+    positions: Dict[str, Tuple[float, float]] = field(default_factory=dict)
     types: Dict[str, str] = field(default_factory=dict)
