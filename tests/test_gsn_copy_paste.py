@@ -57,12 +57,17 @@ class GSNCopyPasteTests(unittest.TestCase):
         messagebox.showinfo = self._orig_info
         messagebox.showwarning = self._orig_warn
 
-    def test_pasted_unsupported_node_rejected(self):
+    def test_pasted_node_added_to_diagram(self):
         self.app.copy_node()
         self.app.selected_node = self.other  # paste into a different goal
         self.app.paste_node()
-        self.assertEqual(len(self.diagram.nodes), 3)
-        self.assertEqual(len(self.other.children), 0)
+        self.assertEqual(len(self.diagram.nodes), 4)
+        self.assertEqual(len(self.other.children), 1)
+        cloned = self.other.children[0]
+        self.assertIsNot(cloned, self.child)
+        self.assertIs(cloned.original, cloned)
+        self.assertTrue(cloned.is_primary_instance)
+        self.assertIn(cloned, self.diagram.nodes)
 
 
 if __name__ == "__main__":
