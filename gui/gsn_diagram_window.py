@@ -10,7 +10,6 @@ import sys
 import subprocess
 import copy
 import json
-import uuid
 import weakref
 from pathlib import Path
 from typing import Optional
@@ -829,88 +828,50 @@ class GSNDiagramWindow(tk.Frame):
                 parent.context_children.remove(child)
             self._selected_connection = None
             self.refresh()
-        
-    def _node_ref_strategy1(self, node: GSNNode) -> GSNNode | None:
-        return node
 
-    def _node_ref_strategy2(self, node: GSNNode) -> GSNNode | None:
-        return node.original if not node.is_primary_instance else node
+    def _reconstruct_node_strategy1(
+        self, snap: GSNNode, offset=(20, 20)
+    ) -> GSNNode:
+        clone = snap.clone()
+        clone.x = snap.x + offset[0]
+        clone.y = snap.y + offset[1]
+        return clone
 
-    def _node_ref_strategy3(self, node: GSNNode) -> GSNNode | None:
-        return getattr(node, "original", node)
+    def _reconstruct_node_strategy2(
+        self, snap: GSNNode, offset=(20, 20)
+    ) -> GSNNode:
+        orig = snap if getattr(snap, "is_primary_instance", True) else snap.original
+        clone = orig.clone()
+        clone.x = snap.x + offset[0]
+        clone.y = snap.y + offset[1]
+        return clone
 
-    def _node_ref_strategy4(self, node: GSNNode) -> GSNNode | None:
-        return self.id_to_node.get(node.unique_id, node)
+    def _reconstruct_node_strategy3(
+        self, snap: GSNNode, offset=(20, 20)
+    ) -> GSNNode:
+        clone = snap.clone()
+        clone.x = float(snap.x) + offset[0]
+        clone.y = float(snap.y) + offset[1]
+        return clone
 
-    def _node_ref(self, node: GSNNode) -> GSNNode:
+    def _reconstruct_node_strategy4(
+        self, snap: GSNNode, offset=(20, 20)
+    ) -> GSNNode:
+        orig = getattr(snap, "original", snap)
+        clone = orig.clone()
+        clone.x = getattr(snap, "x", 0) + offset[0]
+        clone.y = getattr(snap, "y", 0) + offset[1]
+        return clone
+
+    def _reconstruct_node(self, snap: GSNNode) -> Optional[GSNNode]:
         for strat in (
-            self._node_ref_strategy1,
-            self._node_ref_strategy2,
-            self._node_ref_strategy3,
-            self._node_ref_strategy4,
-        ):
-            ref = strat(node)
-            if ref:
-                return ref
-        return node
-
-    def _clone_node_strategy1(self, node: GSNNode, offset=(20, 20)) -> GSNNode | None:
-        clone = node.clone()
-        clone.x = node.x + offset[0]
-        clone.y = node.y + offset[1]
-        return clone
-
-    def _clone_node_strategy2(self, node: GSNNode, offset=(20, 20)) -> GSNNode | None:
-        data = node.to_dict()
-        data["x"] = data.get("x", 0) + offset[0]
-        data["y"] = data.get("y", 0) + offset[1]
-        data["original"] = node.original.unique_id if node.original else node.unique_id
-        node_map: dict[str, GSNNode] = {}
-        clone = GSNNode.from_dict(data, nodes=node_map)
-        GSNNode.resolve_references(node_map)
-        clone.is_primary_instance = False
-        return clone
-
-    def _clone_node_strategy3(self, node: GSNNode, offset=(20, 20)) -> GSNNode | None:
-        clone = copy.deepcopy(node)
-        clone.unique_id = str(uuid.uuid4())
-        clone.is_primary_instance = False
-        clone.original = node.original if not node.is_primary_instance else node
-        clone.x = node.x + offset[0]
-        clone.y = node.y + offset[1]
-        clone.children = []
-        clone.parents = []
-        clone.context_children = []
-        return clone
-
-    def _clone_node_strategy4(self, node: GSNNode, offset=(20, 20)) -> GSNNode | None:
-        clone = GSNNode(
-            node.user_name,
-            node.node_type,
-            description=node.description,
-            x=node.x + offset[0],
-            y=node.y + offset[1],
-            is_primary_instance=False,
-            original=node.original if not node.is_primary_instance else node,
-            work_product=node.work_product,
-            evidence_link=node.evidence_link,
-            spi_target=node.spi_target,
-            evidence_sufficient=node.evidence_sufficient,
-            manager_notes=node.manager_notes,
-        )
-        return clone
-
-    def _clone_from_clipboard(self, node: GSNNode) -> Optional[GSNNode]:
-        for strat in (
-            self._clone_node_strategy1,
-            self._clone_node_strategy2,
-            self._clone_node_strategy3,
-            self._clone_node_strategy4,
+            self._reconstruct_node_strategy1,
+            self._reconstruct_node_strategy2,
+            self._reconstruct_node_strategy3,
+            self._reconstruct_node_strategy4,
         ):
             try:
-                clone = strat(node)
-                if clone:
-                    return clone
+                return strat(snap)
             except Exception:
                 continue
         return None
@@ -959,8 +920,7 @@ class GSNDiagramWindow(tk.Frame):
     def copy_selected(self, _event=None) -> None:
         if not self.app or not self.selected_node:
             return
-        ref = self._node_ref(self.selected_node)
-        self.app.diagram_clipboard = ref
+        self.app.diagram_clipboard = self.selected_node
         self.app.diagram_clipboard_type = "GSN"
 
     def cut_selected(self, _event=None) -> None:
@@ -984,8 +944,8 @@ class GSNDiagramWindow(tk.Frame):
                 "Paste", "Clipboard contains incompatible diagram element."
             )
             return
-        src = self.app.diagram_clipboard
-        node = self._clone_from_clipboard(src)
+        clip = self.app.diagram_clipboard
+        node = self._node_from_clipboard(clip)
         if not node:
             return
         node.x += 20
