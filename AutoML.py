@@ -256,7 +256,7 @@ from gui.causal_bayesian_network_window import CBN_WINDOWS
 from gui.gsn_config_window import GSNElementConfig
 from gui.search_toolbox import SearchToolbox
 from gsn import GSNDiagram, GSNModule
-from gsn.nodes import GSNNode
+from gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
 from gui.splash_screen import SplashScreen
@@ -18864,6 +18864,13 @@ class AutoMLApp:
             self.clipboard_node = node
             self.selected_node = node
             self.cut_mode = False
+            if node.parents:
+                parent = node.parents[0]
+                context_children = getattr(parent, "context_children", [])
+                rel = "context" if node in context_children else "solved"
+            else:
+                rel = "solved"
+            self.clipboard_relation = rel
             return
         win = self._focused_cbn_window()
         if win and getattr(win, "selected_node", None):
@@ -18901,6 +18908,13 @@ class AutoMLApp:
             self.clipboard_node = node
             self.selected_node = node
             self.cut_mode = True
+            if node.parents:
+                parent = node.parents[0]
+                context_children = getattr(parent, "context_children", [])
+                rel = "context" if node in context_children else "solved"
+            else:
+                rel = "solved"
+            self.clipboard_relation = rel
             return
         win = self._focused_cbn_window()
         if win and getattr(win, "selected_node", None):
@@ -18928,28 +18942,45 @@ class AutoMLApp:
         messagebox.showwarning("Cut", "Select a non-root node to cut.")
 
     # ------------------------------------------------------------------
+    def _reset_gsn_clone(self, node):
+        if isinstance(node, GSNNode):
+            node.unique_id = str(uuid.uuid4())
+            node.is_primary_instance = True
+            node.original = node
+            for child in getattr(node, "children", []):
+                self._reset_gsn_clone(child)
+
+    # ------------------------------------------------------------------
     def _clone_for_paste_strategy1(self, node):
         if hasattr(node, "clone"):
             return node.clone()
         import copy
-        return copy.deepcopy(node)
+        clone = copy.deepcopy(node)
+        self._reset_gsn_clone(clone)
+        return clone
 
     def _clone_for_paste_strategy2(self, node):
         import copy
         if isinstance(node, GSNNode):
             return node.clone()
-        return copy.deepcopy(node)
+        clone = copy.deepcopy(node)
+        self._reset_gsn_clone(clone)
+        return clone
 
     def _clone_for_paste_strategy3(self, node):
         try:
             return node.clone()  # type: ignore[attr-defined]
         except Exception:
             import copy
-            return copy.deepcopy(node)
+            clone = copy.deepcopy(node)
+            self._reset_gsn_clone(clone)
+            return clone
 
     def _clone_for_paste_strategy4(self, node):
         import copy
-        return copy.deepcopy(node)
+        clone = copy.deepcopy(node)
+        self._reset_gsn_clone(clone)
+        return clone
 
     def _clone_for_paste(self, node):
         for strat in (
@@ -18962,9 +18993,13 @@ class AutoMLApp:
                 clone = strat(node)
                 if clone is not None:
                     return clone
+            except ValueError:
+                messagebox.showwarning("Clone", "Cannot clone this node type.")
+                return None
             except Exception:
                 continue
-        return node
+        messagebox.showwarning("Clone", "Cannot clone this node type.")
+        return None
 
     def paste_node(self):
         if self.clipboard_node:
@@ -19005,8 +19040,15 @@ class AutoMLApp:
                     self.clipboard_node.is_page = False
                     self.clipboard_node.input_subtype = "Failure"
                 self.clipboard_node.is_primary_instance = True
-                target.children.append(self.clipboard_node)
-                self.clipboard_node.parents.append(target)
+                relation = getattr(self, "clipboard_relation", "solved")
+                if hasattr(target, "add_child"):
+                    target.add_child(self.clipboard_node, relation=relation)
+                else:
+                    if relation == "context":
+                        target.context_children.append(self.clipboard_node)
+                    else:
+                        target.children.append(self.clipboard_node)
+                    self.clipboard_node.parents.append(target)
                 if isinstance(self.clipboard_node, GSNNode):
                     old_diag = self._find_gsn_diagram(self.clipboard_node)
                     new_diag = self._find_gsn_diagram(target)
@@ -19042,10 +19084,13 @@ class AutoMLApp:
                 if hasattr(node_for_pos, "display_label"):
                     node_for_pos.display_label = node_for_pos.display_label.replace(" (clone)", "")
                 messagebox.showinfo("Paste", "Node pasted successfully (copied).")
-            AutoML_Helper.calculate_assurance_recursive(
-                self.root_node,
-                self.top_events,
-            )
+            try:
+                AutoML_Helper.calculate_assurance_recursive(
+                    self.root_node,
+                    self.top_events,
+                )
+            except AttributeError:
+                pass
             self.update_views()
             return
         clip_type = getattr(self, "diagram_clipboard_type", None)
@@ -19213,6 +19258,10 @@ class AutoMLApp:
         """
 
         if isinstance(node, GSNNode):
+            if node.node_type not in ALLOWED_AWAY_TYPES:
+                raise ValueError(
+                    "Only Goal, Solution, Context, Assumption, and Justification nodes can be cloned."
+                )
             # GSN nodes provide their own clone method.  Offset the position of
             # the cloned node so that it does not overlap the original.
             new_node = node.clone()
@@ -19676,6 +19725,10 @@ class AutoMLApp:
                 if hasattr(child, "refresh_from_repository"):
                     child.refresh_from_repository()
         self.refresh_all()
+        try:
+            self.apply_governance_rules()
+        except Exception:
+            pass
 
     def redo(self, strategy: str = "v4"):
         """Restore the next state from the redo stack."""
@@ -19689,6 +19742,10 @@ class AutoMLApp:
                 if hasattr(child, "refresh_from_repository"):
                     child.refresh_from_repository()
         self.refresh_all()
+        try:
+            self.apply_governance_rules()
+        except Exception:
+            pass
 
     def clear_undo_history(self) -> None:
         """Remove all undo and redo history."""
@@ -20511,7 +20568,6 @@ class AutoMLApp:
         if not self.odd_libraries and "odd_elements" in data:
             self.odd_libraries = [{"name": "Default", "elements": data.get("odd_elements", [])}]
         self.update_odd_elements()
-        self.apply_governance_rules()
 
         self.fmedas = []
         for doc in data.get("fmedas", []):
@@ -20635,6 +20691,10 @@ class AutoMLApp:
         self.selected_node = None
         if hasattr(self, "page_diagram") and self.page_diagram is not None:
             self.close_page_diagram()
+        try:
+            self.apply_governance_rules()
+        except Exception:
+            pass
         self.update_views()
 
     def save_model(self):
