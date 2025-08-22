@@ -19224,10 +19224,7 @@ class AutoMLApp:
             sel = nb.select()
             if sel:
                 tab = nb.nametowidget(sel)
-                if (
-                    getattr(tab, "gsn_window", None) is win
-                    or getattr(tab, "arch_window", None) is win
-                ):
+                if getattr(tab, "gsn_window", None) is win:
                     return True
         except Exception:
             pass
@@ -19312,7 +19309,7 @@ class AutoMLApp:
     def _arch_window_strategy1(self, clip_type=None):
         win = getattr(self, "active_arch_window", None)
         if win and (not clip_type or self._get_diag_type(win) == clip_type):
-            if self._window_has_focus(win) or self._window_in_selected_tab(win):
+            if self._window_has_focus(win):
                 return win
         return None
 
@@ -19320,23 +19317,21 @@ class AutoMLApp:
         for ref in list(ARCH_WINDOWS):
             win = ref()
             if win and (not clip_type or self._get_diag_type(win) == clip_type):
-                if self._window_has_focus(win) or self._window_in_selected_tab(win):
+                if self._window_has_focus(win):
                     return win
         return None
 
     def _arch_window_strategy3(self, clip_type=None):
         win = getattr(self, "active_arch_window", None)
         if win and (not clip_type or self._get_diag_type(win) == clip_type):
-            if self._window_in_selected_tab(win):
-                return win
+            return win
         return None
 
     def _arch_window_strategy4(self, clip_type=None):
         for ref in list(ARCH_WINDOWS):
             win = ref()
             if win and (not clip_type or self._get_diag_type(win) == clip_type):
-                if self._window_in_selected_tab(win):
-                    return win
+                return win
         return None
 
     def _focused_arch_window(self, clip_type=None):
