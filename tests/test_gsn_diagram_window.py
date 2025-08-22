@@ -7,6 +7,7 @@ from unittest import mock
 import gui.gsn_diagram_window as gdw
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gsn import GSNNode, GSNDiagram, GSNModule
+import pytest
 
 
 def test_gsn_diagram_window_button_labels():
@@ -160,6 +161,56 @@ def test_solved_by_cursor_and_reset():
     assert child in parent.children
     assert child not in parent.context_children
     assert win.canvas.cursor == ""
+
+
+@pytest.mark.parametrize(
+    "mode, child_type, attr",
+    [
+        ("context", "Context", "context_children"),
+        ("solved", "Goal", "children"),
+    ],
+)
+def test_on_release_uses_raw_coords_for_connection(mode, child_type, attr):
+    """Connections should resolve the target using raw event coordinates."""
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    win.zoom = 1.0
+    parent = GSNNode("p", "Goal")
+    child = GSNNode("c", child_type)
+
+    class CanvasStub:
+        def __init__(self):
+            self.cursor = None
+
+        def canvasx(self, x):
+            return x + 10
+
+        def canvasy(self, y):
+            return y + 20
+
+        def delete(self, *a, **k):
+            pass
+
+        def configure(self, **kwargs):
+            if "cursor" in kwargs:
+                self.cursor = kwargs["cursor"]
+
+    win.canvas = CanvasStub()
+
+    def node_at(x, y):
+        return child if (x, y) == (0, 0) else None
+
+    win._node_at = node_at
+    win.refresh = lambda: None
+
+    if mode == "context":
+        GSNDiagramWindow.connect_in_context(win)
+    else:
+        GSNDiagramWindow.connect_solved_by(win)
+
+    win._connect_parent = parent
+    event = type("Event", (), {"x": 0, "y": 0})
+    win._on_release(event)
+    assert child in getattr(parent, attr)
 
 
 def test_refresh_updates_scrollregion():
