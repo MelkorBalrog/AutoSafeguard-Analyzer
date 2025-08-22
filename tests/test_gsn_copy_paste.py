@@ -94,6 +94,63 @@ class GSNCopyPasteTests(unittest.TestCase):
             assert pasted is not node
             assert pasted.original is node
 
+    def test_context_relation_preserved_on_paste(self):
+        root = GSNNode("Root", "Goal")
+        ctx = GSNNode("Ctx", "Context")
+        root.context_children.append(ctx)
+        ctx.parents.append(root)
+        diag = GSNDiagram(root)
+        diag.add_node(ctx)
+        app = AutoMLApp.__new__(AutoMLApp)
+        app.root_node = root
+        app.analysis_tree = DummyTree()
+        app.top_events = []
+        app.update_views = lambda: None
+        app.selected_node = ctx
+        orig_info = messagebox.showinfo
+        orig_warn = messagebox.showwarning
+        messagebox.showinfo = lambda *a, **k: None
+        messagebox.showwarning = lambda *a, **k: None
+        try:
+            app.copy_node()
+            app.selected_node = root
+            app.paste_node()
+        finally:
+            messagebox.showinfo = orig_info
+            messagebox.showwarning = orig_warn
+        assert len(root.context_children) == 2
+        pasted = root.context_children[-1]
+        assert pasted is not ctx
+        assert pasted.original is ctx
+
+    def test_context_relation_preserved_on_paste(self):
+        root = GSNNode("Root", "Goal")
+        ctx = GSNNode("Ctx", "Context")
+        root.context_children.append(ctx)
+        ctx.parents.append(root)
+        diag = GSNDiagram(root)
+        diag.add_node(ctx)
+        app = AutoMLApp.__new__(AutoMLApp)
+        app.root_node = root
+        app.analysis_tree = DummyTree()
+        app.top_events = []
+        app.update_views = lambda: None
+        app.selected_node = ctx
+        orig_info = messagebox.showinfo
+        orig_warn = messagebox.showwarning
+        messagebox.showinfo = lambda *a, **k: None
+        messagebox.showwarning = lambda *a, **k: None
+        try:
+            app.copy_node()
+            app.selected_node = root
+            app.paste_node()
+        finally:
+            messagebox.showinfo = orig_info
+            messagebox.showwarning = orig_warn
+        assert len(root.context_children) == 2
+        pasted = root.context_children[-1]
+        assert pasted is not ctx
+        assert pasted.original is ctx
 
 if __name__ == "__main__":
     unittest.main()
