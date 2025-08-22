@@ -19485,6 +19485,88 @@ class AutoMLApp:
             except Exception:
                 continue
 
+    # ------------------------------------------------------------
+    # Helpers to gather all nodes when synchronising by ID
+    # ------------------------------------------------------------
+    def _collect_sync_nodes_strategy1(self):
+        nodes = []
+        try:
+            nodes.extend(self.get_all_nodes_in_model())
+        except Exception:
+            pass
+        try:
+            nodes.extend(self.get_all_fmea_entries())
+        except Exception:
+            pass
+        for attr in ("all_gsn_diagrams", "gsn_diagrams"):
+            for diag in getattr(self, attr, []):
+                nodes.extend(getattr(diag, "nodes", []))
+        dedup = []
+        for n in nodes:
+            if n not in dedup:
+                dedup.append(n)
+        return dedup
+
+    def _collect_sync_nodes_strategy2(self):
+        nodes = []
+        try:
+            nodes.extend(self.get_all_nodes(self.root_node))
+        except Exception:
+            pass
+        try:
+            nodes.extend(self.get_all_fmea_entries())
+        except Exception:
+            pass
+        for attr in ("all_gsn_diagrams", "gsn_diagrams"):
+            for diag in getattr(self, attr, []):
+                nodes.extend(getattr(diag, "nodes", []))
+        dedup = []
+        for n in nodes:
+            if n not in dedup:
+                dedup.append(n)
+        return dedup
+
+    def _collect_sync_nodes_strategy3(self):
+        visited = set()
+        nodes = []
+        for getter in (
+            getattr(self, "get_all_nodes_in_model", None),
+            lambda: getattr(self, "get_all_nodes", lambda *_a, **_k: [])(self.root_node),
+            getattr(self, "get_all_fmea_entries", None),
+        ):
+            try:
+                for n in getter() if getter else []:
+                    if id(n) not in visited:
+                        visited.add(id(n))
+                        nodes.append(n)
+            except Exception:
+                continue
+        for attr in ("all_gsn_diagrams", "gsn_diagrams"):
+            for diag in getattr(self, attr, []):
+                for n in getattr(diag, "nodes", []):
+                    if id(n) not in visited:
+                        visited.add(id(n))
+                        nodes.append(n)
+        return nodes
+
+    def _collect_sync_nodes_strategy4(self):
+        return self._collect_sync_nodes_strategy1()
+
+    def _collect_sync_nodes(self):
+        for strat in (
+            self._collect_sync_nodes_strategy1,
+            self._collect_sync_nodes_strategy2,
+            self._collect_sync_nodes_strategy3,
+            self._collect_sync_nodes_strategy4,
+        ):
+            try:
+                nodes = strat()
+                if nodes:
+                    return nodes
+            except Exception:
+                continue
+        return []
+
     def _sync_nodes_by_id_strategy1(self, updated_node, attrs):
         clone = updated_node if (not updated_node.is_primary_instance and updated_node.original) else None
         if clone:
@@ -19492,11 +19574,7 @@ class AutoMLApp:
             self._copy_attrs_no_xy(updated_node, clone, attrs)
             updated_node.display_label = clone.display_label.replace(" (clone)", "")
         updated_primary_id = updated_node.unique_id
-        try:
-            nodes_to_check = list(self.get_all_nodes_in_model())
-        except Exception:
-            nodes_to_check = list(self.get_all_nodes(self.root_node))
-        nodes_to_check.extend(self.get_all_fmea_entries())
+        nodes_to_check = self._collect_sync_nodes()
         for node in nodes_to_check:
             if node is updated_node or node is clone:
                 continue
@@ -19519,12 +19597,8 @@ class AutoMLApp:
             self._copy_attrs_no_xy(updated_node, clone, attrs)
             updated_node.display_label = clone.display_label.replace(" (clone)", "")
         updated_primary_id = updated_node.unique_id
-        try:
-            nodes = list(self.get_all_nodes_in_model())
-        except Exception:
-            nodes = list(self.get_all_nodes(self.root_node))
-        nodes += list(self.get_all_fmea_entries())
-        for node in [n for n in nodes if n not in (updated_node, clone)]:
+        nodes = [n for n in self._collect_sync_nodes() if n not in (updated_node, clone)]
+        for node in nodes:
             if node.is_primary_instance and node.unique_id == updated_primary_id:
                 self._copy_attrs_no_xy(node, updated_node, attrs)
                 node.display_label = updated_node.display_label
@@ -19539,17 +19613,7 @@ class AutoMLApp:
             self._copy_attrs_no_xy(primary, clone, attrs)
             primary.display_label = clone.display_label.replace(" (clone)", "")
         updated_primary_id = primary.unique_id
-        try:
-            nodes = list(self.get_all_nodes_in_model())
-        except Exception:
-            try:
-                nodes = list(self.get_all_nodes(self.root_node))
-            except Exception:
-                nodes = []
-        try:
-            nodes += list(self.get_all_fmea_entries())
-        except Exception:
-            pass
+        nodes = self._collect_sync_nodes()
         for node in nodes:
             if node in (primary, clone):
                 continue

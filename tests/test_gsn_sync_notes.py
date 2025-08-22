@@ -54,6 +54,19 @@ class GSNCloneSyncNotesTests(unittest.TestCase):
         self.assertEqual(self.clone.description, "OrigDesc")
         self.assertEqual(self.clone.manager_notes, "NewNote")
 
+    def test_original_syncs_clone_when_model_missing(self):
+        self.app.get_all_nodes_in_model = types.MethodType(lambda _self: [self.original], self.app)
+        diag = types.SimpleNamespace(nodes=[self.original, self.clone])
+        self.app.gsn_diagrams = [diag]
+        self.app.all_gsn_diagrams = [diag]
+        self.original.description = "OrigDesc"
+        self.original.user_name = "OrigName"
+        self.original.manager_notes = "OrigNote"
+        self.app.sync_nodes_by_id(self.original)
+        self.assertEqual(self.clone.description, "OrigDesc")
+        self.assertEqual(self.clone.user_name, "OrigName")
+        self.assertEqual(self.clone.manager_notes, "OrigNote")
+
 
 if __name__ == "__main__":
     unittest.main()
