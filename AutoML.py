@@ -18996,7 +18996,7 @@ class AutoMLApp:
         messagebox.showwarning("Cut", "Select a non-root node to cut.")
 
     # ------------------------------------------------------------------
-    def _reset_gsn_clone(self, node):
+    def _reset_gsn_clone(self, node, original=None):
         if isinstance(node, GSNNode):
             node.unique_id = str(uuid.uuid4())
             old_children = list(getattr(node, "children", []))
@@ -19004,10 +19004,9 @@ class AutoMLApp:
             node.parents = []
             node.context_children = []
             node.is_primary_instance = False
-            if getattr(node, "original", None) is None:
-                node.original = node
+            node.original = original or getattr(node, "original", None) or node
             for child in old_children:
-                self._reset_gsn_clone(child)
+                self._reset_gsn_clone(child, original=node.original)
 
     # ------------------------------------------------------------------
     def _clone_for_paste_strategy1(self, node, parent=None):
@@ -19017,17 +19016,17 @@ class AutoMLApp:
             return node.clone()
         import copy
         clone = copy.deepcopy(node)
-        self._reset_gsn_clone(clone)
+        self._reset_gsn_clone(clone, getattr(node, "original", node))
         return clone
 
     def _clone_for_paste_strategy2(self, node, parent=None):
         import copy
         if isinstance(node, GSNNode):
-            if parent and node.node_type in {"Context", "Assumption", "Justification"}:
-                return node.clone(parent)
-            return node.clone()
+            clone = node.clone()
+            self._reset_gsn_clone(clone, getattr(node, "original", node))
+            return clone
         clone = copy.deepcopy(node)
-        self._reset_gsn_clone(clone)
+        self._reset_gsn_clone(clone, getattr(node, "original", node))
         return clone
 
     def _clone_for_paste_strategy3(self, node, parent=None):
@@ -19038,13 +19037,13 @@ class AutoMLApp:
         except Exception:
             import copy
             clone = copy.deepcopy(node)
-            self._reset_gsn_clone(clone)
+            self._reset_gsn_clone(clone, getattr(node, "original", node))
             return clone
 
     def _clone_for_paste_strategy4(self, node, parent=None):
         import copy
         clone = copy.deepcopy(node)
-        self._reset_gsn_clone(clone)
+        self._reset_gsn_clone(clone, getattr(node, "original", node))
         return clone
 
     def _clone_for_paste(self, node, parent=None):
