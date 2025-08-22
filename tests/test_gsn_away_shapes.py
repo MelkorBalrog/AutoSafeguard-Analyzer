@@ -82,6 +82,19 @@ def test_away_shapes_receive_module_identifier(node_type, expected):
     assert helper.calls[0] == (expected, "Mod")
 
 
+def test_away_shapes_prefer_non_root_module():
+    root_mod = GSNNode("Root", "Module")
+    sub_mod = GSNNode("Sub", "Module")
+    original = GSNNode("Orig", "Goal")
+    original.parents.extend([root_mod, sub_mod])
+    clone = GSNNode("Clone", "Goal", is_primary_instance=False, original=original)
+    helper = RecordingHelper()
+    diag = GSNDiagram(clone, drawing_helper=helper)
+    canvas = StubCanvas()
+    diag.draw(canvas)
+    assert helper.calls[0] == ("goal", "Sub")
+
+
 def test_away_shapes_without_module_identifier():
     original = GSNNode("Orig", "Goal")
     clone = GSNNode("Clone", "Goal", is_primary_instance=False, original=original)
