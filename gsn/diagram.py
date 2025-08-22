@@ -51,20 +51,6 @@ class GSNDiagram:
             self.nodes.append(node)
 
     # ------------------------------------------------------------------
-    def connect(self, parent: GSNNode, child: GSNNode, relation: str = "solved") -> None:
-        """Create a relationship between ``parent`` and ``child``.
-
-        The nodes are automatically added to the diagram if they are not
-        already present.  ``relation`` may be ``"solved"`` for a solved-by
-        link or ``"context"`` for an in-context-of relationship.
-        """
-        if parent not in self.nodes:
-            self.add_node(parent)
-        if child not in self.nodes:
-            self.add_node(child)
-        parent.add_child(child, relation=relation)
-
-    # ------------------------------------------------------------------
     def to_dict(self) -> dict:
         """Return a JSON-serialisable representation of this diagram."""
         return {
