@@ -18979,9 +18979,13 @@ class AutoMLApp:
                 clone = strat(node)
                 if clone is not None:
                     return clone
+            except ValueError:
+                messagebox.showwarning("Clone", "Cannot clone this node type.")
+                return None
             except Exception:
                 continue
-        return node
+        messagebox.showwarning("Clone", "Cannot clone this node type.")
+        return None
 
     def paste_node(self):
         if self.clipboard_node:
@@ -19039,6 +19043,8 @@ class AutoMLApp:
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
                 cloned_node = self._clone_for_paste(self.clipboard_node)
+                if cloned_node is None:
+                    return
                 target.children.append(cloned_node)
                 cloned_node.parents.append(target)
                 if isinstance(cloned_node, GSNNode):

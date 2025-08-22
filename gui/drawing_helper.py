@@ -1476,6 +1476,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         box_h = m_height + 2 * padding
         left = x - box_w / 2
         right = x + box_w / 2
+        top -= line_width
         bottom = top + box_h
         canvas.create_rectangle(
             left,
@@ -1865,7 +1866,6 @@ class GSNDrawingHelper(FTADrawingHelper):
         **kwargs,
     ):
         self.draw_module_shape(canvas, x, y, scale=scale, **kwargs)
-
 
 # Create a single GSNDrawingHelper object for convenience
 
