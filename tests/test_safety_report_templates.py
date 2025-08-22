@@ -79,7 +79,7 @@ def test_technical_cybersecurity_concept_template_valid():
 
 
 def test_pdf_report_template_includes_diagram_sections():
-    data = _load("report_template.json")
+    data = _load("product_report_template.json")
     titles = [sec["title"] for sec in data["sections"]]
     assert {
         "Block Diagrams",
@@ -95,7 +95,7 @@ def test_pdf_report_template_includes_diagram_sections():
 
 
 def test_report_template_includes_item_definition_section():
-    data = _load("report_template.json")
+    data = _load("product_report_template.json")
     assert {"item_description", "assumptions"} <= set(data["elements"].keys())
     section = next(sec for sec in data["sections"] if sec["title"] == "Item Definition")
     assert "<item_description>" in section["content"]
@@ -103,13 +103,13 @@ def test_report_template_includes_item_definition_section():
 
 
 def test_report_template_includes_odd_and_scenario_sections():
-    data = _load("report_template.json")
+    data = _load("product_report_template.json")
     titles = {sec["title"] for sec in data["sections"]}
     assert {"ODD Library", "Scenario Library"} <= titles
 
 
 def test_report_template_includes_operational_safety_and_decommissioning_sections():
-    data = _load("report_template.json")
+    data = _load("product_report_template.json")
     titles = {sec["title"] for sec in data["sections"]}
     assert {"Operational Safety Requirements", "Decommissioning Requirements"} <= titles
 
@@ -125,7 +125,7 @@ def test_safety_security_report_template_valid():
     } <= titles
 
 def test_report_template_includes_trigger_and_insufficiency_sections():
-    data = _load("report_template.json")
+    data = _load("product_report_template.json")
     titles = {sec["title"] for sec in data["sections"]}
     assert {
         "Triggering Conditions",

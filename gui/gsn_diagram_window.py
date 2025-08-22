@@ -919,6 +919,132 @@ class GSNDiagramWindow(tk.Frame):
         self.selected_node = node
         self.refresh()
 
+    def _reconstruct_node_strategy1(
+        self, snap: GSNNode, offset=(20, 20)
+    ) -> GSNNode:
+        clone = snap.clone()
+        clone.x = snap.x + offset[0]
+        clone.y = snap.y + offset[1]
+        return clone
+
+    def _reconstruct_node_strategy2(
+        self, snap: GSNNode, offset=(20, 20)
+    ) -> GSNNode:
+        orig = snap if getattr(snap, "is_primary_instance", True) else snap.original
+        clone = orig.clone()
+        clone.x = snap.x + offset[0]
+        clone.y = snap.y + offset[1]
+        return clone
+
+    def _reconstruct_node_strategy3(
+        self, snap: GSNNode, offset=(20, 20)
+    ) -> GSNNode:
+        clone = snap.clone()
+        clone.x = float(snap.x) + offset[0]
+        clone.y = float(snap.y) + offset[1]
+        return clone
+
+    def _reconstruct_node_strategy4(
+        self, snap: GSNNode, offset=(20, 20)
+    ) -> GSNNode:
+        orig = getattr(snap, "original", snap)
+        clone = orig.clone()
+        clone.x = getattr(snap, "x", 0) + offset[0]
+        clone.y = getattr(snap, "y", 0) + offset[1]
+        return clone
+
+    def _reconstruct_node(self, snap: GSNNode) -> Optional[GSNNode]:
+        for strat in (
+            self._reconstruct_node_strategy1,
+            self._reconstruct_node_strategy2,
+            self._reconstruct_node_strategy3,
+            self._reconstruct_node_strategy4,
+        ):
+            try:
+                return strat(snap)
+            except Exception:
+                continue
+        return None
+
+    def _node_from_clipboard_strategy1(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, GSNNode):
+            return clip.clone()
+        return None
+
+    def _node_from_clipboard_strategy2(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, dict):
+            try:
+                return self._reconstruct_node_strategy1(copy.deepcopy(clip))
+            except Exception:
+                return None
+        return None
+
+    def _node_from_clipboard_strategy3(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, dict):
+            try:
+                return self._reconstruct_node_strategy2(copy.deepcopy(clip))
+            except Exception:
+                return None
+        return None
+
+    def _node_from_clipboard_strategy4(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, dict):
+            try:
+                return self._reconstruct_node_strategy3(copy.deepcopy(clip))
+            except Exception:
+                return None
+        return None
+
+    def _node_from_clipboard(self, clip) -> Optional[GSNNode]:
+        for strat in (
+            self._node_from_clipboard_strategy1,
+            self._node_from_clipboard_strategy2,
+            self._node_from_clipboard_strategy3,
+            self._node_from_clipboard_strategy4,
+        ):
+            node = strat(clip)
+            if node:
+                return node
+        return None
+
+    def copy_selected(self, _event=None) -> None:
+        if not self.app or not self.selected_node:
+            return
+        self.app.diagram_clipboard = self.selected_node
+        self.app.diagram_clipboard_type = "GSN"
+
+    def cut_selected(self, _event=None) -> None:
+        if not self.app or not self.selected_node:
+            return
+        self.copy_selected()
+        if self.selected_node in self.diagram.nodes:
+            self.diagram.nodes.remove(self.selected_node)
+        for p in list(self.selected_node.parents):
+            if self.selected_node in p.children:
+                p.children.remove(self.selected_node)
+        self.selected_node = None
+        self.refresh()
+
+    def paste_selected(self, _event=None) -> None:
+        if not self.app or not getattr(self.app, "diagram_clipboard", None):
+            return
+        clip_type = getattr(self.app, "diagram_clipboard_type", None)
+        if clip_type and clip_type != "GSN":
+            messagebox.showwarning(
+                "Paste", "Clipboard contains incompatible diagram element."
+            )
+            return
+        clip = self.app.diagram_clipboard
+        node = self._node_from_clipboard(clip)
+        if not node:
+            return
+        node.x += 20
+        node.y += 20
+        self.diagram.add_node(node)
+        self.id_to_node[node.unique_id] = node
+        self.selected_node = node
+        self.refresh()
+
     def zoom_in(self):  # pragma: no cover - GUI interaction stub
         self.zoom *= 1.2
         self.refresh()

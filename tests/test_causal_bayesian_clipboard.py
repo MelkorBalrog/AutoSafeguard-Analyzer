@@ -96,4 +96,3 @@ def test_cbn_same_diagram_clone_independent_position():
     # data shared
     doc.network.cpds["A"] = 0.3
     assert doc.network.cpds["A"] == 0.3
-
