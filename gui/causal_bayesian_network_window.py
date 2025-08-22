@@ -3,6 +3,9 @@ import tkinter.font as tkfont
 from tkinter import ttk, simpledialog
 from itertools import product
 import re
+import copy
+import json
+import weakref
 
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui import messagebox, TranslucidButton
@@ -11,6 +14,9 @@ from gui.drawing_helper import FTADrawingHelper
 from gui.style_manager import StyleManager
 from gui.icon_factory import create_icon as draw_icon
 from gui.button_utils import set_uniform_button_width
+
+
+CBN_WINDOWS: set[weakref.ReferenceType] = set()
 
 
 class CausalBayesianNetworkWindow(tk.Frame):
@@ -102,13 +108,14 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.canvas.bind("<Button-3>", self.on_right_click)
         self.drawing_helper = FTADrawingHelper()
 
-        self.nodes = {}  # name -> (oval_id, text_id, fill_tag)
-        self.tables = {}  # name -> (window_id, frame, treeview)
-        self.id_to_node = {}
+        # allow multiple instances of the same model node on a diagram
+        self.nodes = {}  # name -> list[(oval_id, text_id, fill_tag)]
+        self.tables = {}  # name -> list[(window_id, frame, treeview)]
+        self.id_to_node = {}  # canvas id -> (name, index)
         self.edges = []  # (line_id, src, dst)
         self.edge_start = None
         self.drag_node = None
-        self.selected_node = None
+        self.selected_node = None  # (name, index)
         self.selection_rect = None
         self.temp_edge_line = None
         self.temp_edge_anim = None
@@ -123,6 +130,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.pack(fill=tk.BOTH, expand=True)
         self._bind_shortcuts()
         self.focus_set()
+        self.bind("<FocusIn>", self._on_focus_in)
+        CBN_WINDOWS.add(weakref.ref(self))
 
     # ------------------------------------------------------------------
     def refresh_docs(self) -> None:
@@ -163,6 +172,10 @@ class CausalBayesianNetworkWindow(tk.Frame):
         else:
             self.toolbox.pack_forget()
 
+    def _on_focus_in(self, _event=None) -> None:
+        if self.app:
+            self.app._cbn_window = self
+
     # ------------------------------------------------------------------
     def _fit_toolbox(self) -> None:
         """Ensure all toolbox buttons share the width of the longest."""
@@ -195,7 +208,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
     # ------------------------------------------------------------------
     def new_doc(self) -> None:
         name = simpledialog.askstring("New Analysis", "Name:", parent=self)
-        if not name:
+        if not name or self._doc_name_exists(name):
+            if name:
+                messagebox.showwarning("New Analysis", "Analysis name already exists")
             return
         doc = CausalBayesianNetworkDoc(name)
         if not hasattr(self.app, "cbn_docs"):
@@ -207,6 +222,16 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.refresh_docs()
         self.doc_var.set(name)
         self.select_doc()
+
+    def _doc_name_exists(self, name: str) -> bool:
+        docs = list(getattr(self.app, "cbn_docs", []))
+        checks = [
+            lambda n: any(d.name == n for d in docs),
+            lambda n: any(d.name.lower() == n.lower() for d in docs),
+            lambda n: any(d.name.strip() == n.strip() for d in docs),
+            lambda n: any(d.name.split()[0] == n.split()[0] for d in docs),
+        ]
+        return any(check(name) for check in checks)
 
     # ------------------------------------------------------------------
     def rename_doc(self) -> None:
@@ -281,7 +306,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 return
             x, y = event.x, event.y
             doc.network.add_node(name, cpd=0.5)
-            doc.positions[name] = (x, y)
+            self._add_position(doc, name, (x, y))
             doc.types[name] = "variable"
             self._draw_node(name, x, y, "variable")
             self.select_tool("Select")
@@ -296,7 +321,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 undo()
             x, y = event.x, event.y
             doc.network.add_node(name, cpd=0.5)
-            doc.positions[name] = (x, y)
+            self._add_position(doc, name, (x, y))
             kind = "trigger" if self.current_tool == "Triggering Condition" else "insufficiency"
             doc.types[name] = kind
             self._draw_node(name, x, y, kind)
@@ -321,7 +346,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
                     continue
                 nx = x + idx * (2 * self.NODE_RADIUS + 10)
                 doc.network.add_node(name, cpd=0.5)
-                doc.positions[name] = (nx, y)
+                self._add_position(doc, name, (nx, y))
                 doc.types[name] = "trigger"
                 self._draw_node(name, nx, y, "trigger")
             if hasattr(self.app, "update_triggering_condition_list"):
@@ -341,7 +366,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
                     continue
                 nx = x + idx * (2 * self.NODE_RADIUS + 10)
                 doc.network.add_node(name, cpd=0.5)
-                doc.positions[name] = (nx, y)
+                self._add_position(doc, name, (nx, y))
                 doc.types[name] = "insufficiency"
                 self._draw_node(name, nx, y, "insufficiency")
             if hasattr(self.app, "update_functional_insufficiency_list"):
@@ -359,27 +384,28 @@ class CausalBayesianNetworkWindow(tk.Frame):
                     continue
                 nx = x + idx * (2 * self.NODE_RADIUS + 10)
                 doc.network.add_node(name, cpd=0.5)
-                doc.positions[name] = (nx, y)
+                self._add_position(doc, name, (nx, y))
                 doc.types[name] = "malfunction"
                 self._draw_node(name, nx, y, "malfunction")
         elif self.current_tool == "Relationship":
-            name = self._find_node(event.x, event.y)
-            if not name:
+            node = self._find_node(event.x, event.y)
+            if not node:
                 self.select_tool("Select")
                 return
-            self.edge_start = name
+            self.edge_start = node[0]
             self._highlight_node(None)
         else:  # Select tool
-            name = self._find_node(event.x, event.y)
-            if name:
+            node = self._find_node(event.x, event.y)
+            if node:
                 undo = getattr(self.app, "push_undo_state", None)
                 if undo:
                     undo()
-            self.drag_node = name
+            self.drag_node = node
             self.drag_offset = (0, 0)
-            self._highlight_node(name)
-            if name:
-                x, y = doc.positions.get(name, (0, 0))
+            self._highlight_node(node)
+            if node:
+                name, idx = node
+                x, y = doc.positions.get(name, [(0, 0)])[idx]
                 self.drag_offset = (x - event.x, y - event.y)
 
     # ------------------------------------------------------------------
@@ -388,12 +414,12 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if not doc:
             return
         if self.current_tool == "Select" and self.drag_node:
-            name = self.drag_node
-            old_x, old_y = doc.positions.get(name, (0, 0))
+            name, idx = self.drag_node
+            old_x, old_y = doc.positions.get(name, [(0, 0)])[idx]
             x, y = event.x + self.drag_offset[0], event.y + self.drag_offset[1]
             dx, dy = x - old_x, y - old_y
-            doc.positions[name] = (x, y)
-            oval_id, text_id, fill_tag = self.nodes[name]
+            doc.positions[name][idx] = (x, y)
+            oval_id, text_id, fill_tag = self.nodes[name][idx]
             r = self.NODE_RADIUS
             # Move the gradient fill, node outline and label together
             self.canvas.move(fill_tag, dx, dy)
@@ -401,8 +427,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
             self.canvas.move(text_id, dx, dy)
             for line_id, src, dst in self.edges:
                 if src == name or dst == name:
-                    x1, y1 = doc.positions[src]
-                    x2, y2 = doc.positions[dst]
+                    x1, y1 = doc.positions[src][0]
+                    x2, y2 = doc.positions[dst][0]
                     dx, dy = x2 - x1, y2 - y1
                     dist = (dx ** 2 + dy ** 2) ** 0.5 or 1
                     sx = x1 + dx / dist * r
@@ -410,12 +436,12 @@ class CausalBayesianNetworkWindow(tk.Frame):
                     tx = x2 - dx / dist * r
                     ty = y2 - dy / dist * r
                     self.canvas.coords(line_id, sx, sy, tx, ty)
-            self._position_table(name, x, y)
-            if self.selected_node == name and self.selection_rect:
+            self._drag_table(name, idx, x, y)
+            if self.selected_node == (name, idx) and self.selection_rect:
                 self.canvas.coords(self.selection_rect, x - r, y - r, x + r, y + r)
             self._update_scroll_region()
         elif self.current_tool == "Relationship" and self.edge_start:
-            x1, y1 = doc.positions.get(self.edge_start, (0, 0))
+            x1, y1 = doc.positions.get(self.edge_start, [(0, 0)])[0]
             if self.temp_edge_line is None:
                 self.temp_edge_line = self.canvas.create_line(
                     x1, y1, event.x, event.y, dash=(2, 2)
@@ -436,9 +462,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         elif self.current_tool == "Relationship" and self.edge_start:
             dst = self._find_node(event.x, event.y)
             src = self.edge_start
-            if dst and dst != src:
+            if dst and dst[0] != src:
                 kind_src = doc.types.get(src)
-                kind_dst = doc.types.get(dst)
+                kind_dst = doc.types.get(dst[0])
                 if kind_src == "insufficiency" and kind_dst == "trigger":
                     messagebox.showerror(
                         "Invalid Relationship",
@@ -455,12 +481,12 @@ class CausalBayesianNetworkWindow(tk.Frame):
                     undo = getattr(self.app, "push_undo_state", None)
                     if undo:
                         undo()
-                    self._draw_edge(src, dst)
-                    parents = doc.network.parents.setdefault(dst, [])
+                    self._draw_edge(src, dst[0])
+                    parents = doc.network.parents.setdefault(dst[0], [])
                     if src not in parents:
                         parents.append(src)
-                        doc.network.cpds[dst] = {}
-                        self._rebuild_table(dst)
+                        doc.network.cpds[dst[0]] = {}
+                        self._rebuild_table(dst[0])
             self.edge_start = None
             if self.temp_edge_line:
                 self.canvas.delete(self.temp_edge_line)
@@ -480,17 +506,18 @@ class CausalBayesianNetworkWindow(tk.Frame):
             self.temp_edge_anim = self.after(100, self._animate_temp_edge)
 
     # ------------------------------------------------------------------
-    def _highlight_node(self, name: str | None) -> None:
+    def _highlight_node(self, node: tuple | None) -> None:
         if self.selection_rect:
             self.canvas.delete(self.selection_rect)
             self.selection_rect = None
-        self.selected_node = name
-        if not name:
+        self.selected_node = node
+        if not node:
             return
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        x, y = doc.positions.get(name, (0, 0))
+        name, idx = node
+        x, y = doc.positions.get(name, [(0, 0)])[idx]
         r = self.NODE_RADIUS
         self.selection_rect = self.canvas.create_rectangle(
             x - r, y - r, x + r, y + r, outline="red", dash=(2, 2)
@@ -501,9 +528,10 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        name = self._find_node(event.x, event.y)
-        if not name:
+        node = self._find_node(event.x, event.y)
+        if not node:
             return
+        name, _idx = node
         undo = getattr(self.app, "push_undo_state", None)
         if undo:
             undo()
@@ -539,7 +567,42 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._update_all_tables()
 
     # ------------------------------------------------------------------
-    def _draw_node(self, name: str, x: float, y: float, kind: str | None = None) -> None:
+    def _fill_tag_strategy1(self, name: str, idx: int) -> str:
+        safe = re.sub(r"\W", "_", name)
+        return f"fill_{safe}_{idx}"
+
+    # ------------------------------------------------------------------
+    def _fill_tag_strategy2(self, name: str, idx: int) -> str:
+        safe = re.sub(r"\W", "_", name)
+        return f"fill_{safe}_{idx}_s2"
+
+    # ------------------------------------------------------------------
+    def _fill_tag_strategy3(self, name: str, idx: int) -> str:
+        safe = re.sub(r"\W", "_", name)
+        return f"fill_{safe}_{idx}_s3"
+
+    # ------------------------------------------------------------------
+    def _fill_tag_strategy4(self, name: str, idx: int) -> str:
+        safe = re.sub(r"\W", "_", name)
+        return f"fill_{safe}_{idx}_s4"
+
+    # ------------------------------------------------------------------
+    def _generate_fill_tag(self, name: str, idx: int) -> str:
+        for fn in (
+            self._fill_tag_strategy1,
+            self._fill_tag_strategy2,
+            self._fill_tag_strategy3,
+            self._fill_tag_strategy4,
+        ):
+            tag = fn(name, idx)
+            if tag:
+                return tag
+        raise ValueError("Unable to generate fill tag")
+
+    # ------------------------------------------------------------------
+    def _draw_node(
+        self, name: str, x: float, y: float, kind: str | None = None, idx: int | None = None
+    ) -> None:
         """Draw a node as a filled circle with a text label."""
         r = self.NODE_RADIUS
         if kind == "trigger":
@@ -557,8 +620,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         else:
             color = "lightyellow"
             stereo = None
-        safe_name = re.sub(r"\W", "_", name)
-        fill_tag = f"fill_{safe_name}"
+        self.nodes.setdefault(name, [])
+        idx = idx if idx is not None else len(self.nodes[name])
+        fill_tag = self._generate_fill_tag(name, idx)
         fill_ids = self.drawing_helper._fill_gradient_circle(
             self.canvas, x, y, r, color, tag=fill_tag
         ) or []
@@ -576,21 +640,21 @@ class CausalBayesianNetworkWindow(tk.Frame):
             text = self.canvas.create_text(x, y, text=label, font=font)
         else:
             text = self.canvas.create_text(x, y, text=label)
-        self.nodes[name] = (oval, text, fill_tag)
-        self.id_to_node[oval] = name
-        self.id_to_node[text] = name
+        self.nodes[name].insert(idx, (oval, text, fill_tag))
+        self.id_to_node[oval] = (name, idx)
+        self.id_to_node[text] = (name, idx)
         for fid in fill_ids:
-            self.id_to_node[fid] = name
-        self._place_table(name)
+            self.id_to_node[fid] = (name, idx)
+        self._place_table(name, idx)
         self._update_scroll_region()
 
     # ------------------------------------------------------------------
-    def _draw_edge(self, src: str, dst: str) -> None:
+    def _draw_edge(self, src: str, dst: str, src_idx: int = 0, dst_idx: int = 0) -> None:
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        x1, y1 = doc.positions.get(src, (0, 0))
-        x2, y2 = doc.positions.get(dst, (0, 0))
+        x1, y1 = doc.positions.get(src, [(0, 0)])[src_idx]
+        x2, y2 = doc.positions.get(dst, [(0, 0)])[dst_idx]
         r = self.NODE_RADIUS
         dx, dy = x2 - x1, y2 - y1
         dist = (dx ** 2 + dy ** 2) ** 0.5 or 1
@@ -603,7 +667,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._update_scroll_region()
 
     # ------------------------------------------------------------------
-    def _place_table(self, name: str) -> None:
+    def _place_table(self, name: str, idx: int) -> None:
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
@@ -643,20 +707,63 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 f"and {name} is True"
             )
         ToolTip(tree, info)
-        tree.bind("<Double-1>", lambda e, n=name: self.edit_cpd_row(n))
+        tree.bind("<Double-1>", lambda e, n=name, i=idx: self.edit_cpd_row(n, i))
         win = self.canvas.create_window(0, 0, window=frame, anchor="nw")
-        self.tables[name] = (win, frame, tree)
-        self._update_table(name)
-        x, y = doc.positions.get(name, (0, 0))
-        self._position_table(name, x, y)
+        tables = self.tables.setdefault(name, [])
+        while len(tables) <= idx:
+            tables.append(None)
+        if tables[idx]:
+            old_win, old_frame, _ = tables[idx]
+            self.canvas.delete(old_win)
+            old_frame.destroy()
+        tables[idx] = (win, frame, tree)
+        self._update_table(name, idx)
+        x, y = doc.positions.get(name, [(0, 0)])[idx]
+        self._position_table(name, idx, x, y)
         self._update_scroll_region()
 
     # ------------------------------------------------------------------
-    def _update_table(self, name: str) -> None:
+    def _table_lookup_strategy1(self, name: str, idx: int):
+        try:
+            return self.tables[name][idx]
+        except Exception:
+            return None
+
+    def _table_lookup_strategy2(self, name: str, idx: int):
+        tables = self.tables.get(name)
+        if tables and idx < len(tables):
+            return tables[idx]
+        return None
+
+    def _table_lookup_strategy3(self, name: str, idx: int):
+        if name in self.tables:
+            tables = self.tables[name]
+            return tables[idx] if idx < len(tables) else None
+        return None
+
+    def _table_lookup_strategy4(self, name: str, idx: int):
+        tables = self.tables.get(name, [])
+        return next((t for i, t in enumerate(tables) if i == idx), None)
+
+    def _get_table(self, name: str, idx: int):
+        for strat in (
+            self._table_lookup_strategy1,
+            self._table_lookup_strategy2,
+            self._table_lookup_strategy3,
+            self._table_lookup_strategy4,
+        ):
+            tbl = strat(name, idx)
+            if tbl:
+                return tbl
+        return None
+
+    # ------------------------------------------------------------------
+    def _update_table(self, name: str, idx: int) -> None:
         doc = getattr(self.app, "active_cbn", None)
-        if not doc or name not in self.tables:
+        tbl = self._get_table(name, idx)
+        if not doc or not tbl:
             return
-        win, frame, tree = self.tables[name]
+        win, frame, tree = tbl
         tree.delete(*tree.get_children())
         parents = doc.network.parents.get(name, [])
         rows = doc.network.cpd_rows(name)
@@ -672,14 +779,15 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.canvas.itemconfigure(
             win, width=frame.winfo_reqwidth(), height=frame.winfo_reqheight()
         )
-        x, y = doc.positions.get(name, (0, 0))
-        self._position_table(name, x, y)
+        x, y = doc.positions.get(name, [(0, 0)])[idx]
+        self._position_table(name, idx, x, y)
 
     # ------------------------------------------------------------------
-    def _position_table(self, name: str, x: float, y: float) -> None:
-        if name not in self.tables:
+    def _position_table(self, name: str, idx: int, x: float, y: float) -> None:
+        tbl = self._get_table(name, idx)
+        if not tbl:
             return
-        win, frame, _ = self.tables[name]
+        win, frame, _ = tbl
         frame.update_idletasks()
         w, h = frame.winfo_reqwidth(), frame.winfo_reqheight()
         r = self.NODE_RADIUS
@@ -687,30 +795,57 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.canvas.coords(win, x + r + 10, y - h / 2)
 
     # ------------------------------------------------------------------
+    def _drag_table_strategy1(self, name: str, idx: int, x: float, y: float) -> None:
+        self._position_table(name, idx, x, y)
+
+    def _drag_table_strategy2(self, name: str, idx: int, x: float, y: float) -> None:
+        if self._get_table(name, idx):
+            self._position_table(name, idx, x, y)
+
+    def _drag_table_strategy3(self, name: str, idx: int, x: float, y: float) -> None:
+        if not self._get_table(name, idx):
+            self._place_table(name, idx)
+        self._position_table(name, idx, x, y)
+
+    def _drag_table_strategy4(self, name: str, idx: int, x: float, y: float) -> None:
+        try:
+            self._update_table(name, idx)
+        finally:
+            self._position_table(name, idx, x, y)
+
+    def _drag_table(self, name: str, idx: int, x: float, y: float) -> None:
+        for strat in (
+            self._drag_table_strategy1,
+            self._drag_table_strategy2,
+            self._drag_table_strategy3,
+            self._drag_table_strategy4,
+        ):
+            try:
+                strat(name, idx, x, y)
+                break
+            except Exception:
+                continue
+
+    # ------------------------------------------------------------------
     def _update_all_tables(self) -> None:
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        for node in doc.network.nodes:
-            self._update_table(node)
+        for name, tables in self.tables.items():
+            for idx, tbl in enumerate(tables):
+                if tbl:
+                    self._update_table(name, idx)
 
     # ------------------------------------------------------------------
     def _rebuild_table(self, name: str) -> None:
-        if name in self.tables:
-            win, frame, _ = self.tables.pop(name)
-            self.canvas.delete(win)
-            frame.destroy()
-        self._place_table(name)
-
-    # ------------------------------------------------------------------
-    def _update_all_tables(self) -> None:
-        """Update probability tables for all nodes in the active document."""
         doc = getattr(self.app, "active_cbn", None)
-        if not doc:
-            return
-        for node in doc.network.nodes:
-            if node in self.tables:
-                self._update_table(node)
+        if name in self.tables:
+            for win, frame, _ in self.tables.pop(name):
+                self.canvas.delete(win)
+                frame.destroy()
+        count = len(doc.positions.get(name, [])) if doc else 0
+        for idx in range(count):
+            self._place_table(name, idx)
 
     # ------------------------------------------------------------------
     def add_cpd_row(self, name: str) -> None:
@@ -747,12 +882,13 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._update_all_tables()
 
     # ------------------------------------------------------------------
-    def edit_cpd_row(self, name: str) -> None:
+    def edit_cpd_row(self, name: str, idx: int) -> None:
         doc = getattr(self.app, "active_cbn", None)
-        if not doc or name not in self.tables:
+        tbl = self._get_table(name, idx)
+        if not doc or not tbl:
             return
         parents = doc.network.parents.get(name, [])
-        _, _, tree = self.tables[name]
+        _, _, tree = tbl
         item = tree.focus()
         if not item:
             return
@@ -840,20 +976,77 @@ class CausalBayesianNetworkWindow(tk.Frame):
         return [n.strip() for n in sel.split(",") if n.strip() in mals]
 
     # ------------------------------------------------------------------
-    def _find_node(self, x: float, y: float) -> str | None:
-        ids = self.canvas.find_overlapping(x, y, x, y)
+    def _find_node_strategy1(self, x: float, y: float) -> tuple | None:
+        """Locate a node by checking overlapping canvas items."""
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        ids = self.canvas.find_overlapping(cx - 1, cy - 1, cx + 1, cy + 1)
         for i in ids:
-            name = self.id_to_node.get(i)
-            if name:
-                return name
+            node = self.id_to_node.get(i)
+            if node:
+                return node
+        return None
+
+    def _find_node_strategy2(self, x: float, y: float) -> tuple | None:
+        """Locate a node using the closest canvas item."""
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        ids = self.canvas.find_closest(cx, cy)
+        for i in ids:
+            node = self.id_to_node.get(i)
+            if node:
+                return node
+        return None
+
+    def _find_node_strategy3(self, x: float, y: float) -> tuple | None:
+        """Locate a node by checking drawn ovals' bounding boxes."""
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        for name, items in self.nodes.items():
+            for idx, (oval_id, _, _) in enumerate(items):
+                x1, y1, x2, y2 = self.canvas.coords(oval_id)
+                if x1 <= cx <= x2 and y1 <= cy <= y2:
+                    return (name, idx)
+        return None
+
+    def _find_node_strategy4(self, x: float, y: float) -> tuple | None:
+        """Locate a node using stored positions and a radius check."""
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return None
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        r = self.NODE_RADIUS
+        for name, pos_list in doc.positions.items():
+            for idx, (nx, ny) in enumerate(pos_list):
+                if (cx - nx) ** 2 + (cy - ny) ** 2 <= r ** 2:
+                    return (name, idx)
+        return None
+
+    def _find_node(self, x: float, y: float) -> tuple | None:
+        """Find a node at the given canvas coordinates using multiple strategies."""
+        for strat in (
+            self._find_node_strategy1,
+            self._find_node_strategy2,
+            self._find_node_strategy3,
+            self._find_node_strategy4,
+        ):
+            node = strat(x, y)
+            if node:
+                return node
         return None
 
     # ------------------------------------------------------------------
     def load_doc(self) -> None:
         self.canvas.delete("all")
         self.nodes.clear()
-        for _, frame, _ in self.tables.values():
-            frame.destroy()
+        for tables in self.tables.values():
+            for _, frame, _ in tables:
+                frame.destroy()
         self.tables.clear()
         self.id_to_node.clear()
         self.edges.clear()
@@ -861,10 +1054,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if not doc:
             return
         for name in doc.network.nodes:
-            x, y = doc.positions.get(name, (100, 100))
-            doc.positions[name] = (x, y)
+            pos_list = doc.positions.get(name) or [(100, 100)]
+            doc.positions[name] = list(pos_list)
             kind = doc.types.get(name)
-            self._draw_node(name, x, y, kind)
+            for idx, (x, y) in enumerate(doc.positions[name]):
+                self._draw_node(name, x, y, kind, idx)
         for child, parents in doc.network.parents.items():
             for parent in parents:
                 if parent in doc.network.nodes and child in doc.network.nodes:
@@ -900,8 +1094,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.canvas.scale("all", 0, 0, factor, factor)
         doc = getattr(self.app, "active_cbn", None)
         if doc:
-            for name, (x, y) in doc.positions.items():
-                doc.positions[name] = (x * factor, y * factor)
+            for name, pos_list in doc.positions.items():
+                doc.positions[name] = [(x * factor, y * factor) for (x, y) in pos_list]
         if hasattr(self, "text_font"):
             self.text_font.configure(size=int(self.base_font_size * self.zoom_level))
         self._update_scroll_region()
@@ -911,12 +1105,14 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        name = self._find_node(event.x, event.y)
-        if not name:
+        node = self._find_node(event.x, event.y)
+        if not node:
             return
         menu = tk.Menu(self, tearoff=0)
-        menu.add_command(label="Rename", command=lambda n=name: self._prompt_rename_node(n))
-        menu.add_command(label="Delete", command=lambda n=name: self._delete_node(n))
+        menu.add_command(
+            label="Rename", command=lambda n=node[0]: self._prompt_rename_node(n)
+        )
+        menu.add_command(label="Delete", command=lambda n=node: self._delete_node(n))
         try:
             menu.tk_popup(event.x_root, event.y_root)
         finally:  # pragma: no cover - no-op on simple stubs
@@ -942,10 +1138,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._update_all_tables()
 
     # ------------------------------------------------------------------
-    def _delete_node(self, name: str) -> None:
+    def _delete_node(self, node) -> None:
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
+        name = node[0] if isinstance(node, tuple) else node
         delete_model = messagebox.askyesno(
             "Delete Node",
             "Delete node from model?\nNo removes it from diagram only.",
@@ -964,24 +1161,27 @@ class CausalBayesianNetworkWindow(tk.Frame):
                     parents.remove(name)
                     doc.network.cpds[child] = {}
                     self._rebuild_table(child)
-        oval_text = self.nodes.pop(name, None)
-        if oval_text:
-            oval_id, text_id, fill_tag = oval_text
-            self.canvas.delete(oval_id)
-            self.canvas.delete(text_id)
-            find_withtag = getattr(self.canvas, "find_withtag", None)
-            if find_withtag:
-                for fid in find_withtag(fill_tag):
-                    self.canvas.delete(fid)
-                    self.id_to_node.pop(fid, None)
-            self.id_to_node.pop(oval_id, None)
-            self.id_to_node.pop(text_id, None)
+        instances = self.nodes.get(name, [])
+        if instances:
+            # remove all diagram instances for simplicity
+            for oval_id, text_id, fill_tag in instances:
+                self.canvas.delete(oval_id)
+                self.canvas.delete(text_id)
+                find_withtag = getattr(self.canvas, "find_withtag", None)
+                if find_withtag:
+                    for fid in find_withtag(fill_tag):
+                        self.canvas.delete(fid)
+                        self.id_to_node.pop(fid, None)
+                self.id_to_node.pop(oval_id, None)
+                self.id_to_node.pop(text_id, None)
+        self.nodes.pop(name, None)
         if name in self.tables:
-            win, _, _ = self.tables.pop(name)
-            self.canvas.delete(win)
+            for win, frame, _ in self.tables.pop(name):
+                self.canvas.delete(win)
+                frame.destroy()
         doc.positions.pop(name, None)
         doc.types.pop(name, None)
-        if self.selected_node == name:
+        if self.selected_node and self.selected_node[0] == name:
             self._highlight_node(None)
         for line, src, dst in self.edges[:]:
             if src == name or dst == name:
@@ -1002,17 +1202,23 @@ class CausalBayesianNetworkWindow(tk.Frame):
             doc.network.parents[child] = [new if p == old else p for p in parents]
         doc.positions[new] = doc.positions.pop(old)
         doc.types[new] = doc.types.pop(old)
-        oval_id, text_id, old_fill_tag = self.nodes.pop(old)
-        safe_new = re.sub(r"\W", "_", new)
-        new_fill_tag = f"fill_{safe_new}"
-        self.nodes[new] = (oval_id, text_id, new_fill_tag)
-        self.id_to_node[oval_id] = new
-        self.id_to_node[text_id] = new
+        tables = self.tables.pop(old, [])
+        for win, frame, _ in tables:
+            self.canvas.delete(win)
+            frame.destroy()
+        instances = self.nodes.pop(old, [])
         find_withtag = getattr(self.canvas, "find_withtag", None)
-        if find_withtag:
-            for fid in find_withtag(old_fill_tag):
-                self.canvas.itemconfigure(fid, tags=(new_fill_tag,))
-                self.id_to_node[fid] = new
+        new_instances = []
+        for idx, (oval_id, text_id, old_fill_tag) in enumerate(instances):
+            new_tag = self._generate_fill_tag(new, idx)
+            new_instances.append((oval_id, text_id, new_tag))
+            self.id_to_node[oval_id] = (new, idx)
+            self.id_to_node[text_id] = (new, idx)
+            if find_withtag:
+                for fid in find_withtag(old_fill_tag):
+                    self.canvas.itemconfigure(fid, tags=(new_tag,))
+                    self.id_to_node[fid] = (new, idx)
+        self.nodes[new] = new_instances
         kind = doc.types.get(new)
         if kind == "trigger":
             stereo = "triggering condition"
@@ -1037,4 +1243,150 @@ class CausalBayesianNetworkWindow(tk.Frame):
         for child, parents in doc.network.parents.items():
             if new in parents and child != new:
                 self._rebuild_table(child)
+
+    # ------------------------------------------------------------------
+    def _clone_node_strategy1(self, node: tuple) -> tuple | None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return None
+        name, idx = node
+        if name not in doc.network.nodes:
+            return None
+        return (doc, name, idx)
+
+    def _clone_node_strategy2(self, node: tuple) -> tuple | None:
+        snap = self._clone_node_strategy1(node)
+        if snap:
+            return snap
+        return None
+
+    def _clone_node_strategy3(self, node: tuple) -> tuple | None:
+        snap = self._clone_node_strategy1(node)
+        if snap:
+            return (lambda s: s)(snap)
+        return None
+
+    def _clone_node_strategy4(self, node: tuple) -> tuple | None:
+        return self._clone_node_strategy1(node)
+
+    def _clone_node(self, node: tuple) -> tuple | None:
+        for strat in (
+            self._clone_node_strategy1,
+            self._clone_node_strategy2,
+            self._clone_node_strategy3,
+            self._clone_node_strategy4,
+        ):
+            snap = strat(node)
+            if snap is not None:
+                return snap
+        return None
+    def _add_position_strategy1(self, doc, name, pos):
+        doc.positions.setdefault(name, []).append(pos)
+        return len(doc.positions[name]) - 1
+
+    def _add_position_strategy2(self, doc, name, pos):
+        doc.positions.setdefault(name, [])
+        doc.positions[name] += [pos]
+        return len(doc.positions[name]) - 1
+
+    def _add_position_strategy3(self, doc, name, pos):
+        lst = doc.positions.get(name)
+        if lst is None:
+            doc.positions[name] = [pos]
+            return 0
+        lst.append(pos)
+        return len(lst) - 1
+
+    def _add_position_strategy4(self, doc, name, pos):
+        return self._add_position_strategy1(doc, name, pos)
+
+    def _add_position(self, doc, name, pos):
+        for strat in (
+            self._add_position_strategy1,
+            self._add_position_strategy2,
+            self._add_position_strategy3,
+            self._add_position_strategy4,
+        ):
+            try:
+                idx = strat(doc, name, pos)
+                return idx
+            except Exception:
+                continue
+        return 0
+
+    def _reconstruct_node_strategy1(self, snap, doc, offset=(20, 20)) -> tuple:
+        src_doc, name, idx = snap
+        # share underlying network structures so edits in one diagram
+        # propagate to all others referencing the same document
+        if doc.network.nodes is not src_doc.network.nodes:
+            doc.network.nodes = src_doc.network.nodes
+        if doc.network.parents is not src_doc.network.parents:
+            doc.network.parents = src_doc.network.parents
+        if doc.network.cpds is not src_doc.network.cpds:
+            doc.network.cpds = src_doc.network.cpds
+        if doc.types is not src_doc.types:
+            doc.types = src_doc.types
+        if name not in doc.network.nodes:
+            doc.network.nodes.append(name)
+        doc.types.setdefault(name, src_doc.types.get(name, "variable"))
+        src_pos = src_doc.positions.get(name, [(0.0, 0.0)])[idx]
+        new_pos = (src_pos[0] + offset[0], src_pos[1] + offset[1])
+        new_idx = self._add_position(doc, name, new_pos)
+        return (name, new_idx)
+
+    def _reconstruct_node_strategy2(self, snap, doc, offset=(30, 30)) -> tuple:
+        return self._reconstruct_node_strategy1(snap, doc, offset)
+
+    def _reconstruct_node_strategy3(self, snap, doc, offset=(40, 40)) -> tuple:
+        return self._reconstruct_node_strategy1(snap, doc, offset)
+
+    def _reconstruct_node_strategy4(self, snap, doc, offset=(50, 50)) -> tuple:
+        return self._reconstruct_node_strategy1(snap, doc, offset)
+
+    def _reconstruct_node(self, snap, doc) -> tuple | None:
+        for strat in (
+            self._reconstruct_node_strategy1,
+            self._reconstruct_node_strategy2,
+            self._reconstruct_node_strategy3,
+            self._reconstruct_node_strategy4,
+        ):
+            try:
+                return strat(snap, doc)
+            except Exception:
+                continue
+        return None
+
+    def copy_selected(self, _event=None) -> None:
+        if not self.app or not self.selected_node:
+            return
+        snap = self._clone_node(self.selected_node)
+        if snap:
+            self.app.diagram_clipboard = snap
+            self.app.diagram_clipboard_type = "Causal Bayesian Network"
+
+    def cut_selected(self, _event=None) -> None:
+        if not self.app or not self.selected_node:
+            return
+        self.copy_selected()
+        self._delete_node(self.selected_node)
+        self.selected_node = None
+
+    def paste_selected(self, _event=None) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc or not self.app or not getattr(self.app, "diagram_clipboard", None):
+            return
+        clip_type = getattr(self.app, "diagram_clipboard_type", None)
+        if clip_type and clip_type != "Causal Bayesian Network":
+            messagebox.showwarning("Paste", "Clipboard contains incompatible diagram element.")
+            return
+        res = self._reconstruct_node(self.app.diagram_clipboard, doc)
+        if not res:
+            return
+        name, idx = res
+        x, y = doc.positions[name][idx]
+        kind = doc.types.get(name)
+        self._draw_node(name, x, y, kind, idx)
+        for parent in doc.network.parents.get(name, []):
+            if parent in doc.network.nodes:
+                self._draw_edge(parent, name, 0, idx)
 
