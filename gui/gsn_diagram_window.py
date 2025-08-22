@@ -384,8 +384,9 @@ class GSNDiagramWindow(tk.Frame):
             configure(cursor="hand2")
 
     def _on_click(self, event):  # pragma: no cover - requires tkinter
-        cx = self.canvas.canvasx(event.x)
-        cy = self.canvas.canvasy(event.y)
+        raw_x, raw_y = event.x, event.y
+        cx = self.canvas.canvasx(raw_x)
+        cy = self.canvas.canvasy(raw_y)
         if getattr(self, "_pending_add_type", None):
             app = getattr(self, "app", None)
             undo = getattr(app, "push_undo_state", None)
@@ -409,7 +410,7 @@ class GSNDiagramWindow(tk.Frame):
             self.selected_connection = None
         if not hasattr(self, "_selected_conn_id"):
             self._selected_conn_id = ""
-        node = self._node_at(cx, cy)
+        node = self._node_at(raw_x, raw_y)
         connection = self._connection_at(cx, cy)
         app = getattr(self, "app", None)
         if self._connect_mode:
@@ -600,9 +601,10 @@ class GSNDiagramWindow(tk.Frame):
                 webbrowser.open(name)
 
     def _on_double_click(self, event):  # pragma: no cover - requires tkinter
-        cx = self.canvas.canvasx(event.x)
-        cy = self.canvas.canvasy(event.y)
-        node = self._node_at(cx, cy)
+        raw_x, raw_y = event.x, event.y
+        cx = self.canvas.canvasx(raw_x)
+        cy = self.canvas.canvasy(raw_y)
+        node = self._node_at(raw_x, raw_y)
         if node:
             if node.node_type == "Solution":
                 link = getattr(node, "evidence_link", "")
@@ -747,15 +749,35 @@ class GSNDiagramWindow(tk.Frame):
         return None
 
     def _node_at_strategy2(self, x: float, y: float) -> Optional[GSNNode]:
+        """Return node using the closest item only when the pointer is over it.
+
+        The original implementation simply returned the closest canvas item
+        regardless of the click position.  ``Canvas.find_closest`` always
+        yields an item which meant that clicking on empty space would
+        incorrectly select the nearest node.  To avoid random selections we
+        now verify that the pointer actually lies within the bounding box of
+        the closest item before looking up the corresponding node.
+        """
+
         canvasx = getattr(self.canvas, "canvasx", lambda v: v)
         canvasy = getattr(self.canvas, "canvasy", lambda v: v)
         cx, cy = canvasx(x), canvasy(y)
-        items = self.canvas.find_closest(cx, cy)
-        for item in items:
-            for tag in self.canvas.gettags(item):
-                node = self.id_to_node.get(tag)
-                if node:
-                    return node
+        for item in self.canvas.find_closest(cx, cy):
+            bbox = getattr(self.canvas, "bbox", lambda *_: None)(item)
+            if bbox:
+                x1, y1, x2, y2 = bbox
+                if x1 <= cx <= x2 and y1 <= cy <= y2:
+                    node = self._node_from_canvas_item(item)
+                    if node:
+                        return node
+        return None
+
+    def _node_from_canvas_item(self, item) -> Optional[GSNNode]:
+        """Return the node associated with a canvas item, if any."""
+        for tag in self.canvas.gettags(item):
+            node = self.id_to_node.get(tag)
+            if node:
+                return node
         return None
 
     def _node_at_strategy3(self, x: float, y: float) -> Optional[GSNNode]:
@@ -775,7 +797,10 @@ class GSNDiagramWindow(tk.Frame):
         canvasx = getattr(self.canvas, "canvasx", lambda v: v)
         canvasy = getattr(self.canvas, "canvasy", lambda v: v)
         cx, cy = canvasx(x), canvasy(y)
-        for node in self.diagram._traverse():
+        diagram = getattr(self, "diagram", None)
+        if diagram is None:
+            return None
+        for node in diagram._traverse():
             if (cx - node.x) ** 2 + (cy - node.y) ** 2 <= (20 * self.zoom) ** 2:
                 return node
         return None

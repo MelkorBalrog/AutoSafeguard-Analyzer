@@ -18866,7 +18866,8 @@ class AutoMLApp:
             self.cut_mode = False
             if node.parents:
                 parent = node.parents[0]
-                rel = "context" if node in parent.context_children else "solved"
+                context_children = getattr(parent, "context_children", [])
+                rel = "context" if node in context_children else "solved"
             else:
                 rel = "solved"
             self.clipboard_relation = rel
@@ -18909,7 +18910,8 @@ class AutoMLApp:
             self.cut_mode = True
             if node.parents:
                 parent = node.parents[0]
-                rel = "context" if node in parent.context_children else "solved"
+                context_children = getattr(parent, "context_children", [])
+                rel = "context" if node in context_children else "solved"
             else:
                 rel = "solved"
             self.clipboard_relation = rel
@@ -19061,29 +19063,42 @@ class AutoMLApp:
                 self.cut_mode = False
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
-                cloned_node = self._clone_for_paste(self.clipboard_node)
-                if cloned_node is None:
-                    return
+                if isinstance(self.clipboard_node, GSNNode):
+                    src_diag = self._find_gsn_diagram(self.clipboard_node)
+                    tgt_diag = self._find_gsn_diagram(target)
+                    if tgt_diag and src_diag is not tgt_diag:
+                        node_to_paste = self.clipboard_node
+                    else:
+                        node_to_paste = self._clone_for_paste(self.clipboard_node)
+                        if node_to_paste is None:
+                            return
+                else:
+                    node_to_paste = self._clone_for_paste(self.clipboard_node)
+                    if node_to_paste is None:
+                        return
                 relation = getattr(self, "clipboard_relation", "solved")
                 if hasattr(target, "add_child"):
-                    target.add_child(cloned_node, relation=relation)
+                    target.add_child(node_to_paste, relation=relation)
                 else:
                     if relation == "context":
-                        target.context_children.append(cloned_node)
+                        target.context_children.append(node_to_paste)
                     else:
-                        target.children.append(cloned_node)
-                    cloned_node.parents.append(target)
-                if isinstance(cloned_node, GSNNode):
+                        target.children.append(node_to_paste)
+                    node_to_paste.parents.append(target)
+                if isinstance(node_to_paste, GSNNode):
                     diag = self._find_gsn_diagram(target)
-                    if diag and cloned_node not in diag.nodes:
-                        diag.add_node(cloned_node)
-                cloned_node.x = target.x + 100
-                cloned_node.y = target.y + 100
+                    if diag and node_to_paste not in diag.nodes:
+                        diag.add_node(node_to_paste)
+                node_to_paste.x = target.x + 100
+                node_to_paste.y = target.y + 100
                 messagebox.showinfo("Paste", "Node pasted successfully (copied).")
-            AutoML_Helper.calculate_assurance_recursive(
-                self.root_node,
-                self.top_events,
-            )
+            try:
+                AutoML_Helper.calculate_assurance_recursive(
+                    self.root_node,
+                    self.top_events,
+                )
+            except AttributeError:
+                pass
             self.update_views()
             return
         clip_type = getattr(self, "diagram_clipboard_type", None)
