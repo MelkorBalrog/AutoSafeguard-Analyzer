@@ -24,7 +24,7 @@ def test_cbn_diagram_undo_redo_node_add_and_move():
     app = AutoMLApp.__new__(AutoMLApp)
     doc = CausalBayesianNetworkDoc("CBN")
     doc.network.add_node("A", cpd=0.5)
-    doc.positions["A"] = (0, 0)
+    doc.positions["A"] = [(0, 0)]
     doc.types["A"] = "variable"
 
     app.cbn_docs = [doc]
@@ -51,7 +51,7 @@ def test_cbn_diagram_undo_redo_node_add_and_move():
                         )
                         for var, cpd in d.network.cpds.items()
                     },
-                    "positions": {k: tuple(v) for k, v in d.positions.items()},
+                    "positions": {k: [list(p) for p in v] for k, v in d.positions.items()},
                     "types": dict(d.types),
                 }
                 for d in app.cbn_docs
@@ -74,7 +74,7 @@ def test_cbn_diagram_undo_redo_node_add_and_move():
                 else:
                     parsed_cpds[var] = cpd
             net.cpds = parsed_cpds
-            positions = {k: tuple(v) for k, v in d.get("positions", {}).items()}
+            positions = {k: [tuple(p) for p in v] for k, v in d.get("positions", {}).items()}
             types = dict(d.get("types", {}))
             app.cbn_docs.append(
                 CausalBayesianNetworkDoc(d.get("name", "CBN"), network=net, positions=positions, types=types)
@@ -90,18 +90,18 @@ def test_cbn_diagram_undo_redo_node_add_and_move():
     # Record state then modify
     app.push_undo_state()
     doc.network.add_node("B", cpd=0.5)
-    doc.positions["B"] = (5, 5)
+    doc.positions["B"] = [(5, 5)]
     doc.types["B"] = "variable"
-    doc.positions["A"] = (10, 20)
+    doc.positions["A"][0] = (10, 20)
 
     # Undo should remove B and restore A's position
     app.undo()
     doc_after = app.cbn_docs[0]
     assert "B" not in doc_after.network.nodes
-    assert doc_after.positions["A"] == (0, 0)
+    assert doc_after.positions["A"][0] == (0, 0)
 
     # Redo should bring back B and moved A
     app.redo()
     doc_redo = app.cbn_docs[0]
     assert "B" in doc_redo.network.nodes
-    assert doc_redo.positions["A"] == (10, 20)
+    assert doc_redo.positions["A"][0] == (10, 20)
