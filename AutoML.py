@@ -18951,24 +18951,30 @@ class AutoMLApp:
                 self._reset_gsn_clone(child)
 
     # ------------------------------------------------------------------
-    def _clone_for_paste_strategy1(self, node):
+    def _clone_for_paste_strategy1(self, node, parent=None):
         if hasattr(node, "clone"):
+            if parent and getattr(node, "node_type", None) in {"Context", "Assumption", "Justification"}:
+                return node.clone(parent)
             return node.clone()
         import copy
         clone = copy.deepcopy(node)
         self._reset_gsn_clone(clone)
         return clone
 
-    def _clone_for_paste_strategy2(self, node):
+    def _clone_for_paste_strategy2(self, node, parent=None):
         import copy
         if isinstance(node, GSNNode):
+            if parent and node.node_type in {"Context", "Assumption", "Justification"}:
+                return node.clone(parent)
             return node.clone()
         clone = copy.deepcopy(node)
         self._reset_gsn_clone(clone)
         return clone
 
-    def _clone_for_paste_strategy3(self, node):
+    def _clone_for_paste_strategy3(self, node, parent=None):
         try:
+            if parent and getattr(node, "node_type", None) in {"Context", "Assumption", "Justification"}:
+                return node.clone(parent)  # type: ignore[attr-defined]
             return node.clone()  # type: ignore[attr-defined]
         except Exception:
             import copy
@@ -18976,13 +18982,13 @@ class AutoMLApp:
             self._reset_gsn_clone(clone)
             return clone
 
-    def _clone_for_paste_strategy4(self, node):
+    def _clone_for_paste_strategy4(self, node, parent=None):
         import copy
         clone = copy.deepcopy(node)
         self._reset_gsn_clone(clone)
         return clone
 
-    def _clone_for_paste(self, node):
+    def _clone_for_paste(self, node, parent=None):
         for strat in (
             self._clone_for_paste_strategy1,
             self._clone_for_paste_strategy2,
@@ -18990,7 +18996,7 @@ class AutoMLApp:
             self._clone_for_paste_strategy4,
         ):
             try:
-                clone = strat(node)
+                clone = strat(node, parent)
                 if clone is not None:
                     return clone
             except ValueError:
@@ -19066,9 +19072,13 @@ class AutoMLApp:
                 source_diag = self._find_gsn_diagram(self.clipboard_node)
                 target_diag = self._find_gsn_diagram(target)
                 if isinstance(self.clipboard_node, GSNNode) and source_diag is target_diag:
-                    cloned_node = self._clone_for_paste(self.clipboard_node)
-                    target.children.append(cloned_node)
-                    cloned_node.parents.append(target)
+                    cloned_node = self._clone_for_paste(self.clipboard_node, target)
+                    if cloned_node is None:
+                        return
+                    if cloned_node not in target.children:
+                        target.children.append(cloned_node)
+                    if target not in cloned_node.parents:
+                        cloned_node.parents.append(target)
                     if target_diag and cloned_node not in target_diag.nodes:
                         target_diag.add_node(cloned_node)
                     node_for_pos = cloned_node
@@ -19247,14 +19257,16 @@ class AutoMLApp:
                 return win
         return None
  
-    def clone_node_preserving_id(self, node):
+    def clone_node_preserving_id(self, node, parent=None):
         """Return a clone of *node* with a new unique ID.
 
         The function handles both FaultTreeNode and GSNNode instances.  For
         FaultTreeNode objects, a new :class:`FaultTreeNode` is created and the
         relevant attributes are copied across.  For :class:`GSNNode` instances
         the built-in ``clone`` method is used to ensure GSN-specific fields are
-        preserved.
+        preserved.  When *parent* is provided and the node represents a
+        ``Context``, ``Assumption`` or ``Justification`` element the clone is
+        automatically linked to *parent* using an ``in-context-of`` relation.
         """
 
         if isinstance(node, GSNNode):
@@ -19264,7 +19276,12 @@ class AutoMLApp:
                 )
             # GSN nodes provide their own clone method.  Offset the position of
             # the cloned node so that it does not overlap the original.
-            new_node = node.clone()
+            clone_parent = (
+                parent
+                if parent and node.node_type in {"Context", "Assumption", "Justification"}
+                else None
+            )
+            new_node = node.clone(clone_parent)
             new_node.x = node.x + 100
             new_node.y = node.y + 100
             return new_node
