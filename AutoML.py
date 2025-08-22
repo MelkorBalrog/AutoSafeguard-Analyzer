@@ -607,7 +607,7 @@ _CONFIG = load_diagram_rules(_CONFIG_PATH)
 GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 _PATTERN_PATH = Path(__file__).resolve().parent / "config/requirement_patterns.json"
 _REPORT_TEMPLATE_PATH = (
-    Path(__file__).resolve().parent / "config/report_template.json"
+    Path(__file__).resolve().parent / "config/product_report_template.json"
 )
 
 
