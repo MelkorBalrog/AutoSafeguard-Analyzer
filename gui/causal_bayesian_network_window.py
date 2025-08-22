@@ -1005,15 +1005,17 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._update_all_tables()
 
     # ------------------------------------------------------------------
-    def _delete_node(self, name: str) -> None:
+    def _delete_node(self, name: str, prompt: bool = True) -> None:
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        delete_model = messagebox.askyesno(
-            "Delete Node",
-            "Delete node from model?\nNo removes it from diagram only.",
-            parent=self,
-        )
+        delete_model = True
+        if prompt:
+            delete_model = messagebox.askyesno(
+                "Delete Node",
+                "Delete node from model?\nNo removes it from diagram only.",
+                parent=self,
+            )
         undo = getattr(self.app, "push_undo_state", None)
         if undo:
             undo()
@@ -1106,28 +1108,61 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc or name not in doc.network.nodes:
             return None
-        return {"doc": doc, "name": name}
+        x, y = doc.positions.get(name, (0.0, 0.0))
+        return {
+            "doc": doc,
+            "name": name,
+            "parents": doc.network.parents[name],
+            "cpd": doc.network.cpds[name],
+            "x": x,
+            "y": y,
+            "kind": doc.types.get(name, "variable"),
+        }
 
     def _clone_node_strategy2(self, name: str) -> dict | None:
         doc = getattr(self.app, "active_cbn", None)
         if not doc or name not in doc.network.nodes:
             return None
-        snap: dict = {}
-        snap["doc"] = doc
-        snap["name"] = name
+        snap = {
+            "doc": doc,
+            "name": str(name),
+            "parents": doc.network.parents[name],
+            "cpd": doc.network.cpds[name],
+            "x": doc.positions.get(name, (0.0, 0.0))[0],
+            "y": doc.positions.get(name, (0.0, 0.0))[1],
+            "kind": doc.types.get(name, "variable"),
+        }
         return snap
 
     def _clone_node_strategy3(self, name: str) -> dict | None:
         doc = getattr(self.app, "active_cbn", None)
         if not doc or name not in doc.network.nodes:
             return None
-        return {"doc": doc, "name": str(name)}
+        pos = doc.positions.get(name, (0.0, 0.0))
+        return dict(
+            doc=doc,
+            name=name,
+            parents=doc.network.parents[name],
+            cpd=doc.network.cpds[name],
+            x=pos[0],
+            y=pos[1],
+            kind=doc.types.get(name, "variable"),
+        )
 
     def _clone_node_strategy4(self, name: str) -> dict | None:
         doc = getattr(self.app, "active_cbn", None)
         if not doc or name not in doc.network.nodes:
             return None
-        return {"doc": doc, "name": name[:]}  # copy of the string
+        posx, posy = doc.positions.get(name, (0.0, 0.0))
+        return {
+            "doc": doc,
+            "name": name[:],
+            "parents": doc.network.parents[name],
+            "cpd": doc.network.cpds[name],
+            "x": posx,
+            "y": posy,
+            "kind": doc.types.get(name, "variable"),
+        }
 
     def _clone_node(self, name: str) -> dict | None:
         for strat in (
@@ -1142,22 +1177,45 @@ class CausalBayesianNetworkWindow(tk.Frame):
         return None
 
     def _reconstruct_node_strategy1(self, snap: dict, doc, offset=(20, 20)) -> str:
-        orig_doc = snap["doc"]
-        name = snap["name"]
-        x, y = orig_doc.positions.get(name, (0.0, 0.0))
+        orig_doc = snap.get("doc")
+        name = snap.get("name")
+        x = snap.get("x")
+        y = snap.get("y")
+        parents = snap.get("parents")
+        cpd = snap.get("cpd")
+        kind = snap.get("kind", "variable")
+
+        if orig_doc:
+            if x is None or y is None:
+                x, y = orig_doc.positions.get(name, (0.0, 0.0))
+            if parents is None:
+                parents = orig_doc.network.parents.get(name, [])
+            if cpd is None:
+                cpd = orig_doc.network.cpds.get(name)
+            if kind == "variable":
+                kind = orig_doc.types.get(name, kind)
+
+        x = x if x is not None else 0.0
+        y = y if y is not None else 0.0
+        parents = parents if parents is not None else []
+        cpd = cpd if cpd is not None else {}
+
         new_name = name
         while new_name in doc.network.nodes:
             idx = sum(1 for n in doc.network.nodes if n.startswith(name + "_")) + 1
             new_name = f"{name}_{idx}"
+
         if name in doc.network.nodes:
             doc.network.add_node(new_name, parents=doc.network.parents[name], cpd=doc.network.cpds[name])
             doc.network.parents[new_name] = doc.network.parents[name]
             doc.network.cpds[new_name] = doc.network.cpds[name]
-            kind = doc.types.get(name, snap["kind"])
+            kind = doc.types.get(name, kind)
         else:
-            doc.network.add_node(new_name, parents=snap["parents"], cpd=copy.deepcopy(snap["cpd"]))
-            kind = snap["kind"]
-        doc.positions[new_name] = (snap["x"] + offset[0], snap["y"] + offset[1])
+            doc.network.add_node(new_name, parents=parents, cpd=cpd)
+            doc.network.parents[new_name] = parents
+            doc.network.cpds[new_name] = cpd
+
+        doc.positions[new_name] = (x + offset[0], y + offset[1])
         doc.types[new_name] = kind
         return new_name
 
@@ -1175,8 +1233,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
             doc.network.cpds[new_name] = doc.network.cpds[name]
             kind = doc.types.get(name, snap["kind"])
         else:
-            doc.network.parents[new_name] = list(snap["parents"])
-            doc.network.cpds[new_name] = copy.deepcopy(snap["cpd"])
+            doc.network.parents[new_name] = snap["parents"]
+            doc.network.cpds[new_name] = snap["cpd"]
             kind = snap["kind"]
         doc.positions[new_name] = (snap["x"] + offset[0], snap["y"] + offset[1])
         doc.types[new_name] = kind
@@ -1206,10 +1264,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
         while new_name in doc.network.nodes:
             idx = sum(1 for n in doc.network.nodes if n.startswith(name + "_")) + 1
             new_name = f"{name}_{idx}"
-        parents = [p for p in snap.get("parents", [])]
+        parents = snap.get("parents", [])
         cpd = snap.get("cpd")
-        if isinstance(cpd, dict):
-            cpd = {tuple(k): v for k, v in cpd.items()}
         if name in doc.network.nodes:
             doc.network.add_node(new_name, parents=doc.network.parents[name], cpd=doc.network.cpds[name])
             doc.network.parents[new_name] = doc.network.parents[name]
@@ -1217,6 +1273,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
             kind = doc.types.get(name, snap.get("kind", "variable"))
         else:
             doc.network.add_node(new_name, parents=parents, cpd=cpd)
+            doc.network.parents[new_name] = parents
+            doc.network.cpds[new_name] = cpd
             kind = snap.get("kind", "variable")
         doc.positions[new_name] = (snap.get("x", 0) + offset[0], snap.get("y", 0) + offset[1])
         doc.types[new_name] = kind
@@ -1247,7 +1305,12 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if not self.app or not self.selected_node:
             return
         self.copy_selected()
-        self._delete_node(self.selected_node)
+        # Remove the node without prompting the user to mirror the
+        # behaviour of Governance diagrams when performing a cut
+        # operation.  The node is deleted from both the diagram and the
+        # underlying model so that the clipboard snapshot remains the
+        # sole reference.
+        self._delete_node(self.selected_node, prompt=False)
         self.selected_node = None
 
     def paste_selected(self, _event=None) -> None:
