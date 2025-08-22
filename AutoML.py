@@ -18945,8 +18945,6 @@ class AutoMLApp:
     def _reset_gsn_clone(self, node):
         if isinstance(node, GSNNode):
             node.unique_id = str(uuid.uuid4())
-            node.is_primary_instance = True
-            node.original = node
             old_children = list(getattr(node, "children", []))
             node.children = []
             node.parents = []
@@ -19073,16 +19071,11 @@ class AutoMLApp:
                 self.cut_mode = False
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
-                source_diag = self._find_gsn_diagram(self.clipboard_node)
                 target_diag = self._find_gsn_diagram(target)
-                if isinstance(self.clipboard_node, GSNNode) and source_diag is target_diag:
-                    cloned_node = self._clone_for_paste(self.clipboard_node, target)
-                    if cloned_node is None:
-                        return
-                    if cloned_node not in target.children:
-                        target.children.append(cloned_node)
-                    if target not in cloned_node.parents:
-                        cloned_node.parents.append(target)
+                if isinstance(self.clipboard_node, GSNNode):
+                    cloned_node = self._clone_for_paste(self.clipboard_node)
+                    target.children.append(cloned_node)
+                    cloned_node.parents.append(target)
                     if target_diag and cloned_node not in target_diag.nodes:
                         target_diag.add_node(cloned_node)
                     node_for_pos = cloned_node
