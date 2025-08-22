@@ -510,15 +510,16 @@ class GSNDiagramWindow(tk.Frame):
         self.refresh()
 
     def _on_release(self, event):  # pragma: no cover - requires tkinter
-        cx = self.canvas.canvasx(event.x)
-        cy = self.canvas.canvasy(event.y)
+        raw_x, raw_y = event.x, event.y
+        cx = self.canvas.canvasx(raw_x)
+        cy = self.canvas.canvasy(raw_y)
         if self._connect_mode and self._connect_parent:
             self.canvas.delete("_temp_conn")
             anim = getattr(self, "_temp_conn_anim", None)
             if anim:
                 self.canvas.after_cancel(anim)
                 self._temp_conn_anim = None
-            node = self._node_at(cx, cy)
+            node = self._node_at(raw_x, raw_y)
             if node and node is not self._connect_parent:
                 # Use the current connect mode to decide whether this is a
                 # solved-by or in-context-of relationship.
@@ -655,9 +656,10 @@ class GSNDiagramWindow(tk.Frame):
     # ------------------------------------------------------------------
     def _on_right_click(self, event):  # pragma: no cover - requires tkinter
         """Show a context menu for the element under the cursor."""
-        cx = self.canvas.canvasx(event.x)
-        cy = self.canvas.canvasy(event.y)
-        node = self._node_at(cx, cy)
+        raw_x, raw_y = event.x, event.y
+        cx = self.canvas.canvasx(raw_x)
+        cy = self.canvas.canvasy(raw_y)
+        node = self._node_at(raw_x, raw_y)
         conn = self._connection_at(cx, cy)
         if not node and not conn:
             return
