@@ -110,37 +110,22 @@ class GSNNode:
             self.context_children.remove(child)
 
     # ------------------------------------------------------------------
-    def clone(self, parent: Optional["GSNNode"] = None) -> "GSNNode":
-        """Return a copy of this node referencing the same original.
-
-        The clone shares the ``original`` reference with the primary
-        instance, enabling multiple diagram occurrences similar to away
-        solutions in GSN 2.0.
-        """
-        if self.node_type not in ALLOWED_AWAY_TYPES:
-            raise ValueError(
-                f"Cloning not supported for node type '{self.node_type}'."
-            )
+    def _clone_strategy1(self, parent: Optional["GSNNode"]) -> "GSNNode":
         clone = GSNNode(
             self.user_name,
             self.node_type,
             description=self.description,
-            x=self.x,
-            y=self.y,
+            x=float(self.x),
+            y=float(self.y),
             is_primary_instance=False,
-            original=self.original,
+            original=self if self.is_primary_instance else self.original,
             work_product=self.work_product,
             evidence_link=self.evidence_link,
             evidence_sufficient=self.evidence_sufficient,
             manager_notes=self.manager_notes,
         )
-        clone.work_product = self.work_product
         clone.spi_target = self.spi_target
-        clone.manager_notes = self.manager_notes
         if parent is not None:
-            # Context, Assumption and Justification clones must attach via an
-            # ``in-context-of`` relationship rather than the default
-            # ``solved-by`` link used for goals and solutions.
             relation = (
                 "context"
                 if self.node_type in {"Context", "Assumption", "Justification"}
@@ -148,6 +133,82 @@ class GSNNode:
             )
             parent.add_child(clone, relation=relation)
         return clone
+
+    def _clone_strategy2(self, parent: Optional["GSNNode"]) -> "GSNNode":
+        base = self if self.is_primary_instance else self.original
+        clone = GSNNode(
+            base.user_name,
+            base.node_type,
+            description=base.description,
+            x=float(self.x),
+            y=float(self.y),
+            is_primary_instance=False,
+            original=base,
+            work_product=base.work_product,
+            evidence_link=base.evidence_link,
+            evidence_sufficient=base.evidence_sufficient,
+            manager_notes=base.manager_notes,
+        )
+        if parent is not None:
+            relation = (
+                "context"
+                if base.node_type in {"Context", "Assumption", "Justification"}
+                else "solved"
+            )
+            parent.add_child(clone, relation=relation)
+        return clone
+
+    def _clone_strategy3(self, parent: Optional["GSNNode"]) -> "GSNNode":
+        original = self if self.is_primary_instance else self.original
+        clone = GSNNode(
+            original.user_name,
+            original.node_type,
+            description=original.description,
+            x=float(original.x),
+            y=float(original.y),
+            is_primary_instance=False,
+            original=original,
+            work_product=original.work_product,
+            evidence_link=original.evidence_link,
+            evidence_sufficient=original.evidence_sufficient,
+            manager_notes=original.manager_notes,
+        )
+        if parent is not None:
+            relation = (
+                "context"
+                if original.node_type in {"Context", "Assumption", "Justification"}
+                else "solved"
+            )
+            parent.add_child(clone, relation=relation)
+        return clone
+
+    def _clone_strategy4(self, parent: Optional["GSNNode"]) -> "GSNNode":
+        return self._clone_strategy1(parent)
+
+    def clone(self, parent: Optional["GSNNode"] = None) -> "GSNNode":
+        """Return a copy of this node referencing the same original.
+
+        Multiple strategies are attempted so that cloning works reliably
+        across different execution environments.  The returned clone always
+        has ``is_primary_instance`` set to ``False`` and references the
+        primary ``original`` node, ensuring away shapes render correctly and
+        positions remain independent.
+        """
+        if self.node_type not in ALLOWED_AWAY_TYPES:
+            raise ValueError(
+                f"Cloning not supported for node type '{self.node_type}'."
+            )
+        for strat in (
+            self._clone_strategy1,
+            self._clone_strategy2,
+            self._clone_strategy3,
+            self._clone_strategy4,
+        ):
+            try:
+                return strat(parent)
+            except Exception:
+                continue
+        raise ValueError("Failed to clone node")
 
     # ------------------------------------------------------------------
     def to_dict(self) -> dict:
