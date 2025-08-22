@@ -8,6 +8,7 @@ import json
 import weakref
 
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
+from .name_utils import collect_work_product_names, unique_name_v4
 from gui import messagebox, TranslucidButton
 from gui.tooltip import ToolTip
 from gui.drawing_helper import FTADrawingHelper
@@ -241,8 +242,10 @@ class CausalBayesianNetworkWindow(tk.Frame):
         new = simpledialog.askstring("Rename Analysis", "Name:", initialvalue=old, parent=self)
         if not new or new == old:
             return
-        for doc in getattr(self.app, "cbn_docs", []):
+        docs = getattr(self.app, "cbn_docs", [])
+        for doc in docs:
             if doc.name == old:
+                new = unique_name_v4(new, collect_work_product_names(self.app, ignore=doc, diagram_type="cbn"))
                 doc.name = new
                 toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
                 if toolbox:
@@ -1006,6 +1009,44 @@ class CausalBayesianNetworkWindow(tk.Frame):
             node = strat(x, y)
             if node:
                 return node
+        return None
+
+    def _find_node_strategy3(self, x: float, y: float) -> str | None:
+        """Locate a node by checking drawn ovals' bounding boxes."""
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        for name, (oval_id, _, _) in self.nodes.items():
+            x1, y1, x2, y2 = self.canvas.coords(oval_id)
+            if x1 <= cx <= x2 and y1 <= cy <= y2:
+                return name
+        return None
+
+    def _find_node_strategy4(self, x: float, y: float) -> str | None:
+        """Locate a node using stored positions and a radius check."""
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return None
+        canvasx = getattr(self.canvas, "canvasx", lambda v: v)
+        canvasy = getattr(self.canvas, "canvasy", lambda v: v)
+        cx, cy = canvasx(x), canvasy(y)
+        r = self.NODE_RADIUS
+        for name, (nx, ny) in doc.positions.items():
+            if (cx - nx) ** 2 + (cy - ny) ** 2 <= r ** 2:
+                return name
+        return None
+
+    def _find_node(self, x: float, y: float) -> str | None:
+        """Find a node at the given canvas coordinates using multiple strategies."""
+        for strat in (
+            self._find_node_strategy1,
+            self._find_node_strategy2,
+            self._find_node_strategy3,
+            self._find_node_strategy4,
+        ):
+            name = strat(x, y)
+            if name:
+                return name
         return None
 
     # ------------------------------------------------------------------
