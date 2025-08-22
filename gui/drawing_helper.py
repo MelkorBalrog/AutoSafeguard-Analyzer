@@ -2061,89 +2061,64 @@ class GSNDrawingHelper(FTADrawingHelper):
         font_obj,
         obj_id,
     ):
+        """Away Assumption/Justification: fused semi-ellipse + rect; A/J label placed above-right OUTSIDE."""
         outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = self._scaled_font(scale)
-        padding = 4
-        title, desc = (text.split("\n", 1) + [""])[:2]
-        title_w, title_h = self.get_text_size(title, font_obj)
-        desc_w, desc_h = self.get_text_size(desc, font_obj) if desc else (0, 0)
-        w = max(scale, title_w, desc_w) + 2 * padding
-        h = max(scale * 0.6, title_h + desc_h + 3 * padding)
-        radius = w / 2
-        left = x - w / 2
-        right = x + w / 2
-        rect_top = y - h / 2 + radius
-        rect_bottom = y + h / 2
-        # Body: rectangle + top arc
-        canvas.create_rectangle(
-            left,
-            rect_top,
-            right,
-            rect_bottom,
-            fill=fill,
-            outline=outline_color,
-            width=line_width,
-            tags=(obj_id,),
-        )
-        canvas.create_arc(
-            left,
-            rect_top - 2 * radius,
-            right,
-            rect_top,
-            start=0,
-            extent=180,
-            style=tk.CHORD,
-            fill=fill,
-            outline=outline_color,
-            width=line_width,
-            tags=(obj_id,),
-        )
-        # Title in arc region
-        title_y = rect_top - radius / 2
+        pad = 4
+
+        t_w, t_h = self.get_text_size(text, font_obj)
+        w = max(scale, t_w + 2 * pad)
+        h = max(scale * 0.60, t_h + 2 * pad)
+        left, right = x - w / 2.0, x + w / 2.0
+        rect_top = y - h / 2.0
+        rect_bottom = y + h / 2.0
+
+        # Semi-ellipse cap height
+        cap_h = max(12.0, min(w * 0.30, scale * 0.9))
+        r_y = cap_h / 2.0
+
+        # ---- FILLS (fused) ----
+        canvas.create_rectangle(left, rect_top, right, rect_bottom,
+                                fill=fill, outline="", width=0, tags=(obj_id,))
+        canvas.create_arc(left, rect_top - 2 * r_y, right, rect_top,
+                          start=0, extent=180, style=tk.CHORD,
+                          fill=fill, outline="", tags=(obj_id,))
+        # Tiny overlap on the seam (paranoid)
+        canvas.create_rectangle(left, rect_top - 0.75, right, rect_top + 0.75,
+                                fill=fill, outline="", width=0, tags=(obj_id,))
+
+        # Text
+        canvas.create_text(x, (rect_top + rect_bottom) / 2.0,
+                           text=text, font=font_obj, anchor="center",
+                           width=w - 2 * pad, tags=(obj_id,))
+
+        # A/J OUTSIDE and clear of the stroke: above & to the right
+        lbl_font = tkFont.Font(font=font_obj); lbl_font.configure(weight="bold")
         canvas.create_text(
-            x,
-            title_y,
-            text=title,
-            font=font_obj,
-            anchor="center",
-            width=w - 2 * padding,
-            tags=(obj_id,),
-        )
-        # Description in rectangle
-        desc_y = rect_top + (rect_bottom - rect_top) / 2
-        canvas.create_text(
-            x,
-            desc_y,
-            text=desc,
-            font=font_obj,
-            anchor="center",
-            width=w - 2 * padding,
-            tags=(obj_id,),
-        )
-        label_font = tkFont.Font(font=font_obj)
-        label_font.configure(weight="bold")
-        offset = padding
-        canvas.create_text(
-            right - offset,
-            rect_top - radius + offset,
+            right + pad,                 # to the right of the shape
+            rect_top - 2 * r_y - pad,    # above the cap
             text=label,
-            font=label_font,
-            anchor="ne",
-            tags=(obj_id,),
+            font=lbl_font,
+            anchor="nw",                 # text extends down/right from this point
+            tags=(obj_id,)
         )
-        box_font = self._scaled_font(scale * 0.4)
-        self._draw_module_reference_box(
-            canvas,
-            x,
-            rect_bottom,
-            w,
-            module_text,
-            outline_color,
-            line_width,
-            box_font,
-            obj_id,
-        )
+
+        # ---- OUTLINES (single fused perimeter) ----
+        canvas.create_arc(left, rect_top - 2 * r_y, right, rect_top,
+                          start=0, extent=180, style=tk.ARC,
+                          outline=outline_color, width=line_width)
+        canvas.create_line(left, rect_top, left, rect_bottom,
+                           fill=outline_color, width=line_width)
+        canvas.create_line(right, rect_top, right, rect_bottom,
+                           fill=outline_color, width=line_width)
+        canvas.create_line(left, rect_bottom, right, rect_bottom,
+                           fill=outline_color, width=line_width)
+
+        # Module box
+        box_font = self._scaled_font(scale * 0.40)
+        self._draw_module_reference_box(canvas, x, rect_bottom, w, module_text,
+                                        outline_color, line_width, box_font, obj_id)
 
     def draw_away_assumption_shape(
         self,
@@ -2215,6 +2190,363 @@ class GSNDrawingHelper(FTADrawingHelper):
     ):
         self.draw_module_shape(canvas, x, y, scale=scale, **kwargs)
 
-# Create a single GSNDrawingHelper object for convenience
+    # Font sizing policy reused by FTADrawingHelper methods (e.g., circle)
+    def _scaled_font(self, scale: float) -> tkFont.Font:
+        return tkFont.Font(family="Arial", size=max(1, int(scale / 4)))
+
+    # ------------------------
+    # Standard (local) GSN nodes
+    # ------------------------
+    def draw_goal_shape(self, canvas, x, y, scale=60.0, text="Goal",
+                        fill="lightyellow", outline_color=None, line_width=1,
+                        font_obj=None, obj_id: str = ""):
+        outline_color = self._resolve_outline(outline_color)
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        pad = 4
+        t_w, t_h = self.get_text_size(text, font_obj)
+        w = max(scale, t_w + 2 * pad); h = max(scale * 0.6, t_h + 2 * pad)
+        left, top = x - w / 2, y - h / 2; right, bot = x + w / 2, y + h / 2
+        self._fill_gradient_rect(canvas, left, top, right, bot, fill)
+        canvas.create_rectangle(left, top, right, bot, fill="", outline=outline_color, width=line_width, tags=(obj_id,))
+        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 2 * pad, tags=(obj_id,))
+
+    def draw_module_shape(self, canvas, x, y, scale=60.0, text="Module",
+                          fill="lightyellow", outline_color=None, line_width=1,
+                          font_obj=None, obj_id: str = ""):
+        outline_color = self._resolve_outline(outline_color)
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        pad = 4
+        t_w, t_h = self.get_text_size(text, font_obj)
+        w = max(scale, t_w + 2 * pad); base_h = max(scale * 0.6, t_h + 2 * pad)
+        tab_h = base_h * 0.25
+        left = x - w / 2; base_top = y - base_h / 2; right = x + w / 2; bottom = y + base_h / 2
+        tab_top = base_top - tab_h; tab_w = w * 0.4
+        self._fill_gradient_rect(canvas, left, base_top, right, bottom, fill)
+        self._fill_gradient_rect(canvas, left, tab_top, left + tab_w, base_top, fill)
+        canvas.create_polygon(left, base_top, left, bottom, right, bottom, right, tab_top,
+                              left + tab_w, tab_top, left + tab_w, base_top, left, base_top,
+                              fill="", outline=outline_color, width=line_width, tags=(obj_id,))
+        canvas.create_text(x, (base_top + bottom) / 2, text=text, font=font_obj,
+                           anchor="center", width=w - 2 * pad, tags=(obj_id,))
+
+    # ------------------------
+    # AWAY ELEMENTS (GSN v3 exact)
+    # ------------------------
+    def _draw_module_reference_box(
+        self,
+        canvas,
+        x,
+        top,
+        w,
+        module_text,
+        outline_color,
+        line_width,
+        font_obj,
+        obj_id,
+    ):
+        """Draw the module identifier box used by away elements.
+
+        Adds a small folder icon on the left side of the text.
+        """
+        module_text = module_text or "root"
+        pad = 3
+        t_w, t_h = self.get_text_size(module_text, font_obj)
+        icon_size = t_h  # folder height ~= text height
+        box_h = icon_size + 2 * pad
+
+        left, right = x - w / 2, x + w / 2
+        bottom = top + box_h
+
+        # Box background
+        canvas.create_rectangle(
+            left, top, right, bottom,
+            fill="white", outline=outline_color, width=line_width, tags=(obj_id,)
+        )
+
+        # --- Folder icon ---
+        icon_left = left + pad
+        icon_top = top + pad
+        icon_right = icon_left + icon_size
+        icon_bottom = bottom - pad
+
+        # Folder body
+        canvas.create_rectangle(
+            icon_left, icon_top + icon_size * 0.25,
+            icon_right, icon_bottom,
+            fill="lightgrey", outline=outline_color, width=line_width, tags=(obj_id,)
+        )
+        # Folder tab
+        tab_w = icon_size * 0.4
+        tab_h = icon_size * 0.25
+        canvas.create_polygon(
+            icon_left, icon_top + icon_size * 0.25,
+            icon_left, icon_top,
+            icon_left + tab_w, icon_top,
+            icon_left + tab_w, icon_top + icon_size * 0.25,
+            fill="lightgrey", outline=outline_color, width=line_width, tags=(obj_id,)
+        )
+
+        # --- Text ---
+        text_x = icon_right + pad
+        canvas.create_text(
+            text_x, (top + bottom) / 2,
+            text=module_text,
+            font=font_obj, anchor="w",
+            width=w - (text_x - left) - pad,
+            tags=(obj_id,)
+        )
+        return bottom
+
+    def draw_away_goal_shape(self, canvas, x, y, scale=60.0, text="Goal", module_text="",
+                             fill="lightyellow", outline_color=None, line_width=1,
+                             font_obj=None, obj_id: str = ""):
+        """Away Goal: rectangle, split line in lower half; mini module symbol in lower band; external module box below."""
+        outline_color = self._resolve_outline(outline_color)
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        pad = 4
+        t_w, t_h = self.get_text_size(text, font_obj)
+        w = max(scale, t_w + 2 * pad); h = max(scale * 0.6, t_h + 2 * pad)
+        left, top = x - w / 2, y - h / 2; right, bot = x + w / 2, y + h / 2
+
+        canvas.create_rectangle(left, top, right, bot, fill=fill, outline=outline_color, width=line_width, tags=(obj_id,))
+        split_y = top + 0.60 * h
+        canvas.create_line(left, split_y, right, split_y, fill=outline_color, width=line_width)
+
+        # miniature module symbol in lower band
+        band_h = bot - split_y
+        mini_w, mini_h = w * 0.12, band_h * 0.35
+        mini_x, mini_y = x - mini_w / 2, split_y + (band_h - mini_h) / 2
+        canvas.create_rectangle(mini_x, mini_y, mini_x + mini_w, mini_y + mini_h,
+                                fill="lightgray", outline=outline_color, width=line_width, tags=(obj_id,))
+
+        canvas.create_text(x, top + (split_y - top) / 2, text=text, font=font_obj,
+                           anchor="center", width=w - 2 * pad, tags=(obj_id,))
+
+        box_font = self._scaled_font(scale * 0.40)
+        self._draw_module_reference_box(canvas, x, bot, w, module_text, outline_color, line_width, box_font, obj_id)
+
+    def draw_away_solution_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Solution",
+        module_text="",
+        fill="lightyellow",
+        outline_color=None,
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        """Away Solution: top half-circle, shifted down by one radius; fused with body."""
+        outline_color = self._resolve_outline(outline_color)
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        pad = 4
+
+        t_w, t_h = self.get_text_size(text, font_obj)
+        w = max(scale, t_w + 2 * pad)
+        h = max(scale * 0.6, t_h + 2 * pad)
+
+        left, right = x - w / 2.0, x + w / 2.0
+        rect_top = y - h / 2.0
+        rect_bottom = y + h / 2.0
+
+        r = w / 2.0  # half-circle radius spans full width
+
+        # ---- FILLS (no outline → no seam) ----
+        canvas.create_rectangle(left, rect_top, right, rect_bottom,
+                                fill=fill, outline="", width=0, tags=(obj_id,))
+        # Shifted DOWN by one radius: [rect_top - r, rect_top + r]
+        canvas.create_arc(left, rect_top - r, right, rect_top + r,
+                          start=0, extent=180, style=tk.CHORD,
+                          fill=fill, outline="", tags=(obj_id,))
+
+        # Text
+        canvas.create_text(x, (rect_top + rect_bottom) / 2.0,
+                           text=text, font=font_obj, anchor="center",
+                           width=w - 2 * pad, tags=(obj_id,))
+
+        # ---- OUTLINES (single fused perimeter) ----
+        canvas.create_arc(left, rect_top - r, right, rect_top + r,
+                          start=0, extent=180, style=tk.ARC,
+                          outline=outline_color, width=line_width)
+        canvas.create_line(left, rect_top, left, rect_bottom,
+                           fill=outline_color, width=line_width)
+        canvas.create_line(right, rect_top, right, rect_bottom,
+                           fill=outline_color, width=line_width)
+        canvas.create_line(left, rect_bottom, right, rect_bottom,
+                           fill=outline_color, width=line_width)
+
+        # Module reference box
+        box_font = self._scaled_font(scale * 0.40)
+        self._draw_module_reference_box(canvas, x, rect_bottom, w, module_text,
+                                        outline_color, line_width, box_font, obj_id)
+
+    def draw_away_context_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Context",
+        module_text="",
+        fill="lightyellow",
+        outline_color=None,
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        """Away Context: half-capsule top moved DOWN by one cap height; fused with body."""
+        outline_color = self._resolve_outline(outline_color)
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        pad = 4
+
+        t_w, t_h = self.get_text_size(text, font_obj)
+        w = max(scale, t_w + 2 * pad)
+        rect_h = max(scale * 0.50, t_h + 2 * pad)
+
+        cap_h = max(12.0, min(w * 0.30, scale * 0.9))
+        r = min(cap_h / 2.0, w / 4.0)  # keep a straight segment
+
+        # Keep overall center at y: total height = rect_h + 2r
+        left, right = x - w / 2.0, x + w / 2.0
+        rect_top = y - (rect_h + 2 * r) / 2.0
+        rect_bottom = rect_top + 2 * r + rect_h  # full height
+
+        # ---- FILLS (no outlines) ----
+        # Top half-capsule now from rect_top -> rect_top + 2r
+        canvas.create_rectangle(left + r, rect_top, right - r, rect_top + 2 * r,
+                                fill=fill, outline="", width=0, tags=(obj_id,))
+        canvas.create_arc(left, rect_top, left + 2 * r, rect_top + 2 * r,
+                          start=0, extent=180, style=tk.CHORD,
+                          fill=fill, outline="", tags=(obj_id,))
+        canvas.create_arc(right - 2 * r, rect_top, right, rect_top + 2 * r,
+                          start=0, extent=180, style=tk.CHORD,
+                          fill=fill, outline="", tags=(obj_id,))
+        # Body rectangle starts where the capsule ends
+        body_top = rect_top + r
+        canvas.create_rectangle(left, body_top, right, rect_bottom,
+                                fill=fill, outline="", width=0, tags=(obj_id,))
+        # Micro overlap to kill any hairline seam
+        canvas.create_rectangle(left, body_top - 0.75, right, body_top + 0.75,
+                                fill=fill, outline="", width=0, tags=(obj_id,))
+
+        # Text centered in body
+        canvas.create_text(x, body_top + (rect_bottom - body_top) / 2.0,
+                           text=text, font=font_obj, anchor="center",
+                           width=w - 2 * pad, tags=(obj_id,))
+
+        # ---- OUTLINES (single fused perimeter) ----
+        canvas.create_line(left + r, rect_top, right - r, rect_top,
+                           fill=outline_color, width=line_width)
+        canvas.create_arc(left, rect_top, left + 2 * r, rect_top + 2 * r,
+                          start=90, extent=90, style=tk.ARC,
+                          outline=outline_color, width=line_width)
+        canvas.create_arc(right - 2 * r, rect_top, right, rect_top + 2 * r,
+                          start=0, extent=90, style=tk.ARC,
+                          outline=outline_color, width=line_width)
+        canvas.create_line(left, body_top, left, rect_bottom,
+                           fill=outline_color, width=line_width)
+        canvas.create_line(right, body_top, right, rect_bottom,
+                           fill=outline_color, width=line_width)
+        canvas.create_line(left, rect_bottom, right, rect_bottom,
+                           fill=outline_color, width=line_width)
+
+        # Module box
+        box_font = self._scaled_font(scale * 0.40)
+        self._draw_module_reference_box(canvas, x, rect_bottom, w, module_text,
+                                        outline_color, line_width, box_font, obj_id)
+
+    def _draw_away_assumption_or_justification(
+        self,
+        canvas,
+        x,
+        y,
+        scale,
+        text,
+        label,
+        module_text,
+        fill,
+        outline_color,
+        line_width,
+        font_obj,
+        obj_id,
+    ):
+        """Away Assumption/Justification: semi-ellipse moved DOWN by one cap height; fused; label clear."""
+        outline_color = self._resolve_outline(outline_color)
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        pad = 4
+
+        t_w, t_h = self.get_text_size(text, font_obj)
+        w = max(scale, t_w + 2 * pad)
+        h = max(scale * 0.60, t_h + 2 * pad)
+        left, right = x - w / 2.0, x + w / 2.0
+
+        # Body height h; cap height = 2*r_y
+        cap_h = max(12.0, min(w * 0.30, scale * 0.9))
+        r_y = cap_h / 2.0
+
+        # Keep center at y: total height = h + 2*r_y
+        rect_top = y - (h + 2 * r_y) / 2.0
+        rect_bottom = rect_top + 2 * r_y + h
+
+        # ---- FILLS (fused) ----
+        # Cap now from rect_top -> rect_top + 2*r_y
+        canvas.create_arc(left, rect_top, right, rect_top + 2 * r_y,
+                          start=0, extent=180, style=tk.CHORD,
+                          fill=fill, outline="", tags=(obj_id,))
+        # Body starts after cap
+        body_top = rect_top + r_y
+        canvas.create_rectangle(left, body_top, right, rect_bottom,
+                                fill=fill, outline="", width=0, tags=(obj_id,))
+        # Tiny overlap to avoid seams
+        canvas.create_rectangle(left, body_top - 0.75, right, body_top + 0.75,
+                                fill=fill, outline="", width=0, tags=(obj_id,))
+
+        # Text in body
+        canvas.create_text(x, body_top + (rect_bottom - body_top) / 2.0,
+                           text=text, font=font_obj, anchor="center",
+                           width=w - 2 * pad, tags=(obj_id,))
+
+        # Label above-right of cap (clear of stroke)
+        lbl_font = tkFont.Font(font=font_obj); lbl_font.configure(weight="bold")
+        canvas.create_text(right + pad, rect_top - pad,
+                           text=label, font=lbl_font, anchor="nw", tags=(obj_id,))
+
+        # ---- OUTLINES (single fused perimeter) ----
+        canvas.create_arc(left, rect_top, right, rect_top + 2 * r_y,
+                          start=0, extent=180, style=tk.ARC,
+                          outline=outline_color, width=line_width)
+        canvas.create_line(left, body_top, left, rect_bottom,
+                           fill=outline_color, width=line_width)
+        canvas.create_line(right, body_top, right, rect_bottom,
+                           fill=outline_color, width=line_width)
+        canvas.create_line(left, rect_bottom, right, rect_bottom,
+                           fill=outline_color, width=line_width)
+
+        # Module reference box
+        box_font = self._scaled_font(scale * 0.40)
+        self._draw_module_reference_box(canvas, x, rect_bottom, w, module_text,
+                                        outline_color, line_width, box_font, obj_id)
+
+
+    def draw_away_assumption_shape(self, canvas, x, y, scale=60.0, text="Assumption",
+                                   module_text="", fill="lightyellow", outline_color=None,
+                                   line_width=1, font_obj=None, obj_id: str = ""):
+        return self._draw_away_assumption_or_justification(canvas, x, y, scale, text, "A",
+                                                           module_text, fill, outline_color, line_width, font_obj, obj_id)
+
+    def draw_away_justification_shape(self, canvas, x, y, scale=60.0, text="Justification",
+                                      module_text="", fill="lightyellow", outline_color=None,
+                                      line_width=1, font_obj=None, obj_id: str = ""):
+        return self._draw_away_assumption_or_justification(canvas, x, y, scale, text, "J",
+                                                           module_text, fill, outline_color, line_width, font_obj, obj_id)
 
 gsn_drawing_helper = GSNDrawingHelper()
