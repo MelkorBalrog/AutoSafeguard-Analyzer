@@ -19001,6 +19001,44 @@ class AutoMLApp:
         messagebox.showwarning("Clone", "Cannot clone this node type.")
         return None
 
+    def _attach_pasted_node_strategy1(self, target, child, relation):
+        try:
+            target.add_child(child, relation=relation)
+            return True
+        except Exception:
+            return False
+
+    def _attach_pasted_node_strategy2(self, target, child, relation):
+        try:
+            if relation == "context":
+                target.context_children.append(child)
+            else:
+                target.children.append(child)
+            child.parents.append(target)
+            return True
+        except Exception:
+            return False
+
+    def _attach_pasted_node_strategy3(self, target, child, relation):
+        try:
+            target.add_child(child, relation)
+            return True
+        except Exception:
+            return False
+
+    def _attach_pasted_node_strategy4(self, target, child, relation):
+        return self._attach_pasted_node_strategy1(target, child, relation)
+
+    def _attach_pasted_node(self, target, child, relation):
+        for strat in (
+            self._attach_pasted_node_strategy1,
+            self._attach_pasted_node_strategy2,
+            self._attach_pasted_node_strategy3,
+            self._attach_pasted_node_strategy4,
+        ):
+            if strat(target, child, relation):
+                return
+
     def paste_node(self):
         if self.clipboard_node:
             target = None
@@ -19065,16 +19103,18 @@ class AutoMLApp:
             else:
                 source_diag = self._find_gsn_diagram(self.clipboard_node)
                 target_diag = self._find_gsn_diagram(target)
+                relation = getattr(self, "clipboard_relation", "solved")
                 if isinstance(self.clipboard_node, GSNNode) and source_diag is target_diag:
                     cloned_node = self._clone_for_paste(self.clipboard_node)
-                    target.children.append(cloned_node)
-                    cloned_node.parents.append(target)
+                    if cloned_node is None:
+                        messagebox.showwarning("Paste", "Cannot clone this node type.")
+                        return
+                    self._attach_pasted_node(target, cloned_node, relation)
                     if target_diag and cloned_node not in target_diag.nodes:
                         target_diag.add_node(cloned_node)
                     node_for_pos = cloned_node
                 else:
-                    target.children.append(self.clipboard_node)
-                    self.clipboard_node.parents.append(target)
+                    self._attach_pasted_node(target, self.clipboard_node, relation)
                     if isinstance(self.clipboard_node, GSNNode):
                         if target_diag and self.clipboard_node not in target_diag.nodes:
                             target_diag.add_node(self.clipboard_node)
