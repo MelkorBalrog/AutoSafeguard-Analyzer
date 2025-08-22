@@ -252,7 +252,6 @@ from gui.gsn_explorer import GSNExplorer
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_case_explorer import SafetyCaseExplorer
 from gui.gsn_diagram_window import GSNDiagramWindow, GSN_WINDOWS
-from gui.causal_bayesian_network_window import CBN_WINDOWS
 from gui.gsn_config_window import GSNElementConfig
 from gui.search_toolbox import SearchToolbox
 from gsn import GSNDiagram, GSNModule
@@ -18827,15 +18826,21 @@ class AutoMLApp:
             self.selected_node = node
             self.cut_mode = False
             return
-        win = self._focused_cbn_window()
+        win = getattr(self, "_cbn_window", None)
         if win and getattr(win, "selected_node", None):
             if getattr(win, "copy_selected", None):
                 win.copy_selected()
                 return
-        win = self._focused_gsn_window()
+        win = getattr(self, "active_gsn_window", None)
         if win and getattr(win, "selected_node", None):
             if getattr(win, "copy_selected", None):
                 win.copy_selected()
+                return
+        for ref in list(GSN_WINDOWS):
+            win = ref()
+            if win and getattr(win, "selected_node", None):
+                if getattr(win, "copy_selected", None):
+                    win.copy_selected()
                 return
         win = getattr(self, "active_arch_window", None)
         if win and getattr(win, "selected_obj", None):
@@ -18864,15 +18869,21 @@ class AutoMLApp:
             self.selected_node = node
             self.cut_mode = True
             return
-        win = self._focused_cbn_window()
+        win = getattr(self, "_cbn_window", None)
         if win and getattr(win, "selected_node", None):
             if getattr(win, "cut_selected", None):
                 win.cut_selected()
                 return
-        win = self._focused_gsn_window()
+        win = getattr(self, "active_gsn_window", None)
         if win and getattr(win, "selected_node", None):
             if getattr(win, "cut_selected", None):
                 win.cut_selected()
+                return
+        for ref in list(GSN_WINDOWS):
+            win = ref()
+            if win and getattr(win, "selected_node", None):
+                if getattr(win, "cut_selected", None):
+                    win.cut_selected()
                 return
         win = getattr(self, "active_arch_window", None)
         if win and getattr(win, "selected_obj", None):
@@ -18943,13 +18954,15 @@ class AutoMLApp:
                 self.cut_mode = False
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
-                cloned_node = self.clipboard_node
+                cloned_node = self.clone_node_preserving_id(self.clipboard_node)
                 target.children.append(cloned_node)
                 cloned_node.parents.append(target)
                 if isinstance(cloned_node, GSNNode):
                     diag = self._find_gsn_diagram(target)
-                    if diag and cloned_node not in diag.nodes:
+                    if diag:
                         diag.add_node(cloned_node)
+                cloned_node.x = target.x + 100
+                cloned_node.y = target.y + 100
                 messagebox.showinfo("Paste", "Node pasted successfully (copied).")
             AutoML_Helper.calculate_assurance_recursive(
                 self.root_node,
@@ -18958,19 +18971,27 @@ class AutoMLApp:
             self.update_views()
             return
         clip_type = getattr(self, "diagram_clipboard_type", None)
-        win = self._focused_cbn_window()
+        win = getattr(self, "_cbn_window", None)
         if win and getattr(self, "diagram_clipboard", None):
             if not clip_type or clip_type == "Causal Bayesian Network":
                 if getattr(win, "paste_selected", None):
                     win.paste_selected()
                     return
-        win = self._focused_gsn_window()
+        win = getattr(self, "active_gsn_window", None)
         if win and getattr(self, "diagram_clipboard", None):
             if not clip_type or clip_type == "GSN":
                 if getattr(win, "paste_selected", None):
                     win.paste_selected()
                     return
-        win = self._focused_arch_window(clip_type)
+        if (
+            (not win or (clip_type and clip_type != "GSN"))
+            and GSN_WINDOWS
+        ):
+            for ref in list(GSN_WINDOWS):
+                candidate = ref()
+                if candidate and (not clip_type or clip_type == "GSN"):
+                    win = candidate
+                    break
         if win and getattr(self, "diagram_clipboard", None):
             if not clip_type or clip_type == "GSN":
                 if getattr(win, "paste_selected", None):
@@ -19000,82 +19021,6 @@ class AutoMLApp:
         except Exception:
             pass
         return getattr(win, "has_focus", False)
-
-    def _gsn_window_strategy1(self):
-        win = getattr(self, "active_gsn_window", None)
-        if win and self._window_has_focus(win):
-            return win
-        return None
-
-    def _gsn_window_strategy2(self):
-        for ref in list(GSN_WINDOWS):
-            win = ref()
-            if win and self._window_has_focus(win):
-                return win
-        return None
-
-    def _gsn_window_strategy3(self):
-        win = getattr(self, "active_gsn_window", None)
-        if win:
-            return win
-        return None
-
-    def _gsn_window_strategy4(self):
-        for ref in list(GSN_WINDOWS):
-            win = ref()
-            if win:
-                return win
-        return None
-
-    def _focused_gsn_window(self):
-        for strat in (
-            self._gsn_window_strategy1,
-            self._gsn_window_strategy2,
-            self._gsn_window_strategy3,
-            self._gsn_window_strategy4,
-        ):
-            win = strat()
-            if win:
-                return win
-        return None
-
-    def _cbn_window_strategy1(self):
-        win = getattr(self, "_cbn_window", None)
-        if win and self._window_has_focus(win):
-            return win
-        return None
-
-    def _cbn_window_strategy2(self):
-        for ref in list(CBN_WINDOWS):
-            win = ref()
-            if win and self._window_has_focus(win):
-                return win
-        return None
-
-    def _cbn_window_strategy3(self):
-        win = getattr(self, "_cbn_window", None)
-        if win:
-            return win
-        return None
-
-    def _cbn_window_strategy4(self):
-        for ref in list(CBN_WINDOWS):
-            win = ref()
-            if win:
-                return win
-        return None
-
-    def _focused_cbn_window(self):
-        for strat in (
-            self._cbn_window_strategy1,
-            self._cbn_window_strategy2,
-            self._cbn_window_strategy3,
-            self._cbn_window_strategy4,
-        ):
-            win = strat()
-            if win:
-                return win
-        return None
 
     def _arch_window_strategy1(self, clip_type=None):
         win = getattr(self, "active_arch_window", None)
