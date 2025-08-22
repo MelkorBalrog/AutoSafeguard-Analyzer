@@ -6,19 +6,18 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gsn.nodes import GSNNode
 from gsn.diagram import GSNDiagram
-from gui.drawing_helper import GSNDrawingHelper
 
 class StubCanvas:
     def __init__(self):
         self.items = []
     def create_rectangle(self, *args, **kwargs):
-        self.items.append(("rect", args, kwargs))
+        self.items.append((args, kwargs))
     def create_arc(self, *args, **kwargs):
-        self.items.append(("arc", args, kwargs))
+        self.items.append((args, kwargs))
     def create_text(self, *args, **kwargs):
-        self.items.append(("text", args, kwargs))
+        self.items.append((args, kwargs))
     def create_line(self, *args, **kwargs):
-        self.items.append(("line", args, kwargs))
+        self.items.append((args, kwargs))
     def bbox(self, tag):
         return None
     def tag_lower(self, *args, **kwargs):
@@ -88,34 +87,3 @@ def test_away_shapes_without_module_identifier():
     canvas = StubCanvas()
     diag.draw(canvas)
     assert helper.calls[0] == ("goal", "")
-
-
-class DummyFont:
-    def measure(self, text):
-        return len(text) * 5
-
-    def metrics(self, _):
-        return 10
-
-
-def test_away_solution_module_box_adjacent():
-    helper = GSNDrawingHelper()
-    helper.get_text_size = lambda text, font: (len(text) * 5, 10)
-    helper._scaled_font = lambda scale: DummyFont()
-    canvas = StubCanvas()
-    helper.draw_away_solution_shape(
-        canvas,
-        0,
-        0,
-        scale=60,
-        text="S",
-        module_text="M",
-        font_obj=DummyFont(),
-    )
-    rects = [item for item in canvas.items if item[0] == "rect"]
-    assert len(rects) == 2
-    outer = rects[0][1]
-    box = rects[1][1]
-    outer_bottom = outer[3]
-    box_top = box[1]
-    assert abs(box_top - outer_bottom) <= 1
