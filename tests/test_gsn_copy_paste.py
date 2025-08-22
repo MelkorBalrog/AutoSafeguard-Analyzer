@@ -93,6 +93,5 @@ class GSNCopyPasteTests(unittest.TestCase):
         assert pasted is not ctx
         assert pasted.original is ctx
 
-
 if __name__ == "__main__":
     unittest.main()
