@@ -10,6 +10,7 @@ import sys
 import subprocess
 import copy
 import json
+import uuid
 import weakref
 from pathlib import Path
 from typing import Optional
@@ -829,103 +830,87 @@ class GSNDiagramWindow(tk.Frame):
             self._selected_connection = None
             self.refresh()
         
-    def _clone_node_strategy1(self, node: GSNNode) -> dict | None:
-        snap = node.to_dict()
-        snap.pop("unique_id", None)
-        snap.pop("original", None)
-        return snap
+    def _node_ref_strategy1(self, node: GSNNode) -> GSNNode | None:
+        return node
 
-    def _clone_node_strategy2(self, node: GSNNode) -> dict | None:
-        snap = json.loads(json.dumps(node.to_dict()))
-        snap.pop("unique_id", None)
-        snap.pop("original", None)
-        return snap
+    def _node_ref_strategy2(self, node: GSNNode) -> GSNNode | None:
+        return node.original if not node.is_primary_instance else node
 
-    def _clone_node_strategy3(self, node: GSNNode) -> dict | None:
-        snap = copy.deepcopy(node.to_dict())
-        snap.pop("unique_id", None)
-        snap.pop("original", None)
-        return snap
+    def _node_ref_strategy3(self, node: GSNNode) -> GSNNode | None:
+        return getattr(node, "original", node)
 
-    def _clone_node_strategy4(self, node: GSNNode) -> dict | None:
-        return {
-            "user_name": str(node.user_name),
-            "description": str(node.description),
-            "node_type": str(node.node_type),
-            "x": float(node.x),
-            "y": float(node.y),
-            "children": [c.unique_id for c in node.children],
-            "context": [c.unique_id for c in node.context_children],
-            "is_primary_instance": node.is_primary_instance,
-            "work_product": node.work_product,
-            "evidence_link": node.evidence_link,
-            "spi_target": node.spi_target,
-            "evidence_sufficient": node.evidence_sufficient,
-            "manager_notes": node.manager_notes,
-        }
+    def _node_ref_strategy4(self, node: GSNNode) -> GSNNode | None:
+        return self.id_to_node.get(node.unique_id, node)
 
-    def _clone_node(self, node: GSNNode) -> dict | None:
+    def _node_ref(self, node: GSNNode) -> GSNNode:
+        for strat in (
+            self._node_ref_strategy1,
+            self._node_ref_strategy2,
+            self._node_ref_strategy3,
+            self._node_ref_strategy4,
+        ):
+            ref = strat(node)
+            if ref:
+                return ref
+        return node
+
+    def _clone_node_strategy1(self, node: GSNNode, offset=(20, 20)) -> GSNNode | None:
+        clone = node.clone()
+        clone.x = node.x + offset[0]
+        clone.y = node.y + offset[1]
+        return clone
+
+    def _clone_node_strategy2(self, node: GSNNode, offset=(20, 20)) -> GSNNode | None:
+        data = node.to_dict()
+        data["x"] = data.get("x", 0) + offset[0]
+        data["y"] = data.get("y", 0) + offset[1]
+        data["original"] = node.original.unique_id if node.original else node.unique_id
+        node_map: dict[str, GSNNode] = {}
+        clone = GSNNode.from_dict(data, nodes=node_map)
+        GSNNode.resolve_references(node_map)
+        clone.is_primary_instance = False
+        return clone
+
+    def _clone_node_strategy3(self, node: GSNNode, offset=(20, 20)) -> GSNNode | None:
+        clone = copy.deepcopy(node)
+        clone.unique_id = str(uuid.uuid4())
+        clone.is_primary_instance = False
+        clone.original = node.original if not node.is_primary_instance else node
+        clone.x = node.x + offset[0]
+        clone.y = node.y + offset[1]
+        clone.children = []
+        clone.parents = []
+        clone.context_children = []
+        return clone
+
+    def _clone_node_strategy4(self, node: GSNNode, offset=(20, 20)) -> GSNNode | None:
+        clone = GSNNode(
+            node.user_name,
+            node.node_type,
+            description=node.description,
+            x=node.x + offset[0],
+            y=node.y + offset[1],
+            is_primary_instance=False,
+            original=node.original if not node.is_primary_instance else node,
+            work_product=node.work_product,
+            evidence_link=node.evidence_link,
+            spi_target=node.spi_target,
+            evidence_sufficient=node.evidence_sufficient,
+            manager_notes=node.manager_notes,
+        )
+        return clone
+
+    def _clone_from_clipboard(self, node: GSNNode) -> Optional[GSNNode]:
         for strat in (
             self._clone_node_strategy1,
             self._clone_node_strategy2,
             self._clone_node_strategy3,
             self._clone_node_strategy4,
         ):
-            snap = strat(node)
-            if snap:
-                return snap
-        return None
-
-    def _reconstruct_node_strategy1(
-        self, snap: dict, offset=(20, 20)
-    ) -> GSNNode:
-        data = copy.deepcopy(snap)
-        data["x"] = data.get("x", 0) + offset[0]
-        data["y"] = data.get("y", 0) + offset[1]
-        node_map: dict[str, GSNNode] = {}
-        node = GSNNode.from_dict(data, nodes=node_map)
-        GSNNode.resolve_references(node_map)
-        return node
-
-    def _reconstruct_node_strategy2(
-        self, snap: dict, offset=(20, 20)
-    ) -> GSNNode:
-        data = json.loads(json.dumps(snap))
-        data["x"] = data.get("x", 0) + offset[0]
-        data["y"] = data.get("y", 0) + offset[1]
-        node_map: dict[str, GSNNode] = {}
-        node = GSNNode.from_dict(data, nodes=node_map)
-        GSNNode.resolve_references(node_map)
-        return node
-
-    def _reconstruct_node_strategy3(
-        self, snap: dict, offset=(20, 20)
-    ) -> GSNNode:
-        return GSNNode(
-            snap.get("user_name", ""),
-            snap.get("node_type", "Goal"),
-            description=snap.get("description", ""),
-            x=snap.get("x", 0) + offset[0],
-            y=snap.get("y", 0) + offset[1],
-        )
-
-    def _reconstruct_node_strategy4(
-        self, snap: dict, offset=(20, 20)
-    ) -> GSNNode:
-        data = {**snap}
-        data["x"] = data.get("x", 0) + offset[0]
-        data["y"] = data.get("y", 0) + offset[1]
-        return GSNNode.from_dict(data, nodes={})
-
-    def _reconstruct_node(self, snap: dict) -> Optional[GSNNode]:
-        for strat in (
-            self._reconstruct_node_strategy1,
-            self._reconstruct_node_strategy2,
-            self._reconstruct_node_strategy3,
-            self._reconstruct_node_strategy4,
-        ):
             try:
-                return strat(copy.deepcopy(snap))
+                clone = strat(node)
+                if clone:
+                    return clone
             except Exception:
                 continue
         return None
@@ -933,10 +918,9 @@ class GSNDiagramWindow(tk.Frame):
     def copy_selected(self, _event=None) -> None:
         if not self.app or not self.selected_node:
             return
-        snap = self._clone_node(self.selected_node)
-        if snap:
-            self.app.diagram_clipboard = snap
-            self.app.diagram_clipboard_type = "GSN"
+        ref = self._node_ref(self.selected_node)
+        self.app.diagram_clipboard = ref
+        self.app.diagram_clipboard_type = "GSN"
 
     def cut_selected(self, _event=None) -> None:
         if not self.app or not self.selected_node:
@@ -959,8 +943,8 @@ class GSNDiagramWindow(tk.Frame):
                 "Paste", "Clipboard contains incompatible diagram element."
             )
             return
-        snap = copy.deepcopy(self.app.diagram_clipboard)
-        node = self._reconstruct_node(snap)
+        src = self.app.diagram_clipboard
+        node = self._clone_from_clipboard(src)
         if not node:
             return
         self.diagram.add_node(node)

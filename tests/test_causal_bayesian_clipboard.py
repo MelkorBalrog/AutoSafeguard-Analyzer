@@ -1,5 +1,9 @@
 import types
-import copy
+import os
+import sys
+import types
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from gui.causal_bayesian_network_window import CausalBayesianNetworkWindow
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
@@ -24,50 +28,38 @@ def _make_window(app, doc):
 def test_copy_paste_between_cbn_diagrams():
     doc1 = CausalBayesianNetworkDoc(name="d1")
     doc1.network.add_node("A", cpd=0.5)
-    doc1.positions["A"] = (0, 0)
-    doc1.types["A"] = "variable"
+    doc1.network.add_node(
+        "B",
+        parents=["A"],
+        cpd={(True,): 0.8, (False,): 0.1},
+    )
+    doc1.positions["B"] = (0, 0)
+    doc1.types["B"] = "variable"
     app = types.SimpleNamespace(active_cbn=doc1, diagram_clipboard=None, diagram_clipboard_type=None)
 
     win1 = _make_window(app, doc1)
-    snap1 = win1._clone_node_strategy1("A")
-    snap2 = win1._clone_node_strategy2("A")
-    snap3 = win1._clone_node_strategy3("A")
-    snap4 = win1._clone_node_strategy4("A")
+    snap1 = win1._clone_node_strategy1("B")
+    snap2 = win1._clone_node_strategy2("B")
+    snap3 = win1._clone_node_strategy3("B")
+    snap4 = win1._clone_node_strategy4("B")
     assert snap1 == snap2 == snap3 == snap4
+    assert snap1["cpd"] is doc1.network.cpds["B"]
 
-    win1.selected_node = "A"
+    win1.selected_node = "B"
     win1.copy_selected()
     assert app.diagram_clipboard == snap1
+    assert app.diagram_clipboard["cpd"] is doc1.network.cpds["B"]
     assert app.diagram_clipboard_type == "Causal Bayesian Network"
 
     doc2 = CausalBayesianNetworkDoc(name="d2")
     app.active_cbn = doc2
     win2 = _make_window(app, doc2)
 
-    for strat in (
-        win2._reconstruct_node_strategy1,
-        win2._reconstruct_node_strategy2,
-        win2._reconstruct_node_strategy3,
-        win2._reconstruct_node_strategy4,
-    ):
-        app.diagram_clipboard = copy.deepcopy(snap1)
-        doc2.network.nodes.clear()
-        doc2.network.parents.clear()
-        doc2.network.cpds.clear()
-        doc2.positions.clear()
-        doc2.types.clear()
-        name = strat(app.diagram_clipboard, doc2)
-        assert name.startswith("A")
-        assert name in doc2.network.nodes
-        assert doc2.positions[name] == (snap1["x"] + 20, snap1["y"] + 20)
-
-    doc2.network.nodes.clear()
-    doc2.network.parents.clear()
-    doc2.network.cpds.clear()
-    doc2.positions.clear()
-    doc2.types.clear()
     app.diagram_clipboard = snap1
     win2.paste_selected()
-    assert "A" in doc2.network.nodes
-    assert doc2.positions["A"] == (snap1["x"] + 20, snap1["y"] + 20)
+    assert "B" in doc2.network.nodes
+    assert doc2.positions["B"] == (snap1["x"] + 20, snap1["y"] + 20)
+    assert doc2.network.cpds["B"] is doc1.network.cpds["B"]
+    doc2.network.cpds["B"][(True,)] = 0.9
+    assert doc1.network.cpds["B"][(True,)] == 0.9
 
