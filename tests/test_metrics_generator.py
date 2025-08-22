@@ -21,7 +21,7 @@ def test_cli_writes_metrics_and_plots(tmp_path):
     script = repo_root / "tools" / "metrics_generator.py"
     subprocess.run(
         [
-            sys.executable,
+            "python",
             str(script),
             "--path",
             str(analysis_dir),

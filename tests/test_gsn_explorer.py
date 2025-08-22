@@ -242,11 +242,11 @@ def test_new_diagram_rejects_duplicate_name(monkeypatch):
 
     monkeypatch.setattr(simpledialog, "askstring", lambda *a, **k: "Goal")
     called = {}
-    monkeypatch.setattr(messagebox, "showwarning", lambda *a, **k: called.setdefault("warn", True))
+    monkeypatch.setattr(messagebox, "showerror", lambda *a, **k: called.setdefault("err", True))
 
     GSNExplorer.new_diagram(explorer)
 
-    assert called.get("warn")
+    assert called.get("err")
     assert len(mod.diagrams) == 1
 
 
