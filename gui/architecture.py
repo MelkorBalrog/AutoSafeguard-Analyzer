@@ -12,7 +12,6 @@ import math
 import re
 import types
 import weakref
-import copy
 from pathlib import Path
 from dataclasses import dataclass, field, asdict, replace
 from typing import Dict, List, Tuple
@@ -5809,9 +5808,12 @@ class SysMLDiagramWindow(tk.Frame):
     # ------------------------------------------------------------
     # Utility methods
     # ------------------------------------------------------------
-    def _find_object_strategy1(
-        self, x: float, y: float, prefer_port: bool = False
-    ) -> SysMLObject | None:
+    def find_object(self, x: float, y: float, prefer_port: bool = False) -> SysMLObject | None:
+        """Return the diagram object under ``(x, y)``.
+
+        When ``prefer_port`` is ``True`` ports are looked up first so they
+        are selected over overlapping parent objects like a Block Boundary.
+        """
         if prefer_port:
             for obj in reversed(self.objects):
                 if obj.obj_type != "Port":
@@ -5833,71 +5835,6 @@ class SysMLDiagramWindow(tk.Frame):
                 if (x - ox) ** 2 + (y - oy) ** 2 <= r**2:
                     return obj
             elif ox - w <= x <= ox + w and oy - h <= y <= oy + h:
-                return obj
-        return None
-
-    def _find_object_strategy2(
-        self, x: float, y: float, prefer_port: bool = False
-    ) -> SysMLObject | None:
-        if prefer_port:
-            for obj in self.objects:
-                if obj.obj_type != "Port":
-                    continue
-                ox = obj.x * self.zoom
-                oy = obj.y * self.zoom
-                w = obj.width * self.zoom / 2
-                h = obj.height * self.zoom / 2
-                if ox - w <= x <= ox + w and oy - h <= y <= oy + h:
-                    return obj
-
-        for obj in self.objects:
-            ox = obj.x * self.zoom
-            oy = obj.y * self.zoom
-            w = obj.width * self.zoom / 2
-            h = obj.height * self.zoom / 2
-            if ox - w <= x <= ox + w and oy - h <= y <= oy + h:
-                return obj
-        return None
-
-    def _find_object_strategy3(
-        self, x: float, y: float, prefer_port: bool = False
-    ) -> SysMLObject | None:
-        closest = None
-        best = float("inf")
-        for obj in self.objects:
-            ox = obj.x * self.zoom
-            oy = obj.y * self.zoom
-            w = obj.width * self.zoom / 2
-            h = obj.height * self.zoom / 2
-            if ox - w <= x <= ox + w and oy - h <= y <= oy + h:
-                dist = (x - ox) ** 2 + (y - oy) ** 2
-                if dist < best:
-                    best = dist
-                    closest = obj
-        return closest
-
-    def _find_object_strategy4(
-        self, x: float, y: float, prefer_port: bool = False
-    ) -> SysMLObject | None:
-        rx, ry = round(x), round(y)
-        for obj in reversed(self.objects):
-            ox = round(obj.x * self.zoom)
-            oy = round(obj.y * self.zoom)
-            w = round(obj.width * self.zoom / 2)
-            h = round(obj.height * self.zoom / 2)
-            if ox - w <= rx <= ox + w and oy - h <= ry <= oy + h:
-                return obj
-        return None
-
-    def find_object(self, x: float, y: float, prefer_port: bool = False) -> SysMLObject | None:
-        for strat in (
-            self._find_object_strategy1,
-            self._find_object_strategy2,
-            self._find_object_strategy3,
-            self._find_object_strategy4,
-        ):
-            obj = strat(x, y, prefer_port)
-            if obj:
                 return obj
         return None
 
@@ -9354,108 +9291,11 @@ class SysMLDiagramWindow(tk.Frame):
     # ------------------------------------------------------------
     # Clipboard operations
     # ------------------------------------------------------------
-    def _clone_object_strategy1(self, obj: SysMLObject) -> dict | None:
-        return asdict(obj)
-
-    def _clone_object_strategy2(self, obj: SysMLObject) -> dict | None:
-        try:
-            return json.loads(json.dumps(self._clone_object_strategy1(obj)))
-        except Exception:
-            return None
-
-    def _clone_object_strategy3(self, obj: SysMLObject) -> dict | None:
-        try:
-            return copy.deepcopy(self._clone_object_strategy1(obj))
-        except Exception:
-            return None
-
-    def _clone_object_strategy4(self, obj: SysMLObject) -> dict | None:
-        return {
-            "obj_id": obj.obj_id,
-            "obj_type": obj.obj_type,
-            "x": obj.x,
-            "y": obj.y,
-            "element_id": obj.element_id,
-            "width": obj.width,
-            "height": obj.height,
-            "properties": copy.deepcopy(obj.properties),
-            "requirements": copy.deepcopy(obj.requirements),
-            "locked": obj.locked,
-            "hidden": obj.hidden,
-            "collapsed": copy.deepcopy(obj.collapsed),
-            "phase": obj.phase,
-        }
-
-    def _clone_object(self, obj: SysMLObject) -> dict | None:
-        for strat in (
-            self._clone_object_strategy1,
-            self._clone_object_strategy2,
-            self._clone_object_strategy3,
-            self._clone_object_strategy4,
-        ):
-            snap = strat(obj)
-            if snap:
-                return snap
-        return None
-
-    def _reconstruct_object_strategy1(self, snap: dict, offset=(20, 20)) -> SysMLObject:
-        data = copy.deepcopy(snap)
-        data["obj_id"] = _get_next_id()
-        data["x"] = data.get("x", 0) + offset[0]
-        data["y"] = data.get("y", 0) + offset[1]
-        return SysMLObject(**data)
-
-    def _reconstruct_object_strategy2(self, snap: dict, offset=(20, 20)) -> SysMLObject:
-        data = json.loads(json.dumps(snap))
-        data["obj_id"] = _get_next_id()
-        data["x"] = data.get("x", 0) + offset[0]
-        data["y"] = data.get("y", 0) + offset[1]
-        return SysMLObject(**data)
-
-    def _reconstruct_object_strategy3(self, snap: dict, offset=(20, 20)) -> SysMLObject:
-        return SysMLObject(
-            obj_id=_get_next_id(),
-            obj_type=snap.get("obj_type", "Block"),
-            x=snap.get("x", 0) + offset[0],
-            y=snap.get("y", 0) + offset[1],
-            element_id=snap.get("element_id"),
-            width=snap.get("width", 80.0),
-            height=snap.get("height", 40.0),
-            properties=copy.deepcopy(snap.get("properties", {})),
-            requirements=copy.deepcopy(snap.get("requirements", [])),
-            locked=snap.get("locked", False),
-            hidden=snap.get("hidden", False),
-            collapsed=copy.deepcopy(snap.get("collapsed", {})),
-            phase=snap.get("phase"),
-        )
-
-    def _reconstruct_object_strategy4(self, snap: dict, offset=(20, 20)) -> SysMLObject:
-        data = {**snap}
-        data.setdefault("width", 80.0)
-        data.setdefault("height", 40.0)
-        data.setdefault("properties", {})
-        data.setdefault("requirements", [])
-        data.setdefault("collapsed", {})
-        data["obj_id"] = _get_next_id()
-        data["x"] = data.get("x", 0) + offset[0]
-        data["y"] = data.get("y", 0) + offset[1]
-        return SysMLObject(**data)
-
-    def _reconstruct_object(self, snap: dict, offset=(20, 20)) -> SysMLObject | None:
-        for strat in (
-            self._reconstruct_object_strategy1,
-            self._reconstruct_object_strategy2,
-            self._reconstruct_object_strategy3,
-            self._reconstruct_object_strategy4,
-        ):
-            try:
-                return strat(copy.deepcopy(snap), offset)
-            except Exception:
-                continue
-        return None
     def copy_selected(self, _event=None):
         if self.selected_obj and self.app:
             self.app.active_arch_window = self
+            import copy
+
             diag = self.repo.diagrams.get(self.diagram_id)
             if self.selected_obj.obj_type == "System Boundary":
                 children = [
@@ -9468,10 +9308,7 @@ class SysMLDiagramWindow(tk.Frame):
                 self.app.diagram_clipboard = copy.deepcopy(items)
                 self.app.diagram_clipboard_parent_name = None
             else:
-                snap = self._clone_object(self.selected_obj)
-                if not snap:
-                    return
-                self.app.diagram_clipboard = snap
+                self.app.diagram_clipboard = copy.deepcopy(self.selected_obj)
                 parent_name = None
                 if self.selected_obj.obj_type == "Work Product":
                     pid = self.selected_obj.properties.get("parent")
@@ -9487,6 +9324,8 @@ class SysMLDiagramWindow(tk.Frame):
             return
         if self.selected_obj and self.app:
             self.app.active_arch_window = self
+            import copy
+
             diag = self.repo.diagrams.get(self.diagram_id)
             if self.selected_obj.obj_type == "System Boundary":
                 children = [
@@ -9502,10 +9341,7 @@ class SysMLDiagramWindow(tk.Frame):
                     self.remove_object(child)
                 self.remove_object(self.selected_obj)
             else:
-                snap = self._clone_object(self.selected_obj)
-                if not snap:
-                    return
-                self.app.diagram_clipboard = snap
+                self.app.diagram_clipboard = copy.deepcopy(self.selected_obj)
                 parent_name = None
                 if self.selected_obj.obj_type == "Work Product":
                     pid = self.selected_obj.properties.get("parent")
@@ -9565,13 +9401,11 @@ class SysMLDiagramWindow(tk.Frame):
                 self.sort_objects()
                 self.selected_obj = area
             else:
-                new_obj = self._reconstruct_object(clip)
-                if not new_obj:
-                    return
-                if (
-                    new_obj.obj_type == "Work Product"
-                    and getattr(self.app, "diagram_clipboard_parent_name", None)
-                ):
+                new_obj = copy.deepcopy(clip)
+                new_obj.obj_id = _get_next_id()
+                new_obj.x += 20
+                new_obj.y += 20
+                if new_obj.obj_type == "Work Product" and getattr(self.app, "diagram_clipboard_parent_name", None):
                     parent_name = self.app.diagram_clipboard_parent_name
                     parent_obj = None
                     if (
@@ -9581,9 +9415,7 @@ class SysMLDiagramWindow(tk.Frame):
                     ):
                         parent_obj = self.selected_obj
                     if not parent_obj:
-                        parent_obj = self._place_process_area(
-                            parent_name, new_obj.x, new_obj.y
-                        )
+                        parent_obj = self._place_process_area(parent_name, new_obj.x, new_obj.y)
                     new_obj.properties["parent"] = str(parent_obj.obj_id)
                     self._constrain_to_parent(new_obj, parent_obj)
                 if new_obj.obj_type == "System Boundary":
