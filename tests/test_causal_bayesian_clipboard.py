@@ -67,4 +67,3 @@ def test_cbn_copy_paste_shares_node_between_docs():
 
     doc2.network.cpds["B"][(True,)] = 0.9
     assert doc1.network.cpds["B"][(True,)] == 0.9
-
