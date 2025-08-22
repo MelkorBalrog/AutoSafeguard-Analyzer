@@ -10693,14 +10693,12 @@ class AutoMLApp:
             self.dragging_node.y = new_y
             if self.dragging_node.is_primary_instance:
                 self.move_subtree(self.dragging_node, dx, dy)
-            self.sync_nodes_by_id(self.dragging_node)
             self.redraw_canvas()
 
     def on_canvas_release(self, event):
         if self.dragging_node:
             self.dragging_node.x = round(self.dragging_node.x/self.grid_size)*self.grid_size
             self.dragging_node.y = round(self.dragging_node.y/self.grid_size)*self.grid_size
-            self.sync_nodes_by_id(self.dragging_node)
             self.push_undo_state()
         self.dragging_node = None
         self.drag_offset_x = 0
@@ -18851,8 +18849,98 @@ class AutoMLApp:
         elif diag.diag_type == "Control Flow Diagram":
             ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.refresh_all()
-        
+
+    def _diagram_copy_strategy1(self):
+        win = self._focused_cbn_window()
+        if win and getattr(win, "selected_node", None) and getattr(win, "copy_selected", None):
+            self.selected_node = None
+            self.clipboard_node = None
+            self.cut_mode = False
+            win.copy_selected()
+            return True
+        return False
+
+    def _diagram_copy_strategy2(self):
+        win = self._focused_gsn_window()
+        if win and getattr(win, "selected_node", None) and getattr(win, "copy_selected", None):
+            self.selected_node = None
+            self.clipboard_node = None
+            self.cut_mode = False
+            win.copy_selected()
+            return True
+        return False
+
+    def _diagram_copy_strategy3(self):
+        win = getattr(self, "active_arch_window", None)
+        if win and getattr(win, "selected_obj", None) and getattr(win, "copy_selected", None):
+            self.selected_node = None
+            self.clipboard_node = None
+            self.cut_mode = False
+            win.copy_selected()
+            return True
+        return False
+
+    def _diagram_copy_strategy4(self):
+        for ref in list(ARCH_WINDOWS):
+            win = ref()
+            if win and getattr(win, "selected_obj", None) and getattr(win, "copy_selected", None):
+                self.selected_node = None
+                self.clipboard_node = None
+                self.cut_mode = False
+                win.copy_selected()
+                return True
+        return False
+
+    def _diagram_cut_strategy1(self):
+        win = self._focused_cbn_window()
+        if win and getattr(win, "selected_node", None) and getattr(win, "cut_selected", None):
+            self.selected_node = None
+            self.clipboard_node = None
+            self.cut_mode = False
+            win.cut_selected()
+            return True
+        return False
+
+    def _diagram_cut_strategy2(self):
+        win = self._focused_gsn_window()
+        if win and getattr(win, "selected_node", None) and getattr(win, "cut_selected", None):
+            self.selected_node = None
+            self.clipboard_node = None
+            self.cut_mode = False
+            win.cut_selected()
+            return True
+        return False
+
+    def _diagram_cut_strategy3(self):
+        win = getattr(self, "active_arch_window", None)
+        if win and getattr(win, "selected_obj", None) and getattr(win, "cut_selected", None):
+            self.selected_node = None
+            self.clipboard_node = None
+            self.cut_mode = False
+            win.cut_selected()
+            return True
+        return False
+
+    def _diagram_cut_strategy4(self):
+        for ref in list(ARCH_WINDOWS):
+            win = ref()
+            if win and getattr(win, "selected_obj", None) and getattr(win, "cut_selected", None):
+                self.selected_node = None
+                self.clipboard_node = None
+                self.cut_mode = False
+                win.cut_selected()
+                return True
+        return False
+
     def copy_node(self):
+        for strat in (
+            self._diagram_copy_strategy1,
+            self._diagram_copy_strategy2,
+            self._diagram_copy_strategy3,
+            self._diagram_copy_strategy4,
+        ):
+            if strat():
+                return
         node = self.selected_node
         if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
             sel = self.analysis_tree.selection()
@@ -18872,31 +18960,18 @@ class AutoMLApp:
                 rel = "solved"
             self.clipboard_relation = rel
             return
-        win = self._focused_cbn_window()
-        if win and getattr(win, "selected_node", None):
-            if getattr(win, "copy_selected", None):
-                win.copy_selected()
-                return
-        win = self._focused_gsn_window()
-        if win and getattr(win, "selected_node", None):
-            if getattr(win, "copy_selected", None):
-                win.copy_selected()
-                return
-        win = getattr(self, "active_arch_window", None)
-        if win and getattr(win, "selected_obj", None):
-            if getattr(win, "copy_selected", None):
-                win.copy_selected()
-                return
-        for ref in list(ARCH_WINDOWS):
-            win = ref()
-            if win and getattr(win, "selected_obj", None):
-                if getattr(win, "copy_selected", None):
-                    win.copy_selected()
-                return
         messagebox.showwarning("Copy", "Select a non-root node to copy.")
 
     def cut_node(self):
         """Store the currently selected node for a cut & paste operation."""
+        for strat in (
+            self._diagram_cut_strategy1,
+            self._diagram_cut_strategy2,
+            self._diagram_cut_strategy3,
+            self._diagram_cut_strategy4,
+        ):
+            if strat():
+                return
         node = self.selected_node
         if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
             sel = self.analysis_tree.selection()
@@ -18916,27 +18991,6 @@ class AutoMLApp:
                 rel = "solved"
             self.clipboard_relation = rel
             return
-        win = self._focused_cbn_window()
-        if win and getattr(win, "selected_node", None):
-            if getattr(win, "cut_selected", None):
-                win.cut_selected()
-                return
-        win = self._focused_gsn_window()
-        if win and getattr(win, "selected_node", None):
-            if getattr(win, "cut_selected", None):
-                win.cut_selected()
-                return
-        win = getattr(self, "active_arch_window", None)
-        if win and getattr(win, "selected_obj", None):
-            if getattr(win, "cut_selected", None):
-                win.cut_selected()
-                return
-        for ref in list(ARCH_WINDOWS):
-            win = ref()
-            if win and getattr(win, "selected_obj", None):
-                if getattr(win, "cut_selected", None):
-                    win.cut_selected()
-                return
         if getattr(self, "active_arch_window", None) or ARCH_WINDOWS:
             return
         messagebox.showwarning("Cut", "Select a non-root node to cut.")
@@ -18949,6 +19003,9 @@ class AutoMLApp:
             node.children = []
             node.parents = []
             node.context_children = []
+            node.is_primary_instance = False
+            if getattr(node, "original", None) is None:
+                node.original = node
             for child in old_children:
                 self._reset_gsn_clone(child)
 
@@ -19093,9 +19150,8 @@ class AutoMLApp:
                 self.cut_mode = False
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
-                source_diag = self._find_gsn_diagram(self.clipboard_node)
                 target_diag = self._find_gsn_diagram(target)
-                if isinstance(self.clipboard_node, GSNNode) and source_diag is target_diag:
+                if isinstance(self.clipboard_node, GSNNode):
                     cloned_node = self._clone_for_paste(self.clipboard_node)
                     target.children.append(cloned_node)
                     cloned_node.parents.append(target)
@@ -19169,7 +19225,10 @@ class AutoMLApp:
             sel = nb.select()
             if sel:
                 tab = nb.nametowidget(sel)
-                if getattr(tab, "gsn_window", None) is win:
+                if (
+                    getattr(tab, "gsn_window", None) is win
+                    or getattr(tab, "arch_window", None) is win
+                ):
                     return True
         except Exception:
             pass
@@ -19254,7 +19313,7 @@ class AutoMLApp:
     def _arch_window_strategy1(self, clip_type=None):
         win = getattr(self, "active_arch_window", None)
         if win and (not clip_type or self._get_diag_type(win) == clip_type):
-            if self._window_has_focus(win):
+            if self._window_has_focus(win) or self._window_in_selected_tab(win):
                 return win
         return None
 
@@ -19262,21 +19321,23 @@ class AutoMLApp:
         for ref in list(ARCH_WINDOWS):
             win = ref()
             if win and (not clip_type or self._get_diag_type(win) == clip_type):
-                if self._window_has_focus(win):
+                if self._window_has_focus(win) or self._window_in_selected_tab(win):
                     return win
         return None
 
     def _arch_window_strategy3(self, clip_type=None):
         win = getattr(self, "active_arch_window", None)
         if win and (not clip_type or self._get_diag_type(win) == clip_type):
-            return win
+            if self._window_in_selected_tab(win):
+                return win
         return None
 
     def _arch_window_strategy4(self, clip_type=None):
         for ref in list(ARCH_WINDOWS):
             win = ref()
             if win and (not clip_type or self._get_diag_type(win) == clip_type):
-                return win
+                if self._window_in_selected_tab(win):
+                    return win
         return None
 
     def _focused_arch_window(self, clip_type=None):
@@ -19496,37 +19557,7 @@ class AutoMLApp:
         the original, the values are simply pushed to all clones.
         """
 
-        attrs = [
-            "node_type",
-            "user_name",
-            "description",
-            "manager_notes",
-            "rationale",
-            "quant_value",
-            "gate_type",
-            "severity",
-            "input_subtype",
-            "equation",
-            "detailed_equation",
-            "is_page",
-            "failure_prob",
-            "prob_formula",
-            "failure_mode_ref",
-            "fmea_effect",
-            "fmea_cause",
-            "fmea_severity",
-            "fmea_occurrence",
-            "fmea_detection",
-            "fmea_component",
-            "fmeda_malfunction",
-            "fmeda_safety_goal",
-            "fmeda_diag_cov",
-            "fmeda_fit",
-            "fmeda_spfm",
-            "fmeda_lpfm",
-            "fmeda_fault_type",
-            "fmeda_fault_fraction",
-        ]
+        attrs = ["user_name", "description", "manager_notes"]
 
         for strat in (
             self._sync_nodes_by_id_strategy1,
