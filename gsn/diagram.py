@@ -342,13 +342,8 @@ class GSNDiagram:
         elif typ == "module":
             ratio = 0.6
             scale = max(base_scale, width + padding, (height + padding) / ratio)
-            draw_func = (
-                self.drawing_helper.draw_module_shape
-                if node.is_primary_instance
-                else self.drawing_helper.draw_away_module_shape
-            )
             _call(
-                draw_func,
+                self.drawing_helper.draw_module_shape,
                 canvas,
                 x,
                 y,

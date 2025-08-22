@@ -256,7 +256,7 @@ from gui.causal_bayesian_network_window import CBN_WINDOWS
 from gui.gsn_config_window import GSNElementConfig
 from gui.search_toolbox import SearchToolbox
 from gsn import GSNDiagram, GSNModule
-from gsn.nodes import GSNNode
+from gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
 from gui.splash_screen import SplashScreen
@@ -18928,28 +18928,45 @@ class AutoMLApp:
         messagebox.showwarning("Cut", "Select a non-root node to cut.")
 
     # ------------------------------------------------------------------
+    def _reset_gsn_clone(self, node):
+        if isinstance(node, GSNNode):
+            node.unique_id = str(uuid.uuid4())
+            node.is_primary_instance = True
+            node.original = node
+            for child in getattr(node, "children", []):
+                self._reset_gsn_clone(child)
+
+    # ------------------------------------------------------------------
     def _clone_for_paste_strategy1(self, node):
         if hasattr(node, "clone"):
             return node.clone()
         import copy
-        return copy.deepcopy(node)
+        clone = copy.deepcopy(node)
+        self._reset_gsn_clone(clone)
+        return clone
 
     def _clone_for_paste_strategy2(self, node):
         import copy
         if isinstance(node, GSNNode):
             return node.clone()
-        return copy.deepcopy(node)
+        clone = copy.deepcopy(node)
+        self._reset_gsn_clone(clone)
+        return clone
 
     def _clone_for_paste_strategy3(self, node):
         try:
             return node.clone()  # type: ignore[attr-defined]
         except Exception:
             import copy
-            return copy.deepcopy(node)
+            clone = copy.deepcopy(node)
+            self._reset_gsn_clone(clone)
+            return clone
 
     def _clone_for_paste_strategy4(self, node):
         import copy
-        return copy.deepcopy(node)
+        clone = copy.deepcopy(node)
+        self._reset_gsn_clone(clone)
+        return clone
 
     def _clone_for_paste(self, node):
         for strat in (
@@ -19202,6 +19219,10 @@ class AutoMLApp:
         """
 
         if isinstance(node, GSNNode):
+            if node.node_type not in ALLOWED_AWAY_TYPES:
+                raise ValueError(
+                    "Only Goal, Solution, Context, Assumption, and Justification nodes can be cloned."
+                )
             # GSN nodes provide their own clone method.  Offset the position of
             # the cloned node so that it does not overlap the original.
             new_node = node.clone()

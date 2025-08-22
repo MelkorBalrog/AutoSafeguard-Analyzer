@@ -1524,20 +1524,19 @@ class GSNDrawingHelper(FTADrawingHelper):
         top = y - h / 2
         right = x + w / 2
         bottom = y + h / 2
-        self._fill_gradient_rect(canvas, left, top, right, bottom, fill)
         canvas.create_rectangle(
             left,
             top,
             right,
             bottom,
-            fill="",
+            fill=fill,
             outline=outline_color,
             width=line_width,
             tags=(obj_id,),
         )
-        line_y = top + h * 0.7
+        line_y = top + h * 0.6
         canvas.create_line(left, line_y, right, line_y, fill=outline_color, width=line_width)
-        module_scale = h * 0.25
+        module_scale = (bottom - line_y) * 0.5
         self.draw_module_shape(
             canvas,
             x,
@@ -1600,13 +1599,12 @@ class GSNDrawingHelper(FTADrawingHelper):
         right = x + w / 2
         rect_bottom = y + h / 2
         top = rect_top - radius
-        self._fill_gradient_rect(canvas, left, rect_top, right, rect_bottom, fill)
         canvas.create_rectangle(
             left,
             rect_top,
             right,
             rect_bottom,
-            fill="",
+            fill=fill,
             outline=outline_color,
             width=line_width,
             tags=(obj_id,),
@@ -1672,13 +1670,12 @@ class GSNDrawingHelper(FTADrawingHelper):
         right = x + w / 2
         rect_top = y - h / 2
         rect_bottom = y + h / 2 - radius
-        self._fill_gradient_rect(canvas, left, rect_top, right, rect_bottom + radius, fill)
         canvas.create_rectangle(
             left,
             rect_top,
             right,
             rect_bottom,
-            fill="",
+            fill=fill,
             outline=outline_color,
             width=line_width,
             tags=(obj_id,),
@@ -1744,13 +1741,12 @@ class GSNDrawingHelper(FTADrawingHelper):
         right = x + w / 2
         rect_bottom = y + h / 2
         rect_top = y - h / 2 + radius
-        self._fill_gradient_rect(canvas, left, rect_top - radius, right, rect_bottom, fill)
         canvas.create_rectangle(
             left,
             rect_top,
             right,
             rect_bottom,
-            fill="",
+            fill=fill,
             outline=outline_color,
             width=line_width,
             tags=(obj_id,),
