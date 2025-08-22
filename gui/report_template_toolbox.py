@@ -222,7 +222,9 @@ class ReportTemplateEditor(tk.Frame):
         apply_translucid_button_style()
         self.app = app
         self.config_path = Path(
-            config_path or Path(__file__).resolve().parents[1] / "config/report_template.json"
+            config_path
+            or Path(__file__).resolve().parents[1]
+            / "config/product_report_template.json"
         )
         try:
             self.data = load_report_template(self.config_path)
