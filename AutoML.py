@@ -19063,34 +19063,26 @@ class AutoMLApp:
                 self.cut_mode = False
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
-                if isinstance(self.clipboard_node, GSNNode):
-                    src_diag = self._find_gsn_diagram(self.clipboard_node)
-                    tgt_diag = self._find_gsn_diagram(target)
-                    if tgt_diag and src_diag is not tgt_diag:
-                        node_to_paste = self.clipboard_node
-                    else:
-                        node_to_paste = self._clone_for_paste(self.clipboard_node)
-                        if node_to_paste is None:
-                            return
+                source_diag = self._find_gsn_diagram(self.clipboard_node)
+                target_diag = self._find_gsn_diagram(target)
+                if isinstance(self.clipboard_node, GSNNode) and source_diag is target_diag:
+                    cloned_node = self._clone_for_paste(self.clipboard_node)
+                    target.children.append(cloned_node)
+                    cloned_node.parents.append(target)
+                    if target_diag and cloned_node not in target_diag.nodes:
+                        target_diag.add_node(cloned_node)
+                    node_for_pos = cloned_node
                 else:
-                    node_to_paste = self._clone_for_paste(self.clipboard_node)
-                    if node_to_paste is None:
-                        return
-                relation = getattr(self, "clipboard_relation", "solved")
-                if hasattr(target, "add_child"):
-                    target.add_child(node_to_paste, relation=relation)
-                else:
-                    if relation == "context":
-                        target.context_children.append(node_to_paste)
-                    else:
-                        target.children.append(node_to_paste)
-                    node_to_paste.parents.append(target)
-                if isinstance(node_to_paste, GSNNode):
-                    diag = self._find_gsn_diagram(target)
-                    if diag and node_to_paste not in diag.nodes:
-                        diag.add_node(node_to_paste)
-                node_to_paste.x = target.x + 100
-                node_to_paste.y = target.y + 100
+                    target.children.append(self.clipboard_node)
+                    self.clipboard_node.parents.append(target)
+                    if isinstance(self.clipboard_node, GSNNode):
+                        if target_diag and self.clipboard_node not in target_diag.nodes:
+                            target_diag.add_node(self.clipboard_node)
+                    node_for_pos = self.clipboard_node
+                node_for_pos.x = target.x + 100
+                node_for_pos.y = target.y + 100
+                if hasattr(node_for_pos, "display_label"):
+                    node_for_pos.display_label = node_for_pos.display_label.replace(" (clone)", "")
                 messagebox.showinfo("Paste", "Node pasted successfully (copied).")
             try:
                 AutoML_Helper.calculate_assurance_recursive(
