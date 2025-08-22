@@ -19011,7 +19011,8 @@ class AutoMLApp:
 
     def paste_node(self):
         if self.clipboard_node:
-            # NOTE: This logic is final; do not modify without explicit user approval.
+            # NOTE: Paste logic and target resolution chain (selection → focused diagram root → app root)
+            # are final and must not be modified without explicit user approval.
             target = None
             sel = self.analysis_tree.selection()
             if sel:
@@ -19020,6 +19021,16 @@ class AutoMLApp:
                     target = self.find_node_by_id(self.root_node, int(tags[0]))
             if not target:
                 target = self.selected_node or self.root_node
+            if not target:
+                win = self._focused_gsn_window()
+                if win and getattr(win, "diagram", None):
+                    target = win.diagram.root
+            if not target:
+                win = self._focused_cbn_window()
+                if win and getattr(win, "diagram", None):
+                    target = win.diagram.root
+            if not target:
+                target = self.root_node
             if not target:
                 win = self._focused_gsn_window()
                 if win and getattr(win, "diagram", None):
@@ -19082,8 +19093,9 @@ class AutoMLApp:
                 self.cut_mode = False
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
+                source_diag = self._find_gsn_diagram(self.clipboard_node)
                 target_diag = self._find_gsn_diagram(target)
-                if isinstance(self.clipboard_node, GSNNode):
+                if isinstance(self.clipboard_node, GSNNode) and source_diag is target_diag:
                     cloned_node = self._clone_for_paste(self.clipboard_node)
                     target.children.append(cloned_node)
                     cloned_node.parents.append(target)
