@@ -829,52 +829,6 @@ class GSNDiagramWindow(tk.Frame):
             self._selected_connection = None
             self.refresh()
         
-    def _clone_node_strategy1(self, node: GSNNode) -> dict | None:
-        snap = node.to_dict()
-        snap.pop("unique_id", None)
-        snap.pop("original", None)
-        return snap
-
-    def _clone_node_strategy2(self, node: GSNNode) -> dict | None:
-        snap = json.loads(json.dumps(node.to_dict()))
-        snap.pop("unique_id", None)
-        snap.pop("original", None)
-        return snap
-
-    def _clone_node_strategy3(self, node: GSNNode) -> dict | None:
-        snap = copy.deepcopy(node.to_dict())
-        snap.pop("unique_id", None)
-        snap.pop("original", None)
-        return snap
-
-    def _clone_node_strategy4(self, node: GSNNode) -> dict | None:
-        return {
-            "user_name": str(node.user_name),
-            "description": str(node.description),
-            "node_type": str(node.node_type),
-            "x": float(node.x),
-            "y": float(node.y),
-            "children": [c.unique_id for c in node.children],
-            "context": [c.unique_id for c in node.context_children],
-            "is_primary_instance": node.is_primary_instance,
-            "work_product": node.work_product,
-            "evidence_link": node.evidence_link,
-            "spi_target": node.spi_target,
-            "evidence_sufficient": node.evidence_sufficient,
-            "manager_notes": node.manager_notes,
-        }
-
-    def _clone_node(self, node: GSNNode) -> dict | None:
-        for strat in (
-            self._clone_node_strategy1,
-            self._clone_node_strategy2,
-            self._clone_node_strategy3,
-            self._clone_node_strategy4,
-        ):
-            snap = strat(node)
-            if snap:
-                return snap
-        return None
 
     def _reconstruct_node_strategy1(
         self, snap: dict, offset=(20, 20)
@@ -930,13 +884,52 @@ class GSNDiagramWindow(tk.Frame):
                 continue
         return None
 
+    def _node_from_clipboard_strategy1(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, GSNNode):
+            return clip.clone()
+        return None
+
+    def _node_from_clipboard_strategy2(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, dict):
+            try:
+                return self._reconstruct_node_strategy1(copy.deepcopy(clip))
+            except Exception:
+                return None
+        return None
+
+    def _node_from_clipboard_strategy3(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, dict):
+            try:
+                return self._reconstruct_node_strategy2(copy.deepcopy(clip))
+            except Exception:
+                return None
+        return None
+
+    def _node_from_clipboard_strategy4(self, clip) -> Optional[GSNNode]:
+        if isinstance(clip, dict):
+            try:
+                return self._reconstruct_node_strategy3(copy.deepcopy(clip))
+            except Exception:
+                return None
+        return None
+
+    def _node_from_clipboard(self, clip) -> Optional[GSNNode]:
+        for strat in (
+            self._node_from_clipboard_strategy1,
+            self._node_from_clipboard_strategy2,
+            self._node_from_clipboard_strategy3,
+            self._node_from_clipboard_strategy4,
+        ):
+            node = strat(clip)
+            if node:
+                return node
+        return None
+
     def copy_selected(self, _event=None) -> None:
         if not self.app or not self.selected_node:
             return
-        snap = self._clone_node(self.selected_node)
-        if snap:
-            self.app.diagram_clipboard = snap
-            self.app.diagram_clipboard_type = "GSN"
+        self.app.diagram_clipboard = self.selected_node
+        self.app.diagram_clipboard_type = "GSN"
 
     def cut_selected(self, _event=None) -> None:
         if not self.app or not self.selected_node:
@@ -959,10 +952,12 @@ class GSNDiagramWindow(tk.Frame):
                 "Paste", "Clipboard contains incompatible diagram element."
             )
             return
-        snap = copy.deepcopy(self.app.diagram_clipboard)
-        node = self._reconstruct_node(snap)
+        clip = self.app.diagram_clipboard
+        node = self._node_from_clipboard(clip)
         if not node:
             return
+        node.x += 20
+        node.y += 20
         self.diagram.add_node(node)
         self.id_to_node[node.unique_id] = node
         self.selected_node = node
