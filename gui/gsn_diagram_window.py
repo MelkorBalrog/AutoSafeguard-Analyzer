@@ -830,17 +830,25 @@ class GSNDiagramWindow(tk.Frame):
             self.refresh()
         
     def _clone_node_strategy1(self, node: GSNNode) -> dict | None:
-        return node.to_dict()
+        snap = node.to_dict()
+        snap.pop("unique_id", None)
+        snap.pop("original", None)
+        return snap
 
     def _clone_node_strategy2(self, node: GSNNode) -> dict | None:
-        return json.loads(json.dumps(node.to_dict()))
+        snap = json.loads(json.dumps(node.to_dict()))
+        snap.pop("unique_id", None)
+        snap.pop("original", None)
+        return snap
 
     def _clone_node_strategy3(self, node: GSNNode) -> dict | None:
-        return copy.deepcopy(node.to_dict())
+        snap = copy.deepcopy(node.to_dict())
+        snap.pop("unique_id", None)
+        snap.pop("original", None)
+        return snap
 
     def _clone_node_strategy4(self, node: GSNNode) -> dict | None:
         return {
-            "unique_id": node.unique_id,
             "user_name": str(node.user_name),
             "description": str(node.description),
             "node_type": str(node.node_type),
@@ -849,7 +857,6 @@ class GSNDiagramWindow(tk.Frame):
             "children": [c.unique_id for c in node.children],
             "context": [c.unique_id for c in node.context_children],
             "is_primary_instance": node.is_primary_instance,
-            "original": node.original.unique_id if node.original else None,
             "work_product": node.work_product,
             "evidence_link": node.evidence_link,
             "spi_target": node.spi_target,

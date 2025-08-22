@@ -31,6 +31,8 @@ def test_gsn_copy_paste_between_diagrams():
     snap3 = win1._clone_node_strategy3(root1)
     snap4 = win1._clone_node_strategy4(root1)
     assert snap1 == snap2 == snap3 == snap4
+    assert "unique_id" not in snap1
+    assert "original" not in snap1
 
     win1.selected_node = root1
     win1.copy_selected()
