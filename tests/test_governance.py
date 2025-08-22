@@ -2,7 +2,7 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from gsn.governance import RelationshipStatus, can_view_gsn_argumentation
+from gov.governance import RelationshipStatus, can_view_gsn_argumentation
 from analysis.safety_management import ALLOWED_USAGE, ALLOWED_ANALYSIS_USAGE
 
 
