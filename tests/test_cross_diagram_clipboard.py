@@ -264,7 +264,6 @@ def test_cut_paste_between_governance_diagrams():
     assert len(win2.objects) == 1
     assert win2.objects[0].obj_type == "Plan"
 
-
 def test_copy_paste_process_area_between_diagrams():
     ARCH_WINDOWS.clear()
     app = AutoMLApp.__new__(AutoMLApp)
