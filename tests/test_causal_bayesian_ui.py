@@ -146,6 +146,7 @@ def _setup_window():
     win.current_tool = "Select"
     win._place_table = lambda *a, **k: None
     win._position_table = lambda *a, **k: None
+    win._drag_table = lambda *a, **k: None
     win.after = lambda *a, **k: None
     win.after_cancel = lambda *a, **k: None
     win.selected_node = None
@@ -204,6 +205,7 @@ def _setup_window_real():
     win.current_tool = "Select"
     win._place_table = lambda *a, **k: None
     win._position_table = lambda *a, **k: None
+    win._drag_table = lambda *a, **k: None
     win.after = lambda *a, **k: None
     win.after_cancel = lambda *a, **k: None
     win.selected_node = None
@@ -383,6 +385,7 @@ def test_update_all_tables_refreshes_dependencies():
     win.current_tool = "Select"
     win._place_table = lambda *a, **k: None
     win._position_table = lambda *a, **k: None
+    win._drag_table = lambda *a, **k: None
 
     app = DummyApp()
     net = CausalBayesianNetwork()
