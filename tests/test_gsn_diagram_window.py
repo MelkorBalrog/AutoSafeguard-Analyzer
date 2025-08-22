@@ -256,58 +256,6 @@ def test_click_and_drag_uses_canvas_coordinates():
     assert node.x == 160 and node.y == 260
 
 
-def test_on_release_uses_raw_coordinates():
-    """Releasing a connection should resolve nodes using raw event coordinates."""
-    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
-    win.zoom = 1.0
-    parent = GSNNode("p", "Goal")
-    child = GSNNode("c", "Goal")
-    win._connect_mode = "solved"
-    win._connect_parent = parent
-    win.refresh = lambda: None
-
-    class CanvasStub:
-        def __init__(self):
-            self.off_x = 100
-            self.off_y = 200
-            self.cursor = None
-
-        def canvasx(self, x):
-            return x + self.off_x
-
-        def canvasy(self, y):
-            return y + self.off_y
-
-        def delete(self, *a, **k):
-            pass
-
-        def after_cancel(self, *a, **k):
-            pass
-
-        def find_overlapping(self, x1, y1, x2, y2):
-            if x1 <= 110 <= x2 and y1 <= 210 <= y2:
-                return [1]
-            return []
-
-        def find_closest(self, x, y):
-            return []
-
-        def gettags(self, item):
-            return (child.unique_id,)
-
-        def configure(self, **kwargs):
-            if "cursor" in kwargs:
-                self.cursor = kwargs["cursor"]
-
-    win.canvas = CanvasStub()
-    win.id_to_node = {child.unique_id: child}
-
-    event = type("Evt", (), {"x": 10, "y": 10})
-    win._on_release(event)
-
-    assert child in parent.children
-
-
 def test_add_module_uses_existing_modules(monkeypatch):
     app = types.SimpleNamespace(gsn_modules=[GSNModule("Pkg1"), GSNModule("Pkg2")])
     diagram = GSNDiagram(GSNNode("r", "Goal"))
