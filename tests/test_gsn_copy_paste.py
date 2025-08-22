@@ -61,10 +61,12 @@ class GSNCopyPasteTests(unittest.TestCase):
         self.app.copy_node()
         self.app.selected_node = self.other  # paste into a different goal
         self.app.paste_node()
-        self.assertEqual(len(self.diagram.nodes), 3)
+        self.assertEqual(len(self.diagram.nodes), 4)
         self.assertEqual(len(self.other.children), 1)
         cloned = self.other.children[0]
-        self.assertIs(cloned, self.child)
+        self.assertIsNot(cloned, self.child)
+        self.assertNotEqual(cloned.unique_id, self.child.unique_id)
+        self.assertIs(cloned.original, self.child.original)
         self.assertIn(cloned, self.diagram.nodes)
 
 
