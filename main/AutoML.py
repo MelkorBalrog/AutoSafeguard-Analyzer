@@ -2566,6 +2566,8 @@ class AutoMLApp:
         self.failures: list[str] = []
         self.triggering_conditions: list[str] = []
         self.functional_insufficiencies: list[str] = []
+        self.triggering_condition_nodes = []
+        self.functional_insufficiency_nodes = []
         self.hazop_docs = []  # list of HazopDoc
         self.hara_docs = []   # list of HaraDoc
         self.stpa_docs = []   # list of StpaDoc
@@ -4532,17 +4534,41 @@ class AutoMLApp:
                 parts.append(p)
         return ";".join(parts) if changed else value
 
-    def _remove_name_from_list(self, value: str, target: str) -> str:
+    def _remove_name_from_list(self, value: str, name: str) -> str:
         parts = []
-        changed = False
         for p in value.split(";"):
             p = p.strip()
-            if not p or p == target:
-                if p == target:
-                    changed = True
-                continue
-            parts.append(p)
-        return ";".join(parts) if changed else value
+            if p and p != name:
+                parts.append(p)
+        return ";".join(parts)
+
+    def add_triggering_condition(self, name: str) -> None:
+        self.push_undo_state()
+        name = (name or "").strip()
+        if not name or name in self.triggering_conditions:
+            return
+        node = FaultTreeNode(name, "Triggering Condition")
+        self.triggering_condition_nodes.append(node)
+        if name not in self.triggering_conditions:
+            self.triggering_conditions.append(name)
+        self.update_triggering_condition_list()
+        self.update_views()
+
+    def delete_triggering_condition(self, name: str) -> None:
+        self.push_undo_state()
+        self.triggering_condition_nodes = [
+            n for n in self.triggering_condition_nodes if n.user_name != name
+        ]
+        for doc in self.fi2tc_docs + self.tc2fi_docs:
+            for e in doc.entries:
+                val = e.get("triggering_conditions", "")
+                new_val = self._remove_name_from_list(val, name)
+                if new_val != val:
+                    e["triggering_conditions"] = new_val
+        if name in self.triggering_conditions:
+            self.triggering_conditions.remove(name)
+        self.update_triggering_condition_list()
+        self.update_views()
 
     def rename_triggering_condition(self, old: str, new: str) -> None:
         self.push_undo_state()
@@ -4557,7 +4583,39 @@ class AutoMLApp:
                 new_val = self._replace_name_in_list(val, old, new)
                 if new_val != val:
                     e["triggering_conditions"] = new_val
+        if old in self.triggering_conditions:
+            idx = self.triggering_conditions.index(old)
+            self.triggering_conditions[idx] = new
         self.update_triggering_condition_list()
+        self.update_views()
+
+    def add_functional_insufficiency(self, name: str) -> None:
+        self.push_undo_state()
+        name = (name or "").strip()
+        if not name or name in self.functional_insufficiencies:
+            return
+        node = FaultTreeNode(name, "Functional Insufficiency")
+        node.gate_type = "AND"
+        self.functional_insufficiency_nodes.append(node)
+        if name not in self.functional_insufficiencies:
+            self.functional_insufficiencies.append(name)
+        self.update_functional_insufficiency_list()
+        self.update_views()
+
+    def delete_functional_insufficiency(self, name: str) -> None:
+        self.push_undo_state()
+        self.functional_insufficiency_nodes = [
+            n for n in self.functional_insufficiency_nodes if n.user_name != name
+        ]
+        for doc in self.fi2tc_docs + self.tc2fi_docs:
+            for e in doc.entries:
+                val = e.get("functional_insufficiencies", "")
+                new_val = self._remove_name_from_list(val, name)
+                if new_val != val:
+                    e["functional_insufficiencies"] = new_val
+        if name in self.functional_insufficiencies:
+            self.functional_insufficiencies.remove(name)
+        self.update_functional_insufficiency_list()
         self.update_views()
 
     def rename_functional_insufficiency(self, old: str, new: str) -> None:
@@ -4573,6 +4631,9 @@ class AutoMLApp:
                 new_val = self._replace_name_in_list(val, old, new)
                 if new_val != val:
                     e["functional_insufficiencies"] = new_val
+        if old in self.functional_insufficiencies:
+            idx = self.functional_insufficiencies.index(old)
+            self.functional_insufficiencies[idx] = new
         self.update_functional_insufficiency_list()
         self.update_views()
 
@@ -10964,16 +11025,26 @@ class AutoMLApp:
 
     def get_all_triggering_conditions(self):
         """Return all triggering condition nodes."""
-        return [n for n in self.get_all_nodes_in_model() if n.node_type.upper() == "TRIGGERING CONDITION"]
+        nodes = [
+            n
+            for n in self.get_all_nodes_in_model()
+            if n.node_type.upper() == "TRIGGERING CONDITION"
+        ]
+        nodes.extend(self.triggering_condition_nodes)
+        unique = {n.unique_id: n for n in nodes}
+        return list(unique.values())
 
     def get_all_functional_insufficiencies(self):
         """Return all functional insufficiency nodes."""
-        return [
+        nodes = [
             n
             for n in self.get_all_nodes_in_model()
             if n.node_type.upper() == "FUNCTIONAL INSUFFICIENCY"
             or (getattr(n, "input_subtype", "") or "").lower() == "functional insufficiency"
         ]
+        nodes.extend(self.functional_insufficiency_nodes)
+        unique = {n.unique_id: n for n in nodes}
+        return list(unique.values())
 
     def get_all_scenario_names(self):
         """Return the list of scenario names from all scenario libraries."""
@@ -13688,6 +13759,29 @@ class AutoMLApp:
                 for name in self.triggering_conditions:
                     w.writerow([name])
             messagebox.showinfo("Export", "Triggering conditions exported.")
+        def add_tc():
+            name = simpledialog.askstring("Triggering Condition", "Name:")
+            if name:
+                self.add_triggering_condition(name.strip())
+                refresh()
+
+        def edit_tc():
+            sel = lb.curselection()
+            if not sel:
+                return
+            current = lb.get(sel[0])
+            name = simpledialog.askstring("Triggering Condition", "Name:", initialvalue=current)
+            if name and name != current:
+                self.rename_triggering_condition(current, name.strip())
+                refresh()
+
+        def del_tc():
+            sel = list(lb.curselection())
+            for idx in reversed(sel):
+                name = lb.get(idx)
+                if messagebox.askyesno("Delete", f"Delete triggering condition '{name}'?"):
+                    self.delete_triggering_condition(name)
+            refresh()
 
         btn = ttk.Frame(win)
         btn.pack(side=tk.RIGHT, fill=tk.Y)
@@ -14015,6 +14109,29 @@ class AutoMLApp:
                 for name in self.functional_insufficiencies:
                     w.writerow([name])
             messagebox.showinfo("Export", "Functional insufficiencies exported.")
+        def add_fi():
+            name = simpledialog.askstring("Functional Insufficiency", "Name:")
+            if name:
+                self.add_functional_insufficiency(name.strip())
+                refresh()
+
+        def edit_fi():
+            sel = lb.curselection()
+            if not sel:
+                return
+            current = lb.get(sel[0])
+            name = simpledialog.askstring("Functional Insufficiency", "Name:", initialvalue=current)
+            if name and name != current:
+                self.rename_functional_insufficiency(current, name.strip())
+                refresh()
+
+        def del_fi():
+            sel = list(lb.curselection())
+            for idx in reversed(sel):
+                name = lb.get(idx)
+                if messagebox.askyesno("Delete", f"Delete functional insufficiency '{name}'?"):
+                    self.delete_functional_insufficiency(name)
+            refresh()
 
         btn = ttk.Frame(win)
         btn.pack(side=tk.RIGHT, fill=tk.Y)
