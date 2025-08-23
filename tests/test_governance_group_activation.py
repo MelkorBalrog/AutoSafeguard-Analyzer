@@ -46,6 +46,7 @@ class DummyMenu:
         ("Safety & Security Case", "GSN"),
         ("GSN Argumentation", "GSN"),
         ("FMEA", "Qualitative Analysis"),
+        ("Prototype Assurance Analysis", "Qualitative Analysis"),
         ("FMEDA", "Quantitative Analysis"),
         ("Causal Bayesian Network Analysis", "Quantitative Analysis"),
         ("Mission Profile", "Quantitative Analysis"),

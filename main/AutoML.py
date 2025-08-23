@@ -2221,6 +2221,11 @@ class AutoMLApp:
             "FMEDA Manager",
             "show_fmeda_list",
         ),
+        "Prototype Assurance Analysis": (
+            "Safety Analysis",
+            "Prototype Assurance Analysis",
+            "create_paa_diagram",
+        ),
         "FTA": (
             "Safety Analysis",
             "FTA Cut Sets",
@@ -2289,6 +2294,7 @@ class AutoMLApp:
         "FI2TC": "Qualitative Analysis",
         "TC2FI": "Qualitative Analysis",
         "FMEA": "Qualitative Analysis",
+        "Prototype Assurance Analysis": "Qualitative Analysis",
         "FMEDA": "Quantitative Analysis",
         "Mission Profile": "Quantitative Analysis",
         "Reliability Analysis": "Quantitative Analysis",
@@ -2853,6 +2859,14 @@ class AutoMLApp:
             label="Fault Prioritization",
             command=self.open_fault_prioritization_window,
         )
+        qualitative_menu.add_command(
+            label="Prototype Assurance Analysis",
+            command=self.create_paa_diagram,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus.setdefault("Prototype Assurance Analysis", []).append(
+            (qualitative_menu, qualitative_menu.index("end"))
+        )
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
         quantitative_menu.add_command(
@@ -3206,6 +3220,7 @@ class AutoMLApp:
             "Safety Analysis": [
                 "Fault Prioritization",
                 "Cause & Effect Diagram",
+                "Prototype Assurance Analysis",
             ],
             "Configuration": [
                 "Diagram Rule Editor",
@@ -4867,6 +4882,7 @@ class AutoMLApp:
         new_event = FaultTreeNode("", "TOP EVENT")
         new_event.x, new_event.y = 300, 200
         new_event.is_top_event = True
+        new_event.analysis_mode = "FTA"
         self.top_events.append(new_event)
         self.root_node = new_event
         # Track creation for lifecycle phase filtering
@@ -10139,7 +10155,12 @@ class AutoMLApp:
             if node:
                 old = node.user_name
                 node.user_name = new
-                self.safety_mgmt_toolbox.rename_document("FTA", old, new)
+                analysis = (
+                    "Prototype Assurance Analysis"
+                    if getattr(getattr(self, "canvas", None), "mode", "") == "PAA"
+                    else "FTA"
+                )
+                self.safety_mgmt_toolbox.rename_document(analysis, old, new)
         elif kind == "arch" and repo.diagrams.get(ident):
             repo.diagrams[ident].name = new
         elif kind == "gov":
@@ -10163,7 +10184,12 @@ class AutoMLApp:
             old = node.name
             node.user_name = new
             if hasattr(self, "safety_mgmt_toolbox"):
-                self.safety_mgmt_toolbox.rename_document("FTA", old, node.name)
+                analysis = (
+                    "Prototype Assurance Analysis"
+                    if getattr(getattr(self, "canvas", None), "mode", "") == "PAA"
+                    else "FTA"
+                )
+                self.safety_mgmt_toolbox.rename_document(analysis, old, node.name)
         elif kind == "pkg" and repo.elements.get(ident):
             repo.elements[ident].name = new
         self.update_views()
@@ -10419,6 +10445,7 @@ class AutoMLApp:
             "FMEA": "reliability_analyses",
             "FMEDA": "fmeda_components",
             "FTA": "top_events",
+            "Prototype Assurance Analysis": "top_events",
             "Architecture Diagram": "arch_diagrams",
             "Scenario Library": "scenario_libraries",
             "ODD": "odd_libraries",
@@ -10745,12 +10772,16 @@ class AutoMLApp:
         menu.add_command(label="Edit Controllability", command=lambda: self.edit_controllability())
         menu.add_command(label="Edit Page Flag", command=lambda: self.edit_page_flag())
         menu.add_separator()
-        menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"))
-        menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"))
-        menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"))
-        menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"))
-        menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
-        menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
+        if getattr(self.canvas, "mode", "") == "PAA":
+            menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"))
+            menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"))
+        else:
+            menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"))
+            menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"))
+            menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"))
+            menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"))
+            menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
+            menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
         menu.tk_popup(event.x_root, event.y_root)
 
     def on_canvas_click(self, event):
@@ -11884,10 +11915,28 @@ class AutoMLApp:
                 nonlocal safety_root
                 if safety_root is None:
                     safety_root = tree.insert("", "end", text="Safety Analysis", open=True)
-            if "FTA" in enabled or getattr(self, "top_events", []):
+
+            paa_events = [
+                te for te in getattr(self, "top_events", [])
+                if getattr(te, "analysis_mode", "FTA") == "PAA"
+            ]
+            fta_events = [
+                te for te in getattr(self, "top_events", [])
+                if getattr(te, "analysis_mode", "FTA") != "PAA"
+            ]
+
+            if "Prototype Assurance Analysis" in enabled or paa_events:
+                _ensure_safety_root()
+                paa_root = tree.insert(safety_root, "end", text="PAAs", open=True)
+                for idx, te in enumerate(paa_events):
+                    if not _visible("Prototype Assurance Analysis", te.name):
+                        continue
+                    tree.insert(paa_root, "end", text=te.name, tags=("paa", str(te.unique_id)))
+
+            if "FTA" in enabled or fta_events:
                 _ensure_safety_root()
                 fta_root = tree.insert(safety_root, "end", text="FTAs", open=True)
-                for idx, te in enumerate(self.top_events):
+                for idx, te in enumerate(fta_events):
                     if not _visible("FTA", te.name):
                         continue
                     tree.insert(fta_root, "end", text=te.name, tags=("fta", str(te.unique_id)))
@@ -12442,10 +12491,18 @@ class AutoMLApp:
 
     def add_node_of_type(self, event_type):
         self.push_undo_state()
+        if getattr(self.canvas, "mode", "") == "PAA":
+            allowed = {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"}
+            if event_type.upper() not in allowed:
+                messagebox.showwarning(
+                    "Invalid",
+                    "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis.",
+                )
+                return
         # If a node is selected, ensure it is a primary instance.
         if self.selected_node:
             if not self.selected_node.is_primary_instance:
-                messagebox.showwarning("Invalid Operation", 
+                messagebox.showwarning("Invalid Operation",
                     "Cannot add new elements to a clone node.\nPlease select the original node instead.")
                 return
             parent_node = self.selected_node
@@ -12691,7 +12748,12 @@ class AutoMLApp:
         self.top_events.append(new_event)
         self.root_node = new_event
         if hasattr(self, "safety_mgmt_toolbox"):
-            self.safety_mgmt_toolbox.register_created_work_product("FTA", new_event.name)
+            analysis = (
+                "Prototype Assurance Analysis"
+                if getattr(getattr(self, "canvas", None), "mode", "") == "PAA"
+                else "FTA"
+            )
+            self.safety_mgmt_toolbox.register_created_work_product(analysis, new_event.name)
         self.update_views()
 
     def delete_top_events_for_malfunction(self, name: str) -> None:
@@ -12702,11 +12764,16 @@ class AutoMLApp:
             return
         for te in removed:
             if hasattr(self, "safety_mgmt_toolbox"):
-                self.safety_mgmt_toolbox.register_deleted_work_product("FTA", te.name)
+                analysis = (
+                    "Prototype Assurance Analysis"
+                    if getattr(getattr(self, "canvas", None), "mode", "") == "PAA"
+                    else "FTA"
+                )
+                self.safety_mgmt_toolbox.register_deleted_work_product(analysis, te.name)
             self.top_events.remove(te)
             if hasattr(self, "safety_mgmt_toolbox"):
                 self.safety_mgmt_toolbox.register_deleted_work_product(
-                    "FTA", te.user_name
+                    analysis, te.user_name
                 )
         if self.root_node in removed:
             self.root_node = self.top_events[0] if self.top_events else FaultTreeNode("", "TOP EVENT")
@@ -18643,6 +18710,26 @@ class AutoMLApp:
         self.canvas.bind("<Double-1>", self.on_canvas_double_click)
         self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
 
+    def create_paa_diagram(self):
+        """Initialize a Prototype Assurance Analysis diagram."""
+        self._create_fta_tab()
+        if getattr(self, "canvas", None) is not None:
+            self.canvas.mode = "PAA"
+        # Automatically create the top-level event for PAA mode
+        new_event = FaultTreeNode("", "TOP EVENT")
+        new_event.x, new_event.y = 300, 200
+        new_event.is_top_event = True
+        new_event.analysis_mode = "PAA"
+        if not hasattr(self, "top_events"):
+            self.top_events = []
+        self.top_events.append(new_event)
+        self.root_node = new_event
+        if hasattr(self, "safety_mgmt_toolbox"):
+            self.safety_mgmt_toolbox.register_created_work_product(
+                "Prototype Assurance Analysis", new_event.user_name
+            )
+        self.update_views()
+
     def _reset_fta_state(self):
         """Clear references to the FTA tab and its canvas."""
         self.canvas_tab = None
@@ -22835,6 +22922,7 @@ class PageDiagram:
         self.app = app
         self.root_node = page_gate_node
         self.canvas = canvas
+        self.mode = getattr(canvas, "mode", "")
         self.zoom = 1.0
         self.diagram_font = tkFont.Font(family="Arial", size=int(8 * self.zoom))
         self.grid_size = 20
@@ -22940,14 +23028,18 @@ class PageDiagram:
         if node.node_type.upper() not in ["TOP EVENT", "BASIC EVENT"]:
             menu.add_command(label="Edit Page Flag", command=lambda: self.context_edit_page_flag(node))
         menu.add_separator()
-        menu.add_command(label="Add Confidence", command=lambda: self.context_add("Confidence Level"))
-        menu.add_command(label="Add Robustness", command=lambda: self.context_add("Robustness Score"))
-        menu.add_command(label="Add Gate", command=lambda: self.context_add("GATE"))
-        menu.add_command(label="Add Basic Event", command=lambda: self.context_add("Basic Event"))
-        menu.add_command(label="Add Triggering Condition", command=lambda: self.context_add("Triggering Condition"))
-        menu.add_command(label="Add Functional Insufficiency", command=lambda: self.context_add("Functional Insufficiency"))
-        menu.add_command(label="Add Gate from Failure Mode", command=lambda: self.context_add_gate_from_failure_mode())
-        menu.add_command(label="Add Fault Event", command=lambda: self.context_add_fault_event())
+        if getattr(self, "mode", "") == "PAA":
+            menu.add_command(label="Add Confidence", command=lambda: self.context_add("Confidence Level"))
+            menu.add_command(label="Add Robustness", command=lambda: self.context_add("Robustness Score"))
+        else:
+            menu.add_command(label="Add Confidence", command=lambda: self.context_add("Confidence Level"))
+            menu.add_command(label="Add Robustness", command=lambda: self.context_add("Robustness Score"))
+            menu.add_command(label="Add Gate", command=lambda: self.context_add("GATE"))
+            menu.add_command(label="Add Basic Event", command=lambda: self.context_add("Basic Event"))
+            menu.add_command(label="Add Triggering Condition", command=lambda: self.context_add("Triggering Condition"))
+            menu.add_command(label="Add Functional Insufficiency", command=lambda: self.context_add("Functional Insufficiency"))
+            menu.add_command(label="Add Gate from Failure Mode", command=lambda: self.context_add_gate_from_failure_mode())
+            menu.add_command(label="Add Fault Event", command=lambda: self.context_add_fault_event())
         menu.tk_popup(event.x_root, event.y_root)
 
     def context_edit(self, node):
