@@ -219,12 +219,51 @@ class GSNDiagram:
         return None
 
     # ------------------------------------------------------------------
-    def _find_module_name(self, node: GSNNode) -> str:
-        """Return the name of the module containing ``node``'s original."""
-        original = getattr(node, "original", node)
-        for parent in getattr(original, "parents", []):
+    def _find_module_name_strategy1(self, node: GSNNode) -> str:
+        for parent in getattr(getattr(node, "original", node), "parents", []):
             if getattr(parent, "node_type", "") == "Module":
                 return getattr(parent, "user_name", "")
+        return ""
+
+    def _find_module_name_strategy2(self, node: GSNNode) -> str:
+        for parent in getattr(node, "parents", []):
+            if getattr(parent, "node_type", "") == "Module":
+                return getattr(parent, "user_name", "")
+        return ""
+
+    def _find_module_name_strategy3(self, node: GSNNode) -> str:
+        parents = []
+        if getattr(node, "original", None):
+            parents.extend(getattr(node.original, "parents", []))
+        parents.extend(getattr(node, "parents", []))
+        for parent in parents:
+            if getattr(parent, "node_type", "") == "Module":
+                return getattr(parent, "user_name", "")
+        return ""
+
+    def _find_module_name_strategy4(self, node: GSNNode) -> str:
+        try:
+            return next(
+                p.user_name
+                for p in getattr(getattr(node, "original", node), "parents", [])
+                if getattr(p, "node_type", "") == "Module"
+            )
+        except StopIteration:
+            return ""
+
+    def _find_module_name(self, node: GSNNode) -> str:
+        for strat in (
+            self._find_module_name_strategy1,
+            self._find_module_name_strategy2,
+            self._find_module_name_strategy3,
+            self._find_module_name_strategy4,
+        ):
+            try:
+                name = strat(node)
+                if name:
+                    return name
+            except Exception:
+                continue
         return ""
 
     # ------------------------------------------------------------------
