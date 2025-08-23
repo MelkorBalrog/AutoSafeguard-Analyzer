@@ -2329,6 +2329,7 @@ class AutoMLApp:
         self.fta_root_node = None
         self.cta_root_node = None
         self.paa_root_node = None
+        self.analysis_tabs = {}
         self.shared_product_goals = {}
         self.selected_node = None
         self.clone_offset_counter = {}
@@ -3342,6 +3343,7 @@ class AutoMLApp:
         # event.  This avoids the spurious "Node 1" appearing at startup.
         # Initialize the canvas related attributes so tab-close callbacks work
         # before the FTA tab has ever been created.
+        self.analysis_tabs = {}
         self.canvas_tab = None
         self.canvas_frame = None
         self.canvas = None
@@ -10824,6 +10826,11 @@ class AutoMLApp:
         return counts
 
     def get_node_fill_color(self, node):
+        mode = getattr(getattr(self, "canvas", None), "diagram_mode", "FTA")
+        if mode == "CTA":
+            return "#EE82EE"
+        if mode == "PAA":
+            return "#40E0D0"
         return "#FAD7A0"
 
     def on_right_mouse_press(self, event):
@@ -18820,26 +18827,85 @@ class AutoMLApp:
         diagram_mode: str
             The operational mode of the diagram (``"FTA"`` or ``"CTA"``).
         """
-        self.canvas_tab = ttk.Frame(self.doc_nb)
-        self.doc_nb.add(self.canvas_tab, text="FTA" if diagram_mode == "FTA" else diagram_mode)
+        tabs = getattr(self, "analysis_tabs", {})
+        existing = tabs.get(diagram_mode)
+        if existing and existing["tab"].winfo_exists():
+            self.canvas_tab = existing["tab"]
+            self.canvas_frame = existing["tab"]
+            self.canvas = existing["canvas"]
+            self.hbar = existing["hbar"]
+            self.vbar = existing["vbar"]
+            self.diagram_mode = diagram_mode
+            self.doc_nb.select(self.canvas_tab)
+            self._update_analysis_menus()
+            return
 
-        self.canvas_frame = self.canvas_tab
-        self.canvas = tk.Canvas(self.canvas_frame, bg=StyleManager.get_instance().canvas_bg)
-        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
-        self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
-        self.vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
-        self.vbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.canvas.config(xscrollcommand=self.hbar.set, yscrollcommand=self.vbar.set,
-                           scrollregion=(0, 0, 2000, 2000))
-        self.canvas.bind("<ButtonPress-3>", self.on_right_mouse_press)
-        self.canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
-        self.canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
-        self.canvas.bind("<Button-1>", self.on_canvas_click)
-        self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
-        self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-        self.canvas.bind("<Double-1>", self.on_canvas_double_click)
-        self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
+        canvas_tab = ttk.Frame(self.doc_nb)
+        self.doc_nb.add(canvas_tab, text="FTA" if diagram_mode == "FTA" else diagram_mode)
+
+        canvas = tk.Canvas(canvas_tab, bg=StyleManager.get_instance().canvas_bg)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        hbar = ttk.Scrollbar(canvas_tab, orient=tk.HORIZONTAL, command=canvas.xview)
+        hbar.pack(side=tk.BOTTOM, fill=tk.X)
+        vbar = ttk.Scrollbar(canvas_tab, orient=tk.VERTICAL, command=canvas.yview)
+        vbar.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set,
+                      scrollregion=(0, 0, 2000, 2000))
+        canvas.bind("<ButtonPress-3>", self.on_right_mouse_press)
+        canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
+        canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
+        canvas.bind("<Button-1>", self.on_canvas_click)
+        canvas.bind("<B1-Motion>", self.on_canvas_drag)
+        canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
+        canvas.bind("<Double-1>", self.on_canvas_double_click)
+        canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
+
+        canvas.diagram_mode = diagram_mode
+        self.analysis_tabs[diagram_mode] = {
+            "tab": canvas_tab,
+            "canvas": canvas,
+            "hbar": hbar,
+            "vbar": vbar,
+        }
+        self.canvas_tab = canvas_tab
+        self.canvas_frame = canvas_tab
+        self.canvas = canvas
+        self.hbar = hbar
+        self.vbar = vbar
+        self.diagram_mode = diagram_mode
+        self.doc_nb.select(canvas_tab)
+        self._update_analysis_menus()
+
+    def _create_cta_tab(self):
+        """Convenience wrapper for creating a CTA diagram."""
+        self._create_fta_tab("CTA")
+
+    def create_cta_diagram(self):
+        """Initialize a CTA diagram and its top-level event."""
+        self._create_cta_tab()
+        self.add_top_level_event()
+        if getattr(self, "cta_root_node", None):
+            self.open_page_diagram(self.cta_root_node)
+
+    def _update_analysis_menus(self):
+        """Enable or disable node-adding menu items based on diagram mode."""
+        mode = getattr(self, "diagram_mode", "FTA")
+        if hasattr(self, "fta_menu"):
+            for key in ("add_gate", "add_basic_event", "add_gate_from_failure_mode", "add_fault_event"):
+                state = tk.NORMAL if mode == "FTA" else tk.DISABLED
+                self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
+        if hasattr(self, "cta_menu"):
+            for key in ("add_trigger", "add_functional_insufficiency"):
+                state = tk.NORMAL if mode == "CTA" else tk.DISABLED
+                self.cta_menu.entryconfig(self._cta_menu_indices[key], state=state)
+        if hasattr(self, "paa_menu"):
+            for key in ("add_confidence", "add_robustness"):
+                state = tk.NORMAL if mode == "PAA" else tk.DISABLED
+                self.paa_menu.entryconfig(self._paa_menu_indices[key], state=state)
+
+    def _create_paa_tab(self):
+        """Convenience wrapper for creating a PAA diagram."""
+        self._create_fta_tab("PAA")
 
         # Record the active diagram mode on the canvas for later checks
         self.canvas.diagram_mode = diagram_mode
@@ -18895,23 +18961,33 @@ class AutoMLApp:
 
     def ensure_fta_tab(self):
         """Recreate the FTA tab if it was closed."""
-        if not getattr(self, "canvas_tab", None) or not self.canvas_tab.winfo_exists():
-            self._create_fta_tab(getattr(self, "diagram_mode", "FTA"))
+        mode = getattr(self, "diagram_mode", "FTA")
+        tab_info = self.analysis_tabs.get(mode)
+        if not tab_info or not tab_info["tab"].winfo_exists():
+            self._create_fta_tab(mode)
+        else:
+            self.canvas_tab = tab_info["tab"]
+            self.canvas = tab_info["canvas"]
+            self.hbar = tab_info["hbar"]
+            self.vbar = tab_info["vbar"]
 
     def _on_tab_close(self, event):
         tab_id = self.doc_nb._closing_tab
         if hasattr(self, "_tab_titles"):
             self._tab_titles.pop(tab_id, None)
         tab = self.doc_nb.nametowidget(tab_id)
-        if tab is getattr(self, "canvas_tab", None):
-            self.canvas_tab = None
-            self.canvas_frame = None
-            self.canvas = None
-            self.hbar = None
-            self.vbar = None
-            self.page_diagram = None
-            tab.destroy()
-            return
+        for mode, info in list(getattr(self, "analysis_tabs", {}).items()):
+            if info["tab"] is tab:
+                del self.analysis_tabs[mode]
+                if tab is getattr(self, "canvas_tab", None):
+                    self.canvas_tab = None
+                    self.canvas_frame = None
+                    self.canvas = None
+                    self.hbar = None
+                    self.vbar = None
+                    self.page_diagram = None
+                tab.destroy()
+                return
         if tab is getattr(self, "search_tab", None):
             self.search_tab = None
             tab.destroy()
@@ -18946,14 +19022,20 @@ class AutoMLApp:
         gsn_win = getattr(tab, "gsn_window", None)
         if gsn_win:
             self.selected_node = gsn_win.diagram.root
-        if tab is getattr(self, "canvas_tab", None):
-            mode = getattr(self.canvas, "diagram_mode", "FTA")
-            if mode == "CTA" and self.cta_root_node:
-                self.root_node = self.cta_root_node
-            elif mode == "PAA" and self.paa_root_node:
-                self.root_node = self.paa_root_node
-            elif self.fta_root_node:
-                self.root_node = self.fta_root_node
+        for mode, info in getattr(self, "analysis_tabs", {}).items():
+            if info["tab"] is tab:
+                self.canvas_tab = info["tab"]
+                self.canvas = info["canvas"]
+                self.hbar = info["hbar"]
+                self.vbar = info["vbar"]
+                self.diagram_mode = mode
+                if mode == "CTA" and self.cta_root_node:
+                    self.root_node = self.cta_root_node
+                elif mode == "PAA" and self.paa_root_node:
+                    self.root_node = self.paa_root_node
+                elif self.fta_root_node:
+                    self.root_node = self.fta_root_node
+                break
         # Propagate recent changes and ensure the active tab reflects them
         self.refresh_all()
         if tab is getattr(self, "_safety_case_tab", None):
@@ -21717,6 +21799,7 @@ class AutoMLApp:
 
         page_canvas = tk.Canvas(self.canvas_frame, bg=StyleManager.get_instance().canvas_bg)
         page_canvas.grid(row=1, column=0, sticky="nsew")
+        page_canvas.diagram_mode = getattr(self, "diagram_mode", "FTA")
         vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=page_canvas.yview)
         vbar.grid(row=1, column=1, sticky="ns")
         hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=page_canvas.xview)
