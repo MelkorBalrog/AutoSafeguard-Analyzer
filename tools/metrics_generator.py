@@ -21,8 +21,10 @@ import sys
 from typing import Dict, Iterable, List
 from dataclasses import dataclass
 
-# Ensure repository root is importable for local matplotlib stub
+# Ensure repository root is importable for local packages
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from tools.memory_manager import lazy_import, manager as memory_manager
 
 
 def _sloc(lines: Iterable[str]) -> int:
@@ -122,7 +124,7 @@ def collect_metrics(root: Path) -> Dict[str, object]:
 def generate_plots(metrics: Dict[str, object], out_dir: Path) -> None:
     """Create simple visualisations of LOC and complexity metrics."""
     try:
-        import matplotlib.pyplot as plt
+        plt = lazy_import("matplotlib.pyplot")
     except Exception as exc:  # pragma: no cover - fallback if matplotlib missing
         print(f"Plotting skipped: {exc}")
         return
@@ -149,6 +151,8 @@ def generate_plots(metrics: Dict[str, object], out_dir: Path) -> None:
         plt.tight_layout()
         plt.savefig(out_dir / "metrics_complexity.png")
         plt.close()
+
+    memory_manager.cleanup()
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
