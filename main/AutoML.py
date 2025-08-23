@@ -18696,6 +18696,19 @@ class AutoMLApp:
         self._create_fta_tab()
         if getattr(self, "canvas", None) is not None:
             self.canvas.mode = "PAA"
+        # Automatically create the top-level event for PAA mode
+        new_event = FaultTreeNode("", "TOP EVENT")
+        new_event.x, new_event.y = 300, 200
+        new_event.is_top_event = True
+        if not hasattr(self, "top_events"):
+            self.top_events = []
+        self.top_events.append(new_event)
+        self.root_node = new_event
+        if hasattr(self, "safety_mgmt_toolbox"):
+            self.safety_mgmt_toolbox.register_created_work_product(
+                "Prototype Assurance Analysis", new_event.user_name
+            )
+        self.update_views()
 
     def _reset_fta_state(self):
         """Clear references to the FTA tab and its canvas."""
