@@ -7,6 +7,7 @@ executable the dependencies are already bundled so the installation step
 is skipped.
 """
 import importlib
+import runpy
 import os
 import subprocess
 import sys
