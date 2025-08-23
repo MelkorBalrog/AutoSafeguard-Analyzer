@@ -6,7 +6,6 @@ ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-
         mode = getattr(self, "diagram_mode", "FTA")
         event_lists = {
             "FTA": self.top_events,
