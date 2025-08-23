@@ -1028,6 +1028,10 @@ class EditNodeDialog(simpledialog.Dialog):
         self.desc_text.grid(row=2, column=1, padx=5, pady=5)
         self.desc_text.bind("<Return>", self.on_enter_pressed)
 
+        if getattr(self.node, "name_readonly", False):
+            self.user_name_entry.configure(state="disabled")
+            self.desc_text.configure(state="disabled")
+
         ttk.Label(general_frame, text="\nRationale:").grid(row=3, column=0, padx=5, pady=5, sticky="ne")
         self.rationale_text = tk.Text(general_frame, width=40, height=3, font=dialog_font, wrap="word")
         self.rationale_text.insert("1.0", self.node.rationale)
@@ -2065,7 +2069,13 @@ class EditNodeDialog(simpledialog.Dialog):
                 target_node.safe_state = self.safe_state_entry.get().strip()
                 new_mal = self.mal_var.get().strip() or self.mal_sel_var.get().strip()
                 if new_mal:
-                    for te in self.app.top_events:
+                    mode = getattr(self.app, "diagram_mode", "FTA")
+                    lists = {
+                        "CTA": getattr(self.app, "cta_events", []),
+                        "PAA": getattr(self.app, "paa_events", []),
+                    }
+                    existing = lists.get(mode, self.app.top_events)
+                    for te in existing:
                         if te is not target_node and getattr(te, "malfunction", "") == new_mal:
                             messagebox.showerror(
                                 "Duplicate Malfunction",
@@ -2077,6 +2087,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 if target_node.malfunction and target_node.malfunction != new_mal:
                     self.app.rename_malfunction(target_node.malfunction, new_mal)
                 target_node.malfunction = new_mal
+                self.app._update_shared_product_goals()
                 target_node.ftti = self.ftti_entry.get().strip()
                 # Safety metrics targets are no longer edited here. Preserve
                 # existing values on the node.
@@ -2231,6 +2242,11 @@ class AutoMLApp:
             "FTA Cut Sets",
             "show_cut_sets",
         ),
+        "CTA": (
+            "Safety Analysis",
+            "CTA Diagrams",
+            "create_cta_diagram",
+        ),
         "Process": (
             "Process",
             "Calc Prototype Assurance Level (PAL)",
@@ -2295,6 +2311,8 @@ class AutoMLApp:
         "TC2FI": "Qualitative Analysis",
         "FMEA": "Qualitative Analysis",
         "Prototype Assurance Analysis": "Qualitative Analysis",
+        "CTA": "Qualitative Analysis",
+        "Product Goal Specification": "Requirements",
         "FMEDA": "Quantitative Analysis",
         "Mission Profile": "Quantitative Analysis",
         "Reliability Analysis": "Quantitative Analysis",
@@ -2317,6 +2335,13 @@ class AutoMLApp:
         AutoMLApp._instance = self
         self.root = root
         self.top_events = []
+        self.cta_events = []
+        self.paa_events = []
+        self.fta_root_node = None
+        self.cta_root_node = None
+        self.paa_root_node = None
+        self.analysis_tabs = {}
+        self.shared_product_goals = {}
         self.selected_node = None
         self.clone_offset_counter = {}
         self._loaded_model_paths = []
@@ -2641,6 +2666,7 @@ class AutoMLApp:
         self.load_default_mechanisms()
 
         menubar = tk.Menu(root)
+        self.menubar = menubar
         file_menu = tk.Menu(menubar, tearoff=0)
         file_menu.add_command(label="New AutoML Model", command=self.new_model, accelerator="Ctrl+N")
         file_menu.add_command(label="Save AutoML Model", command=self.save_model, accelerator="Ctrl+S")
@@ -2653,15 +2679,15 @@ class AutoMLApp:
         fta_menu = tk.Menu(menubar, tearoff=0)
         fta_menu.add_command(label="Add Top Level Event", command=self.add_top_level_event)
         fta_menu.add_separator()
-        fta_menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"), accelerator="Ctrl+Shift+C")
-        fta_menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"), accelerator="Ctrl+Shift+R")
         fta_menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"), accelerator="Ctrl+Shift+G")
+        self._fta_menu_indices = {"add_gate": fta_menu.index("end")}
         fta_menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"), accelerator="Ctrl+Shift+B")
-        fta_menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
-        fta_menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
+        self._fta_menu_indices["add_basic_event"] = fta_menu.index("end")
         fta_menu.add_command(label="Add FMEA/FMEDA Event", command=self.add_basic_event_from_fmea)
         fta_menu.add_command(label="Add Gate from Failure Mode", command=self.add_gate_from_failure_mode)
+        self._fta_menu_indices["add_gate_from_failure_mode"] = fta_menu.index("end")
         fta_menu.add_command(label="Add Fault Event", command=self.add_fault_event)
+        self._fta_menu_indices["add_fault_event"] = fta_menu.index("end")
         fta_menu.add_separator()
         fta_menu.add_command(label="FTA-FMEA Traceability", command=self.show_traceability_matrix)
         fta_menu.add_command(
@@ -2672,6 +2698,7 @@ class AutoMLApp:
         self.work_product_menus.setdefault("FTA", []).append((fta_menu, fta_menu.index("end")))
         fta_menu.add_command(label="Common Cause Toolbox", command=self.show_common_cause_view)
         fta_menu.add_command(label="Cause & Effect Chain", command=self.show_cause_effect_chain)
+        self.fta_menu = fta_menu
 
         edit_menu = tk.Menu(menubar, tearoff=0)
         edit_menu.add_command(label="Undo", command=self.undo, accelerator="Ctrl+Z")
@@ -2855,20 +2882,53 @@ class AutoMLApp:
         self.work_product_menus.setdefault("FMEA", []).append(
             (qualitative_menu, qualitative_menu.index("end"))
         )
+
+        cta_menu = tk.Menu(qualitative_menu, tearoff=0)
+        cta_menu.add_command(label="Add Top Level Event", command=self.create_cta_diagram)
+        cta_menu.add_separator()
+        cta_menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"), accelerator="Ctrl+Shift+C")
+        cta_menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"), accelerator="Ctrl+Shift+R")
+        cta_menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
+        self._cta_menu_indices = {"add_trigger": cta_menu.index("end")}
+        cta_menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
+        self._cta_menu_indices["add_functional_insufficiency"] = cta_menu.index("end")
+        qualitative_menu.add_cascade(label="CTA", menu=cta_menu, state=tk.DISABLED)
+        self.work_product_menus.setdefault("CTA", []).append(
+            (qualitative_menu, qualitative_menu.index("end"))
+        )
+        self.cta_menu = cta_menu
         qualitative_menu.add_command(
             label="Fault Prioritization",
             command=self.open_fault_prioritization_window,
         )
-        qualitative_menu.add_command(
+
+        paa_menu = tk.Menu(qualitative_menu, tearoff=0)
+        paa_menu.add_command(label="Add Top Level Event", command=self.create_paa_diagram)
+        paa_menu.add_separator()
+        paa_menu.add_command(
+            label="Add Confidence",
+            command=lambda: self.add_node_of_type("Confidence Level"),
+            accelerator="Ctrl+Shift+C",
+        )
+        self._paa_menu_indices = {"add_confidence": paa_menu.index("end")}
+        paa_menu.add_command(
+            label="Add Robustness",
+            command=lambda: self.add_node_of_type("Robustness Score"),
+            accelerator="Ctrl+Shift+R",
+        )
+        self._paa_menu_indices["add_robustness"] = paa_menu.index("end")
+        qualitative_menu.add_cascade(
             label="Prototype Assurance Analysis",
-            command=self.create_paa_diagram,
+            menu=paa_menu,
             state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("Prototype Assurance Analysis", []).append(
             (qualitative_menu, qualitative_menu.index("end"))
         )
+        self.paa_menu = paa_menu
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
+        self.quantitative_menu = quantitative_menu
         quantitative_menu.add_command(
             label="Mission Profiles",
             command=self.manage_mission_profiles,
@@ -2908,6 +2968,11 @@ class AutoMLApp:
             label="FMEDA Manager",
             command=self.show_fmeda_list,
             state=tk.DISABLED,
+        )
+
+        quantitative_menu.add_cascade(label="FTA", menu=fta_menu, state=tk.DISABLED)
+        self.work_product_menus.setdefault("FTA", []).append(
+            (quantitative_menu, quantitative_menu.index("end"))
         )
 
         libs_menu = tk.Menu(menubar, tearoff=0)
@@ -2965,10 +3030,6 @@ class AutoMLApp:
         menubar.add_cascade(label="Quantitative Analysis", menu=quantitative_menu)
         idx = menubar.index("end")
         self.work_product_menus.setdefault("Quantitative Analysis", []).append((menubar, idx))
-        menubar.entryconfig(idx, state=tk.DISABLED)
-        menubar.add_cascade(label="FTA/CTA", menu=fta_menu)
-        idx = menubar.index("end")
-        self.work_product_menus.setdefault("FTA", []).append((menubar, idx))
         menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="GSN", menu=gsn_menu)
         idx = menubar.index("end")
@@ -3294,6 +3355,7 @@ class AutoMLApp:
         # event.  This avoids the spurious "Node 1" appearing at startup.
         # Initialize the canvas related attributes so tab-close callbacks work
         # before the FTA tab has ever been created.
+        self.analysis_tabs = {}
         self.canvas_tab = None
         self.canvas_frame = None
         self.canvas = None
@@ -4442,7 +4504,7 @@ class AutoMLApp:
         for i, m in enumerate(self.malfunctions):
             if m == old:
                 self.malfunctions[i] = new
-        for te in self.top_events:
+        for te in self.top_events + getattr(self, "cta_events", []) + getattr(self, "paa_events", []):
             if getattr(te, "malfunction", "") == old:
                 te.malfunction = new
         for n in self.get_all_nodes_in_model():
@@ -4458,6 +4520,31 @@ class AutoMLApp:
             for e in d.get("entries", []):
                 self._replace_entry_mal(e, old, new)
         self.update_views()
+        self._update_shared_product_goals()
+
+    def _update_shared_product_goals(self):
+        groups = {}
+        for te in self.top_events + getattr(self, "cta_events", []) + getattr(self, "paa_events", []):
+            mal = getattr(te, "malfunction", "")
+            if mal:
+                groups.setdefault(mal, []).append(te)
+        self.shared_product_goals = getattr(self, "shared_product_goals", {})
+        for mal, events in groups.items():
+            if len(events) > 1:
+                pg = self.shared_product_goals.get(mal)
+                if not pg:
+                    pg = {"name": events[0].user_name, "description": events[0].description}
+                    self.shared_product_goals[mal] = pg
+                for e in events:
+                    e.user_name = pg["name"]
+                    e.description = pg.get("description", e.description)
+                    e.name_readonly = True
+                    e.product_goal = pg
+            else:
+                self.shared_product_goals.pop(mal, None)
+                ev = events[0]
+                ev.name_readonly = False
+                ev.product_goal = None
 
     def rename_hazard(self, old: str, new: str) -> None:
         self.push_undo_state()
@@ -4882,13 +4969,23 @@ class AutoMLApp:
         new_event = FaultTreeNode("", "TOP EVENT")
         new_event.x, new_event.y = 300, 200
         new_event.is_top_event = True
-        self.top_events.append(new_event)
+        diag_mode = getattr(self, "diagram_mode", "FTA")
+        if diag_mode == "CTA":
+            self.cta_events.append(new_event)
+            self.cta_root_node = new_event
+            wp = "CTA"
+        elif diag_mode == "PAA":
+            self.paa_events.append(new_event)
+            self.paa_root_node = new_event
+            wp = "Prototype Assurance Analysis"
+        else:
+            self.top_events.append(new_event)
+            self.fta_root_node = new_event
+            wp = "FTA"
         self.root_node = new_event
-        # Track creation for lifecycle phase filtering
         if hasattr(self, "safety_mgmt_toolbox"):
-            self.safety_mgmt_toolbox.register_created_work_product(
-                "FTA", new_event.user_name
-            )
+            self.safety_mgmt_toolbox.register_created_work_product(wp, new_event.user_name)
+        self._update_shared_product_goals()
         self.update_views()
 
     def _build_probability_frame(
@@ -9945,6 +10042,21 @@ class AutoMLApp:
         elif kind == "fta" and ident is not None:
             te = next((t for t in self.top_events if t.unique_id == int(ident)), None)
             if te:
+                self.diagram_mode = "FTA"
+                self.ensure_fta_tab()
+                self.doc_nb.select(self.canvas_tab)
+                self.open_page_diagram(te)
+        elif kind == "cta" and ident is not None:
+            te = next((t for t in getattr(self, "cta_events", []) if t.unique_id == int(ident)), None)
+            if te:
+                self.diagram_mode = "CTA"
+                self.ensure_fta_tab()
+                self.doc_nb.select(self.canvas_tab)
+                self.open_page_diagram(te)
+        elif kind == "paa" and ident is not None:
+            te = next((t for t in getattr(self, "paa_events", []) if t.unique_id == int(ident)), None)
+            if te:
+                self.diagram_mode = "PAA"
                 self.ensure_fta_tab()
                 self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
@@ -10156,7 +10268,7 @@ class AutoMLApp:
                 node.user_name = new
                 analysis = (
                     "Prototype Assurance Analysis"
-                    if getattr(getattr(self, "canvas", None), "mode", "") == "PAA"
+                    if getattr(self, "diagram_mode", "") == "PAA"
                     else "FTA"
                 )
                 self.safety_mgmt_toolbox.rename_document(analysis, old, new)
@@ -10185,7 +10297,7 @@ class AutoMLApp:
             if hasattr(self, "safety_mgmt_toolbox"):
                 analysis = (
                     "Prototype Assurance Analysis"
-                    if getattr(getattr(self, "canvas", None), "mode", "") == "PAA"
+                    if getattr(self, "diagram_mode", "") == "PAA"
                     else "FTA"
                 )
                 self.safety_mgmt_toolbox.rename_document(analysis, old, node.name)
@@ -10677,6 +10789,7 @@ class AutoMLApp:
 
         # Remove all previous FTA information
         self.top_events = []
+        self.cta_events = []
         self.root_node = None
         self.selected_node = None
         self.page_history = []
@@ -10727,6 +10840,11 @@ class AutoMLApp:
         return counts
 
     def get_node_fill_color(self, node):
+        mode = getattr(getattr(self, "canvas", None), "diagram_mode", "FTA")
+        if mode == "CTA":
+            return "#EE82EE"
+        if mode == "PAA":
+            return "#40E0D0"
         return "#FAD7A0"
 
     def on_right_mouse_press(self, event):
@@ -10771,16 +10889,18 @@ class AutoMLApp:
         menu.add_command(label="Edit Controllability", command=lambda: self.edit_controllability())
         menu.add_command(label="Edit Page Flag", command=lambda: self.edit_page_flag())
         menu.add_separator()
-        if getattr(self.canvas, "mode", "") == "PAA":
+        diag_mode = getattr(self.canvas, "diagram_mode", "FTA")
+        if diag_mode == "PAA":
             menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"))
             menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"))
-        else:
-            menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"))
-            menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"))
-            menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"))
-            menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"))
+        elif diag_mode == "CTA":
             menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
             menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
+        else:
+            menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"))
+            menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"))
+            menu.add_command(label="Add Gate from Failure Mode", command=self.add_gate_from_failure_mode)
+            menu.add_command(label="Add Fault Event", command=self.add_fault_event)
         menu.tk_popup(event.x_root, event.y_root)
 
     def on_canvas_click(self, event):
@@ -11036,8 +11156,9 @@ class AutoMLApp:
         Return a list of *all* nodes across *all* top-level events in self.top_events.
         """
         all_nodes = []
-        for te in self.top_events:
-            nodes = self.get_all_nodes_table(te)  # your existing method for one root
+        events = self.top_events + getattr(self, "cta_events", []) + getattr(self, "paa_events", [])
+        for te in events:
+            nodes = self.get_all_nodes_table(te)
             all_nodes.extend(nodes)
         return all_nodes
 
@@ -11921,6 +12042,27 @@ class AutoMLApp:
                     if not _visible("FTA", te.name):
                         continue
                     tree.insert(fta_root, "end", text=te.name, tags=("fta", str(te.unique_id)))
+            if "CTA" in enabled or getattr(self, "cta_events", []):
+                _ensure_safety_root()
+                cta_root = tree.insert(safety_root, "end", text="CTAs", open=True)
+                for idx, te in enumerate(getattr(self, "cta_events", [])):
+                    if not _visible("CTA", te.name):
+                        continue
+                    tree.insert(cta_root, "end", text=te.name, tags=("cta", str(te.unique_id)))
+            if "Prototype Assurance Analysis" in enabled or getattr(self, "paa_events", []):
+                _ensure_safety_root()
+                paa_root = next(
+                    (c for c in tree.get_children(safety_root) if tree.item(c, "text") == "PAAs"),
+                    None,
+                )
+                if paa_root is None:
+                    paa_root = tree.insert(safety_root, "end", text="PAAs", open=True)
+                else:
+                    tree.delete(*tree.get_children(paa_root))
+                for idx, te in enumerate(getattr(self, "paa_events", [])):
+                    if not _visible("Prototype Assurance Analysis", te.name):
+                        continue
+                    tree.insert(paa_root, "end", text=te.name, tags=("paa", str(te.unique_id)))
             if "FMEA" in enabled or getattr(self, "fmeas", []):
                 _ensure_safety_root()
                 fmea_root = tree.insert(safety_root, "end", text="FMEAs", open=True)
@@ -12472,12 +12614,24 @@ class AutoMLApp:
 
     def add_node_of_type(self, event_type):
         self.push_undo_state()
-        if getattr(self.canvas, "mode", "") == "PAA":
+        diag_mode = getattr(self, "diagram_mode", "FTA")
+        if diag_mode == "PAA":
             allowed = {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"}
             if event_type.upper() not in allowed:
                 messagebox.showwarning(
                     "Invalid",
                     "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis.",
+                )
+                return
+        else:
+            if diag_mode == "CTA":
+                allowed = {"TRIGGERING CONDITION", "FUNCTIONAL INSUFFICIENCY"}
+            else:
+                allowed = {"GATE", "BASIC EVENT"}
+            if event_type.upper() not in allowed:
+                messagebox.showwarning(
+                    "Invalid",
+                    f"Node type '{event_type}' is not allowed in {diag_mode} diagrams.",
                 )
                 return
         # If a node is selected, ensure it is a primary instance.
@@ -12731,7 +12885,7 @@ class AutoMLApp:
         if hasattr(self, "safety_mgmt_toolbox"):
             analysis = (
                 "Prototype Assurance Analysis"
-                if getattr(getattr(self, "canvas", None), "mode", "") == "PAA"
+                if getattr(self, "diagram_mode", "") == "PAA"
                 else "FTA"
             )
             self.safety_mgmt_toolbox.register_created_work_product(analysis, new_event.name)
@@ -12747,7 +12901,7 @@ class AutoMLApp:
             if hasattr(self, "safety_mgmt_toolbox"):
                 analysis = (
                     "Prototype Assurance Analysis"
-                    if getattr(getattr(self, "canvas", None), "mode", "") == "PAA"
+                    if getattr(self, "diagram_mode", "") == "PAA"
                     else "FTA"
                 )
                 self.safety_mgmt_toolbox.register_deleted_work_product(analysis, te.name)
@@ -18668,47 +18822,100 @@ class AutoMLApp:
             win.destroy()
         return _close
 
-    def _create_fta_tab(self):
-        """Create the main FTA tab with canvas and bindings."""
-        self.canvas_tab = ttk.Frame(self.doc_nb)
-        self.doc_nb.add(self.canvas_tab, text="FTA")
+    def _create_fta_tab(self, diagram_mode: str = "FTA"):
+        """Create the main FTA tab with canvas and bindings.
 
-        self.canvas_frame = self.canvas_tab
-        self.canvas = tk.Canvas(self.canvas_frame, bg=StyleManager.get_instance().canvas_bg)
-        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
-        self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
-        self.vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
-        self.vbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.canvas.config(xscrollcommand=self.hbar.set, yscrollcommand=self.vbar.set,
-                           scrollregion=(0, 0, 2000, 2000))
-        self.canvas.bind("<ButtonPress-3>", self.on_right_mouse_press)
-        self.canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
-        self.canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
-        self.canvas.bind("<Button-1>", self.on_canvas_click)
-        self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
-        self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-        self.canvas.bind("<Double-1>", self.on_canvas_double_click)
-        self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
+        Parameters
+        ----------
+        diagram_mode: str
+            The operational mode of the diagram (``"FTA"`` or ``"CTA"``).
+        """
+        tabs = getattr(self, "analysis_tabs", {})
+        existing = tabs.get(diagram_mode)
+        if existing and existing["tab"].winfo_exists():
+            self.canvas_tab = existing["tab"]
+            self.canvas_frame = existing["tab"]
+            self.canvas = existing["canvas"]
+            self.hbar = existing["hbar"]
+            self.vbar = existing["vbar"]
+            self.diagram_mode = diagram_mode
+            self.doc_nb.select(self.canvas_tab)
+            self._update_analysis_menus()
+            return
+
+        canvas_tab = ttk.Frame(self.doc_nb)
+        self.doc_nb.add(canvas_tab, text="FTA" if diagram_mode == "FTA" else diagram_mode)
+
+        canvas = tk.Canvas(canvas_tab, bg=StyleManager.get_instance().canvas_bg)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        hbar = ttk.Scrollbar(canvas_tab, orient=tk.HORIZONTAL, command=canvas.xview)
+        hbar.pack(side=tk.BOTTOM, fill=tk.X)
+        vbar = ttk.Scrollbar(canvas_tab, orient=tk.VERTICAL, command=canvas.yview)
+        vbar.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set,
+                      scrollregion=(0, 0, 2000, 2000))
+        canvas.bind("<ButtonPress-3>", self.on_right_mouse_press)
+        canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
+        canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
+        canvas.bind("<Button-1>", self.on_canvas_click)
+        canvas.bind("<B1-Motion>", self.on_canvas_drag)
+        canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
+        canvas.bind("<Double-1>", self.on_canvas_double_click)
+        canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
+
+        canvas.diagram_mode = diagram_mode
+        self.analysis_tabs[diagram_mode] = {
+            "tab": canvas_tab,
+            "canvas": canvas,
+            "hbar": hbar,
+            "vbar": vbar,
+        }
+        self.canvas_tab = canvas_tab
+        self.canvas_frame = canvas_tab
+        self.canvas = canvas
+        self.hbar = hbar
+        self.vbar = vbar
+        self.diagram_mode = diagram_mode
+        self.doc_nb.select(canvas_tab)
+        self._update_analysis_menus()
+
+    def _create_cta_tab(self):
+        """Convenience wrapper for creating a CTA diagram."""
+        self._create_fta_tab("CTA")
+
+    def create_cta_diagram(self):
+        """Initialize a CTA diagram and its top-level event."""
+        self._create_cta_tab()
+        self.add_top_level_event()
+        if getattr(self, "cta_root_node", None):
+            self.open_page_diagram(self.cta_root_node)
+
+    def _update_analysis_menus(self):
+        """Enable or disable node-adding menu items based on diagram mode."""
+        mode = getattr(self, "diagram_mode", "FTA")
+        if hasattr(self, "fta_menu"):
+            for key in ("add_gate", "add_basic_event", "add_gate_from_failure_mode", "add_fault_event"):
+                state = tk.NORMAL if mode == "FTA" else tk.DISABLED
+                self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
+        if hasattr(self, "cta_menu"):
+            for key in ("add_trigger", "add_functional_insufficiency"):
+                state = tk.NORMAL if mode == "CTA" else tk.DISABLED
+                self.cta_menu.entryconfig(self._cta_menu_indices[key], state=state)
+        if hasattr(self, "paa_menu"):
+            for key in ("add_confidence", "add_robustness"):
+                state = tk.NORMAL if mode == "PAA" else tk.DISABLED
+                self.paa_menu.entryconfig(self._paa_menu_indices[key], state=state)
+
+    def _create_paa_tab(self):
+        """Convenience wrapper for creating a PAA diagram."""
+        self._create_fta_tab("PAA")
 
     def create_paa_diagram(self):
-        """Initialize a Prototype Assurance Analysis diagram."""
-        self._create_fta_tab()
-        if getattr(self, "canvas", None) is not None:
-            self.canvas.mode = "PAA"
-        # Automatically create the top-level event for PAA mode
-        new_event = FaultTreeNode("", "TOP EVENT")
-        new_event.x, new_event.y = 300, 200
-        new_event.is_top_event = True
-        if not hasattr(self, "top_events"):
-            self.top_events = []
-        self.top_events.append(new_event)
-        self.root_node = new_event
-        if hasattr(self, "safety_mgmt_toolbox"):
-            self.safety_mgmt_toolbox.register_created_work_product(
-                "Prototype Assurance Analysis", new_event.user_name
-            )
-        self.update_views()
+        """Initialize a Prototype Assurance Analysis diagram and its top-level event."""
+        self._create_paa_tab()
+        self.add_top_level_event()
+        if getattr(self, "paa_root_node", None):
+            self.open_page_diagram(self.paa_root_node)
 
     def _reset_fta_state(self):
         """Clear references to the FTA tab and its canvas."""
@@ -18721,23 +18928,33 @@ class AutoMLApp:
 
     def ensure_fta_tab(self):
         """Recreate the FTA tab if it was closed."""
-        if not getattr(self, "canvas_tab", None) or not self.canvas_tab.winfo_exists():
-            self._create_fta_tab()
+        mode = getattr(self, "diagram_mode", "FTA")
+        tab_info = self.analysis_tabs.get(mode)
+        if not tab_info or not tab_info["tab"].winfo_exists():
+            self._create_fta_tab(mode)
+        else:
+            self.canvas_tab = tab_info["tab"]
+            self.canvas = tab_info["canvas"]
+            self.hbar = tab_info["hbar"]
+            self.vbar = tab_info["vbar"]
 
     def _on_tab_close(self, event):
         tab_id = self.doc_nb._closing_tab
         if hasattr(self, "_tab_titles"):
             self._tab_titles.pop(tab_id, None)
         tab = self.doc_nb.nametowidget(tab_id)
-        if tab is getattr(self, "canvas_tab", None):
-            self.canvas_tab = None
-            self.canvas_frame = None
-            self.canvas = None
-            self.hbar = None
-            self.vbar = None
-            self.page_diagram = None
-            tab.destroy()
-            return
+        for mode, info in list(getattr(self, "analysis_tabs", {}).items()):
+            if info["tab"] is tab:
+                del self.analysis_tabs[mode]
+                if tab is getattr(self, "canvas_tab", None):
+                    self.canvas_tab = None
+                    self.canvas_frame = None
+                    self.canvas = None
+                    self.hbar = None
+                    self.vbar = None
+                    self.page_diagram = None
+                tab.destroy()
+                return
         if tab is getattr(self, "search_tab", None):
             self.search_tab = None
             tab.destroy()
@@ -18772,6 +18989,20 @@ class AutoMLApp:
         gsn_win = getattr(tab, "gsn_window", None)
         if gsn_win:
             self.selected_node = gsn_win.diagram.root
+        for mode, info in getattr(self, "analysis_tabs", {}).items():
+            if info["tab"] is tab:
+                self.canvas_tab = info["tab"]
+                self.canvas = info["canvas"]
+                self.hbar = info["hbar"]
+                self.vbar = info["vbar"]
+                self.diagram_mode = mode
+                if mode == "CTA" and self.cta_root_node:
+                    self.root_node = self.cta_root_node
+                elif mode == "PAA" and self.paa_root_node:
+                    self.root_node = self.paa_root_node
+                elif self.fta_root_node:
+                    self.root_node = self.fta_root_node
+                break
         # Propagate recent changes and ensure the active tab reflects them
         self.refresh_all()
         if tab is getattr(self, "_safety_case_tab", None):
@@ -20001,6 +20232,9 @@ class AutoMLApp:
 
     def edit_user_name(self):
         if self.selected_node:
+            if getattr(self.selected_node, "name_readonly", False):
+                messagebox.showinfo("Product Goal", "Edit via Product Goal editor")
+                return
             new_name = simpledialog.askstring("Edit User Name", "Enter new user name:", initialvalue=self.selected_node.user_name)
             if new_name is not None:
                 self.selected_node.user_name = new_name.strip()
@@ -20647,6 +20881,7 @@ class AutoMLApp:
             self.top_events = [root]
         else:
             self.top_events = []
+        self.cta_events = []
 
         if (
             ensure_root
@@ -21322,6 +21557,7 @@ class AutoMLApp:
         unique_node_id_counter = 1
 
         self.top_events = []
+        self.cta_events = []
         self.root_node = None
         self.selected_node = None
         self.page_history = []
@@ -21530,6 +21766,7 @@ class AutoMLApp:
 
         page_canvas = tk.Canvas(self.canvas_frame, bg=StyleManager.get_instance().canvas_bg)
         page_canvas.grid(row=1, column=0, sticky="nsew")
+        page_canvas.diagram_mode = getattr(self, "diagram_mode", "FTA")
         vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=page_canvas.yview)
         vbar.grid(row=1, column=1, sticky="ns")
         hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=page_canvas.xview)
@@ -22718,6 +22955,8 @@ class FaultTreeNode:
         self.fault_ref = ""
         # Malfunction name for top level events
         self.malfunction = ""
+        self.name_readonly = False
+        self.product_goal = None
         # Probability values for classical FTA calculations
         self.failure_prob = 0.0
         self.probability = 0.0
@@ -22810,6 +23049,8 @@ class FaultTreeNode:
             "probability": self.probability,
             "prob_formula": self.prob_formula,
             "status": self.status,
+            "product_goal_name": self.product_goal.get("name") if getattr(self, "product_goal", None) else "",
+            "name_readonly": self.name_readonly,
             "children": [child.to_dict() for child in self.children]
         }
         if not self.is_primary_instance and self.original and (self.original.unique_id != self.unique_id):
@@ -22881,6 +23122,9 @@ class FaultTreeNode:
         node.probability = data.get("probability", 0.0)
         node.prob_formula = data.get("prob_formula", "linear")
         node.status = data.get("status", "draft")
+        node.name_readonly = data.get("name_readonly", False)
+        pg_name = data.get("product_goal_name", "")
+        node.product_goal = {"name": pg_name} if pg_name else None
         node.display_label = ""
         node.equation = ""
         node.detailed_equation = ""
@@ -22902,7 +23146,7 @@ class PageDiagram:
         self.app = app
         self.root_node = page_gate_node
         self.canvas = canvas
-        self.mode = getattr(canvas, "mode", "")
+        self.diagram_mode = getattr(canvas, "diagram_mode", "FTA")
         self.zoom = 1.0
         self.diagram_font = tkFont.Font(family="Arial", size=int(8 * self.zoom))
         self.grid_size = 20
@@ -23008,16 +23252,15 @@ class PageDiagram:
         if node.node_type.upper() not in ["TOP EVENT", "BASIC EVENT"]:
             menu.add_command(label="Edit Page Flag", command=lambda: self.context_edit_page_flag(node))
         menu.add_separator()
-        if getattr(self, "mode", "") == "PAA":
+        if self.diagram_mode == "PAA":
             menu.add_command(label="Add Confidence", command=lambda: self.context_add("Confidence Level"))
             menu.add_command(label="Add Robustness", command=lambda: self.context_add("Robustness Score"))
-        else:
-            menu.add_command(label="Add Confidence", command=lambda: self.context_add("Confidence Level"))
-            menu.add_command(label="Add Robustness", command=lambda: self.context_add("Robustness Score"))
-            menu.add_command(label="Add Gate", command=lambda: self.context_add("GATE"))
-            menu.add_command(label="Add Basic Event", command=lambda: self.context_add("Basic Event"))
+        elif self.diagram_mode == "CTA":
             menu.add_command(label="Add Triggering Condition", command=lambda: self.context_add("Triggering Condition"))
             menu.add_command(label="Add Functional Insufficiency", command=lambda: self.context_add("Functional Insufficiency"))
+        else:
+            menu.add_command(label="Add Gate", command=lambda: self.context_add("GATE"))
+            menu.add_command(label="Add Basic Event", command=lambda: self.context_add("Basic Event"))
             menu.add_command(label="Add Gate from Failure Mode", command=lambda: self.context_add_gate_from_failure_mode())
             menu.add_command(label="Add Fault Event", command=lambda: self.context_add_fault_event())
         menu.tk_popup(event.x_root, event.y_root)

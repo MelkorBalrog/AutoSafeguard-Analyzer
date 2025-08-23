@@ -46,6 +46,7 @@ ALLOWED_PROPAGATIONS: set[tuple[str, str]] = {
     ("FMEA", "Prototype Assurance Analysis"),
     ("FMEDA", "Prototype Assurance Analysis"),
     ("FTA", "Product Goal Specification"),
+    ("FTA", "CTA"),
     ("Prototype Assurance Analysis", "Product Goal Specification"),
 }
 
@@ -76,6 +77,7 @@ SAFETY_ANALYSIS_WORK_PRODUCTS: set[str] = {
     "FMEA",
     "FMEDA",
     "FTA",
+    "CTA",
     "Prototype Assurance Analysis",
     "Reliability Analysis",
     "Causal Bayesian Network Analysis",
