@@ -1,6 +1,5 @@
 from analysis.scenario_description import template_phrases
 
-
 def test_template_phrase_filters_and_single():
     phrases = template_phrases(
         "Frontal",
