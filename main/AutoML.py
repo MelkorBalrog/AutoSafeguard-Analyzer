@@ -2221,6 +2221,11 @@ class AutoMLApp:
             "FMEDA Manager",
             "show_fmeda_list",
         ),
+        "Prototype Assurance Analysis": (
+            "Safety Analysis",
+            "Prototype Assurance Analysis",
+            "create_paa_diagram",
+        ),
         "FTA": (
             "Safety Analysis",
             "FTA Cut Sets",
@@ -2289,6 +2294,7 @@ class AutoMLApp:
         "FI2TC": "Qualitative Analysis",
         "TC2FI": "Qualitative Analysis",
         "FMEA": "Qualitative Analysis",
+        "Prototype Assurance Analysis": "Qualitative Analysis",
         "FMEDA": "Quantitative Analysis",
         "Mission Profile": "Quantitative Analysis",
         "Reliability Analysis": "Quantitative Analysis",
@@ -2856,6 +2862,10 @@ class AutoMLApp:
         qualitative_menu.add_command(
             label="Prototype Assurance Analysis",
             command=self.create_paa_diagram,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus.setdefault("Prototype Assurance Analysis", []).append(
+            (qualitative_menu, qualitative_menu.index("end"))
         )
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
@@ -3210,6 +3220,7 @@ class AutoMLApp:
             "Safety Analysis": [
                 "Fault Prioritization",
                 "Cause & Effect Diagram",
+                "Prototype Assurance Analysis",
             ],
             "Configuration": [
                 "Diagram Rule Editor",
@@ -10143,7 +10154,12 @@ class AutoMLApp:
             if node:
                 old = node.user_name
                 node.user_name = new
-                self.safety_mgmt_toolbox.rename_document("FTA", old, new)
+                analysis = (
+                    "Prototype Assurance Analysis"
+                    if getattr(getattr(self, "canvas", None), "mode", "") == "PAA"
+                    else "FTA"
+                )
+                self.safety_mgmt_toolbox.rename_document(analysis, old, new)
         elif kind == "arch" and repo.diagrams.get(ident):
             repo.diagrams[ident].name = new
         elif kind == "gov":
@@ -10167,7 +10183,12 @@ class AutoMLApp:
             old = node.name
             node.user_name = new
             if hasattr(self, "safety_mgmt_toolbox"):
-                self.safety_mgmt_toolbox.rename_document("FTA", old, node.name)
+                analysis = (
+                    "Prototype Assurance Analysis"
+                    if getattr(getattr(self, "canvas", None), "mode", "") == "PAA"
+                    else "FTA"
+                )
+                self.safety_mgmt_toolbox.rename_document(analysis, old, node.name)
         elif kind == "pkg" and repo.elements.get(ident):
             repo.elements[ident].name = new
         self.update_views()
@@ -10423,6 +10444,7 @@ class AutoMLApp:
             "FMEA": "reliability_analyses",
             "FMEDA": "fmeda_components",
             "FTA": "top_events",
+            "Prototype Assurance Analysis": "top_events",
             "Architecture Diagram": "arch_diagrams",
             "Scenario Library": "scenario_libraries",
             "ODD": "odd_libraries",
@@ -12707,7 +12729,12 @@ class AutoMLApp:
         self.top_events.append(new_event)
         self.root_node = new_event
         if hasattr(self, "safety_mgmt_toolbox"):
-            self.safety_mgmt_toolbox.register_created_work_product("FTA", new_event.name)
+            analysis = (
+                "Prototype Assurance Analysis"
+                if getattr(getattr(self, "canvas", None), "mode", "") == "PAA"
+                else "FTA"
+            )
+            self.safety_mgmt_toolbox.register_created_work_product(analysis, new_event.name)
         self.update_views()
 
     def delete_top_events_for_malfunction(self, name: str) -> None:
@@ -12718,11 +12745,16 @@ class AutoMLApp:
             return
         for te in removed:
             if hasattr(self, "safety_mgmt_toolbox"):
-                self.safety_mgmt_toolbox.register_deleted_work_product("FTA", te.name)
+                analysis = (
+                    "Prototype Assurance Analysis"
+                    if getattr(getattr(self, "canvas", None), "mode", "") == "PAA"
+                    else "FTA"
+                )
+                self.safety_mgmt_toolbox.register_deleted_work_product(analysis, te.name)
             self.top_events.remove(te)
             if hasattr(self, "safety_mgmt_toolbox"):
                 self.safety_mgmt_toolbox.register_deleted_work_product(
-                    "FTA", te.user_name
+                    analysis, te.user_name
                 )
         if self.root_node in removed:
             self.root_node = self.top_events[0] if self.top_events else FaultTreeNode("", "TOP EVENT")
