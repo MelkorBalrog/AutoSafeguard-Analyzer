@@ -24,3 +24,4 @@ def test_paa_diagram_has_top_event(monkeypatch):
     assert app.diagram_mode == "PAA"
     assert len(app.top_events) == 1
     assert getattr(app.top_events[0], "is_top_event", False)
+    assert getattr(app.top_events[0], "analysis_mode", "") == "PAA"
