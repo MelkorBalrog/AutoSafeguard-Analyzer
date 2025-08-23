@@ -3827,6 +3827,10 @@ class SysMLDiagramWindow(tk.Frame):
     def _on_focus_in(self, event=None):
         if self.app:
             self.app.active_arch_window = self
+        # Persist any unsaved diagram changes before reloading from the repository.
+        # Without this step, edits made in configuration dialogs could be lost or
+        # cause the diagram to appear empty when the window regains focus.
+        self._sync_to_repository()
         self.refresh_from_repository(event)
 
     def _fit_toolbox(self) -> None:
