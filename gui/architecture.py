@@ -164,6 +164,7 @@ WORK_PRODUCT_AREA_MAP = {
     "TC2FI": "Hazard & Threat Analysis",
     "Risk Assessment": "Risk Assessment",
     "FTA": "Safety Analysis",
+    "Prototype Assurance Tree Analysis": "Safety Analysis",
     "FMEA": "Safety Analysis",
     "FMEDA": "Safety Analysis",
     "Scenario Library": "Scenario",
