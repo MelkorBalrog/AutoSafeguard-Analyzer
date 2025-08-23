@@ -5711,6 +5711,7 @@ class SysMLDiagramWindow(tk.Frame):
                 self.redraw()
 
     def _edit_object(self, obj):
+        self._sync_to_repository()
         SysMLObjectDialog(self, obj)
         self._sync_to_repository()
         self.redraw()
