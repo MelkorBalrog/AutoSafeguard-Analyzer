@@ -3,6 +3,7 @@ import types
 import csv
 import tempfile
 from unittest import mock
+import pytest
 
 import gui.gsn_diagram_window as gdw
 from gui.gsn_diagram_window import GSNDiagramWindow
@@ -87,12 +88,13 @@ def test_temp_connection_line_has_arrow_in_context_mode():
     assert lines[0].get("arrow") == tk.LAST
 
 
-def test_on_release_creates_context_link():
+@pytest.mark.parametrize("typ", ["Context", "Assumption", "Justification"])
+def test_on_release_creates_context_link(typ):
     """Releasing in context mode should mark the relation accordingly."""
     win = GSNDiagramWindow.__new__(GSNDiagramWindow)
     win.zoom = 1.0
     parent = GSNNode("p", "Goal")
-    child = GSNNode("c", "Context")
+    child = GSNNode("c", typ)
 
     class CanvasStub:
         def __init__(self):
@@ -123,6 +125,43 @@ def test_on_release_creates_context_link():
     assert child in parent.children
     assert child in parent.context_children
     assert win.canvas.cursor == ""
+
+
+@pytest.mark.parametrize("ptype", ["Context", "Assumption", "Justification"])
+@pytest.mark.parametrize("ctype", ["Context", "Assumption", "Justification"])
+def test_on_release_context_link_from_annotation(ptype, ctype):
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    win.zoom = 1.0
+    parent = GSNNode("p", ptype)
+    child = GSNNode("c", ctype)
+
+    class CanvasStub:
+        def __init__(self):
+            self.cursor = None
+
+        def canvasx(self, x):
+            return x
+
+        def canvasy(self, y):
+            return y
+
+        def delete(self, *a, **k):
+            pass
+
+        def configure(self, **kwargs):
+            if "cursor" in kwargs:
+                self.cursor = kwargs["cursor"]
+
+    win.canvas = CanvasStub()
+    win._node_at = lambda x, y: child
+    win.refresh = lambda: None
+
+    GSNDiagramWindow.connect_in_context(win)
+    win._connect_parent = parent
+    event = type("Event", (), {"x": 0, "y": 0})
+    win._on_release(event)
+    assert child in parent.children
+    assert child in parent.context_children
 
 
 def test_solved_by_cursor_and_reset():
