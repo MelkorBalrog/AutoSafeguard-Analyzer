@@ -17747,7 +17747,9 @@ class AutoMLApp:
 
                 ttk.Label(master, text="Scenery").grid(row=4, column=0, sticky="e")
                 self.sce_var = tk.StringVar(value=self.data.get("scenery", ""))
-                ttk.Entry(master, textvariable=self.sce_var).grid(row=4, column=1, sticky="ew")
+                ttk.Entry(master, textvariable=self.sce_var, state="readonly").grid(
+                    row=4, column=1, sticky="ew"
+                )
 
                 elems = []
                 self.elem_classes = {}
@@ -17777,13 +17779,13 @@ class AutoMLApp:
                                     self.elem_params[val] = params
 
                 ttk.Label(master, text="ODD Elements").grid(row=5, column=0, sticky="e")
-                self.elem_list = tk.Listbox(master, selectmode=tk.MULTIPLE, height=5, exportselection=False)
+                self.elem_list = tk.Listbox(
+                    master, selectmode=tk.MULTIPLE, height=5, exportselection=False
+                )
                 for el in elems:
                     self.elem_list.insert(tk.END, el)
                 self.elem_list.grid(row=5, column=1, sticky="nsew")
                 self.elem_list.bind("<<ListboxSelect>>", lambda e: self.update_description())
-                ttk.Button(master, text="To Scenery", command=self.insert_elem).grid(row=5, column=2, padx=2)
-                ttk.Button(master, text="To Desc", command=self.insert_desc_elem).grid(row=5, column=3, padx=2)
                 master.grid_rowconfigure(5, weight=1)
 
                 tc_names = [n.user_name or f"TC {n.unique_id}" for n in self.app.get_all_triggering_conditions()]
@@ -17823,6 +17825,7 @@ class AutoMLApp:
 
             def update_description(self, *args):
                 names = [self.elem_list.get(i) for i in self.elem_list.curselection()]
+                self.sce_var.set(", ".join(names))
                 odds = [
                     (
                         n,
@@ -17842,29 +17845,15 @@ class AutoMLApp:
                 text = " ".join(phrases)
                 self.desc.delete("1.0", "end")
                 self.desc.insert("1.0", text)
-
-            def insert_elem(self):
-                sels = [self.elem_list.get(i) for i in self.elem_list.curselection()]
-                if sels:
-                    cur = self.sce_var.get().strip()
-                    new = ", ".join(sels)
-                    if cur:
-                        self.sce_var.set(f"{cur}, {new}")
-                    else:
-                        self.sce_var.set(new)
-
-            def insert_desc_elem(self):
-                sels = [self.elem_list.get(i) for i in self.elem_list.curselection()]
-                for el in sels:
-                    pos = self.desc.index(tk.INSERT)
-                    text = f"[[{el}]]"
-                    self.desc.insert(pos, text)
+                for m in re.finditer(r"\[\[(.+?)\]\]", text):
+                    name = m.group(1)
+                    start = f"1.0+{m.start()}c"
+                    end = f"1.0+{m.end()}c"
                     tag = f"link{self.tag_counter}"
                     self.tag_counter += 1
-                    end = self.desc.index(f"{pos}+{len(text)}c")
-                    self.desc.tag_add(tag, pos, end)
+                    self.desc.tag_add(tag, start, end)
                     self.desc.tag_config(tag, foreground="blue", underline=1)
-                    self.desc.tag_bind(tag, "<Button-1>", lambda e, n=el: self.show_elem(n))
+                    self.desc.tag_bind(tag, "<Button-1>", lambda e, n=name: self.show_elem(n))
 
             def load_desc_links(self):
                 desc = self.data.get("description", "")

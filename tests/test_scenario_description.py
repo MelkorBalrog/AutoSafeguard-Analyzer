@@ -16,9 +16,9 @@ def test_template_phrase_filters_and_single():
     assert len(phrases) == 1
     text = phrases[0].lower()
     assert "frontal scenario" in text
-    assert "rainy weather environment" in text
-    assert "guarded highway infrastructure" in text
-    assert "asphalt road" in text
+    assert "[[rainy weather]] environment" in text
+    assert "[[guarded highway]] infrastructure" in text
+    assert "[[asphalt]] road" in text
     assert "loss of control" in text
     assert "accuracy" not in text
 

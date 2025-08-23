@@ -41,7 +41,7 @@ def _combine_segments(
     segs: List[str] = []
     for i, (name, params) in enumerate(items):
         start = lead_word if i == 0 else "and"
-        seg = f"{start} {name} {label}"
+        seg = f"{start} [[{name}]] {label}"
         if params:
             seg += f", with {params} parameters"
         segs.append(seg)
@@ -77,6 +77,8 @@ def _build_odd_phrase(
     env: List[Tuple[str, str]] = []
     infra: List[Tuple[str, str]] = []
     road: List[Tuple[str, str]] = []
+    temp: List[Tuple[str, str]] = []
+    mov: List[Tuple[str, str]] = []
     for name, cls, params in odd_elements:
         filtered = _normalize_params(params)
         plist = ", ".join(filtered)
@@ -86,6 +88,10 @@ def _build_odd_phrase(
             infra.append((name, plist))
         elif cls == "Road":
             road.append((name, plist))
+        elif cls == "Temporal":
+            temp.append((name, plist))
+        elif cls == "Movable":
+            mov.append((name, plist))
     parts: List[str] = []
     if env:
         parts.append(_combine_segments(env, "Environment", "within"))
@@ -93,6 +99,10 @@ def _build_odd_phrase(
         parts.append(_combine_segments(infra, "Infrastructure", "on"))
     if road:
         parts.append(_combine_segments(road, "road", "within"))
+    if temp:
+        parts.append(_combine_segments(temp, "temporal condition", "during"))
+    if mov:
+        parts.append(_combine_segments(mov, "movable object", "with"))
     return ", ".join(parts)
 
 def template_phrases(
