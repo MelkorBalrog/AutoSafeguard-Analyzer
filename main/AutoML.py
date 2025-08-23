@@ -17784,6 +17784,14 @@ class AutoMLApp:
                 )
                 for el in elems:
                     self.elem_list.insert(tk.END, el)
+                selected = {
+                    s.strip()
+                    for s in str(self.data.get("scenery", "")).split(",")
+                    if s.strip()
+                }
+                for idx, el in enumerate(elems):
+                    if el in selected:
+                        self.elem_list.selection_set(idx)
                 self.elem_list.grid(row=5, column=1, sticky="nsew")
                 self.elem_list.bind("<<ListboxSelect>>", lambda e: self.update_description())
                 master.grid_rowconfigure(5, weight=1)
@@ -17885,7 +17893,8 @@ class AutoMLApp:
                 self.data["class"] = self.cls_var.get()
                 self.data["behavior"] = self.beh_var.get()
                 self.data["action"] = self.act_var.get()
-                self.data["scenery"] = self.sce_var.get()
+                names = [self.elem_list.get(i) for i in self.elem_list.curselection()]
+                self.data["scenery"] = ", ".join(names)
                 self.data["tc"] = self.tc_var.get()
                 self.data["fi"] = self.fi_var.get()
                 try:

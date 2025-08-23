@@ -105,6 +105,7 @@ def _build_odd_phrase(
         parts.append(_combine_segments(mov, "movable object", "with"))
     return ", ".join(parts)
 
+
 def template_phrases(
     scenario_class: str,
     other_road_users: str,
