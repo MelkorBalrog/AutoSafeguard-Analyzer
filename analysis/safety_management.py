@@ -39,10 +39,14 @@ ALLOWED_PROPAGATIONS: set[tuple[str, str]] = {
     ("Risk Assessment", "FMEA"),
     ("Risk Assessment", "FMEDA"),
     ("Risk Assessment", "FTA"),
+    ("Risk Assessment", "Prototype Risk Analysis"),
     ("Risk Assessment", "Product Goal Specification"),
     ("FMEA", "FTA"),
     ("FMEDA", "FTA"),
+    ("FMEA", "Prototype Risk Analysis"),
+    ("FMEDA", "Prototype Risk Analysis"),
     ("FTA", "Product Goal Specification"),
+    ("Prototype Risk Analysis", "Product Goal Specification"),
 }
 
 # Valid "Used" relationships between safety analysis work products. These
@@ -72,6 +76,7 @@ SAFETY_ANALYSIS_WORK_PRODUCTS: set[str] = {
     "FMEA",
     "FMEDA",
     "FTA",
+    "Prototype Risk Analysis",
     "Reliability Analysis",
     "Causal Bayesian Network Analysis",
     "Safety & Security Case",
@@ -93,6 +98,7 @@ ALLOWED_USAGE.update(
     {
         ("Mission Profile", "Reliability Analysis"),
         ("Mission Profile", "FTA"),
+        ("Mission Profile", "Prototype Risk Analysis"),
         ("Requirement Specification", "HAZOP"),
         ("ODD", "Scenario Library"),
         ("Scenario Library", "HAZOP"),

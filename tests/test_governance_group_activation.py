@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 from sysml.sysml_repository import SysMLRepository
-from AutoML import AutoMLApp
+from main.AutoML import AutoMLApp
 
 
 class DummyListbox:
@@ -46,6 +46,7 @@ class DummyMenu:
         ("Safety & Security Case", "GSN"),
         ("GSN Argumentation", "GSN"),
         ("FMEA", "Qualitative Analysis"),
+        ("Prototype Risk Analysis", "Qualitative Analysis"),
         ("FMEDA", "Quantitative Analysis"),
         ("Causal Bayesian Network Analysis", "Quantitative Analysis"),
         ("Mission Profile", "Quantitative Analysis"),
