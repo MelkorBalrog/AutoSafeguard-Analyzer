@@ -149,3 +149,42 @@ def test_invalid_node_addition(monkeypatch):
     app.add_node_of_type("Gate")
     assert warnings
     assert len(parent.children) == 0
+
+
+def test_tab_change_triggers_redraw(monkeypatch):
+    app = AutoMLApp.__new__(AutoMLApp)
+    cta_canvas = types.SimpleNamespace(diagram_mode="CTA")
+    fta_canvas = types.SimpleNamespace(diagram_mode="FTA")
+
+    class Tab:
+        def winfo_children(self):
+            return []
+
+    cta_tab = Tab()
+    fta_tab = Tab()
+
+    app.analysis_tabs = {
+        "CTA": {"tab": cta_tab, "canvas": cta_canvas, "hbar": None, "vbar": None},
+        "FTA": {"tab": fta_tab, "canvas": fta_canvas, "hbar": None, "vbar": None},
+    }
+    app.cta_root_node = object()
+    app.fta_root_node = object()
+    app._make_doc_tab_visible = lambda tid: None
+    app.refresh_all = lambda: None
+    app.refresh_safety_case_table = lambda: None
+
+    called = {}
+
+    def redraw():
+        called["redraw"] = True
+
+    app.redraw_canvas = redraw
+
+    notebook = types.SimpleNamespace(select=lambda: cta_tab, nametowidget=lambda tab: tab)
+    event = types.SimpleNamespace(widget=notebook)
+
+    app._on_tab_change(event)
+
+    assert called.get("redraw")
+    assert app.canvas is cta_canvas
+    assert app.diagram_mode == "CTA"
