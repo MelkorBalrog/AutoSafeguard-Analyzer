@@ -42,24 +42,16 @@ class GSNCloneRelationshipTests(unittest.TestCase):
         self.assertIsNot(deep_clone.original, deep_clone)
         self.assertFalse(deep_clone.is_primary_instance)
 
-    def test_paste_node_clones_gsn_nodes(self, monkeypatch):
+    def test_paste_node_clones_gsn_nodes(self):
         import types
         import AutoML as automl_module
 
-        monkeypatch.setattr(
-            automl_module,
-            "messagebox",
-            types.SimpleNamespace(
-                showwarning=lambda *a, **k: None,
-                showinfo=lambda *a, **k: None,
-            ),
+        automl_module.messagebox = types.SimpleNamespace(
+            showwarning=lambda *a, **k: None,
+            showinfo=lambda *a, **k: None,
         )
-        monkeypatch.setattr(
-            automl_module,
-            "AutoML_Helper",
-            types.SimpleNamespace(
-                calculate_assurance_recursive=lambda *a, **k: None
-            ),
+        automl_module.AutoML_Helper = types.SimpleNamespace(
+            calculate_assurance_recursive=lambda *a, **k: None
         )
 
         app = AutoMLApp.__new__(AutoMLApp)
