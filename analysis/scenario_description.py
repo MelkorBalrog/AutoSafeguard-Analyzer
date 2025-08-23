@@ -5,22 +5,15 @@ from __future__ import annotations
 from typing import Iterable, List, Sequence, Tuple
 
 
-def _phrase_trigger(
-    sclass: str, oru: str, action: str, odd_phrase: str, tc: str, fi: str
-) -> str:
-    parts: List[str] = []
-    if sclass:
-        parts.append(f"In a {sclass} scenario")
-    if tc:
-        parts.append(f"when {tc}")
-    if oru or action:
-        oa = " ".join(p for p in [oru, action] if p).strip()
-        parts.append(oa if parts else oa.capitalize())
-    if odd_phrase:
-        parts.append(odd_phrase)
-    if fi:
-        parts.append(f"leading to {fi}")
-    return " ".join(parts) + "." if parts else ""
+EXCLUDED_PARAMS = {
+    "recall",
+    "accuracy",
+    "precision",
+    "presicion",
+    "f1 score",
+    "f1_score",
+    "f1score",
+}
 
 
 def _phrase_insufficiency(
@@ -61,7 +54,8 @@ def _build_odd_phrase(
     infra: List[Tuple[str, str]] = []
     road: List[Tuple[str, str]] = []
     for name, cls, params in odd_elements:
-        plist = ", ".join(p for p in params if p)
+        filtered = [p for p in params if p and p.lower() not in EXCLUDED_PARAMS]
+        plist = ", ".join(filtered)
         if cls == "Environment":
             env.append((name, plist))
         elif cls == "Infrastructure":
@@ -84,11 +78,11 @@ def template_phrases(
     odd_elements: Iterable[Tuple[str, str, Sequence[str]]],
     triggering_condition: str,
     functional_insufficiency: str,
-) -> List[str]:
-    """Return two descriptive phrases for a scenario."""
+    ) -> List[str]:
+    """Return a descriptive phrase for a scenario."""
 
     odd_phrase = _build_odd_phrase(odd_elements)
-    p1 = _phrase_trigger(
+    phrase = _phrase_insufficiency(
         scenario_class,
         other_road_users,
         action,
@@ -96,12 +90,4 @@ def template_phrases(
         triggering_condition,
         functional_insufficiency,
     )
-    p2 = _phrase_insufficiency(
-        scenario_class,
-        other_road_users,
-        action,
-        odd_phrase,
-        triggering_condition,
-        functional_insufficiency,
-    )
-    return [p for p in (p1, p2) if p]
+    return [phrase] if phrase else []
