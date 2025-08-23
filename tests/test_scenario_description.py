@@ -38,3 +38,19 @@ def test_template_phrase_no_params_word_when_none():
     assert "accuracy" not in text
     assert "recall" not in text
     assert "parameter" not in text
+
+
+def test_template_phrase_filters_dict_strings():
+    phrases = template_phrases(
+        "Frontal",
+        "pedestrians",
+        "cross",
+        [("day", "Environment", ["{'accuracy': 'ratio', 'speed': 'fast'}"])],
+        "",
+        "",
+    )
+    assert len(phrases) == 1
+    text = phrases[0].lower()
+    assert "accuracy" not in text
+    assert "speed: fast" in text
+    assert "parameter" in text

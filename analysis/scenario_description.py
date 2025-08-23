@@ -13,6 +13,7 @@ EXCLUDED_PARAMS = {
     "f1 score",
     "f1_score",
     "f1score",
+    "f1",
 }
 
 
@@ -47,6 +48,29 @@ def _combine_segments(
     return "; ".join(segs)
 
 
+def _normalize_params(params: Sequence[str]) -> List[str]:
+    norm: List[str] = []
+    for p in params:
+        if isinstance(p, dict):
+            items = p.items()
+        elif isinstance(p, str) and p.startswith("{") and p.endswith("}"):
+            try:
+                from ast import literal_eval
+
+                items = literal_eval(p).items()  # type: ignore[assignment]
+            except Exception:
+                items = [(p, "")]
+        else:
+            items = [(p, "")]
+        for k, v in items:
+            key = str(k).strip()
+            if key.lower() in EXCLUDED_PARAMS:
+                continue
+            val = str(v).strip()
+            norm.append(f"{key}: {val}" if val else key)
+    return norm
+
+
 def _build_odd_phrase(
     odd_elements: Iterable[Tuple[str, str, Sequence[str]]]
 ) -> str:
@@ -54,7 +78,7 @@ def _build_odd_phrase(
     infra: List[Tuple[str, str]] = []
     road: List[Tuple[str, str]] = []
     for name, cls, params in odd_elements:
-        filtered = [p for p in params if p and p.lower() not in EXCLUDED_PARAMS]
+        filtered = _normalize_params(params)
         plist = ", ".join(filtered)
         if cls == "Environment":
             env.append((name, plist))
