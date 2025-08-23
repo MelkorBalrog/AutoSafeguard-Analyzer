@@ -5588,6 +5588,11 @@ class SysMLDiagramWindow(tk.Frame):
         elif obj:
             if self._open_linked_diagram(obj):
                 return
+            # Persist current diagram state before opening the dialog so that
+            # focus changes triggered by the dialog do not clear unsaved
+            # objects from the repository. After the dialog closes, sync again
+            # to store any edits made by the user.
+            self._sync_to_repository()
             SysMLObjectDialog(self, obj)
             self._sync_to_repository()
             self.redraw()
@@ -5706,6 +5711,7 @@ class SysMLDiagramWindow(tk.Frame):
                 self.redraw()
 
     def _edit_object(self, obj):
+        self._sync_to_repository()
         SysMLObjectDialog(self, obj)
         self._sync_to_repository()
         self.redraw()
@@ -9525,6 +9531,9 @@ class SysMLDiagramWindow(tk.Frame):
     def copy_selected(self, _event=None):
         if self.selected_obj and self.app:
             self.app.active_arch_window = self
+            self.app.selected_node = None
+            self.app.clipboard_node = None
+            self.app.cut_mode = False
             diag = self.repo.diagrams.get(self.diagram_id)
             if self.selected_obj.obj_type == "System Boundary":
                 children = [
@@ -9552,6 +9561,9 @@ class SysMLDiagramWindow(tk.Frame):
             return
         if self.selected_obj and self.app:
             self.app.active_arch_window = self
+            self.app.selected_node = None
+            self.app.clipboard_node = None
+            self.app.cut_mode = True
             diag = self.repo.diagrams.get(self.diagram_id)
             if self.selected_obj.obj_type == "System Boundary":
                 children = [

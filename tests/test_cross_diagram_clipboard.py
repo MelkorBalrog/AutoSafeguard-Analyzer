@@ -310,6 +310,61 @@ def test_cut_paste_between_governance_diagrams():
     assert win2.objects[0].obj_type == "Plan"
 
 
+def test_copy_paste_governance_replaces_node_clipboard():
+    ARCH_WINDOWS.clear()
+    app = AutoMLApp.__new__(AutoMLApp)
+    app.diagram_clipboard = None
+    app.diagram_clipboard_type = None
+    # Simulate leftover clipboard node from a different analysis
+    app.clipboard_node = types.SimpleNamespace(
+        unique_id="n1",
+        parents=[],
+        children=[],
+        node_type="Goal",
+        x=0,
+        y=0,
+        display_label="dummy",
+        is_primary_instance=True,
+    )
+    app.selected_node = app.clipboard_node
+    app.root_node = object()
+    app.cut_mode = False
+    repo = DummyRepo("Governance Diagram", "Governance Diagram")
+
+    obj = SysMLObject(
+        obj_id=_get_next_id(),
+        obj_type="Plan",
+        x=0,
+        y=0,
+        element_id=None,
+        width=80,
+        height=40,
+        properties={},
+        requirements=[],
+        locked=False,
+        hidden=False,
+        collapsed={},
+    )
+
+    win1 = make_window(app, repo, 1)
+    win1.objects = [obj]
+    win1.selected_obj = obj
+
+    win2 = make_window(app, repo, 2)
+
+    win1._on_focus_in()
+    # Directly invoke window copy to mimic context menu usage
+    win1.copy_selected()
+    assert app.diagram_clipboard is not None
+    assert app.clipboard_node is None
+
+    win2._on_focus_in()
+    app.paste_node()
+
+    assert len(win2.objects) == 1
+    assert win2.objects[0].obj_type == "Plan"
+
+
 def test_copy_paste_process_area_between_diagrams():
     ARCH_WINDOWS.clear()
     app = AutoMLApp.__new__(AutoMLApp)
