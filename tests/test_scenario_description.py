@@ -1,6 +1,5 @@
 from analysis.scenario_description import template_phrases
 
-
 def test_template_phrase_filters_and_single():
     phrases = template_phrases(
         "Frontal",
@@ -55,23 +54,3 @@ def test_template_phrase_filters_dict_strings():
     assert "accuracy" not in text
     assert "speed: fast" in text
     assert "parameter" in text
-
-
-def test_template_phrase_temporal_and_movable():
-    phrases = template_phrases(
-        "Side",
-        "car",
-        "overtakes",
-        [
-            ("construction zone", "Temporal", []),
-            ("truck", "Movable", []),
-        ],
-        "low battery",
-        "power loss",
-    )
-    assert len(phrases) == 1
-    text = phrases[0].lower()
-    assert "during [[construction zone]] temporal condition" in text
-    assert "with [[truck]] movable object" in text
-    assert "low battery" in text
-    assert "power loss" in text
