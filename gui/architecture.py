@@ -5590,7 +5590,7 @@ class SysMLDiagramWindow(tk.Frame):
                 return
             SysMLObjectDialog(self, obj)
             self._sync_to_repository()
-            self.refresh_from_repository()
+            self.redraw()
             if getattr(self, "app", None):
                 self.app.update_views()
 
@@ -5708,7 +5708,7 @@ class SysMLDiagramWindow(tk.Frame):
     def _edit_object(self, obj):
         SysMLObjectDialog(self, obj)
         self._sync_to_repository()
-        self.refresh_from_repository()
+        self.redraw()
         if self.app:
             self.app.update_views()
         self.update_property_view()
