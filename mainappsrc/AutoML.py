@@ -10029,6 +10029,7 @@ class AutoMLApp:
         elif kind == "fta" and ident is not None:
             te = next((t for t in self.top_events if t.unique_id == int(ident)), None)
             if te:
+                self.diagram_mode = "FTA"
                 self.ensure_fta_tab()
                 self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
