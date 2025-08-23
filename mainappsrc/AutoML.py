@@ -12025,7 +12025,7 @@ class AutoMLApp:
             paa_events = [
                 te for te in getattr(self, "top_events", [])
                 if getattr(te, "analysis_mode", "FTA") == "PAA"
-            ]
+            ] + list(getattr(self, "paa_events", []))
             fta_events = [
                 te for te in getattr(self, "top_events", [])
                 if getattr(te, "analysis_mode", "FTA") != "PAA"
@@ -12034,7 +12034,11 @@ class AutoMLApp:
             if "Prototype Assurance Analysis" in enabled or paa_events:
                 _ensure_safety_root()
                 paa_root = tree.insert(safety_root, "end", text="PAAs", open=True)
+                seen_ids = set()
                 for idx, te in enumerate(paa_events):
+                    if te.unique_id in seen_ids:
+                        continue
+                    seen_ids.add(te.unique_id)
                     if not _visible("Prototype Assurance Analysis", te.name):
                         continue
                     tree.insert(paa_root, "end", text=te.name, tags=("paa", str(te.unique_id)))
@@ -12053,13 +12057,6 @@ class AutoMLApp:
                     if not _visible("CTA", te.name):
                         continue
                     tree.insert(cta_root, "end", text=te.name, tags=("cta", str(te.unique_id)))
-            if "Prototype Assurance Analysis" in enabled or getattr(self, "paa_events", []):
-                _ensure_safety_root()
-                paa_root = tree.insert(safety_root, "end", text="PAAs", open=True)
-                for idx, te in enumerate(getattr(self, "paa_events", [])):
-                    if not _visible("Prototype Assurance Analysis", te.name):
-                        continue
-                    tree.insert(paa_root, "end", text=te.name, tags=("paa", str(te.unique_id)))
             if "FMEA" in enabled or getattr(self, "fmeas", []):
                 _ensure_safety_root()
                 fmea_root = tree.insert(safety_root, "end", text="FMEAs", open=True)
