@@ -3812,11 +3812,14 @@ class SysMLDiagramWindow(tk.Frame):
         # Copy, cut, paste, undo, and redo are bound globally on the application
         # root to ensure each action fires only once. Only Delete remains here.
         self.bind("<Delete>", self.delete_selected)
-        # Refresh from the repository whenever the window gains focus
+        # Refresh from/sync to the repository whenever the window gains or loses focus
         self.bind("<FocusIn>", self._on_focus_in)
         self.canvas.bind("<FocusIn>", self._on_focus_in)
+        self.bind("<FocusOut>", self._on_focus_out)
+        self.canvas.bind("<FocusOut>", self._on_focus_out)
         if isinstance(self.master, tk.Toplevel):
             self.master.bind("<FocusIn>", self._on_focus_in)
+            self.master.bind("<FocusOut>", self._on_focus_out)
 
         self.after_idle(self._fit_toolbox)
         self.redraw()
@@ -3827,7 +3830,11 @@ class SysMLDiagramWindow(tk.Frame):
     def _on_focus_in(self, event=None):
         if self.app:
             self.app.active_arch_window = self
+        self._sync_to_repository()
         self.refresh_from_repository(event)
+
+    def _on_focus_out(self, event=None):
+        self._sync_to_repository()
 
     def _fit_toolbox(self) -> None:
         """Resize the toolbox to the smallest width that shows all button text."""
