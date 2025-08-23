@@ -12021,10 +12021,28 @@ class AutoMLApp:
                 nonlocal safety_root
                 if safety_root is None:
                     safety_root = tree.insert("", "end", text="Safety Analysis", open=True)
-            if "FTA" in enabled or getattr(self, "top_events", []):
+
+            paa_events = [
+                te for te in getattr(self, "top_events", [])
+                if getattr(te, "analysis_mode", "FTA") == "PAA"
+            ]
+            fta_events = [
+                te for te in getattr(self, "top_events", [])
+                if getattr(te, "analysis_mode", "FTA") != "PAA"
+            ]
+
+            if "Prototype Assurance Analysis" in enabled or paa_events:
+                _ensure_safety_root()
+                paa_root = tree.insert(safety_root, "end", text="PAAs", open=True)
+                for idx, te in enumerate(paa_events):
+                    if not _visible("Prototype Assurance Analysis", te.name):
+                        continue
+                    tree.insert(paa_root, "end", text=te.name, tags=("paa", str(te.unique_id)))
+
+            if "FTA" in enabled or fta_events:
                 _ensure_safety_root()
                 fta_root = tree.insert(safety_root, "end", text="FTAs", open=True)
-                for idx, te in enumerate(self.top_events):
+                for idx, te in enumerate(fta_events):
                     if not _visible("FTA", te.name):
                         continue
                     tree.insert(fta_root, "end", text=te.name, tags=("fta", str(te.unique_id)))
@@ -18856,6 +18874,42 @@ class AutoMLApp:
         self.vbar = vbar
         self.diagram_mode = diagram_mode
         self.doc_nb.select(canvas_tab)
+        self._update_analysis_menus()
+
+    def _create_cta_tab(self):
+        """Convenience wrapper for creating a CTA diagram."""
+        self._create_fta_tab("CTA")
+
+    def create_cta_diagram(self):
+        """Initialize a CTA diagram and its top-level event."""
+        self._create_cta_tab()
+        self.add_top_level_event()
+        if getattr(self, "cta_root_node", None):
+            self.open_page_diagram(self.cta_root_node)
+
+    def _update_analysis_menus(self):
+        """Enable or disable node-adding menu items based on diagram mode."""
+        mode = getattr(self, "diagram_mode", "FTA")
+        if hasattr(self, "fta_menu"):
+            for key in ("add_gate", "add_basic_event", "add_gate_from_failure_mode", "add_fault_event"):
+                state = tk.NORMAL if mode == "FTA" else tk.DISABLED
+                self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
+        if hasattr(self, "cta_menu"):
+            for key in ("add_trigger", "add_functional_insufficiency"):
+                state = tk.NORMAL if mode == "CTA" else tk.DISABLED
+                self.cta_menu.entryconfig(self._cta_menu_indices[key], state=state)
+        if hasattr(self, "paa_menu"):
+            for key in ("add_confidence", "add_robustness"):
+                state = tk.NORMAL if mode == "PAA" else tk.DISABLED
+                self.paa_menu.entryconfig(self._paa_menu_indices[key], state=state)
+
+    def _create_paa_tab(self):
+        """Convenience wrapper for creating a PAA diagram."""
+        self._create_fta_tab("PAA")
+
+        # Record the active diagram mode on the canvas for later checks
+        self.canvas.diagram_mode = diagram_mode
+        self.diagram_mode = diagram_mode
         self._update_analysis_menus()
 
     def _create_cta_tab(self):
