@@ -17774,6 +17774,7 @@ class AutoMLApp:
 
                 elems = []
                 self.elem_classes = {}
+                self.elem_params = {}
                 for name in self.lib.get("odds", []):
                     for l in self.app.odd_libraries:
                         if l.get("name") == name:
@@ -17781,12 +17782,22 @@ class AutoMLApp:
                                 if isinstance(el, dict):
                                     val = el.get("name") or el.get("element") or el.get("id")
                                     cls = el.get("class", "")
+                                    params = []
+                                    for k, v in el.items():
+                                        if k in {"name", "element", "id", "class"}:
+                                            continue
+                                        if isinstance(v, (list, tuple, set)):
+                                            params.extend(str(x) for x in v if x)
+                                        elif v:
+                                            params.append(str(v))
                                 else:
                                     val = str(el)
                                     cls = ""
+                                    params = []
                                 if val:
                                     elems.append(val)
                                     self.elem_classes[val] = cls
+                                    self.elem_params[val] = params
 
                 ttk.Label(master, text="ODD Elements").grid(row=5, column=0, sticky="e")
                 self.elem_list = tk.Listbox(master, selectmode=tk.MULTIPLE, height=5, exportselection=False)
@@ -17835,7 +17846,14 @@ class AutoMLApp:
 
             def update_description(self, *args):
                 names = [self.elem_list.get(i) for i in self.elem_list.curselection()]
-                odds = [(n, self.elem_classes.get(n, "")) for n in names]
+                odds = [
+                    (
+                        n,
+                        self.elem_classes.get(n, ""),
+                        self.elem_params.get(n, []),
+                    )
+                    for n in names
+                ]
                 phrases = template_phrases(
                     self.cls_var.get(),
                     self.beh_var.get(),
