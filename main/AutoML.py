@@ -11954,10 +11954,28 @@ class AutoMLApp:
                 nonlocal safety_root
                 if safety_root is None:
                     safety_root = tree.insert("", "end", text="Safety Analysis", open=True)
-            if "FTA" in enabled or getattr(self, "top_events", []):
+
+            paa_events = [
+                te for te in getattr(self, "top_events", [])
+                if getattr(te, "analysis_mode", "FTA") == "PAA"
+            ]
+            fta_events = [
+                te for te in getattr(self, "top_events", [])
+                if getattr(te, "analysis_mode", "FTA") != "PAA"
+            ]
+
+            if "Prototype Assurance Analysis" in enabled or paa_events:
+                _ensure_safety_root()
+                paa_root = tree.insert(safety_root, "end", text="PAAs", open=True)
+                for idx, te in enumerate(paa_events):
+                    if not _visible("Prototype Assurance Analysis", te.name):
+                        continue
+                    tree.insert(paa_root, "end", text=te.name, tags=("paa", str(te.unique_id)))
+
+            if "FTA" in enabled or fta_events:
                 _ensure_safety_root()
                 fta_root = tree.insert(safety_root, "end", text="FTAs", open=True)
-                for idx, te in enumerate(self.top_events):
+                for idx, te in enumerate(fta_events):
                     if not _visible("FTA", te.name):
                         continue
                     tree.insert(fta_root, "end", text=te.name, tags=("fta", str(te.unique_id)))
@@ -18791,6 +18809,7 @@ class AutoMLApp:
         new_event = FaultTreeNode("", "TOP EVENT")
         new_event.x, new_event.y = 300, 200
         new_event.is_top_event = True
+        new_event.analysis_mode = "PAA"
         if not hasattr(self, "top_events"):
             self.top_events = []
         self.top_events.append(new_event)
