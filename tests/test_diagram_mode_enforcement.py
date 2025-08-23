@@ -1,0 +1,151 @@
+import sys, types, pathlib
+
+# Ensure repository root is on path
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
+# Stub PIL modules to allow importing AutoML without Pillow
+sys.modules.setdefault("PIL", types.ModuleType("PIL"))
+sys.modules.setdefault("PIL.Image", types.ModuleType("PIL.Image"))
+sys.modules.setdefault("PIL.ImageDraw", types.ModuleType("PIL.ImageDraw"))
+sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
+sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
+
+import importlib.util
+
+module_path = pathlib.Path(__file__).resolve().parents[1] / "main" / "AutoML.py"
+spec = importlib.util.spec_from_file_location("AutoML", module_path)
+AutoML = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(AutoML)
+AutoMLApp = AutoML.AutoMLApp
+FaultTreeNode = AutoML.FaultTreeNode
+PageDiagram = AutoML.PageDiagram
+
+import pytest
+
+class DummyMenu:
+    last = None
+
+    def __init__(self, *args, **kwargs):
+        DummyMenu.last = self
+        self.entries = []
+
+    def add_command(self, label, command=None, **kwargs):
+        self.entries.append(label)
+
+    def add_separator(self):
+        pass
+
+    def tk_popup(self, x, y):
+        pass
+
+    def entryconfig(self, index, state):
+        # Used in _update_analysis_menus tests
+        if len(self.entries) <= index:
+            self.entries.extend([None] * (index - len(self.entries) + 1))
+        self.entries[index] = (self.entries[index], state)
+
+
+def _make_page_diagram(mode):
+    app = types.SimpleNamespace(root=None, project_properties={})
+
+    class Canvas:
+        def __init__(self, mode):
+            self.diagram_mode = mode
+
+        def canvasx(self, v):
+            return v
+
+        def canvasy(self, v):
+            return v
+
+        def bind(self, *a, **k):
+            pass
+
+    canvas = Canvas(mode)
+    root = FaultTreeNode("", "Top Event")
+    root.x = root.y = 0
+    AutoML.tkFont = types.SimpleNamespace(Font=lambda *a, **k: object())
+    return PageDiagram(app, root, canvas)
+
+
+def test_context_menu_cta(monkeypatch):
+    pd = _make_page_diagram("CTA")
+    monkeypatch.setattr(AutoML.tk, "Menu", DummyMenu)
+    event = types.SimpleNamespace(x=0, y=0, x_root=0, y_root=0)
+    pd.show_context_menu(event)
+    entries = DummyMenu.last.entries
+    assert "Add Triggering Condition" in entries
+    assert "Add Functional Insufficiency" in entries
+    assert "Add Gate" not in entries
+    assert "Add Basic Event" not in entries
+
+
+def test_context_menu_fta(monkeypatch):
+    pd = _make_page_diagram("FTA")
+    monkeypatch.setattr(AutoML.tk, "Menu", DummyMenu)
+    event = types.SimpleNamespace(x=0, y=0, x_root=0, y_root=0)
+    pd.show_context_menu(event)
+    entries = DummyMenu.last.entries
+    assert "Add Gate" in entries
+    assert "Add Basic Event" in entries
+    assert "Add Triggering Condition" not in entries
+    assert "Add Functional Insufficiency" not in entries
+
+
+def test_top_level_menu_gating():
+    app = AutoMLApp.__new__(AutoMLApp)
+
+    class Menu:
+        def __init__(self):
+            self.states = {}
+
+        def entryconfig(self, index, state):
+            self.states[index] = state
+
+    app.fta_menu = Menu()
+    app.cta_menu = Menu()
+    app.paa_menu = Menu()
+    app._fta_menu_indices = {
+        "add_gate": 0,
+        "add_basic_event": 1,
+        "add_gate_from_failure_mode": 2,
+        "add_fault_event": 3,
+    }
+    app._cta_menu_indices = {
+        "add_trigger": 0,
+        "add_functional_insufficiency": 1,
+    }
+    app._paa_menu_indices = {
+        "add_confidence": 0,
+        "add_robustness": 1,
+    }
+
+    app.diagram_mode = "CTA"
+    app._update_analysis_menus()
+    tk = AutoML.tk
+    assert all(state == tk.DISABLED for state in app.fta_menu.states.values())
+    assert all(state == tk.NORMAL for state in app.cta_menu.states.values())
+
+    app.diagram_mode = "FTA"
+    app._update_analysis_menus()
+    assert all(state == tk.NORMAL for state in app.fta_menu.states.values())
+    assert all(state == tk.DISABLED for state in app.cta_menu.states.values())
+
+
+def test_invalid_node_addition(monkeypatch):
+    app = AutoMLApp.__new__(AutoMLApp)
+    parent = FaultTreeNode("", "Top Event")
+    parent.x = parent.y = 0
+    parent.is_primary_instance = True
+    app.selected_node = parent
+    app.analysis_tree = types.SimpleNamespace(selection=lambda: ())
+    app.update_views = lambda: None
+    app.diagram_mode = "CTA"
+
+    warnings = []
+    monkeypatch.setattr(
+        AutoML.messagebox, "showwarning", lambda *a, **k: warnings.append(a)
+    )
+    app.add_node_of_type("Gate")
+    assert warnings
+    assert len(parent.children) == 0
