@@ -20,14 +20,14 @@ if False:  # pragma: no cover
     import AutoML  # noqa: F401
     Path(r"C:\\Program Files\\gs\\gs10.04.0\\bin\\gswin64c.exe")
 
-REQUIRED_PACKAGES = [
-    "pillow",
-    "openpyxl",
-    "networkx",
-    "matplotlib",
-    "reportlab",
-    "adjustText",
-]
+REQUIRED_PACKAGES = {
+    "pillow": "PIL",
+    "openpyxl": "openpyxl",
+    "networkx": "networkx",
+    "matplotlib": "matplotlib",
+    "reportlab": "reportlab",
+    "adjustText": "adjustText",
+}
 
 GS_PATH = Path(r"C:\\Program Files\\gs\\gs10.04.0\\bin\\gswin64c.exe")
 
@@ -112,9 +112,9 @@ def ensure_packages() -> None:
     """
     if getattr(sys, "frozen", False):
         return
-    for pkg in REQUIRED_PACKAGES:
+    for pkg, module in REQUIRED_PACKAGES.items():
         try:
-            importlib.import_module(pkg)
+            importlib.import_module(module)
         except ImportError:
             proc = subprocess.Popen([sys.executable, "-m", "pip", "install", pkg])
             memory_manager.register_process(pkg, proc)
@@ -127,13 +127,17 @@ def main() -> None:
     ensure_packages()
     ensure_ghostscript()
     base_path = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))
-    # Insert both the launcher directory and the 'main' module location to ensure
-    # the project-specific AutoML module is discoverable.
-    main_path = base_path / "main"
-    for path in (str(main_path), str(base_path)):
-        if path not in sys.path:
-            sys.path.insert(0, path)
-    runpy.run_path(main_path / "AutoML.py", run_name="__main__")
+    main_script = base_path / "main" / "AutoML.py"
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.pathsep.join(
+        [str(base_path), env.get("PYTHONPATH", "")]
+    )
+    subprocess.run(
+        [sys.executable, str(main_script)],
+        check=True,
+        cwd=base_path,
+        env=env,
+    )
     memory_manager.cleanup()
 
 if __name__ == "__main__":
