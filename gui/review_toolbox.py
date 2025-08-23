@@ -930,7 +930,7 @@ class ReviewDocumentDialog(tk.Frame):
                 draw_connections(ch)
 
         def draw_node_simple(n):
-            fill = self.app.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
+            fill = self.app.get_node_fill_color(n)
             eff_x, eff_y = n.x, n.y
             top_text = n.node_type
             if n.input_subtype:
@@ -1157,7 +1157,7 @@ class ReviewDocumentDialog(tk.Frame):
 
             top_text = "".join(seg[0] for seg in segments)
             bottom_text = n.name
-            fill = self.app.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
+            fill = self.app.get_node_fill_color(n)
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
@@ -2131,7 +2131,7 @@ class VersionCompareDialog(tk.Frame):
                 draw_connections(ch)
 
         def draw_node_simple(n):
-            fill = self.app.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
+            fill = self.app.get_node_fill_color(n)
             eff_x, eff_y = n.x, n.y
             top_text = n.node_type
             bottom_text = n.name
@@ -2360,7 +2360,7 @@ class VersionCompareDialog(tk.Frame):
             top_text = "".join(seg[0] for seg in segments)
             bottom_text = n.name
 
-            fill = self.app.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
+            fill = self.app.get_node_fill_color(n)
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = self.tree_canvas.find_all()
