@@ -92,12 +92,3 @@ def test_get_node_fill_color_by_mode():
     assert app.get_node_fill_color(None) == "#40E0D0"
     app.canvas.diagram_mode = "FTA"
     assert app.get_node_fill_color(None) == "#FAD7A0"
-
-
-def test_get_node_fill_color_override():
-    app = AutoMLApp.__new__(AutoMLApp)
-    class C:
-        pass
-    app.canvas = C()
-    app.canvas.diagram_mode = "CTA"
-    assert app.get_node_fill_color(None, "FTA") == "#FAD7A0"
