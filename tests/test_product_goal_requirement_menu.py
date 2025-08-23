@@ -4,7 +4,7 @@ import sys
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from main.AutoML import AutoMLApp
+from mainappsrc.AutoML import AutoMLApp
 
 class DummyMenu:
     def __init__(self):

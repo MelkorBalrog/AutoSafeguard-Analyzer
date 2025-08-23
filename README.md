@@ -14,7 +14,7 @@ The metamodel blends concepts from key automotive standards—ISO 26262 (functi
    ```
 2. **Launch AutoML**
    ```bash
-   python main/AutoML.py
+   python mainappsrc/AutoML.py
    ```
 3. **Create a new project**
    - Choose **File → New Project** from the menu.
@@ -1547,7 +1547,7 @@ If sending fails with a connection error, the dialog will prompt again so you ca
 
 AutoML relies on a few third‑party Python packages. The new
 `AutoML_Launcher.py` script checks for these dependencies and installs any that are
-missing before handing off execution to `main/AutoML.py`. The required packages
+missing before handing off execution to `mainappsrc/AutoML.py`. The required packages
 are:
 
 ```
@@ -1570,7 +1570,7 @@ dependencies with `python -m pip show` so the correct interpreter is used and
 pass `--hidden-import=PIL.ImageTk` to PyInstaller to ensure the module is
 bundled correctly.
 
-If double‑clicking `main/AutoML.py` closes immediately, launch it from a command
+If double‑clicking `mainappsrc/AutoML.py` closes immediately, launch it from a command
 prompt instead so any error messages remain visible. Running `AutoML_Launcher.py`
 performs the dependency installation automatically:
 
@@ -1654,7 +1654,7 @@ follow the full safety workflow yourself. Start with these setup steps:
    ```
    pip install pillow openpyxl networkx matplotlib reportlab adjustText
    ```
-2. Launch AutoML with `python main/AutoML.py` and choose **File → New Project**.
+2. Launch AutoML with `python mainappsrc/AutoML.py` and choose **File → New Project**.
 3. Create an activity diagram named **Stop at Intersection**:
    - **Diagram → Activity → New**
    - Add an initial node, an action called *Braking*, and a final node.
