@@ -12,6 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 from tools.crash_report_logger import install_best
+from tools.memory_manager import manager as memory_manager
 
 # Hint PyInstaller to bundle AutoML and its dependencies (e.g. gui package)
 if False:  # pragma: no cover
@@ -114,7 +115,10 @@ def ensure_packages() -> None:
         try:
             importlib.import_module(pkg)
         except ImportError:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
+            proc = subprocess.Popen([sys.executable, "-m", "pip", "install", pkg])
+            memory_manager.register_process(pkg, proc)
+            proc.wait()
+    memory_manager.cleanup()
 
 def main() -> None:
     """Entry point used by both source and bundled executions."""
@@ -126,6 +130,7 @@ def main() -> None:
         sys.path.insert(0, str(base_path))
     automl = importlib.import_module("AutoML")
     automl.main()
+    memory_manager.cleanup()
 
 if __name__ == "__main__":
     main()
