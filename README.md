@@ -27,6 +27,7 @@ These steps start the application with an empty project so you can explore the w
 - [Getting Started](#getting-started)
 - [Governance Diagrams](#governance-diagrams)
 - [Workflow Overview](#workflow-overview)
+- [Pegasus Scenario Generation](#pegasus-scenario-generation)
 - [HAZOP Analysis](#hazop-analysis)
 - [Risk Assessment](#risk-assessment)
 - [Causal Bayesian Network Analysis](#causal-bayesian-network-analysis)
@@ -252,6 +253,10 @@ flowchart TD
 ```
 
 The workflow begins by entering system functions and architecture elements. A **BOM** is imported into a **Reliability analysis** which produces FIT rates and component lists used by the **FMEA/FMEDA** tables. A **HAZOP** analysis identifies malfunctions while the **FI2TC/TC2FI** tables capture SOTIF hazards, functional insufficiencies and triggering conditions along with their severities. In parallel, a **Threat Analysis** maps potential attack paths so the **Cyber Risk Assessment** can compute damage scenarios, risk levels and CALs. Those cybersecurity results feed the **risk assessment**, which combines them with malfunctions and SOTIF severities to assign hazards and ASIL ratings to safety goals that then inform FMEDAs and **FTA** diagrams. Cyber and safety goals produce corresponding requirement sets that converge in peer or joint **reviews**. When a review is approved any changes to requirements or analyses automatically update the ASIL and CAL values traced back to the safety goals, cybersecurity goals, FMEAs and FTAs.
+
+## Pegasus Scenario Generation
+
+AutoML can autogenerate traffic scenarios using the PEGASUS methodology to ensure standardized and comprehensive coverage of operating conditions. The tool interprets ODD parameters and variation dimensions to build scenario libraries consumed by HAZOP, risk assessments and other analyses. Learn more about the approach in the [PEGASUS project](https://www.pegasusprojekt.de/en/about-PEGASUS).
 
 ## HAZOP Analysis
 
