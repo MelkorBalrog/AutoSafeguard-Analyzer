@@ -432,7 +432,7 @@ class SysMLRepository:
             author_email=user_config.CURRENT_USER_EMAIL,
             modified_by=user_config.CURRENT_USER_NAME,
             modified_by_email=user_config.CURRENT_USER_EMAIL,
-            phase=None if self.active_phase == GLOBAL_PHASE else self.active_phase,
+            phase=self.active_phase,
         )
         self.elements[elem_id] = elem
         try:
@@ -523,7 +523,7 @@ class SysMLRepository:
             author_email=user_config.CURRENT_USER_EMAIL,
             modified_by=user_config.CURRENT_USER_NAME,
             modified_by_email=user_config.CURRENT_USER_EMAIL,
-            phase=None if self.active_phase == GLOBAL_PHASE else self.active_phase,
+            phase=self.active_phase,
         )
         self.diagrams[diag_id] = diagram
         try:
@@ -699,7 +699,7 @@ class SysMLRepository:
             author_email=user_config.CURRENT_USER_EMAIL,
             modified_by=user_config.CURRENT_USER_NAME,
             modified_by_email=user_config.CURRENT_USER_EMAIL,
-            phase=None if self.active_phase == GLOBAL_PHASE else self.active_phase,
+            phase=self.active_phase,
         )
         self.relationships.append(rel)
         return rel
@@ -714,10 +714,8 @@ class SysMLRepository:
             return False
         if self.active_phase is None:
             return True
-        if self.active_phase == GLOBAL_PHASE:
-            return elem.phase is None
-        if elem.phase is None:
-            return False
+        if elem.phase in (None, GLOBAL_PHASE):
+            return True
         if elem.phase == self.active_phase or elem.phase in getattr(self, "reuse_phases", set()):
             return True
         diag_id = self.element_diagrams.get(elem_id)
@@ -736,12 +734,8 @@ class SysMLRepository:
             return True
         if self.active_phase is None:
             return True
-        if self.active_phase == GLOBAL_PHASE:
-            return diag.phase is None
-        if diag.diag_type == "Governance Diagram" and diag.phase is None:
+        if diag.phase in (None, GLOBAL_PHASE):
             return True
-        if diag.phase is None:
-            return False
         if diag.phase == self.active_phase or diag.phase in getattr(self, "reuse_phases", set()):
             return True
         return diag.diag_type in getattr(self, "reuse_products", set())
@@ -790,6 +784,32 @@ class SysMLRepository:
         diag = self.diagrams.get(diag_id)
         if diag:
             diag.locked = False
+
+    # ------------------------------------------------------------
+    def set_diagram_phase(self, diag_id: str, phase: Optional[str]) -> None:
+        """Assign lifecycle *phase* to diagram ``diag_id`` and its contents."""
+        diag = self.diagrams.get(diag_id)
+        if not diag:
+            return
+        old = diag.phase
+        diag.phase = phase
+        match: set[Optional[str]] = {old}
+        if old in (None, GLOBAL_PHASE):
+            match.update({None, GLOBAL_PHASE})
+        for elem_id in getattr(diag, "elements", []):
+            elem = self.elements.get(elem_id)
+            if elem and elem.phase in match:
+                elem.phase = phase
+        for rel_id in getattr(diag, "relationships", []):
+            rel = next((r for r in self.relationships if r.rel_id == rel_id), None)
+            if rel and rel.phase in match:
+                rel.phase = phase
+        for obj in getattr(diag, "objects", []):
+            if obj.get("phase") in match:
+                obj["phase"] = phase
+        for conn in getattr(diag, "connections", []):
+            if conn.get("phase") in match:
+                conn["phase"] = phase
 
     # ------------------------------------------------------------
     def rename_phase(self, old: str, new: str) -> None:
@@ -848,14 +868,12 @@ class SysMLRepository:
             return True
         if self.active_phase is None:
             return True
-        if self.active_phase == GLOBAL_PHASE:
-            return obj.get("phase") is None
-        if diag and diag.diag_type == "Governance Diagram" and obj.get("phase") is None:
+        if obj.get("phase") == self.active_phase or obj.get("phase") in getattr(self, "reuse_phases", set()):
             return True
-        if obj.get("phase") is None:
+        if obj.get("phase") in (None, GLOBAL_PHASE):
             elem = self.elements.get(obj.get("element_id"))
-            return self.element_visible(elem.elem_id) if elem else False
-        return obj.get("phase") == self.active_phase or obj.get("phase") in getattr(self, "reuse_phases", set())
+            return self.element_visible(elem.elem_id) if elem else True
+        return False
 
     def connection_visible(self, conn: dict, diag_id: Optional[str] = None) -> bool:
         """Return True if a diagram connection should be visible in the active phase."""
@@ -864,13 +882,11 @@ class SysMLRepository:
             return True
         if self.active_phase is None:
             return True
-        if self.active_phase == GLOBAL_PHASE:
-            return conn.get("phase") is None
-        if diag and diag.diag_type == "Governance Diagram" and conn.get("phase") is None:
+        if conn.get("phase") == self.active_phase or conn.get("phase") in getattr(self, "reuse_phases", set()):
             return True
-        if conn.get("phase") is None:
-            return False
-        return conn.get("phase") == self.active_phase or conn.get("phase") in getattr(self, "reuse_phases", set())
+        if conn.get("phase") in (None, GLOBAL_PHASE):
+            return True
+        return False
 
     def visible_objects(self, diag_id: str) -> list[dict]:
         """Return list of objects in diagram ``diag_id`` visible in the active phase."""
