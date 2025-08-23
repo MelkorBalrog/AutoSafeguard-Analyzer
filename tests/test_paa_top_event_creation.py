@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from main.AutoML import AutoMLApp
+from mainappsrc.AutoML import AutoMLApp
 
 
 def test_paa_diagram_has_top_event(monkeypatch):
