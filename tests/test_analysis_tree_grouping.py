@@ -92,3 +92,15 @@ def test_get_node_fill_color_by_mode():
     assert app.get_node_fill_color(None) == "#40E0D0"
     app.canvas.diagram_mode = "FTA"
     assert app.get_node_fill_color(None) == "#FAD7A0"
+
+
+def test_paa_group_not_duplicated():
+    app = _setup_app_for_tree()
+    # Add a PAA top event alongside existing paa_events
+    app.top_events = [type("N", (), {"name": "p2", "unique_id": 3, "analysis_mode": "PAA"})()]
+    app.update_views()
+    sa_root = next(n for n, d in app.analysis_tree.items.items() if d["text"] == "Safety Analysis")
+    paa_groups = [c for c in app.analysis_tree.get_children(sa_root) if app.analysis_tree.items[c]["text"] == "PAAs"]
+    assert len(paa_groups) == 1
+    paa_children = [app.analysis_tree.items[c]["text"] for c in app.analysis_tree.get_children(paa_groups[0])]
+    assert set(paa_children) == {"p1", "p2"}
