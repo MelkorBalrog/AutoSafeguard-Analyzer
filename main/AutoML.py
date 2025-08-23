@@ -2853,6 +2853,10 @@ class AutoMLApp:
             label="Fault Prioritization",
             command=self.open_fault_prioritization_window,
         )
+        qualitative_menu.add_command(
+            label="Prototype Assurance Analysis",
+            command=self.create_paa_diagram,
+        )
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
         quantitative_menu.add_command(
@@ -10745,12 +10749,16 @@ class AutoMLApp:
         menu.add_command(label="Edit Controllability", command=lambda: self.edit_controllability())
         menu.add_command(label="Edit Page Flag", command=lambda: self.edit_page_flag())
         menu.add_separator()
-        menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"))
-        menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"))
-        menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"))
-        menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"))
-        menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
-        menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
+        if getattr(self.canvas, "mode", "") == "PAA":
+            menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"))
+            menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"))
+        else:
+            menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"))
+            menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"))
+            menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"))
+            menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"))
+            menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
+            menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
         menu.tk_popup(event.x_root, event.y_root)
 
     def on_canvas_click(self, event):
@@ -12442,10 +12450,18 @@ class AutoMLApp:
 
     def add_node_of_type(self, event_type):
         self.push_undo_state()
+        if getattr(self.canvas, "mode", "") == "PAA":
+            allowed = {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"}
+            if event_type.upper() not in allowed:
+                messagebox.showwarning(
+                    "Invalid",
+                    "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis.",
+                )
+                return
         # If a node is selected, ensure it is a primary instance.
         if self.selected_node:
             if not self.selected_node.is_primary_instance:
-                messagebox.showwarning("Invalid Operation", 
+                messagebox.showwarning("Invalid Operation",
                     "Cannot add new elements to a clone node.\nPlease select the original node instead.")
                 return
             parent_node = self.selected_node
@@ -18643,6 +18659,12 @@ class AutoMLApp:
         self.canvas.bind("<Double-1>", self.on_canvas_double_click)
         self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
 
+    def create_paa_diagram(self):
+        """Initialize a Prototype Assurance Analysis diagram."""
+        self._create_fta_tab()
+        if getattr(self, "canvas", None) is not None:
+            self.canvas.mode = "PAA"
+
     def _reset_fta_state(self):
         """Clear references to the FTA tab and its canvas."""
         self.canvas_tab = None
@@ -22835,6 +22857,7 @@ class PageDiagram:
         self.app = app
         self.root_node = page_gate_node
         self.canvas = canvas
+        self.mode = getattr(canvas, "mode", "")
         self.zoom = 1.0
         self.diagram_font = tkFont.Font(family="Arial", size=int(8 * self.zoom))
         self.grid_size = 20
@@ -22940,14 +22963,18 @@ class PageDiagram:
         if node.node_type.upper() not in ["TOP EVENT", "BASIC EVENT"]:
             menu.add_command(label="Edit Page Flag", command=lambda: self.context_edit_page_flag(node))
         menu.add_separator()
-        menu.add_command(label="Add Confidence", command=lambda: self.context_add("Confidence Level"))
-        menu.add_command(label="Add Robustness", command=lambda: self.context_add("Robustness Score"))
-        menu.add_command(label="Add Gate", command=lambda: self.context_add("GATE"))
-        menu.add_command(label="Add Basic Event", command=lambda: self.context_add("Basic Event"))
-        menu.add_command(label="Add Triggering Condition", command=lambda: self.context_add("Triggering Condition"))
-        menu.add_command(label="Add Functional Insufficiency", command=lambda: self.context_add("Functional Insufficiency"))
-        menu.add_command(label="Add Gate from Failure Mode", command=lambda: self.context_add_gate_from_failure_mode())
-        menu.add_command(label="Add Fault Event", command=lambda: self.context_add_fault_event())
+        if getattr(self, "mode", "") == "PAA":
+            menu.add_command(label="Add Confidence", command=lambda: self.context_add("Confidence Level"))
+            menu.add_command(label="Add Robustness", command=lambda: self.context_add("Robustness Score"))
+        else:
+            menu.add_command(label="Add Confidence", command=lambda: self.context_add("Confidence Level"))
+            menu.add_command(label="Add Robustness", command=lambda: self.context_add("Robustness Score"))
+            menu.add_command(label="Add Gate", command=lambda: self.context_add("GATE"))
+            menu.add_command(label="Add Basic Event", command=lambda: self.context_add("Basic Event"))
+            menu.add_command(label="Add Triggering Condition", command=lambda: self.context_add("Triggering Condition"))
+            menu.add_command(label="Add Functional Insufficiency", command=lambda: self.context_add("Functional Insufficiency"))
+            menu.add_command(label="Add Gate from Failure Mode", command=lambda: self.context_add_gate_from_failure_mode())
+            menu.add_command(label="Add Fault Event", command=lambda: self.context_add_fault_event())
         menu.tk_popup(event.x_root, event.y_root)
 
     def context_edit(self, node):
