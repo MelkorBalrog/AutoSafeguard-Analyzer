@@ -2231,6 +2231,11 @@ class AutoMLApp:
             "FTA Cut Sets",
             "show_cut_sets",
         ),
+        "CTA": (
+            "Safety Analysis",
+            "CTA Diagrams",
+            "create_cta_diagram",
+        ),
         "Process": (
             "Process",
             "Calc Prototype Assurance Level (PAL)",
@@ -2295,6 +2300,7 @@ class AutoMLApp:
         "TC2FI": "Qualitative Analysis",
         "FMEA": "Qualitative Analysis",
         "Prototype Assurance Analysis": "Qualitative Analysis",
+        "CTA": "Qualitative Analysis",
         "FMEDA": "Quantitative Analysis",
         "Mission Profile": "Quantitative Analysis",
         "Reliability Analysis": "Quantitative Analysis",
@@ -2317,6 +2323,7 @@ class AutoMLApp:
         AutoMLApp._instance = self
         self.root = root
         self.top_events = []
+        self.cta_events = []
         self.selected_node = None
         self.clone_offset_counter = {}
         self._loaded_model_paths = []
@@ -2659,10 +2666,6 @@ class AutoMLApp:
         self._fta_menu_indices = {"add_gate": fta_menu.index("end")}
         fta_menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"), accelerator="Ctrl+Shift+B")
         self._fta_menu_indices["add_basic_event"] = fta_menu.index("end")
-        fta_menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
-        self._fta_menu_indices["add_trigger"] = fta_menu.index("end")
-        fta_menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
-        self._fta_menu_indices["add_functional_insufficiency"] = fta_menu.index("end")
         fta_menu.add_command(label="Add FMEA/FMEDA Event", command=self.add_basic_event_from_fmea)
         fta_menu.add_command(label="Add Gate from Failure Mode", command=self.add_gate_from_failure_mode)
         self._fta_menu_indices["add_gate_from_failure_mode"] = fta_menu.index("end")
@@ -2862,6 +2865,21 @@ class AutoMLApp:
         self.work_product_menus.setdefault("FMEA", []).append(
             (qualitative_menu, qualitative_menu.index("end"))
         )
+
+        cta_menu = tk.Menu(qualitative_menu, tearoff=0)
+        cta_menu.add_command(label="Add Top Level Event", command=self.create_cta_diagram)
+        cta_menu.add_separator()
+        cta_menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"), accelerator="Ctrl+Shift+C")
+        cta_menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"), accelerator="Ctrl+Shift+R")
+        cta_menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
+        self._cta_menu_indices = {"add_trigger": cta_menu.index("end")}
+        cta_menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
+        self._cta_menu_indices["add_functional_insufficiency"] = cta_menu.index("end")
+        qualitative_menu.add_cascade(label="CTA", menu=cta_menu, state=tk.DISABLED)
+        self.work_product_menus.setdefault("CTA", []).append(
+            (qualitative_menu, qualitative_menu.index("end"))
+        )
+        self.cta_menu = cta_menu
         qualitative_menu.add_command(
             label="Fault Prioritization",
             command=self.open_fault_prioritization_window,
@@ -2973,7 +2991,7 @@ class AutoMLApp:
         idx = menubar.index("end")
         self.work_product_menus.setdefault("Quantitative Analysis", []).append((menubar, idx))
         menubar.entryconfig(idx, state=tk.DISABLED)
-        menubar.add_cascade(label="FTA/CTA", menu=fta_menu)
+        menubar.add_cascade(label="FTA", menu=fta_menu)
         idx = menubar.index("end")
         self.work_product_menus.setdefault("FTA", []).append((menubar, idx))
         menubar.entryconfig(idx, state=tk.DISABLED)
@@ -4889,14 +4907,17 @@ class AutoMLApp:
         new_event = FaultTreeNode("", "TOP EVENT")
         new_event.x, new_event.y = 300, 200
         new_event.is_top_event = True
-        new_event.analysis_mode = "FTA"
-        self.top_events.append(new_event)
+        if getattr(self, "diagram_mode", "FTA") == "CTA":
+            if not hasattr(self, "cta_events"):
+                self.cta_events = []
+            self.cta_events.append(new_event)
+            wp = "CTA"
+        else:
+            self.top_events.append(new_event)
+            wp = "FTA"
         self.root_node = new_event
-        # Track creation for lifecycle phase filtering
         if hasattr(self, "safety_mgmt_toolbox"):
-            self.safety_mgmt_toolbox.register_created_work_product(
-                "FTA", new_event.user_name
-            )
+            self.safety_mgmt_toolbox.register_created_work_product(wp, new_event.user_name)
         self.update_views()
 
     def _build_probability_frame(
@@ -9956,6 +9977,13 @@ class AutoMLApp:
                 self.ensure_fta_tab()
                 self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
+        elif kind == "cta" and ident is not None:
+            te = next((t for t in getattr(self, "cta_events", []) if t.unique_id == int(ident)), None)
+            if te:
+                self.diagram_mode = "CTA"
+                self.ensure_fta_tab()
+                self.doc_nb.select(self.canvas_tab)
+                self.open_page_diagram(te)
         elif kind == "safetycase":
             self.manage_safety_cases()
         elif kind == "safetyconcept":
@@ -10685,6 +10713,7 @@ class AutoMLApp:
 
         # Remove all previous FTA information
         self.top_events = []
+        self.cta_events = []
         self.root_node = None
         self.selected_node = None
         self.page_history = []
@@ -11950,6 +11979,13 @@ class AutoMLApp:
                     if not _visible("FTA", te.name):
                         continue
                     tree.insert(fta_root, "end", text=te.name, tags=("fta", str(te.unique_id)))
+            if "CTA" in enabled or getattr(self, "cta_events", []):
+                _ensure_safety_root()
+                cta_root = tree.insert(safety_root, "end", text="CTAs", open=True)
+                for idx, te in enumerate(getattr(self, "cta_events", [])):
+                    if not _visible("CTA", te.name):
+                        continue
+                    tree.insert(cta_root, "end", text=te.name, tags=("cta", str(te.unique_id)))
             if "FMEA" in enabled or getattr(self, "fmeas", []):
                 _ensure_safety_root()
                 fmea_root = tree.insert(safety_root, "end", text="FMEAs", open=True)
@@ -18741,25 +18777,28 @@ class AutoMLApp:
         # Record the active diagram mode on the canvas for later checks
         self.canvas.diagram_mode = diagram_mode
         self.diagram_mode = diagram_mode
-        self._update_fta_menu()
+        self._update_analysis_menus()
 
     def _create_cta_tab(self):
         """Convenience wrapper for creating a CTA diagram."""
         self._create_fta_tab("CTA")
 
-    def _update_fta_menu(self):
+    def create_cta_diagram(self):
+        """Initialize a CTA diagram and its top-level event."""
+        self._create_cta_tab()
+        self.add_top_level_event()
+
+    def _update_analysis_menus(self):
         """Enable or disable node-adding menu items based on diagram mode."""
-        if not hasattr(self, "fta_menu"):
-            return
         mode = getattr(self, "diagram_mode", "FTA")
-        # FTA items
-        for key in ("add_gate", "add_basic_event", "add_gate_from_failure_mode", "add_fault_event"):
-            state = tk.NORMAL if mode == "FTA" else tk.DISABLED
-            self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
-        # CTA items
-        for key in ("add_trigger", "add_functional_insufficiency"):
-            state = tk.NORMAL if mode == "CTA" else tk.DISABLED
-            self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
+        if hasattr(self, "fta_menu"):
+            for key in ("add_gate", "add_basic_event", "add_gate_from_failure_mode", "add_fault_event"):
+                state = tk.NORMAL if mode == "FTA" else tk.DISABLED
+                self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
+        if hasattr(self, "cta_menu"):
+            for key in ("add_trigger", "add_functional_insufficiency"):
+                state = tk.NORMAL if mode == "CTA" else tk.DISABLED
+                self.cta_menu.entryconfig(self._cta_menu_indices[key], state=state)
 
     def create_paa_diagram(self):
         """Initialize a Prototype Assurance Analysis diagram."""
@@ -20718,6 +20757,7 @@ class AutoMLApp:
             self.top_events = [root]
         else:
             self.top_events = []
+        self.cta_events = []
 
         if (
             ensure_root
@@ -21393,6 +21433,7 @@ class AutoMLApp:
         unique_node_id_counter = 1
 
         self.top_events = []
+        self.cta_events = []
         self.root_node = None
         self.selected_node = None
         self.page_history = []
