@@ -353,6 +353,7 @@ from gui.architecture import (
 )
 from sysml.sysml_repository import SysMLRepository
 from analysis.fmeda_utils import compute_fmeda_metrics
+from analysis.scenario_description import template_phrases
 import copy
 import tkinter.font as tkFont
 import builtins
@@ -17509,6 +17510,7 @@ class AutoMLApp:
                 self.data = data or {
                     "name": "",
                     "behavior": "",
+                    "action": "",
                     "scenery": "",
                     "tc": "",
                     "fi": "",
@@ -17527,9 +17529,13 @@ class AutoMLApp:
                 self.beh_var = tk.StringVar(value=self.data.get("behavior", ""))
                 ttk.Entry(master, textvariable=self.beh_var).grid(row=1, column=1, sticky="ew")
 
-                ttk.Label(master, text="Scenery").grid(row=2, column=0, sticky="e")
+                ttk.Label(master, text="Action of Other Road Users").grid(row=2, column=0, sticky="e")
+                self.act_var = tk.StringVar(value=self.data.get("action", ""))
+                ttk.Entry(master, textvariable=self.act_var).grid(row=2, column=1, sticky="ew")
+
+                ttk.Label(master, text="Scenery").grid(row=3, column=0, sticky="e")
                 self.sce_var = tk.StringVar(value=self.data.get("scenery", ""))
-                ttk.Entry(master, textvariable=self.sce_var).grid(row=2, column=1, sticky="ew")
+                ttk.Entry(master, textvariable=self.sce_var).grid(row=3, column=1, sticky="ew")
 
                 elems = []
                 for name in self.lib.get("odds", []):
@@ -17543,59 +17549,80 @@ class AutoMLApp:
                                 if val:
                                     elems.append(val)
 
-                ttk.Label(master, text="ODD Element").grid(row=3, column=0, sticky="e")
-                self.elem_var = tk.StringVar()
-                self.elem_combo = ttk.Combobox(master, textvariable=self.elem_var, values=elems, state="readonly")
-                self.elem_combo.grid(row=3, column=1, sticky="ew")
-                ttk.Button(master, text="To Scenery", command=self.insert_elem).grid(row=3, column=2, padx=2)
-                ttk.Button(master, text="To Desc", command=self.insert_desc_elem).grid(row=3, column=3, padx=2)
+                ttk.Label(master, text="ODD Elements").grid(row=4, column=0, sticky="e")
+                self.elem_list = tk.Listbox(master, selectmode=tk.MULTIPLE, height=5, exportselection=False)
+                for el in elems:
+                    self.elem_list.insert(tk.END, el)
+                self.elem_list.grid(row=4, column=1, sticky="nsew")
+                self.elem_list.bind("<<ListboxSelect>>", lambda e: self.update_description())
+                ttk.Button(master, text="To Scenery", command=self.insert_elem).grid(row=4, column=2, padx=2)
+                ttk.Button(master, text="To Desc", command=self.insert_desc_elem).grid(row=4, column=3, padx=2)
+                master.grid_rowconfigure(4, weight=1)
 
                 tc_names = [n.user_name or f"TC {n.unique_id}" for n in self.app.get_all_triggering_conditions()]
                 fi_names = [n.user_name or f"FI {n.unique_id}" for n in self.app.get_all_functional_insufficiencies()]
-                ttk.Label(master, text="Triggering Condition").grid(row=4, column=0, sticky="e")
+                ttk.Label(master, text="Triggering Condition").grid(row=5, column=0, sticky="e")
                 self.tc_var = tk.StringVar(value=self.data.get("tc", ""))
-                ttk.Combobox(master, textvariable=self.tc_var, values=tc_names, state="readonly").grid(row=4, column=1, sticky="ew")
-                ttk.Label(master, text="Functional Insufficiency").grid(row=5, column=0, sticky="e")
+                ttk.Combobox(master, textvariable=self.tc_var, values=tc_names, state="readonly").grid(row=5, column=1, sticky="ew")
+                ttk.Label(master, text="Functional Insufficiency").grid(row=6, column=0, sticky="e")
                 self.fi_var = tk.StringVar(value=self.data.get("fi", ""))
-                ttk.Combobox(master, textvariable=self.fi_var, values=fi_names, state="readonly").grid(row=5, column=1, sticky="ew")
+                ttk.Combobox(master, textvariable=self.fi_var, values=fi_names, state="readonly").grid(row=6, column=1, sticky="ew")
 
-                ttk.Label(master, text="Exposure").grid(row=6, column=0, sticky="e")
+                ttk.Label(master, text="Exposure").grid(row=7, column=0, sticky="e")
                 self.exp_var = tk.StringVar(value=str(self.data.get("exposure", 1)))
                 ttk.Combobox(
                     master,
                     textvariable=self.exp_var,
                     values=["1", "2", "3", "4"],
                     state="readonly",
-                ).grid(row=6, column=1, sticky="ew")
+                ).grid(row=7, column=1, sticky="ew")
 
-                ttk.Label(master, text="Description").grid(row=7, column=0, sticky="ne")
+                ttk.Label(master, text="Description").grid(row=8, column=0, sticky="ne")
                 self.desc = tk.Text(master, height=4, width=40, wrap="word")
-                self.desc.grid(row=7, column=1, columnspan=3, sticky="nsew")
+                self.desc.grid(row=8, column=1, columnspan=3, sticky="nsew")
                 self.load_desc_links()
                 master.grid_columnconfigure(1, weight=1)
 
+                # Automatically update description on parameter changes
+                for var in (self.beh_var, self.act_var, self.tc_var, self.fi_var):
+                    var.trace_add("write", lambda *a: self.update_description())
+                self.update_description()
+
+            def update_description(self, *args):
+                odds = [self.elem_list.get(i) for i in self.elem_list.curselection()]
+                phrases = template_phrases(
+                    self.beh_var.get(),
+                    self.act_var.get(),
+                    odds,
+                    self.tc_var.get(),
+                    self.fi_var.get(),
+                )
+                text = " ".join(phrases)
+                self.desc.delete("1.0", "end")
+                self.desc.insert("1.0", text)
+
             def insert_elem(self):
-                el = self.elem_var.get()
-                if el:
+                sels = [self.elem_list.get(i) for i in self.elem_list.curselection()]
+                if sels:
                     cur = self.sce_var.get().strip()
+                    new = ", ".join(sels)
                     if cur:
-                        self.sce_var.set(f"{cur}, {el}")
+                        self.sce_var.set(f"{cur}, {new}")
                     else:
-                        self.sce_var.set(el)
+                        self.sce_var.set(new)
 
             def insert_desc_elem(self):
-                el = self.elem_var.get()
-                if not el:
-                    return
-                pos = self.desc.index(tk.INSERT)
-                text = f"[[{el}]]"
-                self.desc.insert(pos, text)
-                tag = f"link{self.tag_counter}"
-                self.tag_counter += 1
-                end = self.desc.index(f"{pos}+{len(text)}c")
-                self.desc.tag_add(tag, pos, end)
-                self.desc.tag_config(tag, foreground="blue", underline=1)
-                self.desc.tag_bind(tag, "<Button-1>", lambda e, n=el: self.show_elem(n))
+                sels = [self.elem_list.get(i) for i in self.elem_list.curselection()]
+                for el in sels:
+                    pos = self.desc.index(tk.INSERT)
+                    text = f"[[{el}]]"
+                    self.desc.insert(pos, text)
+                    tag = f"link{self.tag_counter}"
+                    self.tag_counter += 1
+                    end = self.desc.index(f"{pos}+{len(text)}c")
+                    self.desc.tag_add(tag, pos, end)
+                    self.desc.tag_config(tag, foreground="blue", underline=1)
+                    self.desc.tag_bind(tag, "<Button-1>", lambda e, n=el: self.show_elem(n))
 
             def load_desc_links(self):
                 desc = self.data.get("description", "")
@@ -17625,6 +17652,7 @@ class AutoMLApp:
             def apply(self):
                 self.data["name"] = self.name_var.get()
                 self.data["behavior"] = self.beh_var.get()
+                self.data["action"] = self.act_var.get()
                 self.data["scenery"] = self.sce_var.get()
                 self.data["tc"] = self.tc_var.get()
                 self.data["fi"] = self.fi_var.get()
