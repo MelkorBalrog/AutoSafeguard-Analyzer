@@ -7,7 +7,6 @@ executable the dependencies are already bundled so the installation step
 is skipped.
 """
 import importlib
-import runpy
 import os
 import subprocess
 import sys
@@ -128,12 +127,14 @@ def main() -> None:
     ensure_ghostscript()
     base_path = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))
     # Insert both the launcher directory and the 'main' module location to ensure
-    # the project-specific AutoML module is discoverable.
+    # the project-specific AutoML module is discovered rather than any similarly
+    # named third-party package that may be installed in the environment.
     main_path = base_path / "main"
     for path in (str(main_path), str(base_path)):
         if path not in sys.path:
             sys.path.insert(0, path)
-    runpy.run_path(main_path / "AutoML.py", run_name="__main__")
+    automl = importlib.import_module("AutoML")
+    automl.main()
     memory_manager.cleanup()
 
 if __name__ == "__main__":
