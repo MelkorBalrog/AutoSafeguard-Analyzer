@@ -9,13 +9,18 @@ from main.AutoML import AutoMLApp
 def test_paa_diagram_has_top_event(monkeypatch):
     app = AutoMLApp.__new__(AutoMLApp)
     class DummyCanvas:
-        mode = ""
-    def fake_create_tab():
+        diagram_mode = ""
+
+    def fake_create_tab(mode):
         app.canvas = DummyCanvas()
+        app.canvas.diagram_mode = mode
+        app.diagram_mode = mode
+
     app._create_fta_tab = fake_create_tab
     app.top_events = []
     app.update_views = lambda: None
     app.create_paa_diagram()
-    assert app.canvas.mode == "PAA"
+    assert app.canvas.diagram_mode == "PAA"
+    assert app.diagram_mode == "PAA"
     assert len(app.top_events) == 1
     assert getattr(app.top_events[0], "is_top_event", False)
