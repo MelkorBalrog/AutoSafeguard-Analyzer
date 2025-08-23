@@ -1,0 +1,110 @@
+import os
+import sys
+import types
+from unittest import mock
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from AutoML import AutoMLApp
+from gui.architecture import (
+    UseCaseDiagramWindow,
+    SysMLDiagramWindow,
+    SysMLObject,
+    _get_next_id,
+    ARCH_WINDOWS,
+)
+import gui.architecture as architecture
+
+
+class DummyRepo:
+    def __init__(self):
+        self.diagrams = {
+            1: types.SimpleNamespace(
+                diag_id=1, diag_type="Use Case Diagram", objects=[], connections=[]
+            )
+        }
+
+    # Methods used by _sync_to_repository/refresh_from_repository
+    def push_undo_state(self, sync_app=False):
+        pass
+
+    def object_visible(self, obj, did):
+        return True
+
+    def connection_visible(self, conn, did):
+        return True
+
+    def touch_diagram(self, diag_id):
+        pass
+
+    def visible_objects(self, diag_id):
+        return self.diagrams[diag_id].objects
+
+    def visible_connections(self, diag_id):
+        return []
+
+
+def test_edit_actor_keeps_diagram_objects():
+    ARCH_WINDOWS.clear()
+    app = AutoMLApp.__new__(AutoMLApp)
+    app.update_views = lambda: None
+    repo = DummyRepo()
+
+    win = UseCaseDiagramWindow.__new__(UseCaseDiagramWindow)
+    win.app = app
+    win.repo = repo
+    win.diagram_id = 1
+    win.objects = []
+    win.connections = []
+    win.redraw = lambda: None
+    win.update_property_view = lambda: None
+    win.sort_objects = lambda: None
+    win.find_connection = lambda x, y: None
+
+    obj = SysMLObject(
+        obj_id=_get_next_id(),
+        obj_type="Actor",
+        x=0,
+        y=0,
+        element_id=None,
+        width=40,
+        height=80,
+        properties={"name": "A"},
+        requirements=[],
+        locked=False,
+        hidden=False,
+        collapsed={},
+    )
+    win.objects.append(obj)
+    win.find_object = lambda x, y: obj
+    win._open_linked_diagram = lambda o: False
+    win.canvas = types.SimpleNamespace(canvasx=lambda v: v, canvasy=lambda v: v)
+
+    win._sync_to_repository = types.MethodType(
+        SysMLDiagramWindow._sync_to_repository, win
+    )
+    win.refresh_from_repository = types.MethodType(
+        SysMLDiagramWindow.refresh_from_repository, win
+    )
+    win._on_focus_in = types.MethodType(SysMLDiagramWindow._on_focus_in, win)
+
+    class DummyDialog:
+        def __init__(self, master, obj):
+            # Simulate the window regaining focus before the dialog returns
+            master._on_focus_in()
+
+    with (
+        mock.patch.object(architecture, "SysMLObjectDialog", DummyDialog),
+        mock.patch.object(architecture, "update_block_parts_from_ibd", lambda repo, diag: None),
+        mock.patch.object(architecture, "_sync_block_parts_from_ibd", lambda repo, diag_id: None),
+        mock.patch.object(
+            architecture,
+            "_enforce_ibd_multiplicity",
+            lambda repo, block_id, app=None: [],
+        ),
+    ):
+        event = types.SimpleNamespace(x=0, y=0)
+        SysMLDiagramWindow.on_double_click(win, event)
+
+    assert len(win.objects) == 1
+    assert repo.diagrams[1].objects, "Actor should persist in repository"
