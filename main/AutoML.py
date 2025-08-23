@@ -2301,6 +2301,7 @@ class AutoMLApp:
         "FMEA": "Qualitative Analysis",
         "Prototype Assurance Analysis": "Qualitative Analysis",
         "CTA": "Qualitative Analysis",
+        "Product Goal Specification": "Requirements",
         "FMEDA": "Quantitative Analysis",
         "Mission Profile": "Quantitative Analysis",
         "Reliability Analysis": "Quantitative Analysis",
@@ -2324,6 +2325,11 @@ class AutoMLApp:
         self.root = root
         self.top_events = []
         self.cta_events = []
+        self.paa_events = []
+        self.fta_root_node = None
+        self.cta_root_node = None
+        self.paa_root_node = None
+        self.shared_product_goals = {}
         self.selected_node = None
         self.clone_offset_counter = {}
         self._loaded_model_paths = []
@@ -4484,7 +4490,7 @@ class AutoMLApp:
         for i, m in enumerate(self.malfunctions):
             if m == old:
                 self.malfunctions[i] = new
-        for te in self.top_events:
+        for te in self.top_events + getattr(self, "cta_events", []) + getattr(self, "paa_events", []):
             if getattr(te, "malfunction", "") == old:
                 te.malfunction = new
         for n in self.get_all_nodes_in_model():
@@ -4500,6 +4506,30 @@ class AutoMLApp:
             for e in d.get("entries", []):
                 self._replace_entry_mal(e, old, new)
         self.update_views()
+        self._update_shared_product_goals()
+
+    def _update_shared_product_goals(self):
+        groups = {}
+        for te in self.top_events + getattr(self, "cta_events", []) + getattr(self, "paa_events", []):
+            mal = getattr(te, "malfunction", "")
+            if mal:
+                groups.setdefault(mal, []).append(te)
+        self.shared_product_goals = getattr(self, "shared_product_goals", {})
+        for mal, events in groups.items():
+            if len(events) > 1:
+                pg = self.shared_product_goals.get(mal)
+                if not pg:
+                    pg = {"name": events[0].user_name}
+                    self.shared_product_goals[mal] = pg
+                for e in events:
+                    e.user_name = pg["name"]
+                    e.name_readonly = True
+                    e.product_goal = pg
+            else:
+                self.shared_product_goals.pop(mal, None)
+                ev = events[0]
+                ev.name_readonly = False
+                ev.product_goal = None
 
     def rename_hazard(self, old: str, new: str) -> None:
         self.push_undo_state()
@@ -4926,16 +4956,21 @@ class AutoMLApp:
         new_event.is_top_event = True
         diag_mode = getattr(self, "diagram_mode", "FTA")
         if diag_mode == "CTA":
-            if not hasattr(self, "cta_events"):
-                self.cta_events = []
             self.cta_events.append(new_event)
+            self.cta_root_node = new_event
             wp = "CTA"
+        elif diag_mode == "PAA":
+            self.paa_events.append(new_event)
+            self.paa_root_node = new_event
+            wp = "Prototype Assurance Analysis"
         else:
             self.top_events.append(new_event)
-            wp = "Prototype Assurance Analysis" if diag_mode == "PAA" else "FTA"
+            self.fta_root_node = new_event
+            wp = "FTA"
         self.root_node = new_event
         if hasattr(self, "safety_mgmt_toolbox"):
             self.safety_mgmt_toolbox.register_created_work_product(wp, new_event.user_name)
+        self._update_shared_product_goals()
         self.update_views()
 
     def _build_probability_frame(
@@ -10002,6 +10037,13 @@ class AutoMLApp:
                 self.ensure_fta_tab()
                 self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
+        elif kind == "paa" and ident is not None:
+            te = next((t for t in getattr(self, "paa_events", []) if t.unique_id == int(ident)), None)
+            if te:
+                self.diagram_mode = "PAA"
+                self.ensure_fta_tab()
+                self.doc_nb.select(self.canvas_tab)
+                self.open_page_diagram(te)
         elif kind == "safetycase":
             self.manage_safety_cases()
         elif kind == "safetyconcept":
@@ -11093,8 +11135,9 @@ class AutoMLApp:
         Return a list of *all* nodes across *all* top-level events in self.top_events.
         """
         all_nodes = []
-        for te in self.top_events:
-            nodes = self.get_all_nodes_table(te)  # your existing method for one root
+        events = self.top_events + getattr(self, "cta_events", []) + getattr(self, "paa_events", [])
+        for te in events:
+            nodes = self.get_all_nodes_table(te)
             all_nodes.extend(nodes)
         return all_nodes
 
@@ -12003,6 +12046,13 @@ class AutoMLApp:
                     if not _visible("CTA", te.name):
                         continue
                     tree.insert(cta_root, "end", text=te.name, tags=("cta", str(te.unique_id)))
+            if "Prototype Assurance Analysis" in enabled or getattr(self, "paa_events", []):
+                _ensure_safety_root()
+                paa_root = tree.insert(safety_root, "end", text="PAAs", open=True)
+                for idx, te in enumerate(getattr(self, "paa_events", [])):
+                    if not _visible("Prototype Assurance Analysis", te.name):
+                        continue
+                    tree.insert(paa_root, "end", text=te.name, tags=("paa", str(te.unique_id)))
             if "FMEA" in enabled or getattr(self, "fmeas", []):
                 _ensure_safety_root()
                 fmea_root = tree.insert(safety_root, "end", text="FMEAs", open=True)
@@ -18804,6 +18854,8 @@ class AutoMLApp:
         """Initialize a CTA diagram and its top-level event."""
         self._create_cta_tab()
         self.add_top_level_event()
+        if getattr(self, "cta_root_node", None):
+            self.open_page_diagram(self.cta_root_node)
 
     def _update_analysis_menus(self):
         """Enable or disable node-adding menu items based on diagram mode."""
@@ -18829,6 +18881,8 @@ class AutoMLApp:
         """Initialize a Prototype Assurance Analysis diagram and its top-level event."""
         self._create_paa_tab()
         self.add_top_level_event()
+        if getattr(self, "paa_root_node", None):
+            self.open_page_diagram(self.paa_root_node)
 
     def _reset_fta_state(self):
         """Clear references to the FTA tab and its canvas."""
@@ -18892,6 +18946,14 @@ class AutoMLApp:
         gsn_win = getattr(tab, "gsn_window", None)
         if gsn_win:
             self.selected_node = gsn_win.diagram.root
+        if tab is getattr(self, "canvas_tab", None):
+            mode = getattr(self.canvas, "diagram_mode", "FTA")
+            if mode == "CTA" and self.cta_root_node:
+                self.root_node = self.cta_root_node
+            elif mode == "PAA" and self.paa_root_node:
+                self.root_node = self.paa_root_node
+            elif self.fta_root_node:
+                self.root_node = self.fta_root_node
         # Propagate recent changes and ensure the active tab reflects them
         self.refresh_all()
         if tab is getattr(self, "_safety_case_tab", None):
@@ -20121,6 +20183,9 @@ class AutoMLApp:
 
     def edit_user_name(self):
         if self.selected_node:
+            if getattr(self.selected_node, "name_readonly", False):
+                messagebox.showinfo("Product Goal", "Edit via Product Goal editor")
+                return
             new_name = simpledialog.askstring("Edit User Name", "Enter new user name:", initialvalue=self.selected_node.user_name)
             if new_name is not None:
                 self.selected_node.user_name = new_name.strip()
@@ -22840,6 +22905,8 @@ class FaultTreeNode:
         self.fault_ref = ""
         # Malfunction name for top level events
         self.malfunction = ""
+        self.name_readonly = False
+        self.product_goal = None
         # Probability values for classical FTA calculations
         self.failure_prob = 0.0
         self.probability = 0.0
@@ -22932,6 +22999,8 @@ class FaultTreeNode:
             "probability": self.probability,
             "prob_formula": self.prob_formula,
             "status": self.status,
+            "product_goal_name": self.product_goal.get("name") if getattr(self, "product_goal", None) else "",
+            "name_readonly": self.name_readonly,
             "children": [child.to_dict() for child in self.children]
         }
         if not self.is_primary_instance and self.original and (self.original.unique_id != self.unique_id):
@@ -23003,6 +23072,9 @@ class FaultTreeNode:
         node.probability = data.get("probability", 0.0)
         node.prob_formula = data.get("prob_formula", "linear")
         node.status = data.get("status", "draft")
+        node.name_readonly = data.get("name_readonly", False)
+        pg_name = data.get("product_goal_name", "")
+        node.product_goal = {"name": pg_name} if pg_name else None
         node.display_label = ""
         node.equation = ""
         node.detailed_equation = ""
