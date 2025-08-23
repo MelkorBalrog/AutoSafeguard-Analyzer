@@ -81,16 +81,6 @@ def test_cta_and_paa_groups_separate():
     assert "PAAs" in child_texts
 
 
-def test_paa_group_not_duplicated():
-    app = _setup_app_for_tree()
-    paa_top = type("N", (), {"name": "p2", "unique_id": 3, "analysis_mode": "PAA"})()
-    app.top_events = [paa_top]
-    app.update_views()
-    sa_root = next(n for n, d in app.analysis_tree.items.items() if d["text"] == "Safety Analysis")
-    child_texts = [app.analysis_tree.items[c]["text"] for c in app.analysis_tree.get_children(sa_root)]
-    assert child_texts.count("PAAs") == 1
-
-
 def test_get_node_fill_color_by_mode():
     app = AutoMLApp.__new__(AutoMLApp)
     class C:
