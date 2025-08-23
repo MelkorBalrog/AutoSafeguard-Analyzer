@@ -4353,6 +4353,42 @@ class AutoMLApp:
         if name not in self.hazard_severity:
             self.hazard_severity[name] = int(severity)
 
+    def add_triggering_condition(self, name: str) -> None:
+        """Add a triggering condition to the repository."""
+        self.push_undo_state()
+        append_unique_insensitive(self.triggering_conditions, name or "")
+        self.update_views()
+
+    def add_functional_insufficiency(self, name: str) -> None:
+        """Add a functional insufficiency to the repository."""
+        self.push_undo_state()
+        append_unique_insensitive(self.functional_insufficiencies, name or "")
+        self.update_views()
+
+    def delete_triggering_condition(self, name: str) -> None:
+        """Remove a triggering condition and update references."""
+        self.push_undo_state()
+        self.triggering_conditions = [tc for tc in self.triggering_conditions if tc != name]
+        for doc in self.fi2tc_docs + self.tc2fi_docs:
+            for e in doc.entries:
+                val = e.get("triggering_conditions", "")
+                new_val = self._remove_name_from_list(val, name)
+                if new_val != val:
+                    e["triggering_conditions"] = new_val
+        self.update_views()
+
+    def delete_functional_insufficiency(self, name: str) -> None:
+        """Remove a functional insufficiency and update references."""
+        self.push_undo_state()
+        self.functional_insufficiencies = [fi for fi in self.functional_insufficiencies if fi != name]
+        for doc in self.fi2tc_docs + self.tc2fi_docs:
+            for e in doc.entries:
+                val = e.get("functional_insufficiencies", "")
+                new_val = self._remove_name_from_list(val, name)
+                if new_val != val:
+                    e["functional_insufficiencies"] = new_val
+        self.update_views()
+
     # --------------------------------------------------------------
     # Rename helpers propagate changes across the entire model
     # --------------------------------------------------------------
@@ -4494,6 +4530,18 @@ class AutoMLApp:
                 changed = True
             else:
                 parts.append(p)
+        return ";".join(parts) if changed else value
+
+    def _remove_name_from_list(self, value: str, target: str) -> str:
+        parts = []
+        changed = False
+        for p in value.split(";"):
+            p = p.strip()
+            if not p or p == target:
+                if p == target:
+                    changed = True
+                continue
+            parts.append(p)
         return ";".join(parts) if changed else value
 
     def rename_triggering_condition(self, old: str, new: str) -> None:
@@ -13604,6 +13652,32 @@ class AutoMLApp:
             for tc in self.triggering_conditions:
                 lb.insert(tk.END, tc)
 
+        def add_tc():
+            name = simpledialog.askstring("Triggering Condition", "Name:")
+            if name:
+                self.add_triggering_condition(name)
+                refresh()
+
+        def edit_tc():
+            sel = lb.curselection()
+            if not sel:
+                return
+            current = lb.get(sel[0])
+            name = simpledialog.askstring("Triggering Condition", "Name:", initialvalue=current)
+            if name and name != current:
+                self.rename_triggering_condition(current, name)
+                refresh()
+                lb.select_set(sel[0])
+
+        def del_tc():
+            sel = lb.curselection()
+            if not sel:
+                return
+            name = lb.get(sel[0])
+            if messagebox.askyesno("Delete", f"Delete triggering condition '{name}'?"):
+                self.delete_triggering_condition(name)
+                refresh()
+
         def export_csv():
             path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
             if not path:
@@ -13615,7 +13689,12 @@ class AutoMLApp:
                     w.writerow([name])
             messagebox.showinfo("Export", "Triggering conditions exported.")
 
-        ttk.Button(win, text="Export CSV", command=export_csv).pack(side=tk.RIGHT, padx=5, pady=5)
+        btn = ttk.Frame(win)
+        btn.pack(side=tk.RIGHT, fill=tk.Y)
+        ttk.Button(btn, text="Add", command=add_tc).pack(fill=tk.X)
+        ttk.Button(btn, text="Edit", command=edit_tc).pack(fill=tk.X)
+        ttk.Button(btn, text="Delete", command=del_tc).pack(fill=tk.X)
+        ttk.Button(btn, text="Export CSV", command=export_csv).pack(fill=tk.X)
         refresh()
 
     def show_hazard_list(self):
@@ -13900,6 +13979,31 @@ class AutoMLApp:
             self.update_functional_insufficiency_list()
             for fi in self.functional_insufficiencies:
                 lb.insert(tk.END, fi)
+        def add_fi():
+            name = simpledialog.askstring("Functional Insufficiency", "Name:")
+            if name:
+                self.add_functional_insufficiency(name)
+                refresh()
+
+        def edit_fi():
+            sel = lb.curselection()
+            if not sel:
+                return
+            current = lb.get(sel[0])
+            name = simpledialog.askstring("Functional Insufficiency", "Name:", initialvalue=current)
+            if name and name != current:
+                self.rename_functional_insufficiency(current, name)
+                refresh()
+                lb.select_set(sel[0])
+
+        def del_fi():
+            sel = lb.curselection()
+            if not sel:
+                return
+            name = lb.get(sel[0])
+            if messagebox.askyesno("Delete", f"Delete functional insufficiency '{name}'?"):
+                self.delete_functional_insufficiency(name)
+                refresh()
 
         def export_csv():
             path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
@@ -13912,7 +14016,12 @@ class AutoMLApp:
                     w.writerow([name])
             messagebox.showinfo("Export", "Functional insufficiencies exported.")
 
-        ttk.Button(win, text="Export CSV", command=export_csv).pack(side=tk.RIGHT, padx=5, pady=5)
+        btn = ttk.Frame(win)
+        btn.pack(side=tk.RIGHT, fill=tk.Y)
+        ttk.Button(btn, text="Add", command=add_fi).pack(fill=tk.X)
+        ttk.Button(btn, text="Edit", command=edit_fi).pack(fill=tk.X)
+        ttk.Button(btn, text="Delete", command=del_fi).pack(fill=tk.X)
+        ttk.Button(btn, text="Export CSV", command=export_csv).pack(fill=tk.X)
         refresh()
 
     def show_malfunctions_editor(self):

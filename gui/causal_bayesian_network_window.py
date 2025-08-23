@@ -328,12 +328,12 @@ class CausalBayesianNetworkWindow(tk.Frame):
             kind = "trigger" if self.current_tool == "Triggering Condition" else "insufficiency"
             doc.types[name] = kind
             self._draw_node(name, x, y, kind)
-            if kind == "trigger" and hasattr(self.app, "update_triggering_condition_list"):
-                self.app.update_triggering_condition_list()
+            if kind == "trigger" and hasattr(self.app, "add_triggering_condition"):
+                self.app.add_triggering_condition(name)
             elif kind == "insufficiency" and hasattr(
-                self.app, "update_functional_insufficiency_list"
+                self.app, "add_functional_insufficiency"
             ):
-                self.app.update_functional_insufficiency_list()
+                self.app.add_functional_insufficiency(name)
             self.select_tool("Select")
         elif self.current_tool == "Existing Triggering Condition":
             names = self._select_triggering_conditions()
