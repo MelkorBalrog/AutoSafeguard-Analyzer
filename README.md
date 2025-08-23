@@ -14,7 +14,7 @@ The metamodel blends concepts from key automotive standards—ISO 26262 (functi
    ```
 2. **Launch AutoML**
    ```bash
-   python mainappsrc/AutoML.py
+   python AutoML_launcher.py
    ```
 3. **Create a new project**
    - Choose **File → New Project** from the menu.
