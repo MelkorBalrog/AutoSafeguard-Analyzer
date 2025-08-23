@@ -10027,7 +10027,7 @@ class AutoMLApp:
         elif kind == "sg":
             self.show_product_goals_editor()
         elif kind == "fta" and ident is not None:
-            te = next((t for t in self.top_events if t.unique_id == int(ident)), None)
+            te = next((t for t in getattr(self, "fta_events", []) if t.unique_id == int(ident)), None)
             if te:
                 self.diagram_mode = "FTA"
                 self.ensure_fta_tab()
