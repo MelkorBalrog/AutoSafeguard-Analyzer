@@ -77,8 +77,8 @@ def test_cta_and_paa_groups_separate():
     app.update_views()
     sa_root = next(n for n, d in app.analysis_tree.items.items() if d["text"] == "Safety Analysis")
     child_texts = [app.analysis_tree.items[c]["text"] for c in app.analysis_tree.get_children(sa_root)]
-    assert "CTAs" in child_texts
-    assert "PAAs" in child_texts
+    assert child_texts.count("CTAs") == 1
+    assert child_texts.count("PAAs") == 1
 
 
 def test_get_node_fill_color_by_mode():
