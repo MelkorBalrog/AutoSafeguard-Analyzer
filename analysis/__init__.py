@@ -4,6 +4,7 @@ from .sotif_validation import acceptance_rate, hazardous_behavior_rate, validati
 from .confusion_matrix import compute_metrics, compute_metrics_from_target
 from .safety_case import SafetyCase, SafetyCaseLibrary
 from .causal_bayesian_network import CausalBayesianNetwork, CausalBayesianNetworkDoc
+from .scenario_bn import build_bn_from_scenario
 
 __all__ = [
     "acceptance_rate",
@@ -12,6 +13,7 @@ __all__ = [
     "compute_metrics",
     "CausalBayesianNetwork",
     "CausalBayesianNetworkDoc",
+    "build_bn_from_scenario",
     "SafetyCase",
     "SafetyCaseLibrary",
     "SafetyManagementToolbox",
