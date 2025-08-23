@@ -124,6 +124,16 @@ class SafetyManagementExplorer(tk.Frame):
         self.populate()
 
     # ------------------------------------------------------------------
+    def _refresh_diagram_list(self) -> None:
+        """Update diagram dropdowns in the toolbox window, if present."""
+        smw = getattr(getattr(self, "app", None), "safety_mgmt_window", None)
+        if smw and hasattr(smw, "refresh_diagrams"):
+            try:
+                smw.refresh_diagrams()
+            except Exception:
+                pass
+
+    # ------------------------------------------------------------------
     def new_folder(self):
         name = simpledialog.askstring("New Folder", "Name:", parent=self)
         if not name:
@@ -162,6 +172,7 @@ class SafetyManagementExplorer(tk.Frame):
         if typ == "module" and obj is not None:
             obj.diagrams.append(actual)
         self.populate()
+        self._refresh_diagram_list()
 
     # ------------------------------------------------------------------
     def rename_item(self):
@@ -187,6 +198,7 @@ class SafetyManagementExplorer(tk.Frame):
         else:
             return
         self.populate()
+        self._refresh_diagram_list()
 
     # ------------------------------------------------------------------
     def delete_item(self):
@@ -208,6 +220,7 @@ class SafetyManagementExplorer(tk.Frame):
             else:
                 self.toolbox.modules.remove(obj)
         self.populate()
+        self._refresh_diagram_list()
 
     # ------------------------------------------------------------------
     def open_item(self):
