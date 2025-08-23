@@ -328,12 +328,12 @@ class CausalBayesianNetworkWindow(tk.Frame):
             kind = "trigger" if self.current_tool == "Triggering Condition" else "insufficiency"
             doc.types[name] = kind
             self._draw_node(name, x, y, kind)
-            if kind == "trigger" and hasattr(self.app, "update_triggering_condition_list"):
-                self.app.update_triggering_condition_list()
+            if kind == "trigger" and hasattr(self.app, "add_triggering_condition"):
+                self.app.add_triggering_condition(name)
             elif kind == "insufficiency" and hasattr(
-                self.app, "update_functional_insufficiency_list"
+                self.app, "add_functional_insufficiency"
             ):
-                self.app.update_functional_insufficiency_list()
+                self.app.add_functional_insufficiency(name)
             self.select_tool("Select")
         elif self.current_tool == "Existing Triggering Condition":
             names = self._select_triggering_conditions()
@@ -920,6 +920,39 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._update_all_tables()
 
     # ------------------------------------------------------------------
+    class _SelectExistingDialog(simpledialog.Dialog):
+        """Dialog with a combobox and list to choose existing names."""
+
+        def __init__(self, parent, title: str, options: list[str]):
+            self._options = options
+            self._selected: list[str] = []
+            super().__init__(parent, title)
+
+        def body(self, master):
+            ttk.Label(master, text="Name:").grid(row=0, column=0, sticky="e")
+            self._var = tk.StringVar()
+            self._combo = ttk.Combobox(
+                master, values=self._options, textvariable=self._var, state="readonly"
+            )
+            self._combo.grid(row=0, column=1, padx=5, pady=5)
+            ttk.Button(master, text="Add", command=self._add).grid(row=0, column=2)
+            self._lb = tk.Listbox(master, height=5)
+            self._lb.grid(row=1, column=0, columnspan=3, sticky="nsew", padx=5, pady=5)
+            return self._combo
+
+        def _add(self):
+            val = self._var.get().strip()
+            if val and val not in self._selected:
+                self._selected.append(val)
+                self._lb.insert(tk.END, val)
+
+        def apply(self):
+            if not self._selected:
+                val = self._var.get().strip()
+                if val:
+                    self._selected.append(val)
+            self.result = self._selected
+
     def _select_triggering_conditions(self) -> list[str]:
         """Return existing triggering conditions chosen by the user."""
         tcs = sorted(getattr(self.app, "triggering_conditions", []))
@@ -930,15 +963,10 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 parent=self,
             )
             return []
-        prompt = ", ".join(tcs)
-        sel = simpledialog.askstring(
-            "Existing Triggering Conditions",
-            f"Names (comma separated):\n{prompt}",
-            parent=self,
+        dlg = self._SelectExistingDialog(
+            self, "Existing Triggering Conditions", tcs
         )
-        if not sel:
-            return []
-        return [n.strip() for n in sel.split(",") if n.strip() in tcs]
+        return dlg.result or []
 
     # ------------------------------------------------------------------
     def _select_functional_insufficiencies(self) -> list[str]:
@@ -951,15 +979,10 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 parent=self,
             )
             return []
-        prompt = ", ".join(fis)
-        sel = simpledialog.askstring(
-            "Existing Functional Insufficiencies",
-            f"Names (comma separated):\n{prompt}",
-            parent=self,
+        dlg = self._SelectExistingDialog(
+            self, "Existing Functional Insufficiencies", fis
         )
-        if not sel:
-            return []
-        return [n.strip() for n in sel.split(",") if n.strip() in fis]
+        return dlg.result or []
 
     # ------------------------------------------------------------------
     def _select_malfunctions(self) -> list[str]:
