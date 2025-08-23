@@ -13722,6 +13722,7 @@ class AutoMLApp:
             self.update_triggering_condition_list()
             for tc in self.triggering_conditions:
                 lb.insert(tk.END, tc)
+        win.refresh_from_repository = refresh
 
         def add_tc():
             name = simpledialog.askstring("Triggering Condition", "Name:")
@@ -14073,31 +14074,7 @@ class AutoMLApp:
             self.update_functional_insufficiency_list()
             for fi in self.functional_insufficiencies:
                 lb.insert(tk.END, fi)
-        def add_fi():
-            name = simpledialog.askstring("Functional Insufficiency", "Name:")
-            if name:
-                self.add_functional_insufficiency(name)
-                refresh()
-
-        def edit_fi():
-            sel = lb.curselection()
-            if not sel:
-                return
-            current = lb.get(sel[0])
-            name = simpledialog.askstring("Functional Insufficiency", "Name:", initialvalue=current)
-            if name and name != current:
-                self.rename_functional_insufficiency(current, name)
-                refresh()
-                lb.select_set(sel[0])
-
-        def del_fi():
-            sel = lb.curselection()
-            if not sel:
-                return
-            name = lb.get(sel[0])
-            if messagebox.askyesno("Delete", f"Delete functional insufficiency '{name}'?"):
-                self.delete_functional_insufficiency(name)
-                refresh()
+        win.refresh_from_repository = refresh
 
         def export_csv():
             path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])

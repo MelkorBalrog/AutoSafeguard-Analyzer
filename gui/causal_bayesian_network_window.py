@@ -924,7 +924,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         """Dialog with a combobox and list to choose existing names."""
 
         def __init__(self, parent, title: str, options: list[str]):
-            self._options = options
+            self._choices = options
             self._selected: list[str] = []
             super().__init__(parent, title)
 
@@ -932,7 +932,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             ttk.Label(master, text="Name:").grid(row=0, column=0, sticky="e")
             self._var = tk.StringVar()
             self._combo = ttk.Combobox(
-                master, values=self._options, textvariable=self._var, state="readonly"
+                master, values=self._choices, textvariable=self._var, state="readonly"
             )
             self._combo.grid(row=0, column=1, padx=5, pady=5)
             ttk.Button(master, text="Add", command=self._add).grid(row=0, column=2)
