@@ -2656,12 +2656,18 @@ class AutoMLApp:
         fta_menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"), accelerator="Ctrl+Shift+C")
         fta_menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"), accelerator="Ctrl+Shift+R")
         fta_menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"), accelerator="Ctrl+Shift+G")
+        self._fta_menu_indices = {"add_gate": fta_menu.index("end")}
         fta_menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"), accelerator="Ctrl+Shift+B")
+        self._fta_menu_indices["add_basic_event"] = fta_menu.index("end")
         fta_menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
+        self._fta_menu_indices["add_trigger"] = fta_menu.index("end")
         fta_menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
+        self._fta_menu_indices["add_functional_insufficiency"] = fta_menu.index("end")
         fta_menu.add_command(label="Add FMEA/FMEDA Event", command=self.add_basic_event_from_fmea)
         fta_menu.add_command(label="Add Gate from Failure Mode", command=self.add_gate_from_failure_mode)
+        self._fta_menu_indices["add_gate_from_failure_mode"] = fta_menu.index("end")
         fta_menu.add_command(label="Add Fault Event", command=self.add_fault_event)
+        self._fta_menu_indices["add_fault_event"] = fta_menu.index("end")
         fta_menu.add_separator()
         fta_menu.add_command(label="FTA-FMEA Traceability", command=self.show_traceability_matrix)
         fta_menu.add_command(
@@ -2672,6 +2678,7 @@ class AutoMLApp:
         self.work_product_menus.setdefault("FTA", []).append((fta_menu, fta_menu.index("end")))
         fta_menu.add_command(label="Common Cause Toolbox", command=self.show_common_cause_view)
         fta_menu.add_command(label="Cause & Effect Chain", command=self.show_cause_effect_chain)
+        self.fta_menu = fta_menu
 
         edit_menu = tk.Menu(menubar, tearoff=0)
         edit_menu.add_command(label="Undo", command=self.undo, accelerator="Ctrl+Z")
@@ -10776,12 +10783,15 @@ class AutoMLApp:
             menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"))
             menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"))
         else:
-            menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"))
-            menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"))
-            menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"))
-            menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"))
-            menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
-            menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
+            diag_mode = getattr(self.canvas, "diagram_mode", "FTA")
+            if diag_mode == "CTA":
+                menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
+                menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
+            else:
+                menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"))
+                menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"))
+                menu.add_command(label="Add Gate from Failure Mode", command=self.add_gate_from_failure_mode)
+                menu.add_command(label="Add Fault Event", command=self.add_fault_event)
         menu.tk_popup(event.x_root, event.y_root)
 
     def on_canvas_click(self, event):
@@ -12497,6 +12507,18 @@ class AutoMLApp:
                 messagebox.showwarning(
                     "Invalid",
                     "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis.",
+                )
+                return
+        else:
+            diag_mode = getattr(self.canvas, "diagram_mode", "FTA")
+            if diag_mode == "CTA":
+                allowed = {"TRIGGERING CONDITION", "FUNCTIONAL INSUFFICIENCY"}
+            else:
+                allowed = {"GATE", "BASIC EVENT"}
+            if event_type.upper() not in allowed:
+                messagebox.showwarning(
+                    "Invalid",
+                    f"Node type '{event_type}' is not allowed in {diag_mode} diagrams.",
                 )
                 return
         # If a node is selected, ensure it is a primary instance.
@@ -18687,10 +18709,16 @@ class AutoMLApp:
             win.destroy()
         return _close
 
-    def _create_fta_tab(self):
-        """Create the main FTA tab with canvas and bindings."""
+    def _create_fta_tab(self, diagram_mode: str = "FTA"):
+        """Create the main FTA tab with canvas and bindings.
+
+        Parameters
+        ----------
+        diagram_mode: str
+            The operational mode of the diagram (``"FTA"`` or ``"CTA"``).
+        """
         self.canvas_tab = ttk.Frame(self.doc_nb)
-        self.doc_nb.add(self.canvas_tab, text="FTA")
+        self.doc_nb.add(self.canvas_tab, text="FTA" if diagram_mode == "FTA" else diagram_mode)
 
         self.canvas_frame = self.canvas_tab
         self.canvas = tk.Canvas(self.canvas_frame, bg=StyleManager.get_instance().canvas_bg)
@@ -18710,9 +18738,32 @@ class AutoMLApp:
         self.canvas.bind("<Double-1>", self.on_canvas_double_click)
         self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
 
+        # Record the active diagram mode on the canvas for later checks
+        self.canvas.diagram_mode = diagram_mode
+        self.diagram_mode = diagram_mode
+        self._update_fta_menu()
+
+    def _create_cta_tab(self):
+        """Convenience wrapper for creating a CTA diagram."""
+        self._create_fta_tab("CTA")
+
+    def _update_fta_menu(self):
+        """Enable or disable node-adding menu items based on diagram mode."""
+        if not hasattr(self, "fta_menu"):
+            return
+        mode = getattr(self, "diagram_mode", "FTA")
+        # FTA items
+        for key in ("add_gate", "add_basic_event", "add_gate_from_failure_mode", "add_fault_event"):
+            state = tk.NORMAL if mode == "FTA" else tk.DISABLED
+            self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
+        # CTA items
+        for key in ("add_trigger", "add_functional_insufficiency"):
+            state = tk.NORMAL if mode == "CTA" else tk.DISABLED
+            self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
+
     def create_paa_diagram(self):
         """Initialize a Prototype Assurance Analysis diagram."""
-        self._create_fta_tab()
+        self._create_fta_tab("FTA")
         if getattr(self, "canvas", None) is not None:
             self.canvas.mode = "PAA"
         # Automatically create the top-level event for PAA mode
@@ -18742,7 +18793,7 @@ class AutoMLApp:
     def ensure_fta_tab(self):
         """Recreate the FTA tab if it was closed."""
         if not getattr(self, "canvas_tab", None) or not self.canvas_tab.winfo_exists():
-            self._create_fta_tab()
+            self._create_fta_tab(getattr(self, "diagram_mode", "FTA"))
 
     def _on_tab_close(self, event):
         tab_id = self.doc_nb._closing_tab
@@ -22923,6 +22974,7 @@ class PageDiagram:
         self.root_node = page_gate_node
         self.canvas = canvas
         self.mode = getattr(canvas, "mode", "")
+        self.diagram_mode = getattr(canvas, "diagram_mode", "FTA")
         self.zoom = 1.0
         self.diagram_font = tkFont.Font(family="Arial", size=int(8 * self.zoom))
         self.grid_size = 20
@@ -23032,14 +23084,14 @@ class PageDiagram:
             menu.add_command(label="Add Confidence", command=lambda: self.context_add("Confidence Level"))
             menu.add_command(label="Add Robustness", command=lambda: self.context_add("Robustness Score"))
         else:
-            menu.add_command(label="Add Confidence", command=lambda: self.context_add("Confidence Level"))
-            menu.add_command(label="Add Robustness", command=lambda: self.context_add("Robustness Score"))
-            menu.add_command(label="Add Gate", command=lambda: self.context_add("GATE"))
-            menu.add_command(label="Add Basic Event", command=lambda: self.context_add("Basic Event"))
-            menu.add_command(label="Add Triggering Condition", command=lambda: self.context_add("Triggering Condition"))
-            menu.add_command(label="Add Functional Insufficiency", command=lambda: self.context_add("Functional Insufficiency"))
-            menu.add_command(label="Add Gate from Failure Mode", command=lambda: self.context_add_gate_from_failure_mode())
-            menu.add_command(label="Add Fault Event", command=lambda: self.context_add_fault_event())
+            if self.diagram_mode == "CTA":
+                menu.add_command(label="Add Triggering Condition", command=lambda: self.context_add("Triggering Condition"))
+                menu.add_command(label="Add Functional Insufficiency", command=lambda: self.context_add("Functional Insufficiency"))
+            else:
+                menu.add_command(label="Add Gate", command=lambda: self.context_add("GATE"))
+                menu.add_command(label="Add Basic Event", command=lambda: self.context_add("Basic Event"))
+                menu.add_command(label="Add Gate from Failure Mode", command=lambda: self.context_add_gate_from_failure_mode())
+                menu.add_command(label="Add Fault Event", command=lambda: self.context_add_fault_event())
         menu.tk_popup(event.x_root, event.y_root)
 
     def context_edit(self, node):
