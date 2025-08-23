@@ -9525,6 +9525,9 @@ class SysMLDiagramWindow(tk.Frame):
     def copy_selected(self, _event=None):
         if self.selected_obj and self.app:
             self.app.active_arch_window = self
+            self.app.selected_node = None
+            self.app.clipboard_node = None
+            self.app.cut_mode = False
             diag = self.repo.diagrams.get(self.diagram_id)
             if self.selected_obj.obj_type == "System Boundary":
                 children = [
@@ -9552,6 +9555,9 @@ class SysMLDiagramWindow(tk.Frame):
             return
         if self.selected_obj and self.app:
             self.app.active_arch_window = self
+            self.app.selected_node = None
+            self.app.clipboard_node = None
+            self.app.cut_mode = True
             diag = self.repo.diagrams.get(self.diagram_id)
             if self.selected_obj.obj_type == "System Boundary":
                 children = [
