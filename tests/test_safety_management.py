@@ -735,7 +735,7 @@ def test_menu_work_products_toggle_and_guard_existing_docs():
     cases = [
         ("Process", None),
         ("Reliability Analysis", "reliability_analyses"),
-        ("Qualitative Analysis", "hazop_docs"),
+        ("Risk Assessment", "hazop_docs"),
         ("Architecture Diagram", "arch_diagrams"),
         ("Scenario Library", "scenario_libraries"),
         ("FTA", "top_events"),
@@ -1281,7 +1281,7 @@ def test_child_work_product_enables_parent_menu():
     app._add_tool_category = lambda area, names: None
     app.work_product_menus = {
         "HAZOP": [(child_menu, 0)],
-        "Qualitative Analysis": [(parent_menu, 0)],
+        "Risk Assessment": [(parent_menu, 0)],
     }
     app.enabled_work_products = set()
     app.update_views = lambda: None
@@ -1323,7 +1323,7 @@ def test_refresh_tool_enablement_enables_parent_menus():
     app.update_views = lambda: None
     app.work_product_menus = {
         "HAZOP": [(hazop_menu, 0)],
-        "Qualitative Analysis": [(qual_menu, 0)],
+        "Risk Assessment": [(qual_menu, 0)],
         "FMEDA": [(fmeda_menu, 0)],
         "Quantitative Analysis": [(quant_menu, 0)],
     }
