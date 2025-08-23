@@ -17522,11 +17522,13 @@ class AutoMLApp:
         lib_lb.grid(row=0, column=0, rowspan=4, sticky="nsew")
         scen_tree = ttk.Treeview(
             win,
-            columns=("beh", "sce", "tc", "fi", "exp", "desc"),
+            columns=("cls", "beh", "sce", "tc", "fi", "exp", "desc"),
             show="tree headings",
         )
         scen_tree.heading("#0", text="Name")
         scen_tree.column("#0", width=150)
+        scen_tree.heading("cls", text="Class")
+        scen_tree.column("cls", width=100)
         scen_tree.heading("beh", text="Other Users")
         scen_tree.column("beh", width=140)
         scen_tree.heading("sce", text="Scenery")
@@ -17561,6 +17563,7 @@ class AutoMLApp:
             for sc in lib.get("scenarios", []):
                 if isinstance(sc, dict):
                     name = sc.get("name", "")
+                    cls = sc.get("class", "")
                     beh = sc.get("behavior", "")
                     sce = sc.get("scenery", "")
                     tc = sc.get("tc", "")
@@ -17569,12 +17572,12 @@ class AutoMLApp:
                     desc = sc.get("description", "")
                 else:
                     name = str(sc)
-                    beh = sce = tc = fi = exp = desc = ""
+                    cls = beh = sce = tc = fi = exp = desc = ""
                 scen_tree.insert(
                     "",
                     tk.END,
                     text=name,
-                    values=(beh, sce, tc, fi, exp, desc),
+                    values=(cls, beh, sce, tc, fi, exp, desc),
                     image=self.scenario_icon,
                 )
 
@@ -17618,6 +17621,7 @@ class AutoMLApp:
                 self.lib = lib
                 self.data = data or {
                     "name": "",
+                    "class": "",
                     "behavior": "",
                     "action": "",
                     "scenery": "",
@@ -17634,72 +17638,89 @@ class AutoMLApp:
                 self.name_var = tk.StringVar(value=self.data.get("name", ""))
                 ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, sticky="ew")
 
-                ttk.Label(master, text="Other Road Users").grid(row=1, column=0, sticky="e")
+                ttk.Label(master, text="Scenario Class").grid(row=1, column=0, sticky="e")
+                self.cls_var = tk.StringVar(value=self.data.get("class", ""))
+                cls_opts = ["Frontal", "Side", "Rear", "Free"]
+                ttk.Combobox(master, textvariable=self.cls_var, values=cls_opts, state="readonly").grid(row=1, column=1, sticky="ew")
+
+                ttk.Label(master, text="Other Road Users").grid(row=2, column=0, sticky="e")
                 self.beh_var = tk.StringVar(value=self.data.get("behavior", ""))
-                ttk.Entry(master, textvariable=self.beh_var).grid(row=1, column=1, sticky="ew")
+                ttk.Entry(master, textvariable=self.beh_var).grid(row=2, column=1, sticky="ew")
 
-                ttk.Label(master, text="Action of Other Road Users").grid(row=2, column=0, sticky="e")
+                ttk.Label(master, text="Action of Other Road Users").grid(row=3, column=0, sticky="e")
                 self.act_var = tk.StringVar(value=self.data.get("action", ""))
-                ttk.Entry(master, textvariable=self.act_var).grid(row=2, column=1, sticky="ew")
+                ttk.Entry(master, textvariable=self.act_var).grid(row=3, column=1, sticky="ew")
 
-                ttk.Label(master, text="Scenery").grid(row=3, column=0, sticky="e")
+                ttk.Label(master, text="Scenery").grid(row=4, column=0, sticky="e")
                 self.sce_var = tk.StringVar(value=self.data.get("scenery", ""))
-                ttk.Entry(master, textvariable=self.sce_var).grid(row=3, column=1, sticky="ew")
+                ttk.Entry(master, textvariable=self.sce_var).grid(row=4, column=1, sticky="ew")
 
                 elems = []
+                self.elem_classes = {}
                 for name in self.lib.get("odds", []):
                     for l in self.app.odd_libraries:
                         if l.get("name") == name:
                             for el in l.get("elements", []):
                                 if isinstance(el, dict):
                                     val = el.get("name") or el.get("element") or el.get("id")
+                                    cls = el.get("class", "")
                                 else:
                                     val = str(el)
+                                    cls = ""
                                 if val:
                                     elems.append(val)
+                                    self.elem_classes[val] = cls
 
-                ttk.Label(master, text="ODD Elements").grid(row=4, column=0, sticky="e")
+                ttk.Label(master, text="ODD Elements").grid(row=5, column=0, sticky="e")
                 self.elem_list = tk.Listbox(master, selectmode=tk.MULTIPLE, height=5, exportselection=False)
                 for el in elems:
                     self.elem_list.insert(tk.END, el)
-                self.elem_list.grid(row=4, column=1, sticky="nsew")
+                self.elem_list.grid(row=5, column=1, sticky="nsew")
                 self.elem_list.bind("<<ListboxSelect>>", lambda e: self.update_description())
-                ttk.Button(master, text="To Scenery", command=self.insert_elem).grid(row=4, column=2, padx=2)
-                ttk.Button(master, text="To Desc", command=self.insert_desc_elem).grid(row=4, column=3, padx=2)
-                master.grid_rowconfigure(4, weight=1)
+                ttk.Button(master, text="To Scenery", command=self.insert_elem).grid(row=5, column=2, padx=2)
+                ttk.Button(master, text="To Desc", command=self.insert_desc_elem).grid(row=5, column=3, padx=2)
+                master.grid_rowconfigure(5, weight=1)
 
                 tc_names = [n.user_name or f"TC {n.unique_id}" for n in self.app.get_all_triggering_conditions()]
                 fi_names = [n.user_name or f"FI {n.unique_id}" for n in self.app.get_all_functional_insufficiencies()]
-                ttk.Label(master, text="Triggering Condition").grid(row=5, column=0, sticky="e")
+                ttk.Label(master, text="Triggering Condition").grid(row=6, column=0, sticky="e")
                 self.tc_var = tk.StringVar(value=self.data.get("tc", ""))
-                ttk.Combobox(master, textvariable=self.tc_var, values=tc_names, state="readonly").grid(row=5, column=1, sticky="ew")
-                ttk.Label(master, text="Functional Insufficiency").grid(row=6, column=0, sticky="e")
+                ttk.Combobox(master, textvariable=self.tc_var, values=tc_names, state="readonly").grid(row=6, column=1, sticky="ew")
+                ttk.Label(master, text="Functional Insufficiency").grid(row=7, column=0, sticky="e")
                 self.fi_var = tk.StringVar(value=self.data.get("fi", ""))
-                ttk.Combobox(master, textvariable=self.fi_var, values=fi_names, state="readonly").grid(row=6, column=1, sticky="ew")
+                ttk.Combobox(master, textvariable=self.fi_var, values=fi_names, state="readonly").grid(row=7, column=1, sticky="ew")
 
-                ttk.Label(master, text="Exposure").grid(row=7, column=0, sticky="e")
+                ttk.Label(master, text="Exposure").grid(row=8, column=0, sticky="e")
                 self.exp_var = tk.StringVar(value=str(self.data.get("exposure", 1)))
                 ttk.Combobox(
                     master,
                     textvariable=self.exp_var,
                     values=["1", "2", "3", "4"],
                     state="readonly",
-                ).grid(row=7, column=1, sticky="ew")
+                ).grid(row=8, column=1, sticky="ew")
 
-                ttk.Label(master, text="Description").grid(row=8, column=0, sticky="ne")
+                ttk.Label(master, text="Description").grid(row=9, column=0, sticky="ne")
                 self.desc = tk.Text(master, height=4, width=40, wrap="word")
-                self.desc.grid(row=8, column=1, columnspan=3, sticky="nsew")
+                self.desc.grid(row=9, column=1, columnspan=3, sticky="nsew")
                 self.load_desc_links()
                 master.grid_columnconfigure(1, weight=1)
 
                 # Automatically update description on parameter changes
-                for var in (self.beh_var, self.act_var, self.tc_var, self.fi_var):
+                for var in (
+                    self.cls_var,
+                    self.beh_var,
+                    self.act_var,
+                    self.tc_var,
+                    self.fi_var,
+                ):
                     var.trace_add("write", lambda *a: self.update_description())
                 self.update_description()
 
             def update_description(self, *args):
-                odds = [self.elem_list.get(i) for i in self.elem_list.curselection()]
+                names = [self.elem_list.get(i) for i in self.elem_list.curselection()]
+                odds = [(n, self.elem_classes.get(n, "")) for n in names]
                 phrases = template_phrases(
+                    self.cls_var.get(),
                     self.beh_var.get(),
                     self.act_var.get(),
                     odds,
@@ -17760,6 +17781,7 @@ class AutoMLApp:
 
             def apply(self):
                 self.data["name"] = self.name_var.get()
+                self.data["class"] = self.cls_var.get()
                 self.data["behavior"] = self.beh_var.get()
                 self.data["action"] = self.act_var.get()
                 self.data["scenery"] = self.sce_var.get()
@@ -17845,9 +17867,11 @@ class AutoMLApp:
         win = self._odd_tab
         lib_lb = tk.Listbox(win, height=8, width=25)
         lib_lb.grid(row=0, column=0, rowspan=4, sticky="nsew")
-        elem_tree = ttk.Treeview(win, columns=("attrs",), show="tree headings")
+        elem_tree = ttk.Treeview(win, columns=("cls", "attrs"), show="tree headings")
         elem_tree.heading("#0", text="Name")
         elem_tree.column("#0", width=150)
+        elem_tree.heading("cls", text="Class")
+        elem_tree.column("cls", width=120)
         elem_tree.heading("attrs", text="Attributes")
         elem_tree.column("attrs", width=200)
         elem_tree.grid(row=0, column=1, columnspan=3, sticky="nsew")
@@ -17871,8 +17895,11 @@ class AutoMLApp:
             lib = self.odd_libraries[sel[0]]
             for el in lib.get("elements", []):
                 name = el.get("name") or el.get("element") or el.get("id")
-                attrs = ", ".join(f"{k}={v}" for k, v in el.items() if k != "name")
-                opts = {"values": (attrs,), "text": name}
+                cls = el.get("class", "")
+                attrs = ", ".join(
+                    f"{k}={v}" for k, v in el.items() if k not in {"name", "class"}
+                )
+                opts = {"values": (cls, attrs), "text": name}
                 if self.odd_elem_icon:
                     opts["image"] = self.odd_elem_icon
                 elem_tree.insert("", tk.END, **opts)
@@ -17880,7 +17907,7 @@ class AutoMLApp:
         class ElementDialog(simpledialog.Dialog):
             def __init__(self, parent, app, data=None):
                 self.app = app
-                self.data = data or {"name": ""}
+                self.data = data or {"name": "", "class": ""}
                 super().__init__(parent, title="Edit Element")
 
             def add_attr_row(self, key="", val=""):
@@ -17923,9 +17950,20 @@ class AutoMLApp:
                 self.name_var = tk.StringVar(value=self.data.get("name", ""))
                 ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, sticky="ew")
 
+                ttk.Label(master, text="Class").grid(row=1, column=0, sticky="e")
+                self.class_var = tk.StringVar(value=self.data.get("class", ""))
+                cls_opts = [
+                    "Road",
+                    "Infrastructure",
+                    "Temporal",
+                    "Movable",
+                    "Environment",
+                ]
+                ttk.Combobox(master, textvariable=self.class_var, values=cls_opts, state="readonly").grid(row=1, column=1, sticky="ew")
+
                 nb = ttk.Notebook(master)
-                nb.grid(row=1, column=0, columnspan=2, sticky="nsew")
-                master.grid_rowconfigure(1, weight=1)
+                nb.grid(row=2, column=0, columnspan=2, sticky="nsew")
+                master.grid_rowconfigure(2, weight=1)
                 master.grid_columnconfigure(1, weight=1)
 
                 # Attributes tab
@@ -17933,7 +17971,7 @@ class AutoMLApp:
                 nb.add(self.attr_frame, text="Attributes")
                 self.attr_rows = []
                 for k, v in self.data.items():
-                    if k not in {"name", "p", "n", "tp", "fp", "tn", "fn"}:
+                    if k not in {"name", "class", "p", "n", "tp", "fp", "tn", "fn"}:
                         self.add_attr_row(k, v)
                 ttk.Button(self.attr_frame, text="Add Attribute", command=self.add_attr_row).grid(row=99, column=0, columnspan=3, pady=5)
 
@@ -18062,7 +18100,7 @@ class AutoMLApp:
                 self.name_var.trace_add("write", refresh_vt)
 
             def apply(self):
-                new_data = {"name": self.name_var.get()}
+                new_data = {"name": self.name_var.get(), "class": self.class_var.get()}
                 for row in self.attr_rows:
                     key = row["k_var"].get().strip()
                     if key:
