@@ -14,7 +14,7 @@ The metamodel blends concepts from key automotive standards—ISO 26262 (functi
    ```
 2. **Launch AutoML**
    ```bash
-   python AutoML.py
+   python main/AutoML.py
    ```
 3. **Create a new project**
    - Choose **File → New Project** from the menu.
@@ -1541,8 +1541,8 @@ If sending fails with a connection error, the dialog will prompt again so you ca
 ## Dependencies
 
 AutoML relies on a few third‑party Python packages. The new
-`launcher.py` script checks for these dependencies and installs any that are
-missing before handing off execution to `AutoML.py`. The required packages
+`AutoML_Launcher.py` script checks for these dependencies and installs any that are
+missing before handing off execution to `main/AutoML.py`. The required packages
 are:
 
 ```
@@ -1565,12 +1565,12 @@ dependencies with `python -m pip show` so the correct interpreter is used and
 pass `--hidden-import=PIL.ImageTk` to PyInstaller to ensure the module is
 bundled correctly.
 
-If double‑clicking `AutoML.py` closes immediately, launch it from a command
-prompt instead so any error messages remain visible. Running `launcher.py`
+If double‑clicking `main/AutoML.py` closes immediately, launch it from a command
+prompt instead so any error messages remain visible. Running `AutoML_Launcher.py`
 performs the dependency installation automatically:
 
 ```
-python launcher.py
+python AutoML_Launcher.py
 ```
 
 ## Metrics Tab
@@ -1602,7 +1602,7 @@ This project is licensed under the GNU General Public License version 3. See the
 
 ## Building the Executable
 To create a standalone Windows executable with PyInstaller that embeds the
-dependency-checking launcher:
+dependency-checking `AutoML_Launcher.py`:
 
 - **Linux/macOS:** run `bin/build_exe.sh`
 - **Windows:** run `bin\build_exe.bat`
@@ -1610,7 +1610,7 @@ dependency-checking launcher:
 You can invoke these scripts from any directory; they locate the repository
 root automatically. Both generate `AutoML.exe` and an installer archive `AutoML_installer.zip` inside the `bin` directory. After building you can launch the application directly or use
 `bin/run_automl.sh` on Unix-like systems or `bin\run_automl.bat` on
-Windows. The bundled executable executes `launcher.py` internally so it
+Windows. The bundled executable executes `AutoML_Launcher.py` internally so it
 performs the same dependency installation when run from source.
 
 The build scripts explicitly include Tkinter and its submodules so the GUI
@@ -1649,7 +1649,7 @@ follow the full safety workflow yourself. Start with these setup steps:
    ```
    pip install pillow openpyxl networkx matplotlib reportlab adjustText
    ```
-2. Launch AutoML with `python AutoML.py` and choose **File → New Project**.
+2. Launch AutoML with `python main/AutoML.py` and choose **File → New Project**.
 3. Create an activity diagram named **Stop at Intersection**:
    - **Diagram → Activity → New**
    - Add an initial node, an action called *Braking*, and a final node.

@@ -1,7 +1,7 @@
 import pytest
 from unittest import mock
 
-import launcher
+import AutoML_Launcher as launcher
 
 
 def test_ensure_ghostscript_non_windows():
