@@ -5520,7 +5520,7 @@ class AutoMLApp:
 
             top_text = "".join(seg[0] for seg in segments)
             bottom_text = n.name
-            fill = self.get_node_fill_color(n)
+            fill = self.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
@@ -5785,7 +5785,7 @@ class AutoMLApp:
 
             top_text = "".join(seg[0] for seg in segments)
             bottom_text = n.name
-            fill = self.get_node_fill_color(n)
+            fill = self.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
@@ -6050,7 +6050,7 @@ class AutoMLApp:
 
             top_text = "".join(seg[0] for seg in segments)
             bottom_text = n.name
-            fill = self.get_node_fill_color(n)
+            fill = self.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
@@ -6315,7 +6315,7 @@ class AutoMLApp:
 
             top_text = "".join(seg[0] for seg in segments)
             bottom_text = n.name
-            fill = self.get_node_fill_color(n)
+            fill = self.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
@@ -6580,7 +6580,7 @@ class AutoMLApp:
 
             top_text = "".join(seg[0] for seg in segments)
             bottom_text = n.name
-            fill = self.get_node_fill_color(n)
+            fill = self.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
@@ -6834,7 +6834,7 @@ class AutoMLApp:
 
             top_text = "".join(seg[0] for seg in segments)
             bottom_text = n.name
-            fill = self.get_node_fill_color(n)
+            fill = self.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
@@ -7088,7 +7088,7 @@ class AutoMLApp:
 
             top_text = "".join(seg[0] for seg in segments)
             bottom_text = n.name
-            fill = self.get_node_fill_color(n)
+            fill = self.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
@@ -7342,7 +7342,7 @@ class AutoMLApp:
 
             top_text = "".join(seg[0] for seg in segments)
             bottom_text = n.name
-            fill = self.get_node_fill_color(n)
+            fill = self.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
@@ -7607,7 +7607,7 @@ class AutoMLApp:
 
             top_text = "".join(seg[0] for seg in segments)
             bottom_text = n.name
-            fill = self.get_node_fill_color(n)
+            fill = self.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
@@ -9814,7 +9814,7 @@ class AutoMLApp:
         # For example, if the base label is "Required Rigor [4]", score_type becomes "Required Rigor".
         score_type = base_label.split('[')[0].strip()
 
-        fill_color = self.get_node_fill_color(node)
+        fill_color = self.get_node_fill_color(node, getattr(canvas, "diagram_mode", None))
         eff_x = node.x * self.zoom
         eff_y = node.y * self.zoom
 
@@ -10826,11 +10826,22 @@ class AutoMLApp:
         rec(self.root_node)
         return counts
 
-    def get_node_fill_color(self, node):
-        mode = getattr(getattr(self, "canvas", None), "diagram_mode", "FTA")
-        if mode == "CTA":
+    def get_node_fill_color(self, node, mode: str | None = None):
+        """Return the fill color for *node* based on analysis mode.
+
+        Parameters
+        ----------
+        node: FaultTreeNode | None
+            Unused but kept for API compatibility.
+        mode: str | None
+            Explicit diagram mode to use.  Falls back to the currently
+            focused canvas' ``diagram_mode`` when ``None``.
+        """
+
+        diagram_mode = mode or getattr(getattr(self, "canvas", None), "diagram_mode", "FTA")
+        if diagram_mode == "CTA":
             return "#EE82EE"
-        if mode == "PAA":
+        if diagram_mode == "PAA":
             return "#40E0D0"
         return "#FAD7A0"
 
@@ -12363,7 +12374,7 @@ class AutoMLApp:
             line_width = 1
 
         # Determine the fill color (this function already uses the original's display_label)
-        fill_color = self.get_node_fill_color(node)
+        fill_color = self.get_node_fill_color(node, getattr(canvas, "diagram_mode", None))
         font_obj = self.diagram_font
 
         # For shape selection, use the source’s node type and gate type.
@@ -21839,7 +21850,7 @@ class AutoMLApp:
         else:
             display_label = node.display_label
         
-        fill_color = self.get_node_fill_color(node)
+        fill_color = self.get_node_fill_color(node, getattr(canvas, "diagram_mode", None))
         eff_x, eff_y = node.x, node.y
         top_text = f"Type: {node.node_type}"
         if node.input_subtype:
