@@ -42,7 +42,7 @@ class DummyMenu:
 @pytest.mark.parametrize(
     "work_product,parent",
     [
-        ("FTA", "Quantitative Analysis"),
+        ("FTA", "Process"),
         ("Safety & Security Case", "GSN"),
         ("GSN Argumentation", "GSN"),
         ("FMEA", "Qualitative Analysis"),
