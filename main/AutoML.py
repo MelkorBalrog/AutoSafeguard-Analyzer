@@ -18857,21 +18857,38 @@ class AutoMLApp:
         if getattr(self, "cta_root_node", None):
             self.open_page_diagram(self.cta_root_node)
 
+    def enable_fta_actions(self, enabled: bool) -> None:
+        """Toggle availability of FTA-specific menu actions."""
+        if hasattr(self, "fta_menu"):
+            state = tk.NORMAL if enabled else tk.DISABLED
+            for key in (
+                "add_gate",
+                "add_basic_event",
+                "add_gate_from_failure_mode",
+                "add_fault_event",
+            ):
+                self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
+
+    def enable_cta_actions(self, enabled: bool) -> None:
+        """Toggle availability of CTA-specific menu actions."""
+        if hasattr(self, "cta_menu"):
+            state = tk.NORMAL if enabled else tk.DISABLED
+            for key in ("add_trigger", "add_functional_insufficiency"):
+                self.cta_menu.entryconfig(self._cta_menu_indices[key], state=state)
+
+    def enable_paa_actions(self, enabled: bool) -> None:
+        """Toggle availability of PAA-specific menu actions."""
+        if hasattr(self, "paa_menu"):
+            state = tk.NORMAL if enabled else tk.DISABLED
+            for key in ("add_confidence", "add_robustness"):
+                self.paa_menu.entryconfig(self._paa_menu_indices[key], state=state)
+
     def _update_analysis_menus(self):
         """Enable or disable node-adding menu items based on diagram mode."""
-        mode = getattr(self, "diagram_mode", "FTA")
-        if hasattr(self, "fta_menu"):
-            for key in ("add_gate", "add_basic_event", "add_gate_from_failure_mode", "add_fault_event"):
-                state = tk.NORMAL if mode == "FTA" else tk.DISABLED
-                self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
-        if hasattr(self, "cta_menu"):
-            for key in ("add_trigger", "add_functional_insufficiency"):
-                state = tk.NORMAL if mode == "CTA" else tk.DISABLED
-                self.cta_menu.entryconfig(self._cta_menu_indices[key], state=state)
-        if hasattr(self, "paa_menu"):
-            for key in ("add_confidence", "add_robustness"):
-                state = tk.NORMAL if mode == "PAA" else tk.DISABLED
-                self.paa_menu.entryconfig(self._paa_menu_indices[key], state=state)
+        mode = getattr(self, "diagram_mode", "")
+        self.enable_fta_actions(mode == "FTA")
+        self.enable_cta_actions(mode == "CTA")
+        self.enable_paa_actions(mode == "PAA")
 
     def _create_paa_tab(self):
         """Convenience wrapper for creating a PAA diagram."""
@@ -18946,8 +18963,19 @@ class AutoMLApp:
         gsn_win = getattr(tab, "gsn_window", None)
         if gsn_win:
             self.selected_node = gsn_win.diagram.root
+        # Detect a FaultTreeCanvas to update menu states based on its mode
+        diagram_mode = ""
+        widgets = [tab]
+        if hasattr(tab, "winfo_children"):
+            widgets.extend(tab.winfo_children())
+        for widget in widgets:
+            if widget.__class__.__name__ == "FaultTreeCanvas" or hasattr(widget, "diagram_mode"):
+                diagram_mode = getattr(widget, "diagram_mode", "")
+                break
+        self.diagram_mode = diagram_mode
+        self._update_analysis_menus()
         if tab is getattr(self, "canvas_tab", None):
-            mode = getattr(self.canvas, "diagram_mode", "FTA")
+            mode = diagram_mode or getattr(self.canvas, "diagram_mode", "FTA")
             if mode == "CTA" and self.cta_root_node:
                 self.root_node = self.cta_root_node
             elif mode == "PAA" and self.paa_root_node:
