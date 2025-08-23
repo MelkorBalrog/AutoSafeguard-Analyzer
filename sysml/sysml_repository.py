@@ -853,7 +853,8 @@ class SysMLRepository:
         if diag and diag.diag_type == "Governance Diagram" and obj.get("phase") is None:
             return True
         if obj.get("phase") is None:
-            return False
+            elem = self.elements.get(obj.get("element_id"))
+            return self.element_visible(elem.elem_id) if elem else False
         return obj.get("phase") == self.active_phase or obj.get("phase") in getattr(self, "reuse_phases", set())
 
     def connection_visible(self, conn: dict, diag_id: Optional[str] = None) -> bool:

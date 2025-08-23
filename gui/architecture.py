@@ -174,6 +174,11 @@ WORK_PRODUCT_AREA_MAP = {
 def _work_products_for_area(area: str) -> list[str]:
     return [wp for wp, a in WORK_PRODUCT_AREA_MAP.items() if a == area]
 
+
+def _repo_phase(repo: SysMLRepository) -> str | None:
+    """Safely return the repository's active phase."""
+    return getattr(repo, "active_phase", None)
+
 # Create Safety & AI Lifecycle toolbox frame
 # Create toolbox for additional governance elements grouped by class
 # Repack toolbox to include selector
@@ -1522,6 +1527,7 @@ def add_composite_aggregation_part(
         "element_id": part_elem.elem_id,
         "properties": {"definition": part_id},
         "locked": True,
+        "phase": _repo_phase(repo),
     }
     diag.objects.append(obj_dict)
     _add_ports_for_part(repo, diag, obj_dict, app=app)
@@ -1640,6 +1646,7 @@ def add_multiplicity_parts(
             "element_id": part_elem.elem_id,
             "properties": {"definition": part_id},
             "locked": True,
+            "phase": _repo_phase(repo),
         }
         base_y += 60.0
         diag.objects.append(obj_dict)
@@ -1742,6 +1749,7 @@ def _sync_ibd_composite_parts(
             "element_id": part_elem.elem_id,
             "properties": {"definition": pid},
             "locked": True,
+            "phase": _repo_phase(repo),
         }
         base_y += 60.0
         diag.objects.append(obj_dict)
@@ -1804,6 +1812,7 @@ def _sync_ibd_aggregation_parts(
             "y": base_y,
             "element_id": part_elem.elem_id,
             "properties": {"definition": pid},
+            "phase": _repo_phase(repo),
         }
         base_y += 60.0
         diag.objects.append(obj_dict)
@@ -1931,6 +1940,7 @@ def _sync_ibd_partproperty_parts(
             "element_id": part_elem.elem_id,
             "properties": {"definition": target_id},
             "hidden": not visible,
+            "phase": _repo_phase(repo),
         }
         base_y += 60.0
         diag.objects.append(obj_dict)
@@ -2000,6 +2010,7 @@ def _propagate_boundary_parts(
             new_obj["x"] = base_x
             new_obj["y"] = base_y
             new_obj["hidden"] = False
+            new_obj["phase"] = _repo_phase(repo)
             diag.objects.append(new_obj)
             repo.add_element_to_diagram(diag.diag_id, new_obj["element_id"])
             base_y += 60.0
@@ -2067,6 +2078,7 @@ def _ensure_ibd_boundary(repo: SysMLRepository, diagram: SysMLDiagram, block_id:
             "height": 120.0,
             "element_id": block_id,
             "properties": {"name": repo.elements.get(block_id).name or block_id},
+            "phase": _repo_phase(repo),
         }
         diagram.objects.insert(0, obj_dict)
         added.append(obj_dict)
@@ -2110,6 +2122,7 @@ def _ensure_ibd_boundary(repo: SysMLRepository, diagram: SysMLDiagram, block_id:
                     "element_id": part_elem.elem_id,
                     "properties": {"definition": target_id},
                     "hidden": False,
+                    "phase": _repo_phase(repo),
                 }
                 base_y += 60.0
                 parts.append(obj)
@@ -2597,6 +2610,7 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
             continue
         new_obj = obj.copy()
         new_obj["obj_id"] = _get_next_id()
+        new_obj["phase"] = _repo_phase(repo)
         diagram.objects.append(new_obj)
         repo.add_element_to_diagram(diagram.diag_id, obj.get("element_id"))
         added.append(new_obj)
@@ -2626,6 +2640,7 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
         new_obj = obj.copy()
         new_obj["obj_id"] = _get_next_id()
         new_obj.setdefault("properties", {})["parent"] = str(new_parent)
+        new_obj["phase"] = _repo_phase(repo)
         diagram.objects.append(new_obj)
         added.append(new_obj)
     # update child block partProperties with inherited names
@@ -3068,6 +3083,7 @@ def _add_ports_for_part(
         height=part_obj.get("height", 40.0),
         properties=part_obj.get("properties", {}).copy(),
         locked=part_obj.get("locked", False),
+        phase=part_obj.get("phase"),
     )
     for name in names:
         port = SysMLObject(
@@ -3082,6 +3098,7 @@ def _add_ports_for_part(
                 "labelX": "8",
                 "labelY": "-8",
             },
+            phase=_repo_phase(repo),
         )
         snap_port_to_parent_obj(port, parent)
         port_dict = asdict(port)
@@ -3120,6 +3137,7 @@ def _add_ports_for_boundary(
         boundary_obj.get("y", 0.0),
         width=boundary_obj.get("width", 160.0),
         height=boundary_obj.get("height", 100.0),
+        phase=boundary_obj.get("phase"),
     )
     for name in names:
         port = SysMLObject(
@@ -3134,6 +3152,7 @@ def _add_ports_for_boundary(
                 "labelX": "8",
                 "labelY": "-8",
             },
+            phase=_repo_phase(repo),
         )
         snap_port_to_parent_obj(port, parent)
         port_dict = asdict(port)
@@ -3185,6 +3204,7 @@ def _sync_ports_for_part(repo: SysMLRepository, diag: SysMLDiagram, part_obj: di
         part_obj.get("y", 0.0),
         width=part_obj.get("width", 80.0),
         height=part_obj.get("height", 40.0),
+        phase=part_obj.get("phase"),
     )
     for name in names:
         if name in existing_names:
@@ -3201,6 +3221,7 @@ def _sync_ports_for_part(repo: SysMLRepository, diag: SysMLDiagram, part_obj: di
                 "labelX": "8",
                 "labelY": "-8",
             },
+            phase=_repo_phase(repo),
         )
         snap_port_to_parent_obj(port, parent)
         diag.objects.append(asdict(port))
@@ -3232,6 +3253,7 @@ def _sync_ports_for_boundary(repo: SysMLRepository, diag: SysMLDiagram, boundary
         boundary_obj.get("y", 0.0),
         width=boundary_obj.get("width", 160.0),
         height=boundary_obj.get("height", 100.0),
+        phase=boundary_obj.get("phase"),
     )
     for name in names:
         if name in existing_names:
@@ -3248,6 +3270,7 @@ def _sync_ports_for_boundary(repo: SysMLRepository, diag: SysMLDiagram, boundary
                 "labelX": "8",
                 "labelY": "-8",
             },
+            phase=_repo_phase(repo),
         )
         snap_port_to_parent_obj(port, parent)
         diag.objects.append(asdict(port))
@@ -3605,6 +3628,7 @@ class SysMLDiagramWindow(tk.Frame):
         for data in self.repo.visible_objects(diagram.diag_id):
             if "requirements" not in data:
                 data["requirements"] = []
+            data.setdefault("phase", _repo_phase(self.repo))
             obj = SysMLObject(**data)
             if obj.obj_type == "Part":
                 asil = calculate_allocated_asil(obj.requirements)
@@ -4261,7 +4285,7 @@ class SysMLDiagramWindow(tk.Frame):
                 # work products within the active lifecycle phase. Only one
                 # of "Used By", "Used after Review" or "Used after Approval"
                 # may exist for a given source/target pair.
-                phase = self.repo.active_phase
+                phase = _repo_phase(self.repo)
                 used_stereos = {
                     "used by",
                     "used after review",
@@ -4647,6 +4671,7 @@ class SysMLDiagramWindow(tk.Frame):
                     y / self.zoom,
                     element_id=elem_id,
                     properties={"name": element.name if element else selected},
+                    phase=_repo_phase(self.repo),
                 )
             else:
                 if t == "Port":
@@ -4670,6 +4695,7 @@ class SysMLDiagramWindow(tk.Frame):
                     x / self.zoom,
                     y / self.zoom,
                     element_id=element.elem_id,
+                    phase=_repo_phase(self.repo),
                 )
             if t == "Block":
                 new_obj.height = 140.0
@@ -5138,7 +5164,14 @@ class SysMLDiagramWindow(tk.Frame):
         pkg = self.repo.diagrams[self.diagram_id].package
         element = self.repo.create_element(obj_type, owner=pkg)
         self.repo.add_element_to_diagram(self.diagram_id, element.elem_id)
-        new_obj = SysMLObject(_get_next_id(), obj_type, x / self.zoom, y / self.zoom, element_id=element.elem_id)
+        new_obj = SysMLObject(
+            _get_next_id(),
+            obj_type,
+            x / self.zoom,
+            y / self.zoom,
+            element_id=element.elem_id,
+            phase=_repo_phase(self.repo),
+        )
         if obj_type == "Block":
             new_obj.height = 140.0
             new_obj.width = 160.0
@@ -6439,6 +6472,7 @@ class SysMLDiagramWindow(tk.Frame):
                         "labelX": "8",
                         "labelY": "-8",
                     },
+                    phase=_repo_phase(self.repo),
                 )
                 self.snap_port_to_parent(port, part)
                 self.objects.append(port)
@@ -6482,6 +6516,7 @@ class SysMLDiagramWindow(tk.Frame):
                         "labelX": "8",
                         "labelY": "-8",
                     },
+                    phase=_repo_phase(self.repo),
                 )
                 self.snap_port_to_parent(port, boundary)
                 self.objects.append(port)
@@ -9416,6 +9451,7 @@ class SysMLDiagramWindow(tk.Frame):
         data["obj_id"] = _get_next_id()
         data["x"] = data.get("x", 0) + offset[0]
         data["y"] = data.get("y", 0) + offset[1]
+        data.setdefault("phase", _repo_phase(self.repo))
         return SysMLObject(**data)
 
     def _reconstruct_object_strategy2(self, snap: dict, offset=(20, 20)) -> SysMLObject:
@@ -9423,6 +9459,7 @@ class SysMLDiagramWindow(tk.Frame):
         data["obj_id"] = _get_next_id()
         data["x"] = data.get("x", 0) + offset[0]
         data["y"] = data.get("y", 0) + offset[1]
+        data.setdefault("phase", _repo_phase(self.repo))
         return SysMLObject(**data)
 
     def _reconstruct_object_strategy3(self, snap: dict, offset=(20, 20)) -> SysMLObject:
@@ -9439,7 +9476,7 @@ class SysMLDiagramWindow(tk.Frame):
             locked=snap.get("locked", False),
             hidden=snap.get("hidden", False),
             collapsed=copy.deepcopy(snap.get("collapsed", {})),
-            phase=snap.get("phase"),
+            phase=snap.get("phase", _repo_phase(self.repo)),
         )
 
     def _reconstruct_object_strategy4(self, snap: dict, offset=(20, 20)) -> SysMLObject:
@@ -9452,6 +9489,7 @@ class SysMLDiagramWindow(tk.Frame):
         data["obj_id"] = _get_next_id()
         data["x"] = data.get("x", 0) + offset[0]
         data["y"] = data.get("y", 0) + offset[1]
+        data.setdefault("phase", _repo_phase(self.repo))
         return SysMLObject(**data)
 
     def _reconstruct_object(self, snap: dict, offset=(20, 20)) -> SysMLObject | None:
@@ -10040,6 +10078,7 @@ class SysMLDiagramWindow(tk.Frame):
         for data in self.repo.visible_objects(diag.diag_id):
             if "requirements" not in data:
                 data["requirements"] = []
+            data.setdefault("phase", _repo_phase(self.repo))
             obj = SysMLObject(**data)
             if obj.obj_type == "Part":
                 asil = calculate_allocated_asil(obj.requirements)
@@ -11472,6 +11511,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
                                     base_y + offset * idx,
                                     element_id=elem.elem_id,
                                     properties=elem.properties.copy(),
+                                    phase=_repo_phase(repo),
                                 )
                                 diag.objects.append(obj.__dict__)
                                 # update any open windows for this diagram
@@ -11902,6 +11942,7 @@ class ActivityDiagramWindow(SysMLDiagramWindow):
                 base_y + offset * idx,
                 element_id=elem.elem_id,
                 properties={"name": op_name},
+                phase=_repo_phase(repo),
             )
             diag.objects.append(obj.__dict__)
             self.objects.append(obj)
@@ -12327,6 +12368,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             width=60.0,
             height=80.0,
             properties=props,
+            phase=_repo_phase(self.repo),
         )
         if area:
             self._constrain_to_parent(obj, area)
@@ -12356,6 +12398,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             width=200.0,
             height=150.0,
             properties={"name": name, "name_locked": "1"},
+            phase=_repo_phase(self.repo),
         )
         self.objects.insert(0, obj)
         self.sort_objects()
@@ -12538,6 +12581,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             width=120.0,
             height=80.0,
             properties={"name": name, "name_locked": "1"},
+            phase=_repo_phase(self.repo),
         )
         self.objects.append(obj)
         self.sort_objects()
@@ -12679,6 +12723,7 @@ class BlockDiagramWindow(SysMLDiagramWindow):
                 width=160.0,
                 height=140.0,
                 properties=props,
+                phase=_repo_phase(repo),
             )
             diag.objects.append(obj.__dict__)
             self.objects.append(obj)
@@ -12972,6 +13017,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                 base_y + offset * idx,
                 element_id=elem.elem_id,
                 properties=elem.properties.copy(),
+                phase=_repo_phase(repo),
             )
             diag.objects.append(obj.__dict__)
             self.objects.append(obj)
@@ -13776,6 +13822,7 @@ class ArchitectureManagerDialog(tk.Frame):
                     50.0,
                     element_id=act.elem_id,
                     properties=props,
+                    phase=_repo_phase(repo),
                 )
                 diagram.objects.append(obj.__dict__)
                 if getattr(self, "app", None) and hasattr(self.app, "push_undo_state"):
@@ -13797,6 +13844,7 @@ class ArchitectureManagerDialog(tk.Frame):
                     50.0,
                     element_id=act.elem_id,
                     properties=props,
+                    phase=_repo_phase(repo),
                 )
                 diagram.objects.append(obj.__dict__)
                 if getattr(self, "app", None) and hasattr(self.app, "push_undo_state"):
@@ -13809,7 +13857,14 @@ class ArchitectureManagerDialog(tk.Frame):
         if allowed and repo.elements[elem_id].elem_type == "Package":
             block = repo.create_element("Block", name=repo.elements[elem_id].name, owner=elem_id)
             repo.add_element_to_diagram(diagram.diag_id, block.elem_id)
-            obj = SysMLObject(_get_next_id(), "Block", 50.0, 50.0, element_id=block.elem_id)
+            obj = SysMLObject(
+                _get_next_id(),
+                "Block",
+                50.0,
+                50.0,
+                element_id=block.elem_id,
+                phase=_repo_phase(repo),
+            )
             diagram.objects.append(obj.__dict__)
             if getattr(self, "app", None) and hasattr(self.app, "push_undo_state"):
                 self.app.push_undo_state()
