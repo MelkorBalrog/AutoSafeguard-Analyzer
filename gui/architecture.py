@@ -5588,11 +5588,6 @@ class SysMLDiagramWindow(tk.Frame):
         elif obj:
             if self._open_linked_diagram(obj):
                 return
-            # Persist current diagram state before opening the dialog so that
-            # focus changes triggered by the dialog do not clear unsaved
-            # objects from the repository. After the dialog closes, sync again
-            # to store any edits made by the user.
-            self._sync_to_repository()
             SysMLObjectDialog(self, obj)
             self._sync_to_repository()
             self.redraw()
