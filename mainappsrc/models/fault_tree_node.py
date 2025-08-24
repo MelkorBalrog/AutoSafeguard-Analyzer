@@ -195,6 +195,20 @@ class FaultTreeNode:
             d["original_id"] = self.original.unique_id
         return d
 
+    def clone(self):
+        """Return a clone of this node sharing the same original reference."""
+        import copy
+        from AutoML import AutoML_Helper
+
+        new_node = copy.deepcopy(self)
+        new_node.unique_id = AutoML_Helper.get_next_unique_id()
+        new_node.parents = []
+        new_node.children = []
+        new_node.is_primary_instance = False
+        new_node.original = self if self.is_primary_instance else self.original
+        new_node._original_id = new_node.original.unique_id
+        return new_node
+
     @staticmethod
     def from_dict(data, parent=None):
         node = FaultTreeNode.__new__(FaultTreeNode)
