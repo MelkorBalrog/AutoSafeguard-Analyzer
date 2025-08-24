@@ -18848,13 +18848,6 @@ class AutoMLApp:
         tabs = getattr(self, "analysis_tabs", {})
         existing = tabs.get(diagram_mode)
         
-        if diagram_mode == "CTA":
-            mode = getattr(self, "diagram_mode", "CTA")
-        elif diagram_mode == "PAA":
-            mode = getattr(self, "diagram_mode", "PAA")
-        elif diagram_mode == "FTA":
-            mode = getattr(self, "diagram_mode", "FTA")
-        
         if existing and existing["tab"].winfo_exists():
             self.canvas_tab = existing["tab"]
             self.canvas_frame = existing["tab"]
@@ -18863,7 +18856,7 @@ class AutoMLApp:
             self.vbar = existing["vbar"]
             self.diagram_mode = diagram_mode
             self.doc_nb.select(self.canvas_tab)
-            self._update_analysis_menus(mode)
+            self._update_analysis_menus(diagram_mode)
             return
 
         canvas_tab = ttk.Frame(self.doc_nb)
@@ -18900,7 +18893,7 @@ class AutoMLApp:
         self.vbar = vbar
         self.diagram_mode = diagram_mode
         self.doc_nb.select(canvas_tab)
-        self._update_analysis_menus(mode)
+        self._update_analysis_menus(diagram_mode)
 
     def create_fta_diagram(self):
         """Initialize an FTA diagram and its top-level event."""
@@ -18935,24 +18928,22 @@ class AutoMLApp:
                 
     def enable_cta_actions(self, enabled: bool) -> None:
         """Enable or disable CTA-related menu actions."""
-        mode = getattr(self, "diagram_mode", "CTA")
         if hasattr(self, "cta_menu"):
             state = tk.NORMAL if enabled else tk.DISABLED
             for key in ("add_trigger", "add_functional_insufficiency"):
-                state = tk.NORMAL if mode == "CTA" else tk.DISABLED
                 self.cta_menu.entryconfig(self._cta_menu_indices[key], state=state)
                 
     def enable_paa_actions(self, enabled: bool) -> None:
         """Enable or disable PAA-related menu actions."""
-        mode = getattr(self, "diagram_mode", "PAA")
         if hasattr(self, "paa_menu"):
             state = tk.NORMAL if enabled else tk.DISABLED
             for key in ("add_confidence", "add_robustness"):
-                state = tk.NORMAL if mode == "PAA" else tk.DISABLED
                 self.paa_menu.entryconfig(self._paa_menu_indices[key], state=state)
                 
-    def _update_analysis_menus(self,mode):
+    def _update_analysis_menus(self,mode=None):
         """Enable or disable node-adding menu items based on diagram mode."""
+        if mode is None:
+            mode = getattr(self, "diagram_mode", "FTA")
         self.enable_fta_actions(mode == "FTA")
         self.enable_cta_actions(mode == "CTA")
         self.enable_paa_actions(mode == "PAA")
