@@ -1,4 +1,4 @@
-version: 0.1.6
+version: 0.1.7
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1636,6 +1636,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.1.7 - Refactored requirement pattern selection to lower cyclomatic complexity.
 - 0.1.6 - Fixed version display in Help → About and splash screen.
 - 0.1.5 - Added a pastel style with peach actions and steel-blue nodes.
 - 0.1.4 - Initial diagram style support documented.
