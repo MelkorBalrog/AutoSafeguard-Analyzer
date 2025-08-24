@@ -254,15 +254,20 @@ from gui.review_toolbox import (
     VersionCompareDialog,
 )
 from functools import partial
+# Governance helper class
+from mainappsrc.governance_manager import GovernanceManager
 from gui.safety_management_toolbox import SafetyManagementToolbox
-from gui.gsn_explorer import GSNExplorer
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_case_explorer import SafetyCaseExplorer
-from gui.gsn_diagram_window import GSNDiagramWindow, GSN_WINDOWS
+from gui.gsn_diagram_window import GSN_WINDOWS
 from gui.causal_bayesian_network_window import CBN_WINDOWS
 from gui.gsn_config_window import GSNElementConfig
 from gui.search_toolbox import SearchToolbox
 from gsn import GSNDiagram, GSNModule
+try:
+    from .gsn_manager import GSNManager
+except ImportError:  # pragma: no cover
+    from gsn_manager import GSNManager
 from gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
@@ -299,6 +304,10 @@ except Exception:  # pragma: no cover
     sys.path.append(base)
     sys.path.append(os.path.dirname(base))
     from page_diagram import PageDiagram
+from .event_dispatcher import EventDispatcher
+from mainappsrc.page_diagram import PageDiagram
+from mainappsrc.fmeda_manager import FMEDAManager
+from mainappsrc.fmea_service import FMEAService
 from analysis.user_config import (
     load_user_config,
     save_user_config,
@@ -350,7 +359,6 @@ from analysis.models import (
     REQUIREMENT_WORK_PRODUCTS,
     CAL_LEVEL_OPTIONS,
     CybersecurityGoal,
-    CyberRiskEntry,
 )
 from gui.safety_case_table import SafetyCaseTable
 from gui.architecture import (
@@ -388,6 +396,11 @@ except Exception:  # pragma: no cover
     from project_manager import ProjectManager
     from diagram_controller import DiagramController
     from sotif_manager import SOTIFManager
+from user_manager import UserManager
+from project_manager import ProjectManager
+from cyber_manager import CyberSecurityManager
+from diagram_controller import DiagramController
+from cta_manager import ControlTreeManager
 from config.automl_constants import (
     dynamic_recommendations,
     WORK_PRODUCT_INFO as BASE_WORK_PRODUCT_INFO,
@@ -584,6 +597,14 @@ class AutoMLApp:
     #: titles are truncated with an ellipsis to avoid giant tabs that overflow
     #: the working area.
     MAX_TAB_TEXT_LENGTH = 20
+
+    @property
+    def fmedas(self):
+        return self.fmeda_manager.fmedas
+
+    @fmedas.setter
+    def fmedas(self, value):
+        self.fmeda_manager.fmedas = value
 
     #: Maximum characters shown for tool notebook tab titles. Tool tabs use
     #: a fixed width so they remain readable but long names are capped at this
@@ -910,14 +931,16 @@ class AutoMLApp:
         self.management_diagrams = []
         self.gsn_modules = []  # top-level GSN modules
         self.gsn_diagrams = []  # diagrams not assigned to a module
+        self.gsn_manager = GSNManager(self)
         # Track open diagram tabs to avoid duplicates
         self.diagram_tabs: dict[str, ttk.Frame] = {}
         self.top_events = []
         self.reviews = []
         self.review_data = None
         self.review_window = None
+        self.governance_manager = GovernanceManager(self)
         self.safety_mgmt_toolbox = SafetyManagementToolbox()
-        self.safety_mgmt_toolbox.on_change = self._on_toolbox_change
+        self.governance_manager.attach_toolbox(self.safety_mgmt_toolbox)
         self.current_user = ""
         self.comment_target = None
         self._undo_stack: list[dict] = []
@@ -943,17 +966,18 @@ class AutoMLApp:
         # Delegated managers
         self.user_manager = UserManager(self)
         self.project_manager = ProjectManager(self)
+        self.cyber_manager = CyberSecurityManager(self)
         self.diagram_controller = DiagramController(self)
         self.sotif_manager = SOTIFManager(self)
+        self.fmeda_manager = FMEDAManager(self)
+        self.cta_manager = ControlTreeManager(self)
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
-        self.fmedas = []  # list of FMEDA documents
         self.load_default_mechanisms()
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
-        self.fmedas = []  # list of FMEDA documents
         self.load_default_mechanisms()
 
         self.mechanism_libraries = []
@@ -1142,7 +1166,7 @@ class AutoMLApp:
         qualitative_menu = tk.Menu(menubar, tearoff=0)
         qualitative_menu.add_command(
             label="FMEA Manager",
-            command=self.show_fmea_list,
+            command=self.fmea_service.show_fmea_list,
             state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("FMEA", []).append(
@@ -1150,24 +1174,27 @@ class AutoMLApp:
         )
 
         cta_menu = tk.Menu(qualitative_menu, tearoff=0)
-        cta_menu.add_command(label="Add Top Level Event", command=self.create_cta_diagram)
+        cta_menu.add_command(label="Add Top Level Event", command=self.cta_manager.create_diagram)
         cta_menu.add_separator()
         cta_menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
-        self._cta_menu_indices = {"add_trigger": cta_menu.index("end")}
+        cta_indices = {"add_trigger": cta_menu.index("end")}
         cta_menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
-        self._cta_menu_indices["add_functional_insufficiency"] = cta_menu.index("end")
+        cta_indices["add_functional_insufficiency"] = cta_menu.index("end")
         qualitative_menu.add_cascade(label="CTA", menu=cta_menu, state=tk.DISABLED)
         self.work_product_menus.setdefault("CTA", []).append(
             (qualitative_menu, qualitative_menu.index("end"))
         )
-        self.cta_menu = cta_menu
+        self.cta_manager.register_menu(cta_menu, cta_indices)
         qualitative_menu.add_command(
             label="Fault Prioritization",
             command=self.open_fault_prioritization_window,
         )
 
         paa_menu = tk.Menu(qualitative_menu, tearoff=0)
-        paa_menu.add_command(label="Add Top Level Event", command=self.create_paa_diagram)
+        paa_menu.add_command(
+            label="Add Top Level Event",
+            command=self.paa_manager.create_paa_diagram,
+        )
         paa_menu.add_separator()
         paa_menu.add_command(
             label="Add Confidence",
@@ -1285,7 +1312,7 @@ class AutoMLApp:
         )
 
         gsn_menu = tk.Menu(menubar, tearoff=0)
-        gsn_menu.add_command(label="GSN Explorer", command=self.manage_gsn)
+        gsn_menu.add_command(label="GSN Explorer", command=self.gsn_manager.manage_gsn)
         self.work_product_menus.setdefault("GSN Argumentation", []).append(
             (gsn_menu, gsn_menu.index("end"))
         )
@@ -1340,33 +1367,6 @@ class AutoMLApp:
         menubar.add_cascade(label="Help", menu=help_menu)
 
         root.config(menu=menubar)
-        root.bind('<<StyleChanged>>', self.refresh_styles)
-        root.bind("<Control-n>", lambda event: self.project_manager.new_model())
-        root.bind("<Control-s>", lambda event: self.project_manager.save_model())
-        root.bind("<Control-o>", lambda event: self.project_manager.load_model())
-        root.bind("<Control-f>", lambda event: self.open_search_toolbox())
-        root.bind("<Control-r>", lambda event: self.calculate_overall())
-        root.bind("<Control-m>", lambda event: self.calculate_pmfh())
-        root.bind("<Control-=>", lambda event: self.zoom_in())
-        root.bind("<Control-minus>", lambda event: self.zoom_out())
-        root.bind("<Control-u>", lambda event: self.user_manager.edit_user_name())
-        root.bind("<Control-d>", lambda event: self.edit_description())
-        root.bind("<Control-l>", lambda event: self.edit_rationale())
-        root.bind("<Control-g>", lambda event: self.edit_gate_type())
-        root.bind("<Control-e>", lambda event: self.edit_severity())
-        root.bind("<Control-Shift-c>", lambda event: self.add_node_of_type("Confidence Level"))
-        root.bind("<Control-Shift-r>", lambda event: self.add_node_of_type("Robustness Score"))
-        root.bind("<Control-Shift-g>", lambda event: self.add_node_of_type("GATE"))
-        root.bind("<Control-Shift-b>", lambda event: self.add_node_of_type("Basic Event"))
-        root.bind("<Control-Shift-t>", lambda event: self.add_node_of_type("Triggering Condition"))
-        root.bind("<Control-Shift-f>", lambda event: self.add_node_of_type("Functional Insufficiency"))
-        root.bind_all("<Control-c>", lambda event: self.copy_node(), add="+")
-        root.bind_all("<Control-x>", lambda event: self.cut_node(), add="+")
-        root.bind_all("<Control-v>", lambda event: self.paste_node(), add="+")
-        root.bind("<Control-p>", lambda event: self.diagram_controller.save_diagram_png())
-        root.bind_all("<Control-z>", self._undo_hotkey, add="+")
-        root.bind_all("<Control-y>", self._redo_hotkey, add="+")
-        root.bind("<F1>", lambda event: self.show_about())
 
         # Container to hold the auto-hiding explorer tab and main pane
         self.top_frame = tk.Frame(root)
@@ -1424,10 +1424,6 @@ class AutoMLApp:
             cursor="hand2",
         )
         self._explorer_tab.pack(side=tk.LEFT, fill=tk.Y)
-        self._explorer_tab.bind("<Enter>", lambda _e: self.show_explorer(animate=True))
-        self.explorer_pane.bind("<Enter>", lambda _e: self._cancel_explorer_hide())
-        self.explorer_pane.bind("<Leave>", lambda _e: self._schedule_explorer_hide())
-        self.explorer_pane.bind("<Configure>", lambda _e: self._limit_explorer_size())
 
         self.analysis_tab = ttk.Frame(self.explorer_nb)
         self.explorer_nb.add(self.analysis_tab, text="File Explorer")
@@ -1449,9 +1445,6 @@ class AutoMLApp:
         hsb.grid(row=1, column=0, sticky="ew")
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
-        self.analysis_tree.bind("<Double-1>", self.on_analysis_tree_double_click)
-        self.analysis_tree.bind("<Button-3>", self.on_analysis_tree_right_click)
-        self.analysis_tree.bind("<<TreeviewSelect>>", self.on_analysis_tree_select)
         # Maintain backwards compatibility with older code referencing
         # ``self.treeview`` for the main explorer tree.
         self.treeview = self.analysis_tree
@@ -1469,7 +1462,6 @@ class AutoMLApp:
             top, textvariable=self.lifecycle_var, state="readonly"
         )
         self.lifecycle_cb.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        self.lifecycle_cb.bind("<<ComboboxSelected>>", self.on_lifecycle_selected)
 
         # Container holding navigation buttons and the tools notebook
         nb_container = ttk.Frame(self.tools_group)
@@ -1522,9 +1514,9 @@ class AutoMLApp:
         self._tool_tab_offset = 0
 
         # Properties tab for displaying metadata
-        prop_frame = ttk.Frame(self.tools_nb)
+        self.prop_frame = ttk.Frame(self.tools_nb)
         self.prop_view = ttk.Treeview(
-            prop_frame, columns=("field", "value"), show="headings"
+            self.prop_frame, columns=("field", "value"), show="headings"
         )
         self.prop_view.heading("field", text="Field")
         self.prop_view.heading("value", text="Value")
@@ -1535,15 +1527,12 @@ class AutoMLApp:
         # ------------------------------------------------------------------
         self.prop_view.column("field", width=120, anchor="w", stretch=False)
         self.prop_view.column("value", width=200, anchor="w", stretch=True)
-        add_treeview_scrollbars(self.prop_view, prop_frame)
+        add_treeview_scrollbars(self.prop_view, self.prop_frame)
         # Bind resize handlers on the treeview, its container, and the notebook
-        # itself so the value column always fills the tab width even before any
-        # manual resize. DO NOT REMOVE.
-        self.prop_view.bind("<Configure>", self._resize_prop_columns)
-        self.prop_view.bind("<Map>", self._resize_prop_columns)
-        prop_frame.bind("<Configure>", self._resize_prop_columns)
+        # via :class:`EventDispatcher` so the value column always fills the tab
+        # width even before any manual resize. DO NOT REMOVE.
         self.root.after(0, self._resize_prop_columns)
-        self.tools_nb.add(prop_frame, text="Properties")
+        self.tools_nb.add(self.prop_frame, text="Properties")
         tab_id = self.tools_nb.tabs()[-1]
         self._tool_all_tabs.append(tab_id)
         self._update_tool_tab_visibility()
@@ -1551,8 +1540,6 @@ class AutoMLApp:
 
         # Tooltip helper for tabs (text may be clipped)
         self._tools_tip = ToolTip(self.tools_nb, "", automatic=False)
-        self.tools_nb.bind("<Motion>", self._on_tool_tab_motion)
-        self.tools_nb.bind("<Leave>", lambda _e: self._tools_tip.hide())
 
         self.tool_actions = {
             "Safety & Security Management": self.open_safety_management_toolbox,
@@ -1604,8 +1591,6 @@ class AutoMLApp:
         # Notebook for diagrams and analyses with navigation buttons
         self.doc_frame = ttk.Frame(self.main_pane)
         self.doc_nb = ClosableNotebook(self.doc_frame)
-        self.doc_nb.bind("<<NotebookTabClosed>>", self._on_tab_close)
-        self.doc_nb.bind("<<NotebookTabChanged>>", self._on_tab_change)
         # Mapping of tab identifiers to their full, untruncated titles.  The
         # displayed text may be shortened to keep tabs a reasonable size but we
         # keep the originals here for features like duplicate detection.
@@ -1641,8 +1626,11 @@ class AutoMLApp:
         self.main_pane.add(self.doc_frame, stretch="always")
         # Tooltip helper for document tabs
         self._doc_tip = ToolTip(self.doc_nb, "", automatic=False)
-        self.doc_nb.bind("<Motion>", self._on_doc_tab_motion)
-        self.doc_nb.bind("<Leave>", lambda _e: self._doc_tip.hide())
+
+        # Centralised event binding
+        self.event_dispatcher = EventDispatcher(self)
+        self.event_dispatcher.register_keyboard_shortcuts()
+        self.event_dispatcher.register_tab_events()
 
         # Do not open the FTA tab by default so the application starts with no
         # documents visible. The tab and the initial top event will be created
@@ -1660,7 +1648,7 @@ class AutoMLApp:
         self.root_node = None
         self.top_events = []
         self.fmea_entries = []
-        self.fmeas = []  # list of FMEA documents
+        self.fmea_service = FMEAService(self)
         self.selected_node = None
         self.dragging_node = None
         self.drag_offset_x = 0
@@ -1674,6 +1662,26 @@ class AutoMLApp:
         self.activity_windows = []
         self.block_windows = []
         self.ibd_windows = []
+
+    @property
+    def fmeas(self):
+        service = getattr(self, "fmea_service", None)
+        if service is None:
+            service = FMEAService(self)
+            self.fmea_service = service
+        return service.fmeas
+
+    @fmeas.setter
+    def fmeas(self, value):
+        service = getattr(self, "fmea_service", None)
+        if service is None:
+            service = FMEAService(self)
+            self.fmea_service = service
+        service.fmeas = value
+
+    def show_fmea_list(self):
+        """Delegate to the FMEA service to display the FMEA manager."""
+        self.fmea_service.show_fmea_list()
 
     # --- Requirement Traceability Helpers used by reviews and matrix view ---
     def get_requirement_allocation_names(self, req_id):
@@ -3346,7 +3354,7 @@ class AutoMLApp:
             self.project_properties["severity_probabilities"],
         )
         if smt:
-            smt.set_all_diagrams_frozen(freeze)
+            self.governance_manager.freeze_governance_diagrams(freeze)
 
     def edit_project_properties(self):
         prop_win = tk.Toplevel(self.root)
@@ -3437,7 +3445,7 @@ class AutoMLApp:
                 self.project_properties["severity_probabilities"],
             )
             if smt:
-                smt.set_all_diagrams_frozen(var_freeze.get())
+                self.governance_manager.freeze_governance_diagrams(var_freeze.get())
             messagebox.showinfo(
                 "Project Properties", "Project properties updated."
             )
@@ -8492,9 +8500,8 @@ class AutoMLApp:
             self.fmeas[idx]["name"] = new
             self.safety_mgmt_toolbox.rename_document("FMEA", old, new)
         elif kind == "fmeda":
-            old = self.fmedas[idx]["name"]
-            self.fmedas[idx]["name"] = new
-            self.safety_mgmt_toolbox.rename_document("FMEDA", old, new)
+            doc = self.fmedas[idx]
+            self.fmeda_manager.rename_fmeda(doc, new)
         elif kind == "hazop":
             old = self.hazop_docs[idx].name
             self.hazop_docs[idx].name = new
@@ -8584,91 +8591,25 @@ class AutoMLApp:
             action()
 
     def _on_toolbox_change(self) -> None:
-        self.refresh_tool_enablement()
-        self._refresh_phase_requirements_menu()
-        try:
-            self.update_views()
-        except Exception:
-            pass
+        self.governance_manager._on_toolbox_change()
 
     def apply_governance_rules(self) -> None:
         """Apply governance rules and refresh related UI elements."""
-        try:
-            self._on_toolbox_change()
-        except Exception:
-            pass
+        self.governance_manager.apply_governance_rules()
 
     def refresh_tool_enablement(self) -> None:
-        if not hasattr(self, "tool_listboxes"):
-            return
-        toolbox = getattr(self, "safety_mgmt_toolbox", None)
-        if toolbox:
-            declared = set(toolbox.enabled_products())
-            # Parent menu categories must also be considered declared when
-            # any of their children are enabled so the cascade can be
-            # activated.
-            for name in list(declared):
-                parent = self.WORK_PRODUCT_PARENTS.get(name)
-                while parent:
-                    declared.add(parent)
-                    parent = self.WORK_PRODUCT_PARENTS.get(parent)
+        self.governance_manager.refresh_tool_enablement()
 
-            current = set(getattr(self, "enabled_work_products", set()))
-            for name in declared - current:
-                try:
-                    self.enable_work_product(name)
-                except Exception:
-                    self.enabled_work_products.add(name)
-            if getattr(toolbox, "work_products", None) or toolbox.active_module:
-                for name in current - declared:
-                    try:
-                        # Always hide work products that are not declared in
-                        # the active phase. ``force`` ensures the menu and
-                        # toolbox entries are disabled even when documents of
-                        # that type already exist.
-                        self.disable_work_product(name, force=True)
-                    except Exception:
-                        pass
-        global_enabled = getattr(self, "enabled_work_products", set())
-        if toolbox and (getattr(toolbox, "work_products", None) or toolbox.active_module):
-            phase_enabled = toolbox.enabled_products()
-            # Parent menu categories also need to remain active when any of
-            # their children are enabled.  ``phase_enabled`` only contains the
-            # direct work products declared in the governance diagram so we
-            # ascend the hierarchy here to ensure parent menus are treated as
-            # enabled as well.
-            for name in list(phase_enabled):
-                parent = self.WORK_PRODUCT_PARENTS.get(name)
-                while parent:
-                    phase_enabled.add(parent)
-                    parent = self.WORK_PRODUCT_PARENTS.get(parent)
-        else:
-            phase_enabled = global_enabled
-        enabled = global_enabled & phase_enabled
-        for lb in self.tool_listboxes.values():
-            for i, tool_name in enumerate(lb.get(0, tk.END)):
-                analysis_names = getattr(self, "tool_to_work_product", {}).get(tool_name, set())
-                if isinstance(analysis_names, str):
-                    analysis_names = {analysis_names}
-                if not analysis_names:
-                    in_enabled = tool_name in enabled
-                else:
-                    in_enabled = any(n in enabled for n in analysis_names)
-                if not in_enabled:
-                    lb.itemconfig(i, foreground="gray")
-                else:
-                    lb.itemconfig(i, foreground="black")
-        entry_state: dict[tuple[tk.Menu, int], bool] = {}
-        for wp, menus in getattr(self, "work_product_menus", {}).items():
-            is_enabled = wp in enabled
-            for menu, idx in menus:
-                key = (menu, idx)
-                entry_state[key] = entry_state.get(key, False) or is_enabled
-        for (menu, idx), is_enabled in entry_state.items():
-            try:
-                menu.entryconfig(idx, state=tk.NORMAL if is_enabled else tk.DISABLED)
-            except tk.TclError:
-                pass
+    def update_lifecycle_cb(self) -> None:
+        self.governance_manager.update_lifecycle_cb()
+
+    def _export_toolbox_dict(self) -> dict:
+        toolbox = getattr(self, "safety_mgmt_toolbox", None)
+        if toolbox is None:
+            toolbox = SafetyManagementToolbox()
+            self.governance_manager.attach_toolbox(toolbox)
+            self.safety_mgmt_toolbox = toolbox
+        return toolbox.to_dict()
 
     def on_lifecycle_selected(self, _event=None) -> None:
         phase = self.lifecycle_var.get()
@@ -8677,9 +8618,9 @@ class AutoMLApp:
                 text=f"Active phase: {phase or 'None'}"
             )
         if not phase:
-            self.safety_mgmt_toolbox.set_active_module(None)
+            self.governance_manager.set_active_module(None)
         else:
-            self.safety_mgmt_toolbox.set_active_module(phase)
+            self.governance_manager.set_active_module(phase)
         self.update_views()
         if hasattr(self, "refresh_tool_enablement"):
             try:
@@ -8706,23 +8647,6 @@ class AutoMLApp:
 
         for tab in getattr(self, "diagram_tabs", {}).values():
             _refresh_children(tab)
-
-
-    def update_lifecycle_cb(self) -> None:
-        if not hasattr(self, "lifecycle_cb"):
-            return
-        smt = getattr(self, "safety_mgmt_toolbox", None)
-        list_modules = getattr(smt, "list_modules", None)
-        names = (
-            list_modules()
-            if callable(list_modules)
-            else [m.name for m in getattr(smt, "modules", [])]
-        )
-        self.lifecycle_cb.configure(values=names)
-        if getattr(smt, "active_module", None) in names:
-            self.lifecycle_var.set(smt.active_module)
-        else:
-            self.lifecycle_var.set("")
 
     def _add_tool_category(self, cat: str, names: list[str]) -> None:
         frame = ttk.Frame(self.tools_nb)
@@ -9944,6 +9868,7 @@ class AutoMLApp:
                 self, "safety_mgmt_toolbox", SafetyManagementToolbox()
             )
             toolbox = self.safety_mgmt_toolbox
+            self.governance_manager.attach_toolbox(toolbox)
             toolbox.list_diagrams()
             self.update_lifecycle_cb()
             self.refresh_tool_enablement()
@@ -10443,6 +10368,8 @@ class AutoMLApp:
         self.update_views()
         # Regenerate requirement patterns for any model change
         regenerate_requirement_patterns()
+        # Refresh GSN views separately via the manager
+        self.gsn_manager.refresh()
         # Refresh any secondary windows that may be open
         for attr in dir(self):
             if attr.endswith("_window"):
@@ -11899,216 +11826,8 @@ class AutoMLApp:
         refresh_tree()
 
 
-    def show_fmea_list(self):
-        if getattr(self, "_fmea_tab", None) is not None and self._fmea_tab.winfo_exists():
-            self.doc_nb.select(self._fmea_tab)
-            return
-        self._fmea_tab = self._new_tab("FMEA List")
-        win = self._fmea_tab
-        columns = ("Name", "Created", "Author", "Modified", "ModifiedBy")
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for c in columns:
-            tree.heading(c, text=c)
-            width = 150 if c == "Name" else 120
-            tree.column(c, width=width)
-        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        item_map = {}
-        toolbox = getattr(self, "safety_mgmt_toolbox", None)
-        for fmea in self.fmeas:
-            name = fmea.get("name", "")
-            if toolbox and not toolbox.document_visible("FMEA", name):
-                continue
-            iid = tree.insert(
-                "",
-                "end",
-                values=(
-                    name,
-                    fmea.get("created", ""),
-                    fmea.get("author", ""),
-                    fmea.get("modified", ""),
-                    fmea.get("modified_by", ""),
-                ),
-            )
-            item_map[iid] = fmea
-
-        def open_selected(event=None):
-            iid = tree.focus()
-            doc = item_map.get(iid)
-            if not doc:
-                return
-            win.destroy()
-            self._fmea_tab = None
-            self.show_fmea_table(doc)
-
-        def add_fmea():
-            name = simpledialog.askstring("New FMEA", "Enter FMEA name:")
-            if name:
-                file_name = f"fmea_{name}.csv"
-                now = datetime.datetime.now().isoformat()
-                doc = {
-                    "name": name,
-                    "entries": [],
-                    "file": file_name,
-                    "created": now,
-                    "author": CURRENT_USER_NAME,
-                    "modified": now,
-                    "modified_by": CURRENT_USER_NAME,
-                }
-                self.fmeas.append(doc)
-                if hasattr(self, "safety_mgmt_toolbox"):
-                    self.safety_mgmt_toolbox.register_created_work_product("FMEA", doc["name"])
-                iid = tree.insert(
-                    "",
-                    "end",
-                    values=(name, now, CURRENT_USER_NAME, now, CURRENT_USER_NAME),
-                )
-                item_map[iid] = doc
-                self.update_views()
-
-        def delete_fmea():
-            iid = tree.focus()
-            doc = item_map.get(iid)
-            if not doc:
-                return
-            if toolbox and toolbox.document_read_only("FMEA", doc["name"]):
-                messagebox.showinfo("Read-only", "Re-used FMEAs cannot be deleted")
-                return
-            self.fmeas.remove(doc)
-            if toolbox:
-                toolbox.register_deleted_work_product("FMEA", doc["name"])
-            tree.delete(iid)
-            item_map.pop(iid, None)
-            self.update_views()
-
-        def rename_fmea():
-            iid = tree.focus()
-            doc = item_map.get(iid)
-            if not doc:
-                return
-            if toolbox and toolbox.document_read_only("FMEA", doc["name"]):
-                messagebox.showinfo("Read-only", "Re-used FMEAs cannot be renamed")
-                return
-            current = doc.get("name", "")
-            name = simpledialog.askstring("Rename FMEA", "Enter new name:", initialvalue=current)
-            if not name:
-                return
-            old = doc["name"]
-            doc["name"] = name
-            if toolbox:
-                toolbox.rename_document("FMEA", old, name)
-            self.touch_doc(doc)
-            tree.item(iid, values=(name, doc["created"], doc["author"], doc["modified"], doc["modified_by"]))
-            self.update_views()
-
-        tree.bind("<Double-1>", open_selected)
-        btn_frame = ttk.Frame(win)
-        btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
-        ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
-        ttk.Button(btn_frame, text="Add", command=add_fmea).pack(fill=tk.X)
-        ttk.Button(btn_frame, text="Rename", command=rename_fmea).pack(fill=tk.X)
-        ttk.Button(btn_frame, text="Delete", command=delete_fmea).pack(fill=tk.X)
-
     def show_fmeda_list(self):
-        if getattr(self, "_fmeda_tab", None) is not None and self._fmeda_tab.winfo_exists():
-            self.doc_nb.select(self._fmeda_tab)
-            return
-        self._fmeda_tab = self._new_tab("FMEDA List")
-        win = self._fmeda_tab
-        columns = ("Name", "Created", "Author", "Modified", "ModifiedBy")
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for c in columns:
-            tree.heading(c, text=c)
-            width = 150 if c == "Name" else 120
-            tree.column(c, width=width)
-        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        item_map = {}
-        for doc in self.fmedas:
-            iid = tree.insert(
-                "",
-                "end",
-                values=(
-                    doc.get("name", ""),
-                    doc.get("created", ""),
-                    doc.get("author", ""),
-                    doc.get("modified", ""),
-                    doc.get("modified_by", ""),
-                ),
-            )
-            item_map[iid] = doc
-
-        def open_selected(event=None):
-            iid = tree.focus()
-            d = item_map.get(iid)
-            if not d:
-                return
-            win.destroy()
-            self._fmeda_tab = None
-            self.show_fmea_table(d, fmeda=True)
-
-        def add_fmeda():
-            name = simpledialog.askstring("New FMEDA", "Enter FMEDA name:")
-            if name:
-                file_name = f"fmeda_{name}.csv"
-                now = datetime.datetime.now().isoformat()
-                doc = {
-                    "name": name,
-                    "entries": [],
-                    "file": file_name,
-                    "bom": "",
-                    "created": now,
-                    "author": CURRENT_USER_NAME,
-                    "modified": now,
-                    "modified_by": CURRENT_USER_NAME,
-                }
-                self.fmedas.append(doc)
-                if hasattr(self, "safety_mgmt_toolbox"):
-                    self.safety_mgmt_toolbox.register_created_work_product("FMEDA", doc["name"])
-                iid = tree.insert(
-                    "",
-                    "end",
-                    values=(name, now, CURRENT_USER_NAME, now, CURRENT_USER_NAME),
-                )
-                item_map[iid] = doc
-                self.update_views()
-
-        def delete_fmeda():
-            iid = tree.focus()
-            d = item_map.get(iid)
-            if not d:
-                return
-            self.fmedas.remove(d)
-            if hasattr(self, "safety_mgmt_toolbox"):
-                self.safety_mgmt_toolbox.register_deleted_work_product("FMEDA", d["name"])
-            tree.delete(iid)
-            item_map.pop(iid, None)
-            self.update_views()
-
-        def rename_fmeda():
-            iid = tree.focus()
-            d = item_map.get(iid)
-            if not d:
-                return
-            current = d.get("name", "")
-            name = simpledialog.askstring("Rename FMEDA", "Enter new name:", initialvalue=current)
-            if not name:
-                return
-            old = d["name"]
-            d["name"] = name
-            if hasattr(self, "safety_mgmt_toolbox"):
-                self.safety_mgmt_toolbox.rename_document("FMEDA", old, name)
-            self.touch_doc(d)
-            tree.item(iid, values=(name, d["created"], d["author"], d["modified"], d["modified_by"]))
-            self.update_views()
-
-        tree.bind("<Double-1>", open_selected)
-        btn_frame = ttk.Frame(win)
-        btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
-        ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
-        ttk.Button(btn_frame, text="Add", command=add_fmeda).pack(fill=tk.X)
-        ttk.Button(btn_frame, text="Rename", command=rename_fmeda).pack(fill=tk.X)
-        ttk.Button(btn_frame, text="Delete", command=delete_fmeda).pack(fill=tk.X)
+        self.fmeda_manager.show_fmeda_list()
         
     def show_triggering_condition_list(self):
         if hasattr(self, "_tc_tab") and self._tc_tab.winfo_exists():
@@ -14048,9 +13767,7 @@ class AutoMLApp:
                 self.app.sotif_manager.build_goal_dialog(self, sotif_tab, self.initial)
 
                 # --- Cybersecurity fields ---
-                ttk.Label(cyber_tab, text="CAL:").grid(row=0, column=0, sticky="e")
-                self.cal_var = tk.StringVar(value=self.app.get_cyber_goal_cal(name))
-                ttk.Label(cyber_tab, textvariable=self.cal_var).grid(row=0, column=1, padx=5, pady=5, sticky="w")
+                self.cal_var = self.app.cyber_manager.add_goal_dialog_fields(cyber_tab, name)
                 return self.id_entry
 
             def apply(self):
@@ -14560,24 +14277,7 @@ class AutoMLApp:
 
     def export_cybersecurity_goal_requirements(self):
         """Export cybersecurity goals with linked risk assessments."""
-        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-        if not path:
-            return
-
-        columns = ["Cybersecurity Goal", "CAL", "Risk Assessments", "Description"]
-        with open(path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(columns)
-            for cg in self.cybersecurity_goals:
-                cg.compute_cal()
-                ras = ", ".join(
-                    [
-                        ra.get("name", str(ra)) if isinstance(ra, dict) else str(ra)
-                        for ra in cg.risk_assessments
-                    ]
-                )
-                writer.writerow([cg.goal_id, cg.cal, ras, cg.description])
-        messagebox.showinfo("Export", "Cybersecurity goal requirements exported.")
+        self.cyber_manager.export_goal_requirements()
 
     def show_cut_sets(self):
         """Display minimal cut sets for every top event."""
@@ -16736,6 +16436,7 @@ class AutoMLApp:
 
         if not hasattr(self, "safety_mgmt_toolbox"):
             self.safety_mgmt_toolbox = SafetyManagementToolbox()
+            self.governance_manager.attach_toolbox(self.safety_mgmt_toolbox)
 
         self.safety_mgmt_window = SafetyManagementWindow(
             self._safety_mgmt_tab, self, self.safety_mgmt_toolbox, show_diagrams=show_diagrams
@@ -16988,16 +16689,9 @@ class AutoMLApp:
         if getattr(self, "fta_root_node", None):
             self.open_page_diagram(self.fta_root_node)
 
-    def _create_cta_tab(self):
-        """Convenience wrapper for creating a CTA diagram."""
-        self._create_fta_tab("CTA")
-
     def create_cta_diagram(self):
         """Initialize a CTA diagram and its top-level event."""
-        self._create_cta_tab()
-        self.add_top_level_event()
-        if getattr(self, "cta_root_node", None):
-            self.open_page_diagram(self.cta_root_node)
+        self.cta_manager.create_diagram()
 
     def enable_fta_actions(self, enabled: bool) -> None:
         """Enable or disable FTA-related menu actions."""
@@ -17012,13 +16706,6 @@ class AutoMLApp:
             ):
                 self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
                 
-    def enable_cta_actions(self, enabled: bool) -> None:
-        """Enable or disable CTA-related menu actions."""
-        if hasattr(self, "cta_menu"):
-            state = tk.NORMAL if enabled else tk.DISABLED
-            for key in ("add_trigger", "add_functional_insufficiency"):
-                self.cta_menu.entryconfig(self._cta_menu_indices[key], state=state)
-                
     def enable_paa_actions(self, enabled: bool) -> None:
         """Enable or disable PAA-related menu actions."""
         if hasattr(self, "paa_menu"):
@@ -17031,19 +16718,23 @@ class AutoMLApp:
         if mode is None:
             mode = getattr(self, "diagram_mode", "FTA")
         self.enable_fta_actions(mode == "FTA")
-        self.enable_cta_actions(mode == "CTA")
+        self.cta_manager.enable_actions(mode == "CTA")
         self.enable_paa_actions(mode == "PAA")
 
-    def _create_paa_tab(self):
-        """Convenience wrapper for creating a PAA diagram."""
-        self._create_fta_tab("PAA")
+    def _create_paa_tab(self) -> None:
+        """Delegate to :class:`PrototypeAssuranceManager` to create a PAA tab."""
+        self.paa_manager._create_paa_tab()
 
-    def create_paa_diagram(self):
-        """Initialize a Prototype Assurance Analysis diagram and its top-level event."""
-        self._create_paa_tab()
-        self.add_top_level_event()
-        if getattr(self, "paa_root_node", None):
-            self.open_page_diagram(self.paa_root_node)
+    def create_paa_diagram(self) -> None:
+        """Delegate to :class:`PrototypeAssuranceManager` for diagram setup."""
+        self.paa_manager.create_paa_diagram()
+
+    @property
+    def paa_manager(self) -> PrototypeAssuranceManager:
+        """Lazily create and return the PAA manager."""
+        if not hasattr(self, "_paa_manager"):
+            self._paa_manager = PrototypeAssuranceManager(self)
+        return self._paa_manager
 
     def _reset_fta_state(self):
         """Clear references to the FTA tab and its canvas."""
@@ -17140,7 +16831,7 @@ class AutoMLApp:
             self._update_analysis_menus(mode)
         else:
             self.enable_fta_actions(False)
-            self.enable_cta_actions(False)
+            self.cta_manager.enable_actions(False)
             self.enable_paa_actions(False)
         gsn_win = getattr(tab, "gsn_window", None)
         if gsn_win:
@@ -17169,9 +16860,7 @@ class AutoMLApp:
                         )
                         module = toolbox.module_for_diagram(name)
                         if module != getattr(toolbox, "active_module", None):
-                            toolbox.set_active_module(module)
-                            if hasattr(self, "lifecycle_var") and hasattr(self.lifecycle_var, "set"):
-                                self.lifecycle_var.set(module or "")
+                            self.governance_manager.set_active_module(module)
                     break
 
     def _init_nav_button_style(self) -> None:
@@ -17413,13 +17102,7 @@ class AutoMLApp:
         self.refresh_all()
 
     def manage_gsn(self):
-        if hasattr(self, "_gsn_tab") and self._gsn_tab.winfo_exists():
-            self.doc_nb.select(self._gsn_tab)
-        else:
-            self._gsn_tab = self._new_tab("GSN Explorer")
-            self._gsn_window = GSNExplorer(self._gsn_tab, self)
-            self._gsn_window.pack(fill=tk.BOTH, expand=True)
-        self.refresh_all()
+        self.gsn_manager.manage_gsn()
 
     def manage_safety_management(self):
         if not hasattr(self, "safety_mgmt_toolbox"):
@@ -17452,19 +17135,7 @@ class AutoMLApp:
         self.refresh_all()
 
     def open_gsn_diagram(self, diagram):
-        """Open a GSN diagram inside a new notebook tab."""
-        existing = self.diagram_tabs.get(diagram.diag_id)
-        if existing and str(existing) in self.doc_nb.tabs():
-            if existing.winfo_exists():
-                self.doc_nb.select(existing)
-                self.refresh_all()
-                return
-            self.diagram_tabs.pop(diagram.diag_id, None)
-        tab = self._new_tab(diagram.root.user_name)
-        self.diagram_tabs[diagram.diag_id] = tab
-        window = GSNDiagramWindow(tab, self, diagram)
-        setattr(tab, "gsn_window", window)
-        self.refresh_all()
+        self.gsn_manager.open_diagram(diagram)
 
     def open_arch_window(self, diag_id: str) -> None:
         """Open an existing architecture diagram from the repository."""
@@ -18903,9 +18574,7 @@ class AutoMLApp:
             "sysml_repository": repo.to_dict(),
             "gsn_modules": [m.to_dict() for m in getattr(self, "gsn_modules", [])],
             "gsn_diagrams": [d.to_dict() for d in getattr(self, "gsn_diagrams", [])],
-            "safety_mgmt_toolbox": getattr(
-                self, "safety_mgmt_toolbox", SafetyManagementToolbox()
-            ).to_dict(),
+            "safety_mgmt_toolbox": self._export_toolbox_dict(),
             "enabled_work_products": sorted(
                 getattr(self, "enabled_work_products", set())
             ),
@@ -19001,12 +18670,12 @@ class AutoMLApp:
             data.get("safety_mgmt_toolbox", {})
         )
         toolbox = self.safety_mgmt_toolbox
-        toolbox.on_change = self._on_toolbox_change
+        self.governance_manager.attach_toolbox(toolbox)
         # Refresh menus to expose phases from the loaded toolbox
         self._refresh_phase_requirements_menu()
         # Ensure the SysML repository knows about the active phase from the
         # loaded toolbox so diagrams and work products filter correctly.
-        toolbox.set_active_module(toolbox.active_module)
+        self.governance_manager.set_active_module(toolbox.active_module)
         for te in self.top_events:
             toolbox.register_loaded_work_product("FTA", te.user_name)
         for te in getattr(self, "cta_events", []):
@@ -19020,21 +18689,7 @@ class AutoMLApp:
             except Exception:
                 self.enabled_work_products.add(name)
 
-        self.fmeas = []
-        for fmea_data in data.get("fmeas", []):
-            entries = [FaultTreeNode.from_dict(e) for e in fmea_data.get("entries", [])]
-            self.fmeas.append({
-                "name": fmea_data.get("name", "FMEA"),
-                "file": fmea_data.get("file", f"fmea_{len(self.fmeas)}.csv"),
-                "entries": entries,
-                "created": fmea_data.get("created", datetime.datetime.now().isoformat()),
-                "author": fmea_data.get("author", CURRENT_USER_NAME),
-                "modified": fmea_data.get("modified", datetime.datetime.now().isoformat()),
-                "modified_by": fmea_data.get("modified_by", CURRENT_USER_NAME),
-            })
-        if not self.fmeas and "fmea_entries" in data:
-            entries = [FaultTreeNode.from_dict(e) for e in data.get("fmea_entries", [])]
-            self.fmeas.append({"name": "Default FMEA", "file": "fmea_default.csv", "entries": entries})
+        self.fmea_service.load_fmeas(data)
 
         self.fmedas = []
         for doc in data.get("fmedas", []):
@@ -19142,21 +18797,8 @@ class AutoMLApp:
         for d in data.get("haras", []):
             entries = []
             for e in d.get("entries", []):
-                cyber = None
                 cdata = e.get("cyber")
-                if cdata:
-                    cyber = CyberRiskEntry(
-                        damage_scenario=cdata.get("damage_scenario", ""),
-                        threat_scenario=cdata.get("threat_scenario", ""),
-                        attack_vector=cdata.get("attack_vector", ""),
-                        feasibility=cdata.get("feasibility", ""),
-                        financial_impact=cdata.get("financial_impact", ""),
-                        safety_impact=cdata.get("safety_impact", ""),
-                        operational_impact=cdata.get("operational_impact", ""),
-                        privacy_impact=cdata.get("privacy_impact", ""),
-                        cybersecurity_goal=cdata.get("cybersecurity_goal", ""),
-                    )
-                    cyber.attack_paths = cdata.get("attack_paths", [])
+                cyber = self.cyber_manager.build_risk_entry(cdata)
                 entries.append(
                     HaraEntry(
                         e.get("malfunction", ""),
@@ -19194,21 +18836,8 @@ class AutoMLApp:
             hazop_name = self.hazop_docs[0].name if self.hazop_docs else ""
             entries = []
             for e in data.get("hara_entries", []):
-                cyber = None
                 cdata = e.get("cyber")
-                if cdata:
-                    cyber = CyberRiskEntry(
-                        damage_scenario=cdata.get("damage_scenario", ""),
-                        threat_scenario=cdata.get("threat_scenario", ""),
-                        attack_vector=cdata.get("attack_vector", ""),
-                        feasibility=cdata.get("feasibility", ""),
-                        financial_impact=cdata.get("financial_impact", ""),
-                        safety_impact=cdata.get("safety_impact", ""),
-                        operational_impact=cdata.get("operational_impact", ""),
-                        privacy_impact=cdata.get("privacy_impact", ""),
-                        cybersecurity_goal=cdata.get("cybersecurity_goal", ""),
-                    )
-                    cyber.attack_paths = cdata.get("attack_paths", [])
+                cyber = self.cyber_manager.build_risk_entry(cdata)
                 entries.append(
                     HaraEntry(
                         e.get("malfunction", ""),
