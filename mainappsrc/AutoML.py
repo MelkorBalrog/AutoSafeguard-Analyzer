@@ -284,7 +284,7 @@ try:
 except Exception:  # openpyxl may not be installed
     load_workbook = None
 from gui.drawing_helper import FTADrawingHelper, fta_drawing_helper
-from .page_diagram import PageDiagram
+from mainappsrc.page_diagram import PageDiagram
 from analysis.user_config import (
     load_user_config,
     save_user_config,
