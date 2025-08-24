@@ -25,3 +25,8 @@ class ControlFlowDiagramSubApp:
         self.app.diagram_tabs[diag.diag_id] = tab
         ControlFlowDiagramWindow(tab, self.app, diagram_id=diag.diag_id)
         self.app.refresh_all()
+
+    # ------------------------------------------------------------------
+    def create_export_window(self, parent, diagram):
+        """Return a window instance for exporting *diagram*."""
+        return ControlFlowDiagramWindow(parent, self.app, diagram_id=diagram.diag_id)

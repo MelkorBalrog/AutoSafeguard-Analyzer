@@ -21,3 +21,8 @@ class BlockDiagramSubApp:
         self.app.diagram_tabs[diag.diag_id] = tab
         BlockDiagramWindow(tab, self.app, diagram_id=diag.diag_id)
         self.app.refresh_all()
+
+    # ------------------------------------------------------------------
+    def create_export_window(self, parent, diagram):
+        """Return a window instance for exporting *diagram*."""
+        return BlockDiagramWindow(parent, self.app, diagram_id=diagram.diag_id)

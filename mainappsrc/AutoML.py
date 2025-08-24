@@ -395,7 +395,6 @@ from config.automl_constants import (
     WORK_PRODUCT_INFO as BASE_WORK_PRODUCT_INFO,
     WORK_PRODUCT_PARENTS as BASE_WORK_PRODUCT_PARENTS,
     PMHF_TARGETS,
-    VALID_SUBTYPES,
     AUTHOR,
     AUTHOR_EMAIL,
     AUTHOR_LINKEDIN,
@@ -468,6 +467,7 @@ try:  # pragma: no cover - support direct module import
     from .internal_block_diagram_subapp import InternalBlockDiagramSubApp
     from .control_flow_diagram_subapp import ControlFlowDiagramSubApp
     from .fta_subapp import FTASubApp
+    from .project_editor_subapp import ProjectEditorSubApp
     from .risk_assessment_subapp import RiskAssessmentSubApp
     from .reliability_subapp import ReliabilitySubApp
     from .version import VERSION
@@ -482,6 +482,7 @@ except Exception:  # pragma: no cover
     from internal_block_diagram_subapp import InternalBlockDiagramSubApp
     from control_flow_diagram_subapp import ControlFlowDiagramSubApp
     from fta_subapp import FTASubApp
+    from project_editor_subapp import ProjectEditorSubApp
     from risk_assessment_subapp import RiskAssessmentSubApp
     from reliability_subapp import ReliabilitySubApp
     from version import VERSION
@@ -632,6 +633,7 @@ class AutoMLApp:
         self._init_nav_button_style()
         self.tree_app = TreeSubApp()
         self.fta_app = FTASubApp()
+        self.project_editor_app = ProjectEditorSubApp()
         self.risk_app = RiskAssessmentSubApp()
         # Risk assessment helpers also provide FMEDA metric calculations
         # so expose them through a dedicated ``fmeda`` attribute for clarity.
@@ -1505,6 +1507,91 @@ class AutoMLApp:
 
     def get_top_level_nodes(self):
         return self.fta_app.get_top_level_nodes(self)
+
+    def get_all_nodes_no_filter(self, node):
+        return self.fta_app.get_all_nodes_no_filter(self, node)
+
+    def derive_requirements_for_event(self, event):
+        return self.fta_app.derive_requirements_for_event(self, event)
+
+    def get_combined_safety_requirements(self, node):
+        return self.fta_app.get_combined_safety_requirements(self, node)
+
+    def get_top_event(self, node):
+        return self.fta_app.get_top_event(self, node)
+
+    def aggregate_safety_requirements(self, node, all_nodes):
+        return self.fta_app.aggregate_safety_requirements(self, node, all_nodes)
+
+    def generate_top_event_summary(self, top_event):
+        return self.fta_app.generate_top_event_summary(self, top_event)
+
+    def get_all_nodes(self, node=None):
+        return self.fta_app.get_all_nodes(self, node)
+
+    def get_all_nodes_table(self, root_node):
+        return self.fta_app.get_all_nodes_table(self, root_node)
+
+    def get_all_nodes_in_model(self):
+        return self.fta_app.get_all_nodes_in_model(self)
+
+    def get_all_basic_events(self):
+        return self.fta_app.get_all_basic_events(self)
+
+    def get_all_gates(self):
+        return self.fta_app.get_all_gates(self)
+
+    def metric_to_text(self, metric_type, value):
+        return self.fta_app.metric_to_text(self, metric_type, value)
+
+    def assurance_level_text(self, level):
+        return self.fta_app.assurance_level_text(level)
+
+    def calculate_cut_sets(self, node):
+        return self.fta_app.calculate_cut_sets(self, node)
+
+    def build_hierarchical_argumentation(self, node, indent=0):
+        return self.fta_app.build_hierarchical_argumentation(self, node, indent)
+
+    def build_hierarchical_argumentation_common(self, node, indent=0, described=None):
+        return self.fta_app.build_hierarchical_argumentation_common(self, node, indent, described)
+
+    def build_page_argumentation(self, page_node):
+        return self.fta_app.build_page_argumentation(self, page_node)
+
+    def build_unified_recommendation_table(self):
+        return self.fta_app.build_unified_recommendation_table(self)
+
+    def get_extra_recommendations_list(self, description, level):
+        return self.fta_app.get_extra_recommendations_list(self, description, level)
+
+    def get_extra_recommendations_from_level(self, description, level):
+        return self.fta_app.get_extra_recommendations_from_level(self, description, level)
+
+    def get_recommendation_from_description(self, description, level):
+        return self.fta_app.get_recommendation_from_description(self, description, level)
+
+    def build_argumentation(self, node):
+        return self.fta_app.build_argumentation(self, node)
+
+    def auto_create_argumentation(self, node, suppress_top_event_recommendations=False):
+        return self.fta_app.auto_create_argumentation(self, node, suppress_top_event_recommendations)
+
+    def analyze_common_causes(self, node):
+        return self.fta_app.analyze_common_causes(self, node)
+
+    def build_text_report(self, node, indent=0):
+        return self.fta_app.build_text_report(self, node, indent)
+
+    def all_children_are_base_events(self, node):
+        return self.fta_app.all_children_are_base_events(self, node)
+
+    def build_simplified_fta_model(self, top_event):
+        return self.fta_app.build_simplified_fta_model(self, top_event)
+
+    @staticmethod
+    def auto_generate_fta_diagram(fta_model, output_path):
+        return FTASubApp.auto_generate_fta_diagram(fta_model, output_path)
         
     def find_node_by_id_all(self, unique_id):
         for top in self.top_events:
@@ -2957,41 +3044,6 @@ class AutoMLApp:
                 n.x += offset
         self.update_views()
 
-    def get_all_nodes_table(self,root_node):
-        """
-        Recursively traverse the entire fault tree starting from root_node without any filtering.
-        Returns a list of all nodes.
-        """
-        collector = []
-        def rec(n):
-            collector.append(n)
-            for child in n.children:
-                rec(child)
-        rec(root_node)
-        return collector
-
-    def get_all_nodes_in_model(self):
-        """
-        Return a list of *all* nodes across *all* top-level events in self.top_events.
-        """
-        all_nodes = []
-        events = self.top_events + getattr(self, "cta_events", []) + getattr(self, "paa_events", [])
-        for te in events:
-            nodes = self.get_all_nodes_table(te)
-            all_nodes.extend(nodes)
-        return all_nodes
-
-    def get_all_basic_events(self):
-        """Return a list of all basic events across all top-level trees."""
-        return [n for n in self.get_all_nodes_in_model() if n.node_type.upper() == "BASIC EVENT"]
-
-    def get_all_gates(self):
-        """Return a list of all gate nodes (including top events)."""
-        return [
-            n
-            for n in self.get_all_nodes_in_model()
-            if n.node_type.upper() in GATE_NODE_TYPES
-        ]
 
     def get_all_triggering_conditions(self):
         """Return all triggering condition nodes."""
