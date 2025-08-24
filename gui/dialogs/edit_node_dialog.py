@@ -18,16 +18,9 @@ from analysis.models import (
 )
 from analysis.fmeda_utils import GATE_NODE_TYPES
 from analysis.risk_assessment import AutoMLHelper
+from config.automl_constants import VALID_SUBTYPES
 
 AutoML_Helper = AutoMLHelper()
-
-VALID_SUBTYPES = {
-    "Confidence": ["Function", "Human Task"],
-    "Robustness": ["Function", "Human Task"],
-    "Maturity": ["Functionality"],
-    "Rigor": ["Failure", "AI Error", "Functional Insufficiency"],
-    "Prototype Assurance Level (PAL)": ["Vehicle Level Function"],
-}
 
 def format_requirement(req, include_id=True):
     """Return a formatted requirement string without empty ASIL/CAL fields."""

@@ -67,7 +67,7 @@ class EventDispatcher:
         root.bind_all("<Control-v>", lambda event: self.app.paste_node(), add="+")
         root.bind(
             "<Control-p>",
-            lambda event: self.app.diagram_controller.save_diagram_png(),
+            lambda event: self.app.save_diagram_png(),
         )
         root.bind_all("<Control-z>", self.app._undo_hotkey, add="+")
         root.bind_all("<Control-y>", self.app._redo_hotkey, add="+")

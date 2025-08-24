@@ -387,7 +387,6 @@ import builtins
 try:  # pragma: no cover - support direct module import
     from .user_manager import UserManager
     from .project_manager import ProjectManager
-    from .diagram_controller import DiagramController
     from .sotif_manager import SOTIFManager
 except Exception:  # pragma: no cover
     import os, sys
@@ -396,17 +395,20 @@ except Exception:  # pragma: no cover
     sys.path.append(os.path.dirname(base))
     from user_manager import UserManager
     from project_manager import ProjectManager
-    from diagram_controller import DiagramController
     from sotif_manager import SOTIFManager
 from user_manager import UserManager
 from project_manager import ProjectManager
 from cyber_manager import CyberSecurityManager
-from diagram_controller import DiagramController
 from cta_manager import ControlTreeManager
 from config.automl_constants import (
     dynamic_recommendations,
     WORK_PRODUCT_INFO as BASE_WORK_PRODUCT_INFO,
     WORK_PRODUCT_PARENTS as BASE_WORK_PRODUCT_PARENTS,
+    PMHF_TARGETS,
+    VALID_SUBTYPES,
+    AUTHOR,
+    AUTHOR_EMAIL,
+    AUTHOR_LINKEDIN,
 )
 
 builtins.REQUIREMENT_WORK_PRODUCTS = REQUIREMENT_WORK_PRODUCTS
@@ -465,6 +467,28 @@ from analysis.utils import (
 )
 from analysis.safety_management import SafetyManagementToolbox, ACTIVE_TOOLBOX
 from analysis.causal_bayesian_network import CausalBayesianNetwork, CausalBayesianNetworkDoc
+try:  # pragma: no cover - support direct module import
+    from .style_subapp import StyleSubApp
+    from .tree_subapp import TreeSubApp
+    from .diagram_export_subapp import DiagramExportSubApp
+    from .requirements_manager import RequirementsManagerSubApp
+    from .use_case_diagram_subapp import UseCaseDiagramSubApp
+    from .activity_diagram_subapp import ActivityDiagramSubApp
+    from .block_diagram_subapp import BlockDiagramSubApp
+    from .internal_block_diagram_subapp import InternalBlockDiagramSubApp
+    from .control_flow_diagram_subapp import ControlFlowDiagramSubApp
+    from .version import VERSION
+except Exception:  # pragma: no cover
+    from style_subapp import StyleSubApp
+    from tree_subapp import TreeSubApp
+    from diagram_export_subapp import DiagramExportSubApp
+    from requirements_manager import RequirementsManagerSubApp
+    from use_case_diagram_subapp import UseCaseDiagramSubApp
+    from activity_diagram_subapp import ActivityDiagramSubApp
+    from block_diagram_subapp import BlockDiagramSubApp
+    from internal_block_diagram_subapp import InternalBlockDiagramSubApp
+    from control_flow_diagram_subapp import ControlFlowDiagramSubApp
+    from version import VERSION
 try:  # pragma: no cover
     from .models.fault_tree_node import FaultTreeNode
 except Exception:  # pragma: no cover
@@ -508,54 +532,7 @@ def format_requirement(req, include_id=True):
 
 from pathlib import Path
 
-
-def get_version() -> str:
-    """Read the tool version from the first line of README.md.
-
-    The README is located alongside this file so we resolve the path relative
-    to ``__file__``.  This avoids returning ``"Unknown"`` when the current
-    working directory is different (e.g. when launching from another folder or
-    from an installed package).
-    """
-    try:
-        readme = Path(__file__).resolve().parent / "README.md"
-        with readme.open("r", encoding="utf-8") as f:
-            first_line = f.readline().strip()
-            if first_line.lower().startswith("version:"):
-                return first_line.split(":", 1)[1].strip()
-    except Exception:
-        pass
-    return "Unknown"
-
-
-VERSION = get_version()
-
-# Contact information for splash screen
-AUTHOR = "Miguel Marina"
-AUTHOR_EMAIL = "karel.capek.robotics@gmail.com"
-AUTHOR_LINKEDIN = "https://www.linkedin.com/in/progman32/"
-
 from gui.dialogs.user_info_dialog import UserInfoDialog
-
-# Target PMHF limits per ASIL level (events per hour)
-PMHF_TARGETS = {
-    "D": 1e-8,
-    "C": 1e-7,
-    "B": 1e-7,
-    "A": 1e-6,
-    "QM": 1.0,
-}
-
-##########################################
-# VALID_SUBTYPES dictionary
-##########################################
-VALID_SUBTYPES = {
-    "Confidence": ["Function", "Human Task"],
-    "Robustness": ["Function", "Human Task"],
-    "Maturity": ["Functionality"],
-    "Rigor": ["Failure", "AI Error", "Functional Insufficiency"],
-    "Prototype Assurance Level (PAL)": ["Vehicle Level Function"]
-}
 
 # Node types treated as gates when rendering and editing
 _CONFIG_PATH = Path(__file__).resolve().parent / "config/diagram_rules.json"
@@ -662,197 +639,11 @@ class AutoMLApp:
         self.rc_dragged = False
         self.diagram_font = tkFont.Font(family="Arial", size=int(8 * self.zoom))
         self.style = ttk.Style()
-        try:
-            self.style.theme_use("clam")
-        except tk.TclError:
-            pass
-        self.style.configure(
-            "Treeview",
-            font=("Arial", 10),
-            background="#ffffff",
-            fieldbackground="#ffffff",
-            foreground="black",
-            borderwidth=1,
-            relief="sunken",
-        )
-        self.style.configure(
-            "Treeview.Heading",
-            background="#b5bdc9",
-            foreground="black",
-            relief="raised",
-        )
-        self.style.map(
-            "Treeview.Heading",
-            background=[("active", "#4a6ea9"), ("!active", "#b5bdc9")],
-            foreground=[("active", "white"), ("!active", "black")],
-        )
-        # ------------------------------------------------------------------
-        # Global color theme inspired by Windows classic / Windows 7
-        # ------------------------------------------------------------------
-        # Overall workspace background
-        root.configure(background="#f0f0f0")
-        # General widget colours
-        self.style.configure("TFrame", background="#f0f0f0")
-        self.style.configure("TLabel", background="#f0f0f0", foreground="black")
-        self.style.configure(
-            "TEntry", fieldbackground="#ffffff", background="#ffffff", foreground="black"
-        )
-        self.style.configure(
-            "TCombobox",
-            fieldbackground="#ffffff",
-            background="#ffffff",
-            foreground="black",
-        )
-        self.style.configure(
-            "TMenubutton", background="#e7edf5", foreground="black"
-        )
-        self.style.configure(
-            "TScrollbar",
-            background="#c0d4eb",
-            troughcolor="#e2e6eb",
-            bordercolor="#888888",
-            arrowcolor="#555555",
-            lightcolor="#eaf2fb",
-            darkcolor="#5a6d84",
-            borderwidth=2,
-            relief="raised",
-        )
-        # Apply the scrollbar styling to both orientations
-        for orient in ("Horizontal.TScrollbar", "Vertical.TScrollbar"):
-            self.style.configure(orient,
-                                background="#c0d4eb",
-                                troughcolor="#e2e6eb",
-                                bordercolor="#888888",
-                                arrowcolor="#555555",
-                                lightcolor="#eaf2fb",
-                                darkcolor="#5a6d84",
-                                borderwidth=2,
-                                relief="raised")
-        # Toolbox/LabelFrame titles
-        self.style.configure(
-            "Toolbox.TLabelframe",
-            background="#fef9e7",
-            bordercolor="#888888",
-            lightcolor="#fffef7",
-            darkcolor="#bfae6a",
-            borderwidth=1,
-            relief="raised",
-        )
-        self.style.configure(
-            "Toolbox.TLabelframe.Label",
-            background="#fef9e7",
-            foreground="black",
-            font=("Segoe UI", 10, "bold"),
-            padding=(4, 0, 0, 0),
-            anchor="w",
-        )
-        # Notebook (ribbon-like) title bars with beveled edges
-        self.style.configure(
-            "TNotebook",
-            background="#c0d4eb",
-            lightcolor="#eaf2fb",
-            darkcolor="#5a6d84",
-            borderwidth=2,
-            relief="raised",
-        )
-        self.style.configure(
-            "TNotebook.Tab",
-            background="#b5bdc9",
-            foreground="#555555",
-            borderwidth=1,
-            relief="raised",
-        )
-        self.style.map(
-            "TNotebook.Tab",
-            background=[("selected", "#4a6ea9"), ("!selected", "#b5bdc9")],
-            foreground=[("selected", "white"), ("!selected", "#555555")],
-        )
-        # Closable notebook shares the same appearance
-        self.style.configure(
-            "ClosableNotebook",
-            background="#c0d4eb",
-            lightcolor="#eaf2fb",
-            darkcolor="#5a6d84",
-            borderwidth=2,
-            relief="raised",
-        )
-        self.style.configure(
-            "ClosableNotebook.Tab",
-            background="#b5bdc9",
-            foreground="#555555",
-            borderwidth=1,
-            relief="raised",
-        )
-        self.style.map(
-            "ClosableNotebook.Tab",
-            background=[("selected", "#4a6ea9"), ("!selected", "#b5bdc9")],
-            foreground=[("selected", "white"), ("!selected", "#555555")],
-        )
-        # Mac-like capsule buttons
-        def _build_pill(top: str, bottom: str) -> tk.PhotoImage:
-            img = tk.PhotoImage(width=40, height=20)
-            # ``PhotoImage.put`` only accepts RGB colors. Some Tk builds
-            # (notably older Windows releases) mis-handle 8‑digit hex
-            # values used for transparency and instead raise a
-            # ``TclError``.  To keep the routine portable we fill the
-            # image with a solid RGB color and, where supported, mark that
-            # color as transparent.
-            img.put("#000000", to=(0, 0, 40, 20))
-            try:
-                img.transparency_set(0, 0, 0)
-            except Exception:
-                pass
-            radius = 10
-            t_r = int(top[1:3], 16)
-            t_g = int(top[3:5], 16)
-            t_b = int(top[5:7], 16)
-            b_r = int(bottom[1:3], 16)
-            b_g = int(bottom[3:5], 16)
-            b_b = int(bottom[5:7], 16)
-            for y in range(20):
-                ratio = y / 19
-                r = int(t_r * (1 - ratio) + b_r * ratio)
-                g = int(t_g * (1 - ratio) + b_g * ratio)
-                b = int(t_b * (1 - ratio) + b_b * ratio)
-                color = f"#{r:02x}{g:02x}{b:02x}"
-                for x in range(40):
-                    if x < radius:
-                        if (x - radius) ** 2 + (y - radius) ** 2 <= radius ** 2:
-                            img.put(color, (x, y))
-                    elif x >= 40 - radius:
-                        if (x - (40 - radius - 1)) ** 2 + (y - radius) ** 2 <= radius ** 2:
-                            img.put(color, (x, y))
-                    else:
-                        img.put(color, (x, y))
-            return img
-
-        self._btn_imgs = {
-            "normal": _build_pill("#fdfdfd", "#d2d2d2"),
-            "active": _build_pill("#eaeaea", "#c8c8c8"),
-            "pressed": _build_pill("#d0d0d0", "#a5a5a5"),
-        }
-        self.style.element_create(
-            "RoundedButton",
-            "image",
-            self._btn_imgs["normal"],
-            ("active", self._btn_imgs["active"]),
-            ("pressed", self._btn_imgs["pressed"]),
-            border=10,
-            sticky="nsew",
-        )
-        self.style.map(
-            "TButton",
-            relief=[("pressed", "sunken"), ("!pressed", "raised")],
-        )
-        # Navigation buttons used to scroll document tabs
+        self.style_app = StyleSubApp(root, self.style)
+        self.style_app.apply()
+        self._btn_imgs = self.style_app.btn_images
         self._init_nav_button_style()
-        # Increase notebook tab font/size so titles are fully visible
-        self.style.configure(
-            "TNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
-        )
-        self.style.configure(
-            "ClosableNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
-        )
+        self.tree_app = TreeSubApp()
         # style-aware icons used across tree views
         style_mgr = StyleManager.get_instance()
 
@@ -969,11 +760,17 @@ class AutoMLApp:
         self.user_manager = UserManager(self)
         self.project_manager = ProjectManager(self)
         self.cyber_manager = CyberSecurityManager(self)
-        self.diagram_controller = DiagramController(self)
+        self.diagram_export_app = DiagramExportSubApp(self)
+        self.use_case_diagram_app = UseCaseDiagramSubApp(self)
+        self.activity_diagram_app = ActivityDiagramSubApp(self)
+        self.block_diagram_app = BlockDiagramSubApp(self)
+        self.internal_block_diagram_app = InternalBlockDiagramSubApp(self)
+        self.control_flow_diagram_app = ControlFlowDiagramSubApp(self)
         self.sotif_manager = SOTIFManager(self)
         self.fmeda_manager = FMEDAManager(self)
         self.fmea_service = FMEAService(self)
         self.cta_manager = ControlTreeManager(self)
+        self.requirements_manager = RequirementsManagerSubApp(self)
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
@@ -1094,11 +891,11 @@ class AutoMLApp:
         review_menu.add_command(label="Merge Review Comments", command=self.merge_review_comments)
         review_menu.add_command(label="Compare Versions", command=self.compare_versions)
         architecture_menu = tk.Menu(menubar, tearoff=0)
-        architecture_menu.add_command(label="Use Case Diagram", command=self.diagram_controller.open_use_case_diagram)
-        architecture_menu.add_command(label="Activity Diagram", command=self.diagram_controller.open_activity_diagram)
-        architecture_menu.add_command(label="Block Diagram", command=self.diagram_controller.open_block_diagram)
-        architecture_menu.add_command(label="Internal Block Diagram", command=self.diagram_controller.open_internal_block_diagram)
-        architecture_menu.add_command(label="Control Flow Diagram", command=self.diagram_controller.open_control_flow_diagram)
+        architecture_menu.add_command(label="Use Case Diagram", command=self.open_use_case_diagram)
+        architecture_menu.add_command(label="Activity Diagram", command=self.open_activity_diagram)
+        architecture_menu.add_command(label="Block Diagram", command=self.open_block_diagram)
+        architecture_menu.add_command(label="Internal Block Diagram", command=self.open_internal_block_diagram)
+        architecture_menu.add_command(label="Control Flow Diagram", command=self.open_control_flow_diagram)
         architecture_menu.add_separator()
         architecture_menu.add_command(
             label="AutoML Explorer",
@@ -1686,808 +1483,18 @@ class AutoMLApp:
         """Delegate to the FMEA service to display the FMEA manager."""
         self.fmea_service.show_fmea_list()
 
-    # --- Requirement Traceability Helpers used by reviews and matrix view ---
+        # --- Requirement Traceability Helpers used by reviews and matrix view ---
     def get_requirement_allocation_names(self, req_id):
-        """Return names of model elements linked to the requirement."""
-        names = []
-        repo = SysMLRepository.get_instance()
-        for diag_id, obj_id in repo.find_requirements(req_id):
-            diag = repo.diagrams.get(diag_id)
-            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
-            dname = diag.name if diag else ""
-            oname = obj.get("properties", {}).get("name", "") if obj else ""
-            if dname and oname:
-                names.append(f"{dname}:{oname}")
-            elif dname or oname:
-                names.append(dname or oname)
-        for n in self.get_all_nodes(self.root_node):
-            reqs = getattr(n, "safety_requirements", [])
-            if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                names.append(n.user_name or f"Node {n.unique_id}")
-        for fmea in self.fmeas:
-            for e in fmea.get("entries", []):
-                reqs = e.get("safety_requirements", []) if isinstance(e, dict) else getattr(e, "safety_requirements", [])
-                if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                    if isinstance(e, dict):
-                        name = e.get("description") or e.get("user_name", f"BE {e.get('unique_id','')}")
-                    else:
-                        name = getattr(e, "description", "") or getattr(e, "user_name", f"BE {getattr(e, 'unique_id', '')}")
-                    names.append(f"{fmea['name']}:{name}")
-        repo = SysMLRepository.get_instance()
-        for diag in repo.diagrams.values():
-            for obj in getattr(diag, "objects", []):
-                reqs = obj.get("requirements", [])
-                if any(r.get("id") == req_id for r in reqs):
-                    name = obj.get("properties", {}).get("name") or obj.get("obj_type", "")
-                    names.append(name)
-        return names
-
-    def _collect_goal_names(self, node, acc):
-        if node.node_type.upper() == "TOP EVENT":
-            acc.add(node.safety_goal_description or (node.user_name or f"SG {node.unique_id}"))
-        for p in getattr(node, "parents", []):
-            self._collect_goal_names(p, acc)
+        return self.requirements_manager.get_requirement_allocation_names(req_id)
 
     def get_requirement_goal_names(self, req_id):
-        """Return a list of safety goal names linked to the requirement."""
-        goals = set()
-        for n in self.get_all_nodes(self.root_node):
-            reqs = getattr(n, "safety_requirements", [])
-            if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                self._collect_goal_names(n, goals)
-        for fmea in self.fmeas:
-            for e in fmea.get("entries", []):
-                reqs = e.get("safety_requirements", []) if isinstance(e, dict) else getattr(e, "safety_requirements", [])
-                if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                    parent_list = e.get("parents") if isinstance(e, dict) else getattr(e, "parents", None)
-                    parent = parent_list[0] if parent_list else None
-                    if isinstance(parent, dict) and "unique_id" in parent:
-                        node = self.find_node_by_id_all(parent["unique_id"])
-                    else:
-                        node = parent if hasattr(parent, "unique_id") else None
-                    if node:
-                        self._collect_goal_names(node, goals)
-        return sorted(goals)
+        return self.requirements_manager.get_requirement_goal_names(req_id)
 
     def format_requirement_with_trace(self, req):
-        """Return requirement text including allocation and safety goal lists."""
-        rid = req.get("id", "")
-        alloc = ", ".join(self.get_requirement_allocation_names(rid))
-        goals = ", ".join(self.get_requirement_goal_names(rid))
-        base = format_requirement(req)
-        return f"{base} (Alloc: {alloc}; SGs: {goals})"
+        return self.requirements_manager.format_requirement_with_trace(req)
 
     def build_requirement_diff_html(self, review):
-        """Return HTML highlighting requirement differences for the review."""
-        if not self.versions:
-            return ""
-        base_data = self.versions[-1]["data"]
-        current = self.export_model_data(include_versions=False)
-
-        def filter_data(data):
-            return {
-                "top_events": [t for t in data.get("top_events", []) if t["unique_id"] in review.fta_ids],
-                "fmeas": [f for f in data.get("fmeas", []) if f["name"] in review.fmea_names],
-                "fmedas": [d for d in data.get("fmedas", []) if d.get("name") in getattr(review, "fmeda_names", [])],
-            }
-
-        data1 = filter_data(base_data)
-        data2 = filter_data(current)
-        map1 = self.node_map_from_data(data1["top_events"])
-        map2 = self.node_map_from_data(data2["top_events"])
-
-        def collect_reqs(node_dict, target):
-            for r in node_dict.get("safety_requirements", []):
-                rid = r.get("id")
-                if rid and rid not in target:
-                    target[rid] = r
-            for ch in node_dict.get("children", []):
-                collect_reqs(ch, target)
-
-        reqs1, reqs2 = {}, {}
-        for nid in review.fta_ids:
-            if nid in map1:
-                collect_reqs(map1[nid], reqs1)
-            if nid in map2:
-                collect_reqs(map2[nid], reqs2)
-
-        fmea1 = {f["name"]: f for f in data1.get("fmeas", [])}
-        fmea2 = {f["name"]: f for f in data2.get("fmeas", [])}
-        for name in review.fmea_names:
-            for e in fmea1.get(name, {}).get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs1:
-                        reqs1[rid] = r
-            for e in fmea2.get(name, {}).get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs2:
-                        reqs2[rid] = r
-        for f in data1.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs1:
-                        reqs1[rid] = r
-        for f in data2.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs2:
-                        reqs2[rid] = r
-        for f in data1.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs1:
-                        reqs1[rid] = r
-        for f in data2.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs2:
-                        reqs2[rid] = r
-        for f in data1.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs1:
-                        reqs1[rid] = r
-        for f in data2.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs2:
-                        reqs2[rid] = r
-        for f in data1.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs1:
-                        reqs1[rid] = r
-        for f in data2.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs2:
-                        reqs2[rid] = r
-        for f in data1.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs1:
-                        reqs1[rid] = r
-        for f in data2.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs2:
-                        reqs2[rid] = r
-        for f in data1.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs1:
-                        reqs1[rid] = r
-        for f in data2.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs2:
-                        reqs2[rid] = r
-        for f in data1.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs1:
-                        reqs1[rid] = r
-        for f in data2.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs2:
-                        reqs2[rid] = r
-
-        import difflib, html
-
-        def html_diff(a, b):
-            matcher = difflib.SequenceMatcher(None, a, b)
-            parts = []
-            for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-                if tag == "equal":
-                    parts.append(html.escape(a[i1:i2]))
-                elif tag == "delete":
-                    parts.append(f"<span style='color:red'>{html.escape(a[i1:i2])}</span>")
-                elif tag == "insert":
-                    parts.append(f"<span style='color:blue'>{html.escape(b[j1:j2])}</span>")
-                elif tag == "replace":
-                    parts.append(f"<span style='color:red'>{html.escape(a[i1:i2])}</span>")
-                    parts.append(f"<span style='color:blue'>{html.escape(b[j1:j2])}</span>")
-            return "".join(parts)
-
-        lines = []
-        all_ids = sorted(set(reqs1) | set(reqs2))
-        for rid in all_ids:
-            r1 = reqs1.get(rid)
-            r2 = reqs2.get(rid)
-            if r1 and not r2:
-                lines.append(f"Removed: {html.escape(self.format_requirement_with_trace(r1))}")
-            elif r2 and not r1:
-                lines.append(f"Added: {html.escape(self.format_requirement_with_trace(r2))}")
-            else:
-                if json.dumps(r1, sort_keys=True) != json.dumps(r2, sort_keys=True):
-                    lines.append("Updated: " + html_diff(self.format_requirement_with_trace(r1), self.format_requirement_with_trace(r2)))
-
-        for nid in review.fta_ids:
-            n1 = map1.get(nid, {})
-            n2 = map2.get(nid, {})
-            sg_old = f"{n1.get('safety_goal_description','')} [{n1.get('safety_goal_asil','')}]"
-            sg_new = f"{n2.get('safety_goal_description','')} [{n2.get('safety_goal_asil','')}]"
-            label = n2.get('user_name') or n1.get('user_name') or f"Node {nid}"
-            if sg_old != sg_new:
-                lines.append(
-                    f"Safety Goal for {html.escape(label)}: " + html_diff(sg_old, sg_new)
-                )
-            if n1.get('safe_state','') != n2.get('safe_state',''):
-                lines.append(
-                    f"Safe State for {html.escape(label)}: " + html_diff(n1.get('safe_state',''), n2.get('safe_state',''))
-                )
-
-        return "<br>".join(lines)
-
-    # --- Requirement Traceability Helpers used by reviews and matrix view ---
-    def get_requirement_allocation_names(self, req_id):
-        """Return a list of node or FMEA entry names where the requirement appears."""
-        names = []
-        repo = SysMLRepository.get_instance()
-        for diag_id, obj_id in repo.find_requirements(req_id):
-            diag = repo.diagrams.get(diag_id)
-            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
-            dname = diag.name if diag else ""
-            oname = obj.get("properties", {}).get("name", "") if obj else ""
-            if dname and oname:
-                names.append(f"{dname}:{oname}")
-            elif dname or oname:
-                names.append(dname or oname)
-        for n in self.get_all_nodes(self.root_node):
-            reqs = getattr(n, "safety_requirements", [])
-            if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                names.append(n.user_name or f"Node {n.unique_id}")
-        for fmea in self.fmeas:
-            for e in fmea.get("entries", []):
-                reqs = e.get("safety_requirements", []) if isinstance(e, dict) else getattr(e, "safety_requirements", [])
-                if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                    if isinstance(e, dict):
-                        name = e.get("description") or e.get("user_name", f"BE {e.get('unique_id','')}")
-                    else:
-                        name = getattr(e, "description", "") or getattr(e, "user_name", f"BE {getattr(e, 'unique_id', '')}")
-                    names.append(f"{fmea['name']}:{name}")
-        return names
-
-    def _collect_goal_names(self, node, acc):
-        if node.node_type.upper() == "TOP EVENT":
-            acc.add(node.safety_goal_description or (node.user_name or f"SG {node.unique_id}"))
-        for p in getattr(node, "parents", []):
-            self._collect_goal_names(p, acc)
-
-    def get_requirement_goal_names(self, req_id):
-        """Return a list of safety goal names linked to the requirement."""
-        goals = set()
-        for n in self.get_all_nodes(self.root_node):
-            reqs = getattr(n, "safety_requirements", [])
-            if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                self._collect_goal_names(n, goals)
-        for fmea in self.fmeas:
-            for e in fmea.get("entries", []):
-                reqs = e.get("safety_requirements", []) if isinstance(e, dict) else getattr(e, "safety_requirements", [])
-                if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                    parent_list = e.get("parents", []) if isinstance(e, dict) else getattr(e, "parents", [])
-                    parent = parent_list[0] if parent_list else None
-                    if isinstance(parent, dict) and "unique_id" in parent:
-                        node = self.find_node_by_id_all(parent["unique_id"])
-                    else:
-                        node = parent if hasattr(parent, "unique_id") else None
-                    if node:
-                        self._collect_goal_names(node, goals)
-        return sorted(goals)
-
-    def format_requirement_with_trace(self, req):
-        """Return requirement text including allocation and safety goal lists."""
-        rid = req.get("id", "")
-        alloc = ", ".join(self.get_requirement_allocation_names(rid))
-        goals = ", ".join(self.get_requirement_goal_names(rid))
-        base = format_requirement(req)
-        return f"{base} (Alloc: {alloc}; SGs: {goals})"
-
-    def build_requirement_diff_html(self, review):
-        """Return HTML highlighting requirement differences for the review."""
-        if not self.versions:
-            return ""
-        base_data = self.versions[-1]["data"]
-        current = self.export_model_data(include_versions=False)
-
-        def filter_data(data):
-            return {
-                "top_events": [t for t in data.get("top_events", []) if t["unique_id"] in review.fta_ids],
-                "fmeas": [f for f in data.get("fmeas", []) if f["name"] in review.fmea_names],
-                "fmedas": [d for d in data.get("fmedas", []) if d.get("name") in getattr(review, "fmeda_names", [])],
-            }
-
-        data1 = filter_data(base_data)
-        data2 = filter_data(current)
-        map1 = self.node_map_from_data(data1["top_events"])
-        map2 = self.node_map_from_data(data2["top_events"])
-
-        def collect_reqs(node_dict, target):
-            for r in node_dict.get("safety_requirements", []):
-                rid = r.get("id")
-                if rid and rid not in target:
-                    target[rid] = r
-            for ch in node_dict.get("children", []):
-                collect_reqs(ch, target)
-
-        reqs1, reqs2 = {}, {}
-        for nid in review.fta_ids:
-            if nid in map1:
-                collect_reqs(map1[nid], reqs1)
-            if nid in map2:
-                collect_reqs(map2[nid], reqs2)
-
-        fmea1 = {f["name"]: f for f in data1.get("fmeas", [])}
-        fmea2 = {f["name"]: f for f in data2.get("fmeas", [])}
-        for name in review.fmea_names:
-            for e in fmea1.get(name, {}).get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs1:
-                        reqs1[rid] = r
-            for e in fmea2.get(name, {}).get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs2:
-                        reqs2[rid] = r
-
-        import difflib, html
-
-        def html_diff(a, b):
-            matcher = difflib.SequenceMatcher(None, a, b)
-            parts = []
-            for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-                if tag == "equal":
-                    parts.append(html.escape(a[i1:i2]))
-                elif tag == "delete":
-                    parts.append(f"<span style='color:red'>{html.escape(a[i1:i2])}</span>")
-                elif tag == "insert":
-                    parts.append(f"<span style='color:blue'>{html.escape(b[j1:j2])}</span>")
-                elif tag == "replace":
-                    parts.append(f"<span style='color:red'>{html.escape(a[i1:i2])}</span>")
-                    parts.append(f"<span style='color:blue'>{html.escape(b[j1:j2])}</span>")
-            return "".join(parts)
-
-        lines = []
-        all_ids = sorted(set(reqs1) | set(reqs2))
-        for rid in all_ids:
-            r1 = reqs1.get(rid)
-            r2 = reqs2.get(rid)
-            if r1 and not r2:
-                lines.append(f"Removed: {html.escape(self.format_requirement_with_trace(r1))}")
-            elif r2 and not r1:
-                lines.append(f"Added: {html.escape(self.format_requirement_with_trace(r2))}")
-            else:
-                if json.dumps(r1, sort_keys=True) != json.dumps(r2, sort_keys=True):
-                    lines.append("Updated: " + html_diff(self.format_requirement_with_trace(r1), self.format_requirement_with_trace(r2)))
-
-        for nid in review.fta_ids:
-            n1 = map1.get(nid, {})
-            n2 = map2.get(nid, {})
-            sg_old = f"{n1.get('safety_goal_description','')} [{n1.get('safety_goal_asil','')}]"
-            sg_new = f"{n2.get('safety_goal_description','')} [{n2.get('safety_goal_asil','')}]"
-            label = n2.get('user_name') or n1.get('user_name') or f"Node {nid}"
-            if sg_old != sg_new:
-                lines.append(
-                    f"Safety Goal for {html.escape(label)}: " + html_diff(sg_old, sg_new)
-                )
-            if n1.get('safe_state','') != n2.get('safe_state',''):
-                lines.append(
-                    f"Safe State for {html.escape(label)}: " + html_diff(n1.get('safe_state',''), n2.get('safe_state',''))
-                )
-
-        return "<br>".join(lines)
-
-    # --- Requirement Traceability Helpers used by reviews and matrix view ---
-    def get_requirement_allocation_names(self, req_id):
-        """Return a list of node or FMEA entry names where the requirement appears."""
-        names = []
-        repo = SysMLRepository.get_instance()
-        for diag_id, obj_id in repo.find_requirements(req_id):
-            diag = repo.diagrams.get(diag_id)
-            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
-            dname = diag.name if diag else ""
-            oname = obj.get("properties", {}).get("name", "") if obj else ""
-            if dname and oname:
-                names.append(f"{dname}:{oname}")
-            elif dname or oname:
-                names.append(dname or oname)
-        for n in self.get_all_nodes(self.root_node):
-            reqs = getattr(n, "safety_requirements", [])
-            if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                names.append(n.user_name or f"Node {n.unique_id}")
-        for fmea in self.fmeas:
-            for e in fmea.get("entries", []):
-                reqs = e.get("safety_requirements", []) if isinstance(e, dict) else getattr(e, "safety_requirements", [])
-                if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                    if isinstance(e, dict):
-                        name = e.get("description") or e.get("user_name", f"BE {e.get('unique_id','')}")
-                    else:
-                        name = getattr(e, "description", "") or getattr(e, "user_name", f"BE {getattr(e, 'unique_id', '')}")
-                    names.append(f"{fmea['name']}:{name}")
-        return names
-
-    def _collect_goal_names(self, node, acc):
-        if node.node_type.upper() == "TOP EVENT":
-            acc.add(node.safety_goal_description or (node.user_name or f"SG {node.unique_id}"))
-        for p in getattr(node, "parents", []):
-            self._collect_goal_names(p, acc)
-
-    def get_requirement_goal_names(self, req_id):
-        """Return a list of safety goal names linked to the requirement."""
-        goals = set()
-        for n in self.get_all_nodes(self.root_node):
-            reqs = getattr(n, "safety_requirements", [])
-            if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                self._collect_goal_names(n, goals)
-        for fmea in self.fmeas:
-            for e in fmea.get("entries", []):
-                reqs = e.get("safety_requirements", []) if isinstance(e, dict) else getattr(e, "safety_requirements", [])
-                if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                    parent_list = e.get("parents", []) if isinstance(e, dict) else getattr(e, "parents", [])
-                    parent = parent_list[0] if parent_list else None
-                    if isinstance(parent, dict) and "unique_id" in parent:
-                        node = self.find_node_by_id_all(parent["unique_id"])
-                    else:
-                        node = parent if hasattr(parent, "unique_id") else None
-                    if node:
-                        self._collect_goal_names(node, goals)
-        return sorted(goals)
-
-    def format_requirement_with_trace(self, req):
-        """Return requirement text including allocation and safety goal lists."""
-        if isinstance(req, dict):
-            data = req
-        else:
-            data = {
-                "id": getattr(req, "id", ""),
-                "req_type": getattr(req, "req_type", ""),
-                "asil": getattr(req, "asil", ""),
-                "cal": getattr(req, "cal", ""),
-                "text": getattr(req, "text", ""),
-            }
-        rid = data.get("id", "")
-        alloc = ", ".join(self.get_requirement_allocation_names(rid))
-        goals = ", ".join(self.get_requirement_goal_names(rid))
-        base = format_requirement(data)
-        return f"{base} (Alloc: {alloc}; SGs: {goals})"
-
-    def build_requirement_diff_html(self, review):
-        """Return HTML highlighting requirement differences for the review."""
-        if not self.versions:
-            return ""
-        base_data = self.versions[-1]["data"]
-        current = self.export_model_data(include_versions=False)
-
-        def filter_data(data):
-            return {
-                "top_events": [
-                    t for t in data.get("top_events", []) if t["unique_id"] in review.fta_ids
-                ],
-                "fmeas": [
-                    f for f in data.get("fmeas", []) if f["name"] in review.fmea_names
-                ],
-                "fmedas": [
-                    d
-                    for d in data.get("fmedas", [])
-                    if d.get("name") in getattr(review, "fmeda_names", [])
-                ],
-                "hazops": [
-                    d
-                    for d in data.get("hazops", [])
-                    if d.get("name") in getattr(review, "hazop_names", [])
-                ],
-                "haras": [
-                    d
-                    for d in data.get("haras", [])
-                    if d.get("name") in getattr(review, "hara_names", [])
-                ],
-                "stpas": [
-                    d
-                    for d in data.get("stpas", [])
-                    if d.get("name") in getattr(review, "stpa_names", [])
-                ],
-            }
-
-        data1 = filter_data(base_data)
-        data2 = filter_data(current)
-        map1 = self.node_map_from_data(data1["top_events"])
-        map2 = self.node_map_from_data(data2["top_events"])
-
-        def collect_reqs(node_dict, target):
-            for r in node_dict.get("safety_requirements", []):
-                rid = r.get("id")
-                if rid and rid not in target:
-                    target[rid] = r
-            for ch in node_dict.get("children", []):
-                collect_reqs(ch, target)
-
-        reqs1, reqs2 = {}, {}
-        for nid in review.fta_ids:
-            if nid in map1:
-                collect_reqs(map1[nid], reqs1)
-            if nid in map2:
-                collect_reqs(map2[nid], reqs2)
-
-        fmea1 = {f["name"]: f for f in data1.get("fmeas", [])}
-        fmea2 = {f["name"]: f for f in data2.get("fmeas", [])}
-        for name in review.fmea_names:
-            for e in fmea1.get(name, {}).get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs1:
-                        reqs1[rid] = r
-            for e in fmea2.get(name, {}).get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs2:
-                        reqs2[rid] = r
-
-        import difflib, html
-
-        def html_diff(a, b):
-            matcher = difflib.SequenceMatcher(None, a, b)
-            parts = []
-            for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-                if tag == "equal":
-                    parts.append(html.escape(a[i1:i2]))
-                elif tag == "delete":
-                    parts.append(f"<span style='color:red'>{html.escape(a[i1:i2])}</span>")
-                elif tag == "insert":
-                    parts.append(f"<span style='color:blue'>{html.escape(b[j1:j2])}</span>")
-                elif tag == "replace":
-                    parts.append(f"<span style='color:red'>{html.escape(a[i1:i2])}</span>")
-                    parts.append(f"<span style='color:blue'>{html.escape(b[j1:j2])}</span>")
-            return "".join(parts)
-
-        lines = []
-        all_ids = sorted(set(reqs1) | set(reqs2))
-        for rid in all_ids:
-            r1 = reqs1.get(rid)
-            r2 = reqs2.get(rid)
-            if r1 and not r2:
-                lines.append(f"Removed: {html.escape(self.format_requirement_with_trace(r1))}")
-            elif r2 and not r1:
-                lines.append(f"Added: {html.escape(self.format_requirement_with_trace(r2))}")
-            else:
-                if json.dumps(r1, sort_keys=True) != json.dumps(r2, sort_keys=True):
-                    lines.append("Updated: " + html_diff(self.format_requirement_with_trace(r1), self.format_requirement_with_trace(r2)))
-
-        for nid in review.fta_ids:
-            n1 = map1.get(nid, {})
-            n2 = map2.get(nid, {})
-            sg_old = f"{n1.get('safety_goal_description','')} [{n1.get('safety_goal_asil','')}]"
-            sg_new = f"{n2.get('safety_goal_description','')} [{n2.get('safety_goal_asil','')}]"
-            label = n2.get('user_name') or n1.get('user_name') or f"Node {nid}"
-            if sg_old != sg_new:
-                lines.append(
-                    f"Safety Goal for {html.escape(label)}: " + html_diff(sg_old, sg_new)
-                )
-            if n1.get('safe_state','') != n2.get('safe_state',''):
-                lines.append(
-                    f"Safe State for {html.escape(label)}: " + html_diff(n1.get('safe_state',''), n2.get('safe_state',''))
-                )
-
-        return "<br>".join(lines)
-
-    # --- Requirement Traceability Helpers used by reviews and matrix view ---
-    def get_requirement_allocation_names(self, req_id):
-        """Return a list of node or FMEA entry names where the requirement appears."""
-        names = []
-        repo = SysMLRepository.get_instance()
-        for diag_id, obj_id in repo.find_requirements(req_id):
-            diag = repo.diagrams.get(diag_id)
-            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
-            dname = diag.name if diag else ""
-            oname = obj.get("properties", {}).get("name", "") if obj else ""
-            if dname and oname:
-                names.append(f"{dname}:{oname}")
-            elif dname or oname:
-                names.append(dname or oname)
-        for n in self.get_all_nodes(self.root_node):
-            reqs = getattr(n, "safety_requirements", [])
-            if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                names.append(n.user_name or f"Node {n.unique_id}")
-        for fmea in self.fmeas:
-            for e in fmea.get("entries", []):
-                reqs = e.get("safety_requirements", []) if isinstance(e, dict) else getattr(e, "safety_requirements", [])
-                if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                    if isinstance(e, dict):
-                        name = e.get("description") or e.get("user_name", f"BE {e.get('unique_id','')}")
-                    else:
-                        name = getattr(e, "description", "") or getattr(e, "user_name", f"BE {getattr(e, 'unique_id', '')}")
-                    names.append(f"{fmea['name']}:{name}")
-        return names
-
-    def _collect_goal_names(self, node, acc):
-        if node.node_type.upper() == "TOP EVENT":
-            acc.add(node.safety_goal_description or (node.user_name or f"SG {node.unique_id}"))
-        for p in getattr(node, "parents", []):
-            self._collect_goal_names(p, acc)
-
-    def get_requirement_goal_names(self, req_id):
-        """Return a list of safety goal names linked to the requirement."""
-        goals = set()
-        for n in self.get_all_nodes(self.root_node):
-            reqs = getattr(n, "safety_requirements", [])
-            if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                self._collect_goal_names(n, goals)
-        for fmea in self.fmeas:
-            for e in fmea.get("entries", []):
-                reqs = e.get("safety_requirements", []) if isinstance(e, dict) else getattr(e, "safety_requirements", [])
-                if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
-                    parent_list = e.get("parents", []) if isinstance(e, dict) else getattr(e, "parents", [])
-                    parent = parent_list[0] if parent_list else None
-                    if isinstance(parent, dict) and "unique_id" in parent:
-                        node = self.find_node_by_id_all(parent["unique_id"])
-                    else:
-                        node = parent if hasattr(parent, "unique_id") else None
-                    if node:
-                        self._collect_goal_names(node, goals)
-        return sorted(goals)
-
-    def format_requirement_with_trace(self, req):
-        """Return requirement text including allocation and safety goal lists."""
-        if isinstance(req, dict):
-            data = req
-        else:
-            data = {
-                "id": getattr(req, "id", ""),
-                "req_type": getattr(req, "req_type", ""),
-                "asil": getattr(req, "asil", ""),
-                "cal": getattr(req, "cal", ""),
-                "text": getattr(req, "text", ""),
-            }
-        rid = data.get("id", "")
-        alloc = ", ".join(self.get_requirement_allocation_names(rid))
-        goals = ", ".join(self.get_requirement_goal_names(rid))
-        base = format_requirement(data)
-        return f"{base} (Alloc: {alloc}; SGs: {goals})"
-
-    def build_requirement_diff_html(self, review):
-        """Return HTML highlighting requirement differences for the review."""
-        if not self.versions:
-            return ""
-        base_data = self.versions[-1]["data"]
-        current = self.export_model_data(include_versions=False)
-
-        def filter_data(data):
-            return {
-                "top_events": [
-                    t for t in data.get("top_events", []) if t["unique_id"] in review.fta_ids
-                ],
-                "fmeas": [f for f in data.get("fmeas", []) if f["name"] in review.fmea_names],
-                "fmedas": [
-                    d
-                    for d in data.get("fmedas", [])
-                    if d.get("name") in getattr(review, "fmeda_names", [])
-                ],
-                "hazops": [
-                    d
-                    for d in data.get("hazops", [])
-                    if d.get("name") in getattr(review, "hazop_names", [])
-                ],
-                "haras": [
-                    d
-                    for d in data.get("haras", [])
-                    if d.get("name") in getattr(review, "hara_names", [])
-                ],
-                "stpas": [
-                    d
-                    for d in data.get("stpas", [])
-                    if d.get("name") in getattr(review, "stpa_names", [])
-                ],
-            }
-
-        data1 = filter_data(base_data)
-        data2 = filter_data(current)
-        map1 = self.node_map_from_data(data1["top_events"])
-        map2 = self.node_map_from_data(data2["top_events"])
-
-        def collect_reqs(node_dict, target):
-            for r in node_dict.get("safety_requirements", []):
-                rid = r.get("id")
-                if rid and rid not in target:
-                    target[rid] = r
-            for ch in node_dict.get("children", []):
-                collect_reqs(ch, target)
-
-        reqs1, reqs2 = {}, {}
-        for nid in review.fta_ids:
-            if nid in map1:
-                collect_reqs(map1[nid], reqs1)
-            if nid in map2:
-                collect_reqs(map2[nid], reqs2)
-
-        fmea1 = {f["name"]: f for f in data1.get("fmeas", [])}
-        fmea2 = {f["name"]: f for f in data2.get("fmeas", [])}
-        for name in review.fmea_names:
-            for e in fmea1.get(name, {}).get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs1:
-                        reqs1[rid] = r
-            for e in fmea2.get(name, {}).get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs2:
-                        reqs2[rid] = r
-        for f in data1.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs1:
-                        reqs1[rid] = r
-        for f in data2.get("fmedas", []):
-            for e in f.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    rid = r.get("id")
-                    if rid and rid not in reqs2:
-                        reqs2[rid] = r
-
-        import difflib, html
-
-        def html_diff(a, b):
-            matcher = difflib.SequenceMatcher(None, a, b)
-            parts = []
-            for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-                if tag == "equal":
-                    parts.append(html.escape(a[i1:i2]))
-                elif tag == "delete":
-                    parts.append(f"<span style='color:red'>{html.escape(a[i1:i2])}</span>")
-                elif tag == "insert":
-                    parts.append(f"<span style='color:blue'>{html.escape(b[j1:j2])}</span>")
-                elif tag == "replace":
-                    parts.append(f"<span style='color:red'>{html.escape(a[i1:i2])}</span>")
-                    parts.append(f"<span style='color:blue'>{html.escape(b[j1:j2])}</span>")
-            return "".join(parts)
-
-        lines = []
-        all_ids = sorted(set(reqs1) | set(reqs2))
-        for rid in all_ids:
-            r1 = reqs1.get(rid)
-            r2 = reqs2.get(rid)
-            if r1 and not r2:
-                lines.append(f"Removed: {html.escape(self.format_requirement_with_trace(r1))}")
-            elif r2 and not r1:
-                lines.append(f"Added: {html.escape(self.format_requirement_with_trace(r2))}")
-            else:
-                if json.dumps(r1, sort_keys=True) != json.dumps(r2, sort_keys=True):
-                    lines.append("Updated: " + html_diff(self.format_requirement_with_trace(r1), self.format_requirement_with_trace(r2)))
-
-        for nid in review.fta_ids:
-            n1 = map1.get(nid, {})
-            n2 = map2.get(nid, {})
-            sg_old = f"{n1.get('safety_goal_description','')} [{n1.get('safety_goal_asil','')}]"
-            sg_new = f"{n2.get('safety_goal_description','')} [{n2.get('safety_goal_asil','')}]"
-            label = n2.get('user_name') or n1.get('user_name') or f"Node {nid}"
-            if sg_old != sg_new:
-                lines.append(
-                    f"Safety Goal for {html.escape(label)}: " + html_diff(sg_old, sg_new)
-                )
-            if n1.get('safe_state','') != n2.get('safe_state',''):
-                lines.append(
-                    f"Safe State for {html.escape(label)}: " + html_diff(n1.get('safe_state',''), n2.get('safe_state',''))
-                )
-
-        return "<br>".join(lines)
+        return self.requirements_manager.build_requirement_diff_html(review)
 
     def generate_recommendations_for_top_event(self, node):
         # Determine the Prototype Assurance Level (PAL) based on the node’s quantitative score.
@@ -8222,186 +7229,20 @@ class AutoMLApp:
                                font=self.diagram_font)
 
     def save_diagram_png(self):
-        self.diagram_controller.save_diagram_png()
+        self.diagram_export_app.save_diagram_png()
 
     def on_treeview_click(self, event):
-        sel = self.analysis_tree.selection()
-        if not sel:
-            return
-        try:
-            node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
-        except (IndexError, ValueError):
-            return
-        node = self.find_node_by_id_all(node_id)
-        if node:
-            self.open_page_diagram(node)
+        self.tree_app.on_treeview_click(self, event)
 
     def on_analysis_tree_double_click(self, event):
-        item = (
-            self.analysis_tree.identify_row(event.y)
-            if event is not None
-            else self.analysis_tree.focus()
-        )
-        if not item:
-            return
-        self.analysis_tree.focus(item)
-        tags = self.analysis_tree.item(item, "tags")
-        kind = tags[0] if tags else None
-        ident = tags[1] if tags and len(tags) > 1 else None
-        if kind in {"fmea", "fmeda", "hazop", "hara", "stpa", "threat", "fi2tc", "tc2fi", "jrev", "gov"} and ident is not None:
-            idx = int(ident)
-            if kind == "fmea":
-                self.show_fmea_table(self.fmeas[idx])
-            elif kind == "fmeda":
-                self.show_fmea_table(self.fmedas[idx], fmeda=True)
-            elif kind == "hazop":
-                self.open_hazop_window()
-                if hasattr(self, "_hazop_window"):
-                    doc = self.hazop_docs[idx]
-                    self._hazop_window.doc_var.set(doc.name)
-                    self._hazop_window.select_doc()
-            elif kind == "hara":
-                self.open_risk_assessment_window()
-                if hasattr(self, "_risk_window"):
-                    doc = self.hara_docs[idx]
-                    self._risk_window.doc_var.set(doc.name)
-                    self._risk_window.select_doc()
-            elif kind == "stpa":
-                self.open_stpa_window()
-                if hasattr(self, "_stpa_window"):
-                    doc = self.stpa_docs[idx]
-                    self._stpa_window.doc_var.set(doc.name)
-                    self._stpa_window.select_doc()
-            elif kind == "threat":
-                self.open_threat_window()
-                if hasattr(self, "_threat_window"):
-                    doc = self.threat_docs[idx]
-                    self._threat_window.doc_var.set(doc.name)
-                    self._threat_window.select_doc()
-            elif kind == "fi2tc":
-                self.open_fi2tc_window()
-                if hasattr(self, "_fi2tc_window"):
-                    doc = self.fi2tc_docs[idx]
-                    self._fi2tc_window.doc_var.set(doc.name)
-                    self._fi2tc_window.select_doc()
-            elif kind == "tc2fi":
-                self.open_tc2fi_window()
-                if hasattr(self, "_tc2fi_window"):
-                    doc = self.tc2fi_docs[idx]
-                    self._tc2fi_window.doc_var.set(doc.name)
-                    self._tc2fi_window.select_doc()
-            elif kind == "jrev":
-                if 0 <= idx < len(getattr(self, "joint_reviews", [])):
-                    review = self.joint_reviews[idx]
-                    self.review_data = review
-                    self.open_review_document(review)
-                    self.open_review_toolbox()
-            elif kind == "gov":
-                self.open_management_window(idx)
-        elif kind == "gsn" and ident is not None:
-            diag = getattr(self, "gsn_diagram_map", {}).get(ident)
-            if diag:
-                self.open_gsn_diagram(diag)
-        elif kind == "gsnmod":
-            self.manage_gsn()
-        elif kind == "reqs":
-            self.show_requirements_editor()
-        elif kind == "reqexp":
-            self.show_requirements_explorer()
-        elif kind == "sg":
-            self.show_product_goals_editor()
-        elif kind == "fta" and ident is not None:
-            te = next((t for t in self.top_events if t.unique_id == int(ident)), None)
-            if te:
-                self.diagram_mode = "FTA"
-                self.ensure_fta_tab()
-                self.doc_nb.select(self.canvas_tab)
-                self.open_page_diagram(te)
-        elif kind == "cta" and ident is not None:
-            te = next((t for t in getattr(self, "cta_events", []) if t.unique_id == int(ident)), None)
-            if te:
-                self.diagram_mode = "CTA"
-                self.ensure_fta_tab()
-                self.doc_nb.select(self.canvas_tab)
-                self.open_page_diagram(te)
-        elif kind == "paa" and ident is not None:
-            te = next((t for t in getattr(self, "paa_events", []) if t.unique_id == int(ident)), None)
-            if te:
-                self.diagram_mode = "PAA"
-                self.ensure_fta_tab()
-                self.doc_nb.select(self.canvas_tab)
-                self.open_page_diagram(te)
-        elif kind == "safetycase":
-            self.manage_safety_cases()
-        elif kind == "safetyconcept":
-            self.show_safety_concept_editor()
-        elif kind == "itemdef":
-            self.show_item_definition_editor()
-        elif kind == "arch":
-            self.open_arch_window(ident)
-        elif kind == "pkg":
-            self.manage_architecture()
-        else:
-            parent = item
-            while parent:
-                if (
-                    self.analysis_tree.item(parent, "text")
-                    == "Safety & Security Governance Diagrams"
-                ):
-                    self.manage_safety_management()
-                    return
-                parent = self.analysis_tree.parent(parent)
+        self.tree_app.on_analysis_tree_double_click(self, event)
 
     def on_analysis_tree_right_click(self, event):
-        iid = self.analysis_tree.identify_row(event.y)
-        if not iid:
-            return
-        self.analysis_tree.selection_set(iid)
-        self.analysis_tree.focus(iid)
-        menu = tk.Menu(self.analysis_tree, tearoff=0)
-        menu.add_command(label="Rename", command=self.rename_selected_tree_item)
-        menu.tk_popup(event.x_root, event.y_root)
+        self.tree_app.on_analysis_tree_right_click(self, event)
 
     def on_analysis_tree_select(self, _event):
         """Update property view when a tree item is selected."""
-        if not hasattr(self, "prop_view"):
-            return
-        item = self.analysis_tree.focus()
-        if not item:
-            return
-        tags = self.analysis_tree.item(item, "tags")
-        name = self.analysis_tree.item(item, "text")
-        meta = {"Name": name}
-        if tags:
-            meta["Type"] = tags[0]
-            if len(tags) > 1:
-                ident = tags[1]
-                meta["ID"] = ident
-                repo = SysMLRepository.get_instance()
-                elem = repo.elements.get(ident)
-                if elem:
-                    meta.update(
-                        {
-                            "Type": elem.elem_type,
-                            "Author": getattr(elem, "author", ""),
-                            "Created": getattr(elem, "created", ""),
-                            "Modified": getattr(elem, "modified", ""),
-                            "ModifiedBy": getattr(elem, "modified_by", ""),
-                        }
-                    )
-                else:
-                    diag = repo.diagrams.get(ident)
-                    if diag:
-                        meta.update(
-                            {
-                                "Type": diag.diag_type,
-                                "Author": getattr(diag, "author", ""),
-                                "Created": getattr(diag, "created", ""),
-                                "Modified": getattr(diag, "modified", ""),
-                                "ModifiedBy": getattr(diag, "modified_by", ""),
-                            }
-                        )
-        self.show_properties(meta=meta)
+        self.tree_app.on_analysis_tree_select(self, _event)
 
     def show_properties(self, obj=None, meta=None):
         """Display metadata for *obj* or *meta* dictionary in the properties tab."""
@@ -8457,125 +7298,7 @@ class AutoMLApp:
                         self.status_meta_vars[k].set(v)
 
     def rename_selected_tree_item(self):
-        item = self.analysis_tree.focus()
-        tags = self.analysis_tree.item(item, "tags")
-        if len(tags) != 2:
-            return
-        kind, ident = tags[0], tags[1]
-        repo = SysMLRepository.get_instance()
-        current = ""
-        node = None
-        if kind in {"fmea", "fmeda", "hazop", "hara", "fi2tc", "tc2fi", "jrev"}:
-            idx = int(ident)
-            if kind == "fmea":
-                current = self.fmeas[idx]["name"]
-            elif kind == "fmeda":
-                current = self.fmedas[idx]["name"]
-            elif kind == "hazop":
-                current = self.hazop_docs[idx].name
-            elif kind == "hara":
-                current = self.hara_docs[idx].name
-            elif kind == "fi2tc":
-                current = self.fi2tc_docs[idx].name
-            elif kind == "tc2fi":
-                current = self.tc2fi_docs[idx].name
-            elif kind == "jrev":
-                current = self.joint_reviews[idx].name
-        elif kind == "gsn":
-            diag = getattr(self, "gsn_diagram_map", {}).get(ident)
-            if not diag:
-                return
-            current = diag.root.user_name
-        elif kind == "gsnmod":
-            module = getattr(self, "gsn_module_map", {}).get(ident)
-            if not module:
-                return
-            current = module.name
-        elif kind == "arch":
-            diag = repo.diagrams.get(ident)
-            current = diag.name if diag else ""
-        elif kind == "gov":
-            idx = int(ident)
-            current = self.management_diagrams[idx].name
-        elif kind == "fta":
-            node = next((t for t in self.top_events if t.unique_id == int(ident)), None)
-            current = node.user_name if node else ""
-        elif kind == "pkg":
-            pkg = repo.elements.get(ident)
-            current = pkg.name if pkg else ""
-        else:
-            return
-        new = simpledialog.askstring("Rename", "Enter new name:", initialvalue=current)
-        if not new:
-            return
-        if kind == "fmea":
-            old = self.fmeas[idx]["name"]
-            self.fmeas[idx]["name"] = new
-            self.safety_mgmt_toolbox.rename_document("FMEA", old, new)
-        elif kind == "fmeda":
-            doc = self.fmedas[idx]
-            self.fmeda_manager.rename_fmeda(doc, new)
-        elif kind == "hazop":
-            old = self.hazop_docs[idx].name
-            self.hazop_docs[idx].name = new
-            self.safety_mgmt_toolbox.rename_document("HAZOP", old, new)
-        elif kind == "hara":
-            old = self.hara_docs[idx].name
-            self.hara_docs[idx].name = new
-            self.safety_mgmt_toolbox.rename_document("Risk Assessment", old, new)
-        elif kind == "fi2tc":
-            old = self.fi2tc_docs[idx].name
-            self.fi2tc_docs[idx].name = new
-            self.safety_mgmt_toolbox.rename_document("FI2TC", old, new)
-        elif kind == "tc2fi":
-            old = self.tc2fi_docs[idx].name
-            self.tc2fi_docs[idx].name = new
-            self.safety_mgmt_toolbox.rename_document("TC2FI", old, new)
-        elif kind == "fta":
-            node = next((t for t in self.top_events if t.unique_id == int(ident)), None)
-            if node:
-                old = node.user_name
-                node.user_name = new
-                analysis = (
-                    "Prototype Assurance Analysis"
-                    if getattr(self, "diagram_mode", "") == "PAA"
-                    else "FTA"
-                )
-                self.safety_mgmt_toolbox.rename_document(analysis, old, new)
-        elif kind == "arch" and repo.diagrams.get(ident):
-            repo.diagrams[ident].name = new
-        elif kind == "gov":
-            self.management_diagrams[idx].name = new
-        elif kind == "gsn":
-            diag = self.gsn_diagram_map.get(ident)
-            if diag:
-                diag.root.user_name = new
-        elif kind == "gsnmod":
-            module = self.gsn_module_map.get(ident)
-            if module:
-                module.name = new
-        elif kind == "jrev":
-            if any(r.name == new for r in self.reviews if r is not self.joint_reviews[idx]):
-                messagebox.showerror("Review", "Name already exists")
-                return
-            old = self.joint_reviews[idx].name
-            self.joint_reviews[idx].name = new
-            self.safety_mgmt_toolbox.rename_document("Joint Review", old, new)
-        elif kind == "fta" and node:
-            old = node.name
-            node.user_name = new
-            if hasattr(self, "safety_mgmt_toolbox"):
-                analysis = (
-                    "Prototype Assurance Analysis"
-                    if getattr(self, "diagram_mode", "") == "PAA"
-                    else "FTA"
-                )
-                self.safety_mgmt_toolbox.rename_document(analysis, old, node.name)
-        elif kind == "pkg" and repo.elements.get(ident):
-            repo.elements[ident].name = new
-        self.update_views()
-        if hasattr(self, "_arch_window") and self._arch_window.winfo_exists():
-            self._arch_window.populate()
+        self.tree_app.rename_selected_tree_item(self)
 
     def on_tool_list_double_click(self, event):
         lb = event.widget
@@ -17096,19 +15819,19 @@ class AutoMLApp:
         return create_icon(shape, color)
 
     def open_use_case_diagram(self):
-        self.diagram_controller.open_use_case_diagram()
+        self.use_case_diagram_app.open()
 
     def open_activity_diagram(self):
-        self.diagram_controller.open_activity_diagram()
+        self.activity_diagram_app.open()
 
     def open_block_diagram(self):
-        self.diagram_controller.open_block_diagram()
+        self.block_diagram_app.open()
 
     def open_internal_block_diagram(self):
-        self.diagram_controller.open_internal_block_diagram()
+        self.internal_block_diagram_app.open()
 
     def open_control_flow_diagram(self):
-        self.diagram_controller.open_control_flow_diagram()
+        self.control_flow_diagram_app.open()
 
     def manage_architecture(self):
         if hasattr(self, "_arch_tab") and self._arch_tab.winfo_exists():
