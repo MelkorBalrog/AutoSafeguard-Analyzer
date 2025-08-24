@@ -2,7 +2,7 @@
 
 This module defines :class:`DecompositionDialog`, which allows a user to
 choose a decomposition scheme based on the ASIL level.  It was moved out of
-``mainappsrc.AutoML`` to improve modularity and reduce cyclomatic complexity
+``mainappsrc.automl_core`` to improve modularity and reduce cyclomatic complexity
 of the main application file.
 """
 

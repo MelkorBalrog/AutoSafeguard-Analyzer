@@ -3,7 +3,7 @@ from __future__ import annotations
 """Centralised renderer for AutoML diagrams.
 
 This class acts as a façade over the existing rendering helpers
-from :mod:`mainappsrc.AutoML`.  It allows the GUI and tests to
+from :mod:`mainappsrc.automl_core`.  It allows the GUI and tests to
 invoke diagram operations through a dedicated object rather than
 calling functions directly on the application.
 """

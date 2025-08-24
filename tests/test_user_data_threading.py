@@ -4,7 +4,7 @@ import importlib
 
 
 # Import AutoML module for testing
-automl = importlib.import_module("mainappsrc.AutoML")
+automl = importlib.import_module("mainappsrc.automl_core")
 
 
 def test_load_user_data_parallel(monkeypatch):
