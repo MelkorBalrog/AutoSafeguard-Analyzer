@@ -1,10 +1,12 @@
-version: 0.2.6
+version: 0.2.7
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
 AutoML is an automotive modeling and analysis tool built around a SysML-based metamodel. It lets you describe items, operating scenarios, functions, structure and interfaces in a single environment.
 
 The metamodel blends concepts from key automotive standards—ISO 26262 (functional safety), ISO 21448 (SOTIF), ISO 21434 (cybersecurity) and ISO 8800 (safety and AI)—so one project can address safety, cybersecurity and assurance requirements side by side.
+
+Diagram drawing is centralised in a dedicated :class:`DiagramRenderer`, providing a clear interface for generating and exporting diagrams.
 
 ## Getting Started
 
@@ -1636,6 +1638,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.7 - Introduced `DiagramRenderer` for unified diagram rendering.
 - 0.2.6 - Introduced WindowControllers class for centralized window management.
 - 0.2.5 - Added PDF report generation placeholder and fixed missing menu action.
 - 0.2.4 - Centralized diff capture and review tools into ReviewManager.
