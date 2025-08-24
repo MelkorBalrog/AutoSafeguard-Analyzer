@@ -644,6 +644,9 @@ class AutoMLApp:
         self.tree_app = TreeSubApp()
         self.fta_app = FTASubApp()
         self.risk_app = RiskAssessmentSubApp()
+        # Risk assessment helpers also provide FMEDA metric calculations
+        # so expose them through a dedicated ``fmeda`` attribute for clarity.
+        self.fmeda = self.risk_app
         self.reliability_app = ReliabilitySubApp()
         self.helper = AutoML_Helper
         # style-aware icons used across tree views
@@ -1585,138 +1588,37 @@ class AutoMLApp:
         return False
 
     def add_malfunction(self, name: str) -> None:
-        """Add a malfunction to the list if it does not already exist."""
-        self.push_undo_state()
-        if not name:
-            return
-        name = name.strip()
-        if not name:
-            return
-        exists = any(m.lower() == name.lower() for m in self.malfunctions)
-        append_unique_insensitive(self.malfunctions, name)
-        if not exists and not any(
-            getattr(te, "malfunction", "") == name for te in self.top_events
-        ):
-            # If there's exactly one top event with no malfunction yet,
-            # reuse it instead of creating a new node.
-            if len(self.top_events) == 1 and not getattr(self.top_events[0], "malfunction", ""):
-                self.top_events[0].malfunction = name
-                self.root_node = self.top_events[0]
-                self.update_views()
-            else:
-                self.create_top_event_for_malfunction(name)
+        return self.risk_app.add_malfunction(self, name)
 
     def add_fault(self, name: str) -> None:
-        """Add a fault to the list if not already present."""
-        self.push_undo_state()
-        append_unique_insensitive(self.faults, name)
+        return self.risk_app.add_fault(self, name)
 
     def add_failure(self, name: str) -> None:
-        """Add a failure to the list if not already present."""
-        self.push_undo_state()
-        append_unique_insensitive(self.failures, name)
+        return self.risk_app.add_failure(self, name)
 
     def add_hazard(self, name: str, severity: int | str = 1) -> None:
-        """Add a hazard to the list if not already present."""
-        self.push_undo_state()
-        append_unique_insensitive(self.hazards, name)
-        if isinstance(severity, str):
-            try:
-                severity = int(severity)
-            except Exception:
-                severity = 1
-        if name not in self.hazard_severity:
-            self.hazard_severity[name] = int(severity)
+        return self.risk_app.add_hazard(self, name, severity)
 
     def add_triggering_condition(self, name: str) -> None:
-        """Add a triggering condition to the repository."""
-        self.push_undo_state()
-        append_unique_insensitive(self.triggering_conditions, name or "")
-        self.update_views()
-
-    def add_functional_insufficiency(self, name: str) -> None:
-        """Add a functional insufficiency to the repository."""
-        self.push_undo_state()
-        append_unique_insensitive(self.functional_insufficiencies, name or "")
-        self.update_views()
+        return self.risk_app.add_triggering_condition(self, name)
 
     def delete_triggering_condition(self, name: str) -> None:
-        """Remove a triggering condition and update references."""
-        self.push_undo_state()
-        self.triggering_conditions = [tc for tc in self.triggering_conditions if tc != name]
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                val = e.get("triggering_conditions", "")
-                new_val = self._remove_name_from_list(val, name)
-                if new_val != val:
-                    e["triggering_conditions"] = new_val
-        self.update_views()
+        return self.risk_app.delete_triggering_condition(self, name)
+
+    def rename_triggering_condition(self, old: str, new: str) -> None:
+        return self.risk_app.rename_triggering_condition(self, old, new)
+
+    def add_functional_insufficiency(self, name: str) -> None:
+        return self.risk_app.add_functional_insufficiency(self, name)
 
     def delete_functional_insufficiency(self, name: str) -> None:
-        """Remove a functional insufficiency and update references."""
-        self.push_undo_state()
-        self.functional_insufficiencies = [fi for fi in self.functional_insufficiencies if fi != name]
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                val = e.get("functional_insufficiencies", "")
-                new_val = self._remove_name_from_list(val, name)
-                if new_val != val:
-                    e["functional_insufficiencies"] = new_val
-        self.update_views()
+        return self.risk_app.delete_functional_insufficiency(self, name)
 
-    # --------------------------------------------------------------
-    # Rename helpers propagate changes across the entire model
-    # --------------------------------------------------------------
-    def _replace_in_mal_list(self, obj, old, new):
-        val = getattr(obj, "fmeda_malfunction", "")
-        if not val:
-            return
-        parts = []
-        changed = False
-        for m in val.split(";"):
-            m = m.strip()
-            if not m:
-                continue
-            if m == old:
-                parts.append(new)
-                changed = True
-            else:
-                parts.append(m)
-        if changed:
-            obj.fmeda_malfunction = ";".join(parts)
-
-    def _replace_entry_mal(self, entry, old, new):
-        val = getattr(entry, "fmeda_malfunction", "")
-        if val:
-            parts = [new if m.strip() == old else m.strip() for m in val.split(";") if m.strip()]
-            if ";".join(parts) != val:
-                entry.fmeda_malfunction = ";".join(parts)
+    def rename_functional_insufficiency(self, old: str, new: str) -> None:
+        return self.risk_app.rename_functional_insufficiency(self, old, new)
 
     def rename_malfunction(self, old: str, new: str) -> None:
-        """Rename a malfunction and update all references."""
-        self.push_undo_state()
-        if not old or old == new:
-            return
-        for i, m in enumerate(self.malfunctions):
-            if m == old:
-                self.malfunctions[i] = new
-        for te in self.top_events + getattr(self, "cta_events", []) + getattr(self, "paa_events", []):
-            if getattr(te, "malfunction", "") == old:
-                te.malfunction = new
-        for n in self.get_all_nodes_in_model():
-            self._replace_in_mal_list(n, old, new)
-        for doc in self.hazop_docs:
-            for e in doc.entries:
-                if getattr(e, "malfunction", "") == old:
-                    e.malfunction = new
-        for d in self.fmeas:
-            for e in d.get("entries", []):
-                self._replace_entry_mal(e, old, new)
-        for d in self.fmedas:
-            for e in d.get("entries", []):
-                self._replace_entry_mal(e, old, new)
-        self.update_views()
-        self._update_shared_product_goals()
+        return self.risk_app.rename_malfunction(self, old, new)
 
     def _update_shared_product_goals(self):
         groups = {}
@@ -1742,208 +1644,31 @@ class AutoMLApp:
                 ev.product_goal = None
 
     def rename_hazard(self, old: str, new: str) -> None:
-        self.push_undo_state()
-        if not old or old == new:
-            return
-        for i, h in enumerate(self.hazards):
-            if h == old:
-                self.hazards[i] = new
-        if old in self.hazard_severity:
-            self.hazard_severity[new] = self.hazard_severity.pop(old)
-        for doc in self.hazop_docs:
-            for e in doc.entries:
-                if getattr(e, "hazard", "") == old:
-                    e.hazard = new
-        for doc in self.hara_docs:
-            for e in doc.entries:
-                if getattr(e, "hazard", "") == old:
-                    e.hazard = new
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                if e.get("vehicle_effect", "") == old:
-                    e["vehicle_effect"] = new
-        self.update_views()
+        return self.risk_app.rename_hazard(self, old, new)
 
     def update_hazard_severity(self, hazard: str, severity: int | str) -> None:
-        self.push_undo_state()
-        try:
-            severity = int(severity)
-        except Exception:
-            severity = 1
-        self.hazard_severity[hazard] = severity
-        for doc in self.hara_docs:
-            for e in doc.entries:
-                if getattr(e, "hazard", "") == hazard:
-                    e.severity = severity
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                if e.get("vehicle_effect", "") == hazard:
-                    e["severity"] = str(severity)
-        self.update_views()
+        return self.risk_app.update_hazard_severity(self, hazard, severity)
 
     def rename_fault(self, old: str, new: str) -> None:
-        self.push_undo_state()
-        if not old or old == new:
-            return
-        for i, f in enumerate(self.faults):
-            if f == old:
-                self.faults[i] = new
-        for n in self.get_all_nodes_in_model():
-            if getattr(n, "fault_ref", "") == old:
-                n.fault_ref = new
-        for be in self.get_all_fmea_entries():
-            causes = [c.strip() for c in getattr(be, "fmea_cause", "").split(";")]
-            changed = False
-            for idx, c in enumerate(causes):
-                if c == old:
-                    causes[idx] = new
-                    changed = True
-            if changed:
-                be.fmea_cause = ";".join([c for c in causes if c])
-        self.update_views()
+        return self.risk_app.rename_fault(self, old, new)
 
     def rename_failure(self, old: str, new: str) -> None:
-        self.push_undo_state()
-        if not old or old == new:
-            return
-        for i, fl in enumerate(self.failures):
-            if fl == old:
-                self.failures[i] = new
-        for be in self.get_all_fmea_entries():
-            if getattr(be, "fmea_effect", "") == old:
-                be.fmea_effect = new
-        for n in self.get_all_nodes_in_model():
-            if getattr(n, "fmea_effect", "") == old:
-                n.fmea_effect = new
-        self.update_views()
-
-    def _replace_name_in_list(self, value: str, old: str, new: str) -> str:
-        parts = []
-        changed = False
-        for p in value.split(";"):
-            p = p.strip()
-            if not p:
-                continue
-            if p == old:
-                parts.append(new)
-                changed = True
-            else:
-                parts.append(p)
-        return ";".join(parts) if changed else value
-
-    def _remove_name_from_list(self, value: str, name: str) -> str:
-        parts = []
-        for p in value.split(";"):
-            p = p.strip()
-            if p and p != name:
-                parts.append(p)
-        return ";".join(parts)
-
-    def add_triggering_condition(self, name: str) -> None:
-        self.push_undo_state()
-        name = (name or "").strip()
-        if not name or name in self.triggering_conditions:
-            return
-        node = FaultTreeNode(name, "Triggering Condition")
-        self.triggering_condition_nodes.append(node)
-        if name not in self.triggering_conditions:
-            self.triggering_conditions.append(name)
-        self.update_triggering_condition_list()
-        self.update_views()
-
-    def delete_triggering_condition(self, name: str) -> None:
-        self.push_undo_state()
-        self.triggering_condition_nodes = [
-            n for n in self.triggering_condition_nodes if n.user_name != name
-        ]
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                val = e.get("triggering_conditions", "")
-                new_val = self._remove_name_from_list(val, name)
-                if new_val != val:
-                    e["triggering_conditions"] = new_val
-        if name in self.triggering_conditions:
-            self.triggering_conditions.remove(name)
-        self.update_triggering_condition_list()
-        self.update_views()
-
-    def rename_triggering_condition(self, old: str, new: str) -> None:
-        self.push_undo_state()
-        if not old or old == new:
-            return
-        for n in self.get_all_triggering_conditions():
-            if n.user_name == old:
-                n.user_name = new
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                val = e.get("triggering_conditions", "")
-                new_val = self._replace_name_in_list(val, old, new)
-                if new_val != val:
-                    e["triggering_conditions"] = new_val
-        if old in self.triggering_conditions:
-            idx = self.triggering_conditions.index(old)
-            self.triggering_conditions[idx] = new
-        self.update_triggering_condition_list()
-        self.update_views()
-
-    def add_functional_insufficiency(self, name: str) -> None:
-        self.push_undo_state()
-        name = (name or "").strip()
-        if not name or name in self.functional_insufficiencies:
-            return
-        node = FaultTreeNode(name, "Functional Insufficiency")
-        node.gate_type = "AND"
-        self.functional_insufficiency_nodes.append(node)
-        if name not in self.functional_insufficiencies:
-            self.functional_insufficiencies.append(name)
-        self.update_functional_insufficiency_list()
-        self.update_views()
-
-    def delete_functional_insufficiency(self, name: str) -> None:
-        self.push_undo_state()
-        self.functional_insufficiency_nodes = [
-            n for n in self.functional_insufficiency_nodes if n.user_name != name
-        ]
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                val = e.get("functional_insufficiencies", "")
-                new_val = self._remove_name_from_list(val, name)
-                if new_val != val:
-                    e["functional_insufficiencies"] = new_val
-        if name in self.functional_insufficiencies:
-            self.functional_insufficiencies.remove(name)
-        self.update_functional_insufficiency_list()
-        self.update_views()
-
-    def rename_functional_insufficiency(self, old: str, new: str) -> None:
-        self.push_undo_state()
-        if not old or old == new:
-            return
-        for n in self.get_all_functional_insufficiencies():
-            if n.user_name == old:
-                n.user_name = new
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                val = e.get("functional_insufficiencies", "")
-                new_val = self._replace_name_in_list(val, old, new)
-                if new_val != val:
-                    e["functional_insufficiencies"] = new_val
-        if old in self.functional_insufficiencies:
-            idx = self.functional_insufficiencies.index(old)
-            self.functional_insufficiencies[idx] = new
-        self.update_functional_insufficiency_list()
-        self.update_views()
+        return self.risk_app.rename_failure(self, old, new)
 
     def calculate_fmeda_metrics(self, events):
-        return self.risk_app.calculate_fmeda_metrics(self, events)
+        """Delegate FMEDA metric calculation to the dedicated helper."""
+        return self.fmeda.calculate_fmeda_metrics(self, events)
 
     def compute_fmeda_metrics(self, events):
-        return self.risk_app.compute_fmeda_metrics(self, events)
+        """Delegate detailed FMEDA metric computation to the helper."""
+        return self.fmeda.compute_fmeda_metrics(self, events)
 
     def sync_hara_to_safety_goals(self):
+        """Synchronise HARA results with safety goals via the risk sub-app."""
         return self.risk_app.sync_hara_to_safety_goals(self)
 
     def sync_cyber_risk_to_goals(self):
+        """Synchronise cyber risk results with cybersecurity goals."""
         return self.risk_app.sync_cyber_risk_to_goals(self)
 
     def edit_selected(self):
