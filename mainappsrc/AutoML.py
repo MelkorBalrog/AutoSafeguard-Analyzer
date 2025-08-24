@@ -19031,7 +19031,7 @@ class AutoMLApp:
         canvas = None
         widgets = [tab, *getattr(tab, "winfo_children", lambda: [])()]
         for child in widgets:
-            if child.__class__.__name__ == "FaultTreeCanvas":
+            if hasattr(child, "diagram_mode"):
                 canvas = child
                 break
         if canvas is not None:
