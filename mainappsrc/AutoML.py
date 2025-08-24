@@ -227,6 +227,13 @@ import math
 import sys
 import json
 import tkinter as tk
+import os, sys
+base = os.path.dirname(__file__)
+if base not in sys.path:
+    sys.path.append(base)
+parent = os.path.dirname(base)
+if parent not in sys.path:
+    sys.path.append(parent)
 from typing import Any, Optional
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui.dialog_utils import askstring_fixed
@@ -289,6 +296,14 @@ try:
 except Exception:  # openpyxl may not be installed
     load_workbook = None
 from gui.drawing_helper import FTADrawingHelper, fta_drawing_helper
+try:  # pragma: no cover
+    from .page_diagram import PageDiagram
+except Exception:  # pragma: no cover
+    import os, sys
+    base = os.path.dirname(__file__)
+    sys.path.append(base)
+    sys.path.append(os.path.dirname(base))
+    from page_diagram import PageDiagram
 from .event_dispatcher import EventDispatcher
 from mainappsrc.page_diagram import PageDiagram
 from mainappsrc.fmeda_manager import FMEDAManager
@@ -367,6 +382,20 @@ from analysis.scenario_description import template_phrases
 import copy
 import tkinter.font as tkFont
 import builtins
+try:  # pragma: no cover - support direct module import
+    from .user_manager import UserManager
+    from .project_manager import ProjectManager
+    from .diagram_controller import DiagramController
+    from .sotif_manager import SOTIFManager
+except Exception:  # pragma: no cover
+    import os, sys
+    base = os.path.dirname(__file__)
+    sys.path.append(base)
+    sys.path.append(os.path.dirname(base))
+    from user_manager import UserManager
+    from project_manager import ProjectManager
+    from diagram_controller import DiagramController
+    from sotif_manager import SOTIFManager
 from user_manager import UserManager
 from project_manager import ProjectManager
 from cyber_manager import CyberSecurityManager
@@ -426,10 +455,6 @@ else:  # pragma: no cover - fallback for minimal stubs
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from analysis.utils import (
     append_unique_insensitive,
-    derive_validation_target,
-    exposure_to_probability,
-    controllability_to_probability,
-    severity_to_probability,
     update_probability_tables,
     EXPOSURE_PROBABILITIES,
     CONTROLLABILITY_PROBABILITIES,
@@ -438,7 +463,14 @@ from analysis.utils import (
 )
 from analysis.safety_management import SafetyManagementToolbox, ACTIVE_TOOLBOX
 from analysis.causal_bayesian_network import CausalBayesianNetwork, CausalBayesianNetworkDoc
-from models.fault_tree_node import FaultTreeNode
+try:  # pragma: no cover
+    from .models.fault_tree_node import FaultTreeNode
+except Exception:  # pragma: no cover
+    import os, sys
+    base = os.path.dirname(__file__)
+    sys.path.append(base)
+    sys.path.append(os.path.dirname(base))
+    from models.fault_tree_node import FaultTreeNode
 
 from gui.toolboxes import (
     ReliabilityWindow,
@@ -936,6 +968,7 @@ class AutoMLApp:
         self.project_manager = ProjectManager(self)
         self.cyber_manager = CyberSecurityManager(self)
         self.diagram_controller = DiagramController(self)
+        self.sotif_manager = SOTIFManager(self)
         self.fmeda_manager = FMEDAManager(self)
         self.cta_manager = ControlTreeManager(self)
 
@@ -13731,76 +13764,7 @@ class AutoMLApp:
                 self.desc_text.grid(row=5, column=1, padx=5, pady=5)
 
                 # --- SOTIF fields ---
-                ttk.Label(sotif_tab, text="Acceptance Rate (1/h):").grid(row=0, column=0, sticky="e")
-                self.accept_rate_var = tk.StringVar(value=str(getattr(self.initial, "acceptance_rate", 0.0)))
-                tk.Entry(
-                    sotif_tab,
-                    textvariable=self.accept_rate_var,
-                    validate="key",
-                    validatecommand=(master.register(self.app.validate_float), "%P"),
-                ).grid(row=0, column=1, padx=5, pady=5)
-
-                ttk.Label(sotif_tab, text="On Hours:").grid(row=1, column=0, sticky="e")
-                self.op_hours_var = tk.StringVar(value=str(getattr(self.initial, "operational_hours_on", 0.0)))
-                tk.Entry(
-                    sotif_tab,
-                    textvariable=self.op_hours_var,
-                    validate="key",
-                    validatecommand=(master.register(self.app.validate_float), "%P"),
-                ).grid(row=1, column=1, padx=5, pady=5)
-
-                ttk.Label(sotif_tab, text="Acceptance Criteria Description:").grid(row=2, column=0, sticky="ne")
-                self.acc_text = tk.Text(sotif_tab, width=30, height=3, wrap="word")
-                self.acc_text.insert("1.0", getattr(self.initial, "acceptance_criteria", ""))
-                self.acc_text.grid(row=2, column=1, padx=5, pady=5)
-
-                exp = exposure_to_probability(getattr(self.initial, "exposure", 1))
-                ctrl = controllability_to_probability(getattr(self.initial, "controllability", 1))
-                sev = severity_to_probability(getattr(self.initial, "severity", 1))
-
-                ttk.Label(sotif_tab, text="P(E|HB):").grid(row=3, column=0, sticky="e")
-                self.pehb_var = tk.StringVar(value=str(exp))
-                tk.Entry(sotif_tab, textvariable=self.pehb_var, state="readonly").grid(row=3, column=1, padx=5, pady=5)
-
-                ttk.Label(sotif_tab, text="P(C|E):").grid(row=4, column=0, sticky="e")
-                self.pce_var = tk.StringVar(value=str(ctrl))
-                tk.Entry(sotif_tab, textvariable=self.pce_var, state="readonly").grid(row=4, column=1, padx=5, pady=5)
-
-                ttk.Label(sotif_tab, text="P(S|C):").grid(row=5, column=0, sticky="e")
-                self.psc_var = tk.StringVar(value=str(sev))
-                tk.Entry(sotif_tab, textvariable=self.psc_var, state="readonly").grid(row=5, column=1, padx=5, pady=5)
-
-                ttk.Label(sotif_tab, text="Validation Target (1/h):").grid(row=6, column=0, sticky="e")
-                try:
-                    val = derive_validation_target(float(self.accept_rate_var.get() or 0.0), exp, ctrl, sev)
-                except Exception:
-                    val = 1.0
-                self.val_var = tk.StringVar(value=str(val))
-                tk.Entry(sotif_tab, textvariable=self.val_var, state="readonly").grid(row=6, column=1, padx=5, pady=5)
-
-                def _update_val(*_):
-                    try:
-                        acc = float(self.accept_rate_var.get())
-                        v = derive_validation_target(acc, float(self.pehb_var.get()), float(self.pce_var.get()), float(self.psc_var.get()))
-                    except Exception:
-                        v = 1.0
-                    self.val_var.set(str(v))
-
-                self.accept_rate_var.trace_add("write", _update_val)
-
-                ttk.Label(sotif_tab, text="Mission Profile:").grid(row=7, column=0, sticky="e")
-                self.profile_var = tk.StringVar(value=getattr(self.initial, "mission_profile", ""))
-                ttk.Combobox(
-                    sotif_tab,
-                    textvariable=self.profile_var,
-                    values=[mp.name for mp in self.app.mission_profiles],
-                    state="readonly",
-                ).grid(row=7, column=1, padx=5, pady=5)
-
-                ttk.Label(sotif_tab, text="Val Target Description:").grid(row=8, column=0, sticky="ne")
-                self.val_desc_text = tk.Text(sotif_tab, width=30, height=3, wrap="word")
-                self.val_desc_text.insert("1.0", getattr(self.initial, "validation_desc", ""))
-                self.val_desc_text.grid(row=8, column=1, padx=5, pady=5)
+                self.app.sotif_manager.build_goal_dialog(self, sotif_tab, self.initial)
 
                 # --- Cybersecurity fields ---
                 self.cal_var = self.app.cyber_manager.add_goal_dialog_fields(cyber_tab, name)
@@ -13815,17 +13779,9 @@ class AutoMLApp:
                     "asil": asil,
                     "state": self.state_var.get().strip(),
                     "ftti": self.ftti_var.get().strip(),
-                    "accept_rate": self.accept_rate_var.get().strip(),
-                    "op_hours": self.op_hours_var.get().strip(),
-                    "pehb": self.pehb_var.get().strip(),
-                    "pce": self.pce_var.get().strip(),
-                    "psc": self.psc_var.get().strip(),
-                    "val": self.val_var.get().strip(),
-                    "profile": self.profile_var.get().strip(),
-                    "val_desc": self.val_desc_text.get("1.0", "end-1c"),
-                    "accept": self.acc_text.get("1.0", "end-1c"),
                     "desc": desc,
                 }
+                self.result.update(self.app.sotif_manager.collect_goal_data(self))
 
         def add_sg():
             dlg = SGDialog(win, self, "Add Product Goal")
@@ -13913,8 +13869,7 @@ class AutoMLApp:
         targets: set[str] = set()
         for sg in getattr(self, "top_events", []):
             pg_name = self._product_goal_name(sg)
-            if getattr(sg, "validation_target", "") not in ("", None):
-                targets.add(f"{pg_name} (SOTIF)")
+            targets.update(self.sotif_manager.get_spi_targets_for_goal(sg, pg_name))
             asil = getattr(sg, "safety_goal_asil", "")
             if asil in PMHF_TARGETS:
                 targets.add(f"{pg_name} (FUSA)")
@@ -13986,37 +13941,15 @@ class AutoMLApp:
             tree.delete(iid)
         self._spi_lookup = {}
 
-        for sg in getattr(self, "top_events", []):
-            # SOTIF SPI row
-            sotif_prob = getattr(sg, "spi_probability", "")
-            p_str = f"{sotif_prob:.2e}" if sotif_prob not in ("", None) else ""
-            v_target = getattr(sg, "validation_target", "")
-            if v_target not in ("", None):
-                v_str = f"{v_target:.2e}"
-                spi_val = ""
-                try:
-                    if sotif_prob not in ("", None):
-                        v_val = float(v_target)
-                        p_val = float(sotif_prob)
-                        if v_val > 0 and p_val > 0:
-                            spi_val = f"{math.log10(v_val / p_val):.2f}"
-                except Exception:
-                    spi_val = ""
-                iid = tree.insert(
-                    "",
-                    "end",
-                    values=[
-                        sg.user_name or f"SG {sg.unique_id}",
-                        v_str,
-                        p_str,
-                        spi_val,
-                        self._spi_label(sg),
-                        getattr(sg, "acceptance_criteria", ""),
-                    ],
-                )
-                self._spi_lookup[iid] = (sg, "SOTIF")
+        manager = getattr(self, "sotif_manager", None)
+        if manager is None:
+            manager = SOTIFManager(self)
+            self.sotif_manager = manager
+        for sg, values in manager.iter_spi_rows():
+            iid = tree.insert("", "end", values=values)
+            self._spi_lookup[iid] = (sg, "SOTIF")
 
-            # FUSA SPI row
+        for sg in getattr(self, "top_events", []):
             asil = getattr(sg, "safety_goal_asil", "")
             if asil in PMHF_TARGETS:
                 target = PMHF_TARGETS[asil]
