@@ -25,15 +25,20 @@ class SplashLauncher:
         launcher simply imports :mod:`module_name`.
     module_name:
         Name of the module to import when ``loader`` is not supplied.
+    post_delay:
+        Milliseconds to keep the splash screen visible after initialisation
+        completes.
     """
 
     def __init__(
         self,
         loader: Optional[Callable[[], ModuleType]] = None,
         module_name: str = "AutoML",
+        post_delay: int = 0,
     ) -> None:
         self.loader = loader
         self.module_name = module_name
+        self.post_delay = post_delay
         self._module: Optional[ModuleType] = None
 
     def _load_module(self) -> None:
@@ -43,7 +48,7 @@ class SplashLauncher:
         else:
             self._module = importlib.import_module(self.module_name)
         # Once loading is complete, close the splash screen on the main thread
-        self._root.after(0, self._root.destroy)
+        self._root.after(self.post_delay, self._root.destroy)
 
     def launch(self) -> None:
         """Display the splash screen and run the application's main function."""
