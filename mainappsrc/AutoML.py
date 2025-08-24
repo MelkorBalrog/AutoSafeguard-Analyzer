@@ -2671,32 +2671,6 @@ class AutoMLApp:
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.confirm_close)
 
-        fta_menu = tk.Menu(menubar, tearoff=0)
-        fta_menu.add_command(label="Add Top Level Event", command=self.create_fta_diagram)
-        fta_menu.add_separator()
-        fta_menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"), accelerator="Ctrl+Shift+C")
-        fta_menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"), accelerator="Ctrl+Shift+R")
-        fta_menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"), accelerator="Ctrl+Shift+G")
-        self._fta_menu_indices = {"add_gate": fta_menu.index("end")}
-        fta_menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"), accelerator="Ctrl+Shift+B")
-        self._fta_menu_indices["add_basic_event"] = fta_menu.index("end")
-        fta_menu.add_command(label="Add FMEA/FMEDA Event", command=self.add_basic_event_from_fmea)
-        fta_menu.add_command(label="Add Gate from Failure Mode", command=self.add_gate_from_failure_mode)
-        self._fta_menu_indices["add_gate_from_failure_mode"] = fta_menu.index("end")
-        fta_menu.add_command(label="Add Fault Event", command=self.add_fault_event)
-        self._fta_menu_indices["add_fault_event"] = fta_menu.index("end")
-        fta_menu.add_separator()
-        fta_menu.add_command(label="FTA-FMEA Traceability", command=self.show_traceability_matrix)
-        fta_menu.add_command(
-            label="FTA Cut Sets",
-            command=self.show_cut_sets,
-            state=tk.DISABLED,
-        )
-        self.work_product_menus.setdefault("FTA", []).append((fta_menu, fta_menu.index("end")))
-        fta_menu.add_command(label="Common Cause Toolbox", command=self.show_common_cause_view)
-        fta_menu.add_command(label="Cause & Effect Chain", command=self.show_cause_effect_chain)
-        self.fta_menu = fta_menu
-
         edit_menu = tk.Menu(menubar, tearoff=0)
         edit_menu.add_command(label="Undo", command=self.undo, accelerator="Ctrl+Z")
         edit_menu.add_command(label="Redo", command=self.redo, accelerator="Ctrl+Y")
@@ -2809,67 +2783,65 @@ class AutoMLApp:
         self.work_product_menus.setdefault("Architecture Diagram", []).append(
             (architecture_menu, architecture_menu.index("end"))
         )
-        # --- Qualitative Analysis Menu ---
-        qualitative_menu = tk.Menu(menubar, tearoff=0)
-        qualitative_menu.add_command(
+        # --- Risk Assessment Menu ---
+        risk_menu = tk.Menu(menubar, tearoff=0)
+        risk_menu.add_command(
             label="HAZOP Analysis",
             command=self.open_hazop_window,
             state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("HAZOP", []).append(
-            (qualitative_menu, qualitative_menu.index("end"))
+            (risk_menu, risk_menu.index("end"))
         )
-        qualitative_menu.add_command(
+        risk_menu.add_command(
             label="Risk Assessment",
             command=self.open_risk_assessment_window,
             state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("Risk Assessment", []).append(
-            (qualitative_menu, qualitative_menu.index("end"))
+            (risk_menu, risk_menu.index("end"))
         )
-        qualitative_menu.add_command(
+        risk_menu.add_command(
             label="STPA Analysis",
             command=self.open_stpa_window,
             state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("STPA", []).append(
-            (qualitative_menu, qualitative_menu.index("end"))
+            (risk_menu, risk_menu.index("end"))
         )
-        qualitative_menu.add_command(
+        risk_menu.add_command(
             label="Threat Analysis",
             command=self.open_threat_window,
             state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("Threat Analysis", []).append(
-            (qualitative_menu, qualitative_menu.index("end"))
+            (risk_menu, risk_menu.index("end"))
         )
-        qualitative_menu.add_command(label="Hazard Explorer", command=self.show_hazard_explorer)
-        qualitative_menu.add_command(label="Hazards Editor", command=self.show_hazard_editor)
-        qualitative_menu.add_command(label="Malfunctions Editor", command=self.show_malfunction_editor)
-        qualitative_menu.add_command(label="Faults Editor", command=self.show_fault_editor)
-        qualitative_menu.add_command(label="Failures Editor", command=self.show_failure_editor)
-        qualitative_menu.add_separator()
-        qualitative_menu.add_command(label="Triggering Conditions", command=self.show_triggering_condition_list)
-        qualitative_menu.add_command(label="Functional Insufficiencies", command=self.show_functional_insufficiency_list)
-        qualitative_menu.add_command(label="Malfunctions Editor", command=self.show_malfunctions_editor)
-        qualitative_menu.add_separator()
-        qualitative_menu.add_command(
+        risk_menu.add_command(label="Hazard Explorer", command=self.show_hazard_explorer)
+        risk_menu.add_command(label="Hazards Editor", command=self.show_hazard_editor)
+        risk_menu.add_command(label="Malfunctions Editor", command=self.show_malfunction_editor)
+        risk_menu.add_command(label="Triggering Conditions", command=self.show_triggering_condition_list)
+        risk_menu.add_command(label="Functional Insufficiencies", command=self.show_functional_insufficiency_list)
+        risk_menu.add_separator()
+        risk_menu.add_command(
             label="FI2TC Analysis",
             command=self.open_fi2tc_window,
             state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("FI2TC", []).append(
-            (qualitative_menu, qualitative_menu.index("end"))
+            (risk_menu, risk_menu.index("end"))
         )
-        qualitative_menu.add_command(
+        risk_menu.add_command(
             label="TC2FI Analysis",
             command=self.open_tc2fi_window,
             state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("TC2FI", []).append(
-            (qualitative_menu, qualitative_menu.index("end"))
+            (risk_menu, risk_menu.index("end"))
         )
-        qualitative_menu.add_separator()
+                
+        # --- Qualitative Analysis Menu ---
+        qualitative_menu = tk.Menu(menubar, tearoff=0)
         qualitative_menu.add_command(
             label="FMEA Manager",
             command=self.show_fmea_list,
@@ -2882,8 +2854,6 @@ class AutoMLApp:
         cta_menu = tk.Menu(qualitative_menu, tearoff=0)
         cta_menu.add_command(label="Add Top Level Event", command=self.create_cta_diagram)
         cta_menu.add_separator()
-        cta_menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"), accelerator="Ctrl+Shift+C")
-        cta_menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"), accelerator="Ctrl+Shift+R")
         cta_menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
         self._cta_menu_indices = {"add_trigger": cta_menu.index("end")}
         cta_menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
@@ -2922,6 +2892,7 @@ class AutoMLApp:
             (qualitative_menu, qualitative_menu.index("end"))
         )
         self.paa_menu = paa_menu
+        
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
         quantitative_menu.add_command(
@@ -2932,6 +2903,12 @@ class AutoMLApp:
         self.work_product_menus.setdefault("Mission Profile", []).append(
             (quantitative_menu, quantitative_menu.index("end"))
         )
+                
+        quantitative_menu.add_separator()
+        quantitative_menu.add_command(label="Faults Editor", command=self.show_fault_editor)
+        quantitative_menu.add_command(label="Failures Editor", command=self.show_failure_editor)
+        quantitative_menu.add_separator()
+        
         quantitative_menu.add_command(
             label="Mechanism Libraries", command=self.manage_mechanism_libraries
         )
@@ -2964,7 +2941,33 @@ class AutoMLApp:
             command=self.show_fmeda_list,
             state=tk.DISABLED,
         )
-
+        fta_menu = tk.Menu(quantitative_menu, tearoff=0)
+        fta_menu.add_command(label="Add Top Level Event", command=self.create_fta_diagram)
+        fta_menu.add_separator()
+        fta_menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"), accelerator="Ctrl+Shift+G")
+        self._fta_menu_indices = {"add_gate": fta_menu.index("end")}
+        fta_menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"), accelerator="Ctrl+Shift+B")
+        self._fta_menu_indices["add_basic_event"] = fta_menu.index("end")
+        fta_menu.add_command(label="Add FMEA/FMEDA Event", command=self.add_basic_event_from_fmea)
+        fta_menu.add_command(label="Add Gate from Failure Mode", command=self.add_gate_from_failure_mode)
+        self._fta_menu_indices["add_gate_from_failure_mode"] = fta_menu.index("end")
+        fta_menu.add_command(label="Add Fault Event", command=self.add_fault_event)
+        self._fta_menu_indices["add_fault_event"] = fta_menu.index("end")
+        fta_menu.add_separator()
+        fta_menu.add_command(label="FTA-FMEA Traceability", command=self.show_traceability_matrix)
+        fta_menu.add_command(
+            label="FTA Cut Sets",
+            command=self.show_cut_sets,
+            state=tk.DISABLED,
+        )
+        fta_menu.add_command(label="Common Cause Toolbox", command=self.show_common_cause_view)
+        fta_menu.add_command(label="Cause & Effect Chain", command=self.show_cause_effect_chain)
+        self.fta_menu = fta_menu
+        quantitative_menu.add_cascade(label="FTA", menu=fta_menu, state=tk.DISABLED)
+        self.work_product_menus.setdefault("FTA", []).append(
+            (quantitative_menu, quantitative_menu.index("end"))
+        )
+        
         libs_menu = tk.Menu(menubar, tearoff=0)
         libs_menu.add_command(
             label="Scenario Libraries",
@@ -3013,6 +3016,10 @@ class AutoMLApp:
         self.work_product_menus.setdefault("Scenario Library", []).append((menubar, idx))
         self.work_product_menus.setdefault("ODD", []).append((menubar, idx))
         menubar.entryconfig(idx, state=tk.DISABLED)
+        menubar.add_cascade(label="Risk Assessment", menu=risk_menu)
+        idx = menubar.index("end")
+        self.work_product_menus.setdefault("Risk Assessment", []).append((menubar, idx))
+        menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="Qualitative Analysis", menu=qualitative_menu)
         idx = menubar.index("end")
         self.work_product_menus.setdefault("Qualitative Analysis", []).append((menubar, idx))
@@ -3020,10 +3027,6 @@ class AutoMLApp:
         menubar.add_cascade(label="Quantitative Analysis", menu=quantitative_menu)
         idx = menubar.index("end")
         self.work_product_menus.setdefault("Quantitative Analysis", []).append((menubar, idx))
-        menubar.entryconfig(idx, state=tk.DISABLED)
-        menubar.add_cascade(label="FTA", menu=fta_menu)
-        idx = menubar.index("end")
-        self.work_product_menus.setdefault("FTA", []).append((menubar, idx))
         menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="GSN", menu=gsn_menu)
         idx = menubar.index("end")
