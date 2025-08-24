@@ -363,6 +363,7 @@ import builtins
 from user_manager import UserManager
 from project_manager import ProjectManager
 from diagram_controller import DiagramController
+from cta_manager import ControlTreeManager
 from config.automl_constants import (
     dynamic_recommendations,
     WORK_PRODUCT_INFO as BASE_WORK_PRODUCT_INFO,
@@ -916,6 +917,7 @@ class AutoMLApp:
         self.user_manager = UserManager(self)
         self.project_manager = ProjectManager(self)
         self.diagram_controller = DiagramController(self)
+        self.cta_manager = ControlTreeManager(self)
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
@@ -1121,17 +1123,17 @@ class AutoMLApp:
         )
 
         cta_menu = tk.Menu(qualitative_menu, tearoff=0)
-        cta_menu.add_command(label="Add Top Level Event", command=self.create_cta_diagram)
+        cta_menu.add_command(label="Add Top Level Event", command=self.cta_manager.create_diagram)
         cta_menu.add_separator()
         cta_menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
-        self._cta_menu_indices = {"add_trigger": cta_menu.index("end")}
+        cta_indices = {"add_trigger": cta_menu.index("end")}
         cta_menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
-        self._cta_menu_indices["add_functional_insufficiency"] = cta_menu.index("end")
+        cta_indices["add_functional_insufficiency"] = cta_menu.index("end")
         qualitative_menu.add_cascade(label="CTA", menu=cta_menu, state=tk.DISABLED)
         self.work_product_menus.setdefault("CTA", []).append(
             (qualitative_menu, qualitative_menu.index("end"))
         )
-        self.cta_menu = cta_menu
+        self.cta_manager.register_menu(cta_menu, cta_indices)
         qualitative_menu.add_command(
             label="Fault Prioritization",
             command=self.open_fault_prioritization_window,
@@ -17059,16 +17061,9 @@ class AutoMLApp:
         if getattr(self, "fta_root_node", None):
             self.open_page_diagram(self.fta_root_node)
 
-    def _create_cta_tab(self):
-        """Convenience wrapper for creating a CTA diagram."""
-        self._create_fta_tab("CTA")
-
     def create_cta_diagram(self):
         """Initialize a CTA diagram and its top-level event."""
-        self._create_cta_tab()
-        self.add_top_level_event()
-        if getattr(self, "cta_root_node", None):
-            self.open_page_diagram(self.cta_root_node)
+        self.cta_manager.create_diagram()
 
     def enable_fta_actions(self, enabled: bool) -> None:
         """Enable or disable FTA-related menu actions."""
@@ -17083,13 +17078,6 @@ class AutoMLApp:
             ):
                 self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
                 
-    def enable_cta_actions(self, enabled: bool) -> None:
-        """Enable or disable CTA-related menu actions."""
-        if hasattr(self, "cta_menu"):
-            state = tk.NORMAL if enabled else tk.DISABLED
-            for key in ("add_trigger", "add_functional_insufficiency"):
-                self.cta_menu.entryconfig(self._cta_menu_indices[key], state=state)
-                
     def enable_paa_actions(self, enabled: bool) -> None:
         """Enable or disable PAA-related menu actions."""
         if hasattr(self, "paa_menu"):
@@ -17102,7 +17090,7 @@ class AutoMLApp:
         if mode is None:
             mode = getattr(self, "diagram_mode", "FTA")
         self.enable_fta_actions(mode == "FTA")
-        self.enable_cta_actions(mode == "CTA")
+        self.cta_manager.enable_actions(mode == "CTA")
         self.enable_paa_actions(mode == "PAA")
 
     def _create_paa_tab(self):
@@ -17211,7 +17199,7 @@ class AutoMLApp:
             self._update_analysis_menus(mode)
         else:
             self.enable_fta_actions(False)
-            self.enable_cta_actions(False)
+            self.cta_manager.enable_actions(False)
             self.enable_paa_actions(False)
         gsn_win = getattr(tab, "gsn_window", None)
         if gsn_win:
