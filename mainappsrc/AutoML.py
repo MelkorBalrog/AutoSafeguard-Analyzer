@@ -344,7 +344,6 @@ from analysis.models import (
     REQUIREMENT_WORK_PRODUCTS,
     CAL_LEVEL_OPTIONS,
     CybersecurityGoal,
-    CyberRiskEntry,
 )
 from gui.safety_case_table import SafetyCaseTable
 from gui.architecture import (
@@ -370,6 +369,7 @@ import tkinter.font as tkFont
 import builtins
 from user_manager import UserManager
 from project_manager import ProjectManager
+from cyber_manager import CyberSecurityManager
 from diagram_controller import DiagramController
 from cta_manager import ControlTreeManager
 from config.automl_constants import (
@@ -934,6 +934,7 @@ class AutoMLApp:
         # Delegated managers
         self.user_manager = UserManager(self)
         self.project_manager = ProjectManager(self)
+        self.cyber_manager = CyberSecurityManager(self)
         self.diagram_controller = DiagramController(self)
         self.fmeda_manager = FMEDAManager(self)
         self.cta_manager = ControlTreeManager(self)
@@ -13802,9 +13803,7 @@ class AutoMLApp:
                 self.val_desc_text.grid(row=8, column=1, padx=5, pady=5)
 
                 # --- Cybersecurity fields ---
-                ttk.Label(cyber_tab, text="CAL:").grid(row=0, column=0, sticky="e")
-                self.cal_var = tk.StringVar(value=self.app.get_cyber_goal_cal(name))
-                ttk.Label(cyber_tab, textvariable=self.cal_var).grid(row=0, column=1, padx=5, pady=5, sticky="w")
+                self.cal_var = self.app.cyber_manager.add_goal_dialog_fields(cyber_tab, name)
                 return self.id_entry
 
             def apply(self):
@@ -14345,24 +14344,7 @@ class AutoMLApp:
 
     def export_cybersecurity_goal_requirements(self):
         """Export cybersecurity goals with linked risk assessments."""
-        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-        if not path:
-            return
-
-        columns = ["Cybersecurity Goal", "CAL", "Risk Assessments", "Description"]
-        with open(path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(columns)
-            for cg in self.cybersecurity_goals:
-                cg.compute_cal()
-                ras = ", ".join(
-                    [
-                        ra.get("name", str(ra)) if isinstance(ra, dict) else str(ra)
-                        for ra in cg.risk_assessments
-                    ]
-                )
-                writer.writerow([cg.goal_id, cg.cal, ras, cg.description])
-        messagebox.showinfo("Export", "Cybersecurity goal requirements exported.")
+        self.cyber_manager.export_goal_requirements()
 
     def show_cut_sets(self):
         """Display minimal cut sets for every top event."""
@@ -18882,21 +18864,8 @@ class AutoMLApp:
         for d in data.get("haras", []):
             entries = []
             for e in d.get("entries", []):
-                cyber = None
                 cdata = e.get("cyber")
-                if cdata:
-                    cyber = CyberRiskEntry(
-                        damage_scenario=cdata.get("damage_scenario", ""),
-                        threat_scenario=cdata.get("threat_scenario", ""),
-                        attack_vector=cdata.get("attack_vector", ""),
-                        feasibility=cdata.get("feasibility", ""),
-                        financial_impact=cdata.get("financial_impact", ""),
-                        safety_impact=cdata.get("safety_impact", ""),
-                        operational_impact=cdata.get("operational_impact", ""),
-                        privacy_impact=cdata.get("privacy_impact", ""),
-                        cybersecurity_goal=cdata.get("cybersecurity_goal", ""),
-                    )
-                    cyber.attack_paths = cdata.get("attack_paths", [])
+                cyber = self.cyber_manager.build_risk_entry(cdata)
                 entries.append(
                     HaraEntry(
                         e.get("malfunction", ""),
@@ -18934,21 +18903,8 @@ class AutoMLApp:
             hazop_name = self.hazop_docs[0].name if self.hazop_docs else ""
             entries = []
             for e in data.get("hara_entries", []):
-                cyber = None
                 cdata = e.get("cyber")
-                if cdata:
-                    cyber = CyberRiskEntry(
-                        damage_scenario=cdata.get("damage_scenario", ""),
-                        threat_scenario=cdata.get("threat_scenario", ""),
-                        attack_vector=cdata.get("attack_vector", ""),
-                        feasibility=cdata.get("feasibility", ""),
-                        financial_impact=cdata.get("financial_impact", ""),
-                        safety_impact=cdata.get("safety_impact", ""),
-                        operational_impact=cdata.get("operational_impact", ""),
-                        privacy_impact=cdata.get("privacy_impact", ""),
-                        cybersecurity_goal=cdata.get("cybersecurity_goal", ""),
-                    )
-                    cyber.attack_paths = cdata.get("attack_paths", [])
+                cyber = self.cyber_manager.build_risk_entry(cdata)
                 entries.append(
                     HaraEntry(
                         e.get("malfunction", ""),
