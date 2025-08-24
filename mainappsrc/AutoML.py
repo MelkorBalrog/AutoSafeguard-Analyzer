@@ -2140,7 +2140,9 @@ class AutoMLApp:
                 img = None
         finally:
             temp.destroy()
-        return img.convert("RGB") if img else None    def draw_subtree_with_filter(self, canvas, root_event, visible_nodes):
+        return img.convert("RGB") if img else None    
+    
+    def draw_subtree_with_filter(self, canvas, root_event, visible_nodes):
         self.draw_connections_subtree(canvas, root_event, set())
         for n in visible_nodes:
             self.draw_node_on_canvas_pdf(canvas, n)
