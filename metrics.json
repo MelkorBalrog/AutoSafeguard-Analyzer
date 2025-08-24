@@ -1,32 +1,168 @@
 {
   "total_files": 40,
-  "total_loc": 22421,
-  "total_functions": 1102,
-  "average_complexity": 7.13,
+  "total_loc": 22419,
+  "total_functions": 1113,
+  "average_complexity": 7.06,
   "files": [
     {
-      "file": "mainappsrc/cyber_manager.py",
-      "loc": 58,
+      "file": "mainappsrc/project_manager.py",
+      "loc": 254,
       "functions": [
         {
           "name": "__init__",
-          "lineno": 14,
+          "lineno": 19,
           "complexity": 1
         },
         {
-          "name": "add_goal_dialog_fields",
+          "name": "new_model",
+          "lineno": 23,
+          "complexity": 10
+        },
+        {
+          "name": "_reset_on_load",
+          "lineno": 82,
+          "complexity": 8
+        },
+        {
+          "name": "_prompt_save_before_load",
+          "lineno": 126,
+          "complexity": 1
+        },
+        {
+          "name": "save_model",
+          "lineno": 131,
+          "complexity": 13
+        },
+        {
+          "name": "load_model",
+          "lineno": 196,
+          "complexity": 15
+        },
+        {
+          "name": "clean",
+          "lineno": 253,
+          "complexity": 1
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/__init__.py",
+      "loc": 5,
+      "functions": []
+    },
+    {
+      "file": "mainappsrc/event_dispatcher.py",
+      "loc": 84,
+      "functions": [
+        {
+          "name": "__init__",
           "lineno": 18,
           "complexity": 1
         },
         {
-          "name": "build_risk_entry",
-          "lineno": 31,
-          "complexity": 2
+          "name": "register_keyboard_shortcuts",
+          "lineno": 24,
+          "complexity": 1
         },
         {
-          "name": "export_goal_requirements",
-          "lineno": 50,
+          "name": "register_tab_events",
+          "lineno": 79,
+          "complexity": 1
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/version.py",
+      "loc": 23,
+      "functions": [
+        {
+          "name": "get_version",
+          "lineno": 14,
+          "complexity": 4
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/use_case_diagram_subapp.py",
+      "loc": 18,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 11,
+          "complexity": 1
+        },
+        {
+          "name": "open",
+          "lineno": 14,
+          "complexity": 2
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/diagram_export_subapp.py",
+      "loc": 61,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 11,
+          "complexity": 1
+        },
+        {
+          "name": "save_diagram_png",
+          "lineno": 15,
+          "complexity": 12
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/user_manager.py",
+      "loc": 54,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 11,
+          "complexity": 1
+        },
+        {
+          "name": "edit_user_name",
+          "lineno": 15,
+          "complexity": 4
+        },
+        {
+          "name": "set_current_user",
+          "lineno": 35,
+          "complexity": 5
+        },
+        {
+          "name": "get_current_user_role",
+          "lineno": 53,
           "complexity": 6
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/gsn_manager.py",
+      "loc": 52,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 22,
+          "complexity": 1
+        },
+        {
+          "name": "manage_gsn",
+          "lineno": 28,
+          "complexity": 3
+        },
+        {
+          "name": "open_diagram",
+          "lineno": 39,
+          "complexity": 4
+        },
+        {
+          "name": "refresh",
+          "lineno": 55,
+          "complexity": 10
         }
       ]
     },
@@ -137,104 +273,6 @@
       ]
     },
     {
-      "file": "mainappsrc/diagram_export_subapp.py",
-      "loc": 61,
-      "functions": [
-        {
-          "name": "__init__",
-          "lineno": 11,
-          "complexity": 1
-        },
-        {
-          "name": "save_diagram_png",
-          "lineno": 15,
-          "complexity": 12
-        }
-      ]
-    },
-    {
-      "file": "mainappsrc/paa_manager.py",
-      "loc": 24,
-      "functions": [
-        {
-          "name": "__init__",
-          "lineno": 10,
-          "complexity": 1
-        },
-        {
-          "name": "enable_paa_actions",
-          "lineno": 13,
-          "complexity": 4
-        },
-        {
-          "name": "_create_paa_tab",
-          "lineno": 22,
-          "complexity": 1
-        },
-        {
-          "name": "create_paa_diagram",
-          "lineno": 26,
-          "complexity": 2
-        }
-      ]
-    },
-    {
-      "file": "mainappsrc/repository_manager.py",
-      "loc": 222,
-      "functions": [
-        {
-          "name": "__init__",
-          "lineno": 30,
-          "complexity": 1
-        },
-        {
-          "name": "capture_sysml_diagram",
-          "lineno": 36,
-          "complexity": 10
-        },
-        {
-          "name": "open_arch_window",
-          "lineno": 81,
-          "complexity": 11
-        },
-        {
-          "name": "open_management_window",
-          "lineno": 111,
-          "complexity": 12
-        },
-        {
-          "name": "_create_fta_tab",
-          "lineno": 143,
-          "complexity": 4
-        },
-        {
-          "name": "create_fta_diagram",
-          "lineno": 194,
-          "complexity": 2
-        },
-        {
-          "name": "enable_fta_actions",
-          "lineno": 201,
-          "complexity": 4
-        },
-        {
-          "name": "_reset_fta_state",
-          "lineno": 214,
-          "complexity": 1
-        },
-        {
-          "name": "ensure_fta_tab",
-          "lineno": 223,
-          "complexity": 3
-        },
-        {
-          "name": "update_fta_statuses",
-          "lineno": 235,
-          "complexity": 7
-        }
-      ]
-    },
-    {
       "file": "mainappsrc/fmeda_manager.py",
       "loc": 135,
       "functions": [
@@ -282,6 +320,54 @@
           "name": "rename",
           "lineno": 119,
           "complexity": 3
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/activity_diagram_subapp.py",
+      "loc": 22,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 11,
+          "complexity": 1
+        },
+        {
+          "name": "open",
+          "lineno": 14,
+          "complexity": 3
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/control_flow_diagram_subapp.py",
+      "loc": 22,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 11,
+          "complexity": 1
+        },
+        {
+          "name": "open",
+          "lineno": 14,
+          "complexity": 2
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/internal_block_diagram_subapp.py",
+      "loc": 22,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 11,
+          "complexity": 1
+        },
+        {
+          "name": "open",
+          "lineno": 14,
+          "complexity": 2
         }
       ]
     },
@@ -457,6 +543,438 @@
       ]
     },
     {
+      "file": "mainappsrc/paa_manager.py",
+      "loc": 24,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 10,
+          "complexity": 1
+        },
+        {
+          "name": "enable_paa_actions",
+          "lineno": 13,
+          "complexity": 4
+        },
+        {
+          "name": "_create_paa_tab",
+          "lineno": 22,
+          "complexity": 1
+        },
+        {
+          "name": "create_paa_diagram",
+          "lineno": 26,
+          "complexity": 2
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/style_subapp.py",
+      "loc": 189,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 17,
+          "complexity": 1
+        },
+        {
+          "name": "apply",
+          "lineno": 22,
+          "complexity": 10
+        },
+        {
+          "name": "_build_pill",
+          "lineno": 154,
+          "complexity": 8
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/block_diagram_subapp.py",
+      "loc": 18,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 11,
+          "complexity": 1
+        },
+        {
+          "name": "open",
+          "lineno": 14,
+          "complexity": 2
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/risk_assessment_subapp.py",
+      "loc": 696,
+      "functions": [
+        {
+          "name": "get_hazop_by_name",
+          "lineno": 27,
+          "complexity": 3
+        },
+        {
+          "name": "get_hara_by_name",
+          "lineno": 33,
+          "complexity": 3
+        },
+        {
+          "name": "update_hara_statuses",
+          "lineno": 39,
+          "complexity": 7
+        },
+        {
+          "name": "update_fta_statuses",
+          "lineno": 57,
+          "complexity": 7
+        },
+        {
+          "name": "get_safety_goal_asil",
+          "lineno": 74,
+          "complexity": 15
+        },
+        {
+          "name": "get_hara_goal_asil",
+          "lineno": 89,
+          "complexity": 6
+        },
+        {
+          "name": "get_cyber_goal_cal",
+          "lineno": 98,
+          "complexity": 9
+        },
+        {
+          "name": "get_top_event_safety_goals",
+          "lineno": 113,
+          "complexity": 7
+        },
+        {
+          "name": "_replace_in_mal_list",
+          "lineno": 128,
+          "complexity": 6
+        },
+        {
+          "name": "_replace_entry_mal",
+          "lineno": 146,
+          "complexity": 5
+        },
+        {
+          "name": "_replace_name_in_list",
+          "lineno": 153,
+          "complexity": 5
+        },
+        {
+          "name": "_remove_name_from_list",
+          "lineno": 167,
+          "complexity": 4
+        },
+        {
+          "name": "add_malfunction",
+          "lineno": 175,
+          "complexity": 9
+        },
+        {
+          "name": "add_fault",
+          "lineno": 193,
+          "complexity": 1
+        },
+        {
+          "name": "add_failure",
+          "lineno": 198,
+          "complexity": 1
+        },
+        {
+          "name": "add_hazard",
+          "lineno": 203,
+          "complexity": 4
+        },
+        {
+          "name": "add_triggering_condition",
+          "lineno": 215,
+          "complexity": 5
+        },
+        {
+          "name": "delete_triggering_condition",
+          "lineno": 227,
+          "complexity": 6
+        },
+        {
+          "name": "rename_triggering_condition",
+          "lineno": 243,
+          "complexity": 9
+        },
+        {
+          "name": "add_functional_insufficiency",
+          "lineno": 262,
+          "complexity": 5
+        },
+        {
+          "name": "delete_functional_insufficiency",
+          "lineno": 275,
+          "complexity": 6
+        },
+        {
+          "name": "rename_functional_insufficiency",
+          "lineno": 291,
+          "complexity": 9
+        },
+        {
+          "name": "rename_malfunction",
+          "lineno": 310,
+          "complexity": 15
+        },
+        {
+          "name": "rename_hazard",
+          "lineno": 336,
+          "complexity": 15
+        },
+        {
+          "name": "update_hazard_severity",
+          "lineno": 359,
+          "complexity": 8
+        },
+        {
+          "name": "rename_fault",
+          "lineno": 376,
+          "complexity": 13
+        },
+        {
+          "name": "rename_failure",
+          "lineno": 397,
+          "complexity": 9
+        },
+        {
+          "name": "calculate_fmeda_metrics",
+          "lineno": 412,
+          "complexity": 8
+        },
+        {
+          "name": "compute_fmeda_metrics",
+          "lineno": 441,
+          "complexity": 17
+        },
+        {
+          "name": "sync_hara_to_safety_goals",
+          "lineno": 512,
+          "complexity": 27
+        },
+        {
+          "name": "sync_cyber_risk_to_goals",
+          "lineno": 585,
+          "complexity": 9
+        },
+        {
+          "name": "open_hazop_window",
+          "lineno": 604,
+          "complexity": 3
+        },
+        {
+          "name": "open_risk_assessment_window",
+          "lineno": 612,
+          "complexity": 3
+        },
+        {
+          "name": "open_stpa_window",
+          "lineno": 620,
+          "complexity": 3
+        },
+        {
+          "name": "open_threat_window",
+          "lineno": 628,
+          "complexity": 3
+        },
+        {
+          "name": "open_causal_bayesian_network_window",
+          "lineno": 636,
+          "complexity": 3
+        },
+        {
+          "name": "open_fi2tc_window",
+          "lineno": 645,
+          "complexity": 3
+        },
+        {
+          "name": "open_tc2fi_window",
+          "lineno": 653,
+          "complexity": 3
+        },
+        {
+          "name": "show_hazard_list",
+          "lineno": 661,
+          "complexity": 12
+        },
+        {
+          "name": "show_hazard_editor",
+          "lineno": 752,
+          "complexity": 1
+        },
+        {
+          "name": "show_hazard_explorer",
+          "lineno": 755,
+          "complexity": 3
+        },
+        {
+          "name": "refresh",
+          "lineno": 705,
+          "complexity": 2
+        },
+        {
+          "name": "add",
+          "lineno": 710,
+          "complexity": 3
+        },
+        {
+          "name": "rename",
+          "lineno": 719,
+          "complexity": 5
+        },
+        {
+          "name": "delete",
+          "lineno": 734,
+          "complexity": 3
+        },
+        {
+          "name": "__init__",
+          "lineno": 678,
+          "complexity": 1
+        },
+        {
+          "name": "body",
+          "lineno": 683,
+          "complexity": 1
+        },
+        {
+          "name": "apply",
+          "lineno": 699,
+          "complexity": 1
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/cyber_manager.py",
+      "loc": 58,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 14,
+          "complexity": 1
+        },
+        {
+          "name": "add_goal_dialog_fields",
+          "lineno": 18,
+          "complexity": 1
+        },
+        {
+          "name": "build_risk_entry",
+          "lineno": 31,
+          "complexity": 2
+        },
+        {
+          "name": "export_goal_requirements",
+          "lineno": 50,
+          "complexity": 6
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/repository_manager.py",
+      "loc": 222,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 30,
+          "complexity": 1
+        },
+        {
+          "name": "capture_sysml_diagram",
+          "lineno": 36,
+          "complexity": 10
+        },
+        {
+          "name": "open_arch_window",
+          "lineno": 81,
+          "complexity": 11
+        },
+        {
+          "name": "open_management_window",
+          "lineno": 111,
+          "complexity": 12
+        },
+        {
+          "name": "_create_fta_tab",
+          "lineno": 143,
+          "complexity": 4
+        },
+        {
+          "name": "create_fta_diagram",
+          "lineno": 194,
+          "complexity": 2
+        },
+        {
+          "name": "enable_fta_actions",
+          "lineno": 201,
+          "complexity": 4
+        },
+        {
+          "name": "_reset_fta_state",
+          "lineno": 214,
+          "complexity": 1
+        },
+        {
+          "name": "ensure_fta_tab",
+          "lineno": 223,
+          "complexity": 3
+        },
+        {
+          "name": "update_fta_statuses",
+          "lineno": 235,
+          "complexity": 7
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/fmea_service.py",
+      "loc": 167,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 16,
+          "complexity": 1
+        },
+        {
+          "name": "load_fmeas",
+          "lineno": 22,
+          "complexity": 6
+        },
+        {
+          "name": "show_fmea_list",
+          "lineno": 56,
+          "complexity": 20
+        },
+        {
+          "name": "open_selected",
+          "lineno": 91,
+          "complexity": 2
+        },
+        {
+          "name": "add_fmea",
+          "lineno": 100,
+          "complexity": 3
+        },
+        {
+          "name": "delete_fmea",
+          "lineno": 127,
+          "complexity": 5
+        },
+        {
+          "name": "rename_fmea",
+          "lineno": 144,
+          "complexity": 6
+        }
+      ]
+    },
+    {
       "file": "mainappsrc/governance_manager.py",
       "loc": 129,
       "functions": [
@@ -503,256 +1021,8 @@
       ]
     },
     {
-      "file": "mainappsrc/activity_diagram_subapp.py",
-      "loc": 22,
-      "functions": [
-        {
-          "name": "__init__",
-          "lineno": 11,
-          "complexity": 1
-        },
-        {
-          "name": "open",
-          "lineno": 14,
-          "complexity": 3
-        }
-      ]
-    },
-    {
-      "file": "mainappsrc/fta_subapp.py",
-      "loc": 67,
-      "functions": [
-        {
-          "name": "generate_recommendations_for_top_event",
-          "lineno": 12,
-          "complexity": 4
-        },
-        {
-          "name": "back_all_pages",
-          "lineno": 26,
-          "complexity": 3
-        },
-        {
-          "name": "move_top_event_up",
-          "lineno": 36,
-          "complexity": 6
-        },
-        {
-          "name": "move_top_event_down",
-          "lineno": 55,
-          "complexity": 6
-        },
-        {
-          "name": "get_top_level_nodes",
-          "lineno": 74,
-          "complexity": 2
-        }
-      ]
-    },
-    {
-      "file": "mainappsrc/fmea_service.py",
-      "loc": 167,
-      "functions": [
-        {
-          "name": "__init__",
-          "lineno": 16,
-          "complexity": 1
-        },
-        {
-          "name": "load_fmeas",
-          "lineno": 22,
-          "complexity": 6
-        },
-        {
-          "name": "show_fmea_list",
-          "lineno": 56,
-          "complexity": 20
-        },
-        {
-          "name": "open_selected",
-          "lineno": 91,
-          "complexity": 2
-        },
-        {
-          "name": "add_fmea",
-          "lineno": 100,
-          "complexity": 3
-        },
-        {
-          "name": "delete_fmea",
-          "lineno": 127,
-          "complexity": 5
-        },
-        {
-          "name": "rename_fmea",
-          "lineno": 144,
-          "complexity": 6
-        }
-      ]
-    },
-    {
-      "file": "mainappsrc/event_dispatcher.py",
-      "loc": 84,
-      "functions": [
-        {
-          "name": "__init__",
-          "lineno": 18,
-          "complexity": 1
-        },
-        {
-          "name": "register_keyboard_shortcuts",
-          "lineno": 24,
-          "complexity": 1
-        },
-        {
-          "name": "register_tab_events",
-          "lineno": 79,
-          "complexity": 1
-        }
-      ]
-    },
-    {
-      "file": "mainappsrc/sotif_manager.py",
-      "loc": 133,
-      "functions": [
-        {
-          "name": "__init__",
-          "lineno": 24,
-          "complexity": 1
-        },
-        {
-          "name": "build_goal_dialog",
-          "lineno": 30,
-          "complexity": 5
-        },
-        {
-          "name": "collect_goal_data",
-          "lineno": 107,
-          "complexity": 1
-        },
-        {
-          "name": "get_spi_targets_for_goal",
-          "lineno": 124,
-          "complexity": 2
-        },
-        {
-          "name": "iter_spi_rows",
-          "lineno": 130,
-          "complexity": 9
-        },
-        {
-          "name": "probabilities_for",
-          "lineno": 159,
-          "complexity": 1
-        },
-        {
-          "name": "_update_val",
-          "lineno": 82,
-          "complexity": 2
-        }
-      ]
-    },
-    {
-      "file": "mainappsrc/cta_manager.py",
-      "loc": 29,
-      "functions": [
-        {
-          "name": "__init__",
-          "lineno": 11,
-          "complexity": 1
-        },
-        {
-          "name": "register_menu",
-          "lineno": 16,
-          "complexity": 1
-        },
-        {
-          "name": "_create_tab",
-          "lineno": 22,
-          "complexity": 1
-        },
-        {
-          "name": "create_diagram",
-          "lineno": 26,
-          "complexity": 2
-        },
-        {
-          "name": "enable_actions",
-          "lineno": 33,
-          "complexity": 4
-        }
-      ]
-    },
-    {
-      "file": "mainappsrc/user_manager.py",
-      "loc": 54,
-      "functions": [
-        {
-          "name": "__init__",
-          "lineno": 11,
-          "complexity": 1
-        },
-        {
-          "name": "edit_user_name",
-          "lineno": 15,
-          "complexity": 4
-        },
-        {
-          "name": "set_current_user",
-          "lineno": 35,
-          "complexity": 5
-        },
-        {
-          "name": "get_current_user_role",
-          "lineno": 53,
-          "complexity": 6
-        }
-      ]
-    },
-    {
-      "file": "mainappsrc/project_manager.py",
-      "loc": 254,
-      "functions": [
-        {
-          "name": "__init__",
-          "lineno": 19,
-          "complexity": 1
-        },
-        {
-          "name": "new_model",
-          "lineno": 23,
-          "complexity": 10
-        },
-        {
-          "name": "_reset_on_load",
-          "lineno": 82,
-          "complexity": 8
-        },
-        {
-          "name": "_prompt_save_before_load",
-          "lineno": 126,
-          "complexity": 1
-        },
-        {
-          "name": "save_model",
-          "lineno": 131,
-          "complexity": 13
-        },
-        {
-          "name": "load_model",
-          "lineno": 196,
-          "complexity": 15
-        },
-        {
-          "name": "clean",
-          "lineno": 253,
-          "complexity": 1
-        }
-      ]
-    },
-    {
       "file": "mainappsrc/AutoML.py",
-      "loc": 16615,
+      "loc": 16346,
       "functions": [
         {
           "name": "format_requirement",
@@ -766,12 +1036,12 @@
         },
         {
           "name": "load_user_data",
-          "lineno": 18573,
+          "lineno": 18291,
           "complexity": 2
         },
         {
           "name": "main",
-          "lineno": 18581,
+          "lineno": 18299,
           "complexity": 8
         },
         {
@@ -907,2256 +1177,2216 @@
         {
           "name": "add_malfunction",
           "lineno": 1587,
-          "complexity": 9
+          "complexity": 1
         },
         {
           "name": "add_fault",
-          "lineno": 1609,
+          "lineno": 1590,
           "complexity": 1
         },
         {
           "name": "add_failure",
-          "lineno": 1614,
+          "lineno": 1593,
           "complexity": 1
         },
         {
           "name": "add_hazard",
-          "lineno": 1619,
-          "complexity": 4
+          "lineno": 1596,
+          "complexity": 1
         },
         {
           "name": "add_triggering_condition",
-          "lineno": 1631,
-          "complexity": 2
-        },
-        {
-          "name": "add_functional_insufficiency",
-          "lineno": 1637,
-          "complexity": 2
+          "lineno": 1599,
+          "complexity": 1
         },
         {
           "name": "delete_triggering_condition",
-          "lineno": 1643,
-          "complexity": 5
+          "lineno": 1602,
+          "complexity": 1
+        },
+        {
+          "name": "rename_triggering_condition",
+          "lineno": 1605,
+          "complexity": 1
+        },
+        {
+          "name": "add_functional_insufficiency",
+          "lineno": 1608,
+          "complexity": 1
         },
         {
           "name": "delete_functional_insufficiency",
-          "lineno": 1655,
-          "complexity": 5
+          "lineno": 1611,
+          "complexity": 1
         },
         {
-          "name": "_replace_in_mal_list",
-          "lineno": 1670,
-          "complexity": 6
-        },
-        {
-          "name": "_replace_entry_mal",
-          "lineno": 1688,
-          "complexity": 5
+          "name": "rename_functional_insufficiency",
+          "lineno": 1614,
+          "complexity": 1
         },
         {
           "name": "rename_malfunction",
-          "lineno": 1695,
-          "complexity": 15
+          "lineno": 1617,
+          "complexity": 1
         },
         {
           "name": "_update_shared_product_goals",
-          "lineno": 1721,
+          "lineno": 1620,
           "complexity": 7
         },
         {
           "name": "rename_hazard",
-          "lineno": 1744,
-          "complexity": 15
+          "lineno": 1643,
+          "complexity": 1
         },
         {
           "name": "update_hazard_severity",
-          "lineno": 1767,
-          "complexity": 8
+          "lineno": 1646,
+          "complexity": 1
         },
         {
           "name": "rename_fault",
-          "lineno": 1784,
-          "complexity": 13
+          "lineno": 1649,
+          "complexity": 1
         },
         {
           "name": "rename_failure",
-          "lineno": 1805,
-          "complexity": 9
-        },
-        {
-          "name": "_replace_name_in_list",
-          "lineno": 1820,
-          "complexity": 5
-        },
-        {
-          "name": "_remove_name_from_list",
-          "lineno": 1834,
-          "complexity": 4
-        },
-        {
-          "name": "add_triggering_condition",
-          "lineno": 1842,
-          "complexity": 5
-        },
-        {
-          "name": "delete_triggering_condition",
-          "lineno": 1854,
-          "complexity": 6
-        },
-        {
-          "name": "rename_triggering_condition",
-          "lineno": 1870,
-          "complexity": 9
-        },
-        {
-          "name": "add_functional_insufficiency",
-          "lineno": 1889,
-          "complexity": 5
-        },
-        {
-          "name": "delete_functional_insufficiency",
-          "lineno": 1902,
-          "complexity": 6
-        },
-        {
-          "name": "rename_functional_insufficiency",
-          "lineno": 1918,
-          "complexity": 9
+          "lineno": 1652,
+          "complexity": 1
         },
         {
           "name": "calculate_fmeda_metrics",
-          "lineno": 1937,
+          "lineno": 1655,
           "complexity": 1
         },
         {
           "name": "compute_fmeda_metrics",
-          "lineno": 1940,
+          "lineno": 1658,
           "complexity": 1
         },
         {
           "name": "sync_hara_to_safety_goals",
-          "lineno": 1943,
+          "lineno": 1661,
           "complexity": 1
         },
         {
           "name": "sync_cyber_risk_to_goals",
-          "lineno": 1946,
+          "lineno": 1664,
           "complexity": 1
         },
         {
           "name": "edit_selected",
-          "lineno": 1949,
+          "lineno": 1667,
           "complexity": 8
         },
         {
           "name": "add_top_level_event",
-          "lineno": 1971,
+          "lineno": 1689,
           "complexity": 4
         },
         {
           "name": "_build_probability_frame",
-          "lineno": 1994,
+          "lineno": 1712,
           "complexity": 3
         },
         {
           "name": "_apply_project_properties",
-          "lineno": 2030,
+          "lineno": 1748,
           "complexity": 8
         },
         {
           "name": "edit_project_properties",
-          "lineno": 2060,
+          "lineno": 1778,
           "complexity": 12
         },
         {
           "name": "create_diagram_image",
-          "lineno": 2164,
+          "lineno": 1882,
           "complexity": 2
         },
         {
           "name": "get_page_nodes",
-          "lineno": 2177,
+          "lineno": 1895,
           "complexity": 4
         },
         {
           "name": "capture_page_diagram",
-          "lineno": 2185,
+          "lineno": 1903,
           "complexity": 4
         },
         {
           "name": "capture_gsn_diagram",
-          "lineno": 2231,
+          "lineno": 1949,
           "complexity": 5
         },
         {
           "name": "capture_sysml_diagram",
-          "lineno": 2267,
+          "lineno": 1985,
           "complexity": 10
         },
         {
           "name": "capture_cbn_diagram",
-          "lineno": 2312,
+          "lineno": 2030,
           "complexity": 5
         },
         {
           "name": "capture_diff_diagram",
-          "lineno": 2344,
+          "lineno": 2062,
           "complexity": 87
         },
         {
           "name": "capture_diff_diagram",
-          "lineno": 2609,
+          "lineno": 2327,
           "complexity": 87
         },
         {
           "name": "capture_diff_diagram",
-          "lineno": 2874,
+          "lineno": 2592,
           "complexity": 87
         },
         {
           "name": "capture_diff_diagram",
-          "lineno": 3139,
+          "lineno": 2857,
           "complexity": 87
         },
         {
           "name": "capture_diff_diagram",
-          "lineno": 3404,
+          "lineno": 3122,
           "complexity": 87
         },
         {
           "name": "capture_diff_diagram",
-          "lineno": 3669,
+          "lineno": 3387,
           "complexity": 86
         },
         {
           "name": "capture_diff_diagram",
-          "lineno": 3923,
+          "lineno": 3641,
           "complexity": 86
         },
         {
           "name": "capture_diff_diagram",
-          "lineno": 4177,
+          "lineno": 3895,
           "complexity": 86
         },
         {
           "name": "capture_diff_diagram",
-          "lineno": 4431,
+          "lineno": 4149,
           "complexity": 87
         },
         {
           "name": "metric_to_text",
-          "lineno": 4696,
+          "lineno": 4414,
           "complexity": 11
         },
         {
           "name": "assurance_level_text",
-          "lineno": 4709,
+          "lineno": 4427,
           "complexity": 1
         },
         {
           "name": "calculate_cut_sets",
-          "lineno": 4713,
+          "lineno": 4431,
           "complexity": 12
         },
         {
           "name": "build_hierarchical_argumentation",
-          "lineno": 4738,
+          "lineno": 4456,
           "complexity": 9
         },
         {
           "name": "build_hierarchical_argumentation_common",
-          "lineno": 4756,
+          "lineno": 4474,
           "complexity": 11
         },
         {
           "name": "build_page_argumentation",
-          "lineno": 4780,
+          "lineno": 4498,
           "complexity": 1
         },
         {
           "name": "build_unified_recommendation_table",
-          "lineno": 4783,
+          "lineno": 4501,
           "complexity": 17
         },
         {
           "name": "build_base_events_table_html",
-          "lineno": 4885,
+          "lineno": 4603,
           "complexity": 8
         },
         {
           "name": "build_argumentation",
-          "lineno": 4948,
+          "lineno": 4666,
           "complexity": 14
         },
         {
           "name": "auto_create_argumentation",
-          "lineno": 4995,
+          "lineno": 4713,
           "complexity": 16
         },
         {
           "name": "generate_argumentation_report",
-          "lineno": 5040,
+          "lineno": 4758,
           "complexity": 8
         },
         {
           "name": "get_extra_recommendations_list",
-          "lineno": 5079,
+          "lineno": 4797,
           "complexity": 4
         },
         {
           "name": "get_extra_recommendations_from_level",
-          "lineno": 5095,
+          "lineno": 4813,
           "complexity": 7
         },
         {
           "name": "get_recommendation_from_description",
-          "lineno": 5119,
+          "lineno": 4837,
           "complexity": 4
         },
         {
           "name": "analyze_common_causes",
-          "lineno": 5135,
+          "lineno": 4853,
           "complexity": 8
         },
         {
           "name": "build_text_report",
-          "lineno": 5155,
+          "lineno": 4873,
           "complexity": 5
         },
         {
           "name": "all_children_are_base_events",
-          "lineno": 5170,
+          "lineno": 4888,
           "complexity": 4
         },
         {
           "name": "build_simplified_fta_model",
-          "lineno": 5185,
+          "lineno": 4903,
           "complexity": 6
         },
         {
           "name": "auto_generate_fta_diagram",
-          "lineno": 5229,
+          "lineno": 4947,
           "complexity": 39
         },
         {
           "name": "build_dynamic_recommendations_table",
-          "lineno": 5438,
+          "lineno": 5156,
           "complexity": 10
         },
         {
           "name": "get_all_nodes_no_filter",
-          "lineno": 5514,
+          "lineno": 5232,
           "complexity": 2
         },
         {
           "name": "derive_requirements_for_event",
-          "lineno": 5520,
+          "lineno": 5238,
           "complexity": 4
         },
         {
           "name": "get_combined_safety_requirements",
-          "lineno": 5528,
+          "lineno": 5246,
           "complexity": 6
         },
         {
           "name": "get_top_event",
-          "lineno": 5542,
+          "lineno": 5260,
           "complexity": 4
         },
         {
           "name": "aggregate_safety_requirements",
-          "lineno": 5557,
+          "lineno": 5275,
           "complexity": 7
         },
         {
           "name": "generate_top_event_summary",
-          "lineno": 5581,
+          "lineno": 5299,
           "complexity": 18
         },
         {
           "name": "_generate_pdf_report",
-          "lineno": 5645,
+          "lineno": 5363,
           "complexity": 163
         },
         {
           "name": "generate_pdf_report",
-          "lineno": 6753,
+          "lineno": 6471,
           "complexity": 1
         },
         {
           "name": "capture_event_diagram",
-          "lineno": 6756,
+          "lineno": 6474,
           "complexity": 4
         },
         {
           "name": "draw_subtree_with_filter",
-          "lineno": 6786,
+          "lineno": 6504,
           "complexity": 2
         },
         {
           "name": "draw_subtree",
-          "lineno": 6791,
+          "lineno": 6509,
           "complexity": 2
         },
         {
           "name": "draw_connections_subtree",
-          "lineno": 6798,
+          "lineno": 6516,
           "complexity": 6
         },
         {
           "name": "draw_node_on_canvas_pdf",
-          "lineno": 6816,
+          "lineno": 6534,
           "complexity": 13
         },
         {
           "name": "save_diagram_png",
-          "lineno": 6922,
+          "lineno": 6640,
           "complexity": 1
         },
         {
           "name": "on_treeview_click",
-          "lineno": 6925,
+          "lineno": 6643,
           "complexity": 1
         },
         {
           "name": "on_analysis_tree_double_click",
-          "lineno": 6928,
+          "lineno": 6646,
           "complexity": 1
         },
         {
           "name": "on_analysis_tree_right_click",
-          "lineno": 6931,
+          "lineno": 6649,
           "complexity": 1
         },
         {
           "name": "on_analysis_tree_select",
-          "lineno": 6934,
+          "lineno": 6652,
           "complexity": 1
         },
         {
           "name": "show_properties",
-          "lineno": 6938,
+          "lineno": 6656,
           "complexity": 22
         },
         {
           "name": "rename_selected_tree_item",
-          "lineno": 6991,
+          "lineno": 6709,
           "complexity": 1
         },
         {
           "name": "on_tool_list_double_click",
-          "lineno": 6994,
+          "lineno": 6712,
           "complexity": 10
         },
         {
           "name": "_on_toolbox_change",
-          "lineno": 7020,
+          "lineno": 6738,
           "complexity": 1
         },
         {
           "name": "apply_governance_rules",
-          "lineno": 7023,
+          "lineno": 6741,
           "complexity": 1
         },
         {
           "name": "refresh_tool_enablement",
-          "lineno": 7027,
+          "lineno": 6745,
           "complexity": 1
         },
         {
           "name": "update_lifecycle_cb",
-          "lineno": 7030,
+          "lineno": 6748,
           "complexity": 1
         },
         {
           "name": "_export_toolbox_dict",
-          "lineno": 7033,
+          "lineno": 6751,
           "complexity": 2
         },
         {
           "name": "on_lifecycle_selected",
-          "lineno": 7041,
+          "lineno": 6759,
           "complexity": 13
         },
         {
           "name": "_add_tool_category",
-          "lineno": 7078,
+          "lineno": 6796,
           "complexity": 3
         },
         {
           "name": "enable_process_area",
-          "lineno": 7099,
+          "lineno": 6817,
           "complexity": 2
         },
         {
           "name": "enable_work_product",
-          "lineno": 7104,
+          "lineno": 6822,
           "complexity": 14
         },
         {
           "name": "can_remove_work_product",
-          "lineno": 7142,
+          "lineno": 6860,
           "complexity": 4
         },
         {
           "name": "disable_work_product",
-          "lineno": 7183,
+          "lineno": 6901,
           "complexity": 25
         },
         {
           "name": "open_work_product",
-          "lineno": 7251,
+          "lineno": 6969,
           "complexity": 17
         },
         {
           "name": "_on_tool_tab_motion",
-          "lineno": 7285,
+          "lineno": 7003,
           "complexity": 4
         },
         {
           "name": "_resize_prop_columns",
-          "lineno": 7308,
+          "lineno": 7026,
           "complexity": 3
         },
         {
           "name": "_on_doc_tab_motion",
-          "lineno": 7329,
+          "lineno": 7047,
           "complexity": 4
         },
         {
           "name": "on_ctrl_mousewheel",
-          "lineno": 7347,
+          "lineno": 7065,
           "complexity": 2
         },
         {
           "name": "new_model",
-          "lineno": 7353,
+          "lineno": 7071,
           "complexity": 1
         },
         {
           "name": "compute_occurrence_counts",
-          "lineno": 7356,
+          "lineno": 7074,
           "complexity": 4
         },
         {
           "name": "get_node_fill_color",
-          "lineno": 7375,
+          "lineno": 7093,
           "complexity": 4
         },
         {
           "name": "on_right_mouse_press",
-          "lineno": 7394,
+          "lineno": 7112,
           "complexity": 1
         },
         {
           "name": "on_right_mouse_drag",
-          "lineno": 7398,
+          "lineno": 7116,
           "complexity": 1
         },
         {
           "name": "on_right_mouse_release",
-          "lineno": 7402,
+          "lineno": 7120,
           "complexity": 2
         },
         {
           "name": "show_context_menu",
-          "lineno": 7411,
+          "lineno": 7129,
           "complexity": 7
         },
         {
           "name": "on_canvas_click",
-          "lineno": 7455,
+          "lineno": 7173,
           "complexity": 5
         },
         {
           "name": "on_canvas_double_click",
-          "lineno": 7474,
+          "lineno": 7192,
           "complexity": 7
         },
         {
           "name": "on_canvas_drag",
-          "lineno": 7493,
+          "lineno": 7211,
           "complexity": 3
         },
         {
           "name": "on_canvas_release",
-          "lineno": 7507,
+          "lineno": 7225,
           "complexity": 2
         },
         {
           "name": "_move_subtree_strategy1",
-          "lineno": 7516,
+          "lineno": 7234,
           "complexity": 3
         },
         {
           "name": "_move_subtree_strategy2",
-          "lineno": 7524,
+          "lineno": 7242,
           "complexity": 3
         },
         {
           "name": "_move_subtree_strategy3",
-          "lineno": 7530,
+          "lineno": 7248,
           "complexity": 3
         },
         {
           "name": "_move_subtree_strategy4",
-          "lineno": 7539,
+          "lineno": 7257,
           "complexity": 3
         },
         {
           "name": "move_subtree",
-          "lineno": 7547,
+          "lineno": 7265,
           "complexity": 3
         },
         {
           "name": "zoom_in",
-          "lineno": 7560,
+          "lineno": 7278,
           "complexity": 1
         },
         {
           "name": "zoom_out",
-          "lineno": 7565,
+          "lineno": 7283,
           "complexity": 1
         },
         {
           "name": "toggle_logs",
-          "lineno": 7570,
+          "lineno": 7288,
           "complexity": 1
         },
         {
           "name": "show_explorer",
-          "lineno": 7575,
+          "lineno": 7293,
           "complexity": 3
         },
         {
           "name": "_animate_explorer_show",
-          "lineno": 7594,
+          "lineno": 7312,
           "complexity": 2
         },
         {
           "name": "hide_explorer",
-          "lineno": 7606,
+          "lineno": 7324,
           "complexity": 4
         },
         {
           "name": "_animate_explorer_hide",
-          "lineno": 7617,
+          "lineno": 7335,
           "complexity": 2
         },
         {
           "name": "_schedule_explorer_hide",
-          "lineno": 7630,
+          "lineno": 7348,
           "complexity": 3
         },
         {
           "name": "_cancel_explorer_hide",
-          "lineno": 7639,
+          "lineno": 7357,
           "complexity": 2
         },
         {
           "name": "toggle_explorer_pin",
-          "lineno": 7644,
+          "lineno": 7362,
           "complexity": 3
         },
         {
           "name": "_limit_explorer_size",
-          "lineno": 7653,
+          "lineno": 7371,
           "complexity": 3
         },
         {
           "name": "auto_arrange",
-          "lineno": 7660,
+          "lineno": 7378,
           "complexity": 9
         },
         {
           "name": "get_all_nodes_table",
-          "lineno": 7690,
+          "lineno": 7408,
           "complexity": 2
         },
         {
           "name": "get_all_nodes_in_model",
-          "lineno": 7703,
+          "lineno": 7421,
           "complexity": 2
         },
         {
           "name": "get_all_basic_events",
-          "lineno": 7714,
+          "lineno": 7432,
           "complexity": 2
         },
         {
           "name": "get_all_gates",
-          "lineno": 7718,
+          "lineno": 7436,
           "complexity": 2
         },
         {
           "name": "get_all_triggering_conditions",
-          "lineno": 7726,
+          "lineno": 7444,
           "complexity": 3
         },
         {
           "name": "get_all_functional_insufficiencies",
-          "lineno": 7737,
+          "lineno": 7455,
           "complexity": 5
         },
         {
           "name": "get_all_scenario_names",
-          "lineno": 7749,
+          "lineno": 7467,
           "complexity": 5
         },
         {
           "name": "get_validation_targets_for_odd",
-          "lineno": 7762,
+          "lineno": 7480,
           "complexity": 22
         },
         {
           "name": "classify_scenarios",
-          "lineno": 7814,
+          "lineno": 7532,
           "complexity": 9
         },
         {
           "name": "get_scenario_exposure",
-          "lineno": 7830,
+          "lineno": 7548,
           "complexity": 9
         },
         {
           "name": "get_all_scenery_names",
-          "lineno": 7847,
+          "lineno": 7565,
           "complexity": 7
         },
         {
           "name": "get_all_function_names",
-          "lineno": 7861,
+          "lineno": 7579,
           "complexity": 4
         },
         {
           "name": "get_all_action_names",
-          "lineno": 7870,
+          "lineno": 7588,
           "complexity": 1
         },
         {
           "name": "get_all_action_labels",
-          "lineno": 7875,
+          "lineno": 7593,
           "complexity": 31
         },
         {
           "name": "get_use_case_for_function",
-          "lineno": 7932,
+          "lineno": 7650,
           "complexity": 12
         },
         {
           "name": "get_all_component_names",
-          "lineno": 7954,
+          "lineno": 7672,
           "complexity": 15
         },
         {
           "name": "get_all_part_names",
-          "lineno": 7981,
+          "lineno": 7699,
           "complexity": 9
         },
         {
           "name": "get_all_malfunction_names",
-          "lineno": 8000,
+          "lineno": 7718,
           "complexity": 3
         },
         {
           "name": "get_hazards_for_malfunction",
-          "lineno": 8007,
+          "lineno": 7725,
           "complexity": 9
         },
         {
           "name": "update_odd_elements",
-          "lineno": 8022,
+          "lineno": 7740,
           "complexity": 2
         },
         {
           "name": "update_hazard_list",
-          "lineno": 8028,
+          "lineno": 7746,
           "complexity": 17
         },
         {
           "name": "update_failure_list",
-          "lineno": 8077,
+          "lineno": 7795,
           "complexity": 4
         },
         {
           "name": "update_triggering_condition_list",
-          "lineno": 8086,
+          "lineno": 7804,
           "complexity": 9
         },
         {
           "name": "update_functional_insufficiency_list",
-          "lineno": 8102,
+          "lineno": 7820,
           "complexity": 9
         },
         {
           "name": "get_entry_field",
-          "lineno": 8118,
+          "lineno": 7836,
           "complexity": 2
         },
         {
           "name": "get_all_failure_modes",
-          "lineno": 8124,
+          "lineno": 7842,
           "complexity": 5
         },
         {
           "name": "get_all_fmea_entries",
-          "lineno": 8138,
+          "lineno": 7856,
           "complexity": 3
         },
         {
           "name": "get_non_basic_failure_modes",
-          "lineno": 8147,
+          "lineno": 7865,
           "complexity": 13
         },
         {
           "name": "get_available_failure_modes_for_gates",
-          "lineno": 8171,
+          "lineno": 7889,
           "complexity": 4
         },
         {
           "name": "get_failure_mode_node",
-          "lineno": 8181,
+          "lineno": 7899,
           "complexity": 3
         },
         {
           "name": "get_component_name_for_node",
-          "lineno": 8189,
+          "lineno": 7907,
           "complexity": 5
         },
         {
           "name": "format_failure_mode_label",
-          "lineno": 8198,
+          "lineno": 7916,
           "complexity": 4
         },
         {
           "name": "get_failure_modes_for_malfunction",
-          "lineno": 8203,
+          "lineno": 7921,
           "complexity": 4
         },
         {
           "name": "get_faults_for_failure_mode",
-          "lineno": 8212,
+          "lineno": 7930,
           "complexity": 5
         },
         {
           "name": "get_fit_for_fault",
-          "lineno": 8224,
+          "lineno": 7942,
           "complexity": 6
         },
         {
           "name": "get_all_nodes",
-          "lineno": 8242,
+          "lineno": 7960,
           "complexity": 8
         },
         {
           "name": "update_views",
-          "lineno": 8265,
+          "lineno": 7983,
           "complexity": 113
         },
         {
           "name": "update_basic_event_probabilities",
-          "lineno": 8652,
+          "lineno": 8370,
           "complexity": 2
         },
         {
           "name": "validate_float",
-          "lineno": 8663,
+          "lineno": 8381,
           "complexity": 7
         },
         {
           "name": "compute_failure_prob",
-          "lineno": 8692,
+          "lineno": 8410,
           "complexity": 14
         },
         {
           "name": "propagate_failure_mode_attributes",
-          "lineno": 8730,
+          "lineno": 8448,
           "complexity": 3
         },
         {
           "name": "touch_doc",
-          "lineno": 8740,
+          "lineno": 8458,
           "complexity": 1
         },
         {
           "name": "refresh_model",
-          "lineno": 8747,
+          "lineno": 8465,
           "complexity": 14
         },
         {
           "name": "refresh_all",
-          "lineno": 8793,
+          "lineno": 8511,
           "complexity": 7
         },
         {
           "name": "insert_node_in_tree",
-          "lineno": 8815,
+          "lineno": 8533,
           "complexity": 6
         },
         {
           "name": "redraw_canvas",
-          "lineno": 8828,
+          "lineno": 8546,
           "complexity": 8
         },
         {
           "name": "create_diagram_image_without_grid",
-          "lineno": 8845,
+          "lineno": 8563,
           "complexity": 8
         },
         {
           "name": "draw_connections",
-          "lineno": 8870,
+          "lineno": 8588,
           "complexity": 7
         },
         {
           "name": "draw_node",
-          "lineno": 8887,
+          "lineno": 8605,
           "complexity": 35
         },
         {
           "name": "find_node_by_id",
-          "lineno": 9153,
+          "lineno": 8871,
           "complexity": 6
         },
         {
           "name": "is_descendant",
-          "lineno": 9167,
+          "lineno": 8885,
           "complexity": 4
         },
         {
           "name": "add_node_of_type",
-          "lineno": 9175,
+          "lineno": 8893,
           "complexity": 16
         },
         {
           "name": "add_basic_event_from_fmea",
-          "lineno": 9251,
+          "lineno": 8969,
           "complexity": 11
         },
         {
           "name": "add_basic_event_from_fmea",
-          "lineno": 9294,
+          "lineno": 9012,
           "complexity": 11
         },
         {
           "name": "add_basic_event_from_fmea",
-          "lineno": 9337,
+          "lineno": 9055,
           "complexity": 11
         },
         {
           "name": "remove_node",
-          "lineno": 9381,
+          "lineno": 9099,
           "complexity": 8
         },
         {
           "name": "remove_connection",
-          "lineno": 9400,
+          "lineno": 9118,
           "complexity": 7
         },
         {
           "name": "delete_node_and_subtree",
-          "lineno": 9418,
+          "lineno": 9136,
           "complexity": 5
         },
         {
           "name": "create_top_event_for_malfunction",
-          "lineno": 9436,
+          "lineno": 9154,
           "complexity": 3
         },
         {
           "name": "delete_top_events_for_malfunction",
-          "lineno": 9454,
+          "lineno": 9172,
           "complexity": 9
         },
         {
           "name": "add_gate_from_failure_mode",
-          "lineno": 9477,
+          "lineno": 9195,
           "complexity": 9
         },
         {
           "name": "add_fault_event",
-          "lineno": 9521,
+          "lineno": 9239,
           "complexity": 15
         },
         {
           "name": "calculate_overall",
-          "lineno": 9575,
+          "lineno": 9293,
           "complexity": 4
         },
         {
           "name": "calculate_pmfh",
-          "lineno": 9587,
+          "lineno": 9305,
           "complexity": 21
         },
         {
           "name": "show_requirements_matrix",
-          "lineno": 9642,
+          "lineno": 9360,
           "complexity": 58
         },
         {
           "name": "show_item_definition_editor",
-          "lineno": 9802,
+          "lineno": 9520,
           "complexity": 3
         },
         {
           "name": "show_safety_concept_editor",
-          "lineno": 9824,
+          "lineno": 9542,
           "complexity": 3
         },
         {
           "name": "show_requirements_editor",
-          "lineno": 9873,
+          "lineno": 9591,
           "complexity": 68
         },
         {
           "name": "show_fmeda_list",
-          "lineno": 10261,
+          "lineno": 9979,
           "complexity": 1
         },
         {
           "name": "show_triggering_condition_list",
-          "lineno": 10264,
+          "lineno": 9982,
           "complexity": 19
         },
         {
           "name": "show_hazard_list",
-          "lineno": 10349,
+          "lineno": 10067,
           "complexity": 1
         },
         {
           "name": "show_malfunction_editor",
-          "lineno": 10352,
+          "lineno": 10070,
           "complexity": 11
         },
         {
           "name": "show_fault_list",
-          "lineno": 10407,
+          "lineno": 10125,
           "complexity": 9
         },
         {
           "name": "show_failure_list",
-          "lineno": 10457,
+          "lineno": 10175,
           "complexity": 9
         },
         {
           "name": "show_hazard_editor",
-          "lineno": 10512,
+          "lineno": 10230,
           "complexity": 1
         },
         {
           "name": "show_fault_editor",
-          "lineno": 10515,
+          "lineno": 10233,
           "complexity": 1
         },
         {
           "name": "show_failure_editor",
-          "lineno": 10519,
+          "lineno": 10237,
           "complexity": 1
         },
         {
           "name": "show_functional_insufficiency_list",
-          "lineno": 10523,
+          "lineno": 10241,
           "complexity": 13
         },
         {
           "name": "show_malfunctions_editor",
-          "lineno": 10582,
+          "lineno": 10300,
           "complexity": 15
         },
         {
           "name": "show_fmea_table",
-          "lineno": 11258,
+          "lineno": 10976,
           "complexity": 109
         },
         {
           "name": "export_fmea_to_csv",
-          "lineno": 11784,
+          "lineno": 11502,
           "complexity": 10
         },
         {
           "name": "export_fmeda_to_csv",
-          "lineno": 11800,
+          "lineno": 11518,
           "complexity": 11
         },
         {
           "name": "show_traceability_matrix",
-          "lineno": 11853,
+          "lineno": 11571,
           "complexity": 6
         },
         {
           "name": "collect_requirements_recursive",
-          "lineno": 11874,
+          "lineno": 11592,
           "complexity": 2
         },
         {
           "name": "show_safety_goals_matrix",
-          "lineno": 11880,
+          "lineno": 11598,
           "complexity": 10
         },
         {
           "name": "show_product_goals_editor",
-          "lineno": 11998,
+          "lineno": 11716,
           "complexity": 23
         },
         {
           "name": "_spi_label",
-          "lineno": 12186,
+          "lineno": 11904,
           "complexity": 4
         },
         {
           "name": "_product_goal_name",
-          "lineno": 12195,
+          "lineno": 11913,
           "complexity": 2
         },
         {
           "name": "_parse_spi_target",
-          "lineno": 12199,
+          "lineno": 11917,
           "complexity": 3
         },
         {
           "name": "get_spi_targets",
-          "lineno": 12206,
+          "lineno": 11924,
           "complexity": 3
         },
         {
           "name": "show_safety_performance_indicators",
-          "lineno": 12217,
+          "lineno": 11935,
           "complexity": 9
         },
         {
           "name": "refresh_safety_performance_indicators",
-          "lineno": 12274,
+          "lineno": 11992,
           "complexity": 14
         },
         {
           "name": "refresh_safety_case_table",
-          "lineno": 12320,
+          "lineno": 12038,
           "complexity": 21
         },
         {
           "name": "show_safety_case",
-          "lineno": 12391,
+          "lineno": 12109,
           "complexity": 32
         },
         {
           "name": "export_product_goal_requirements",
-          "lineno": 12552,
+          "lineno": 12270,
           "complexity": 8
         },
         {
           "name": "generate_phase_requirements",
-          "lineno": 12574,
+          "lineno": 12292,
           "complexity": 2
         },
         {
           "name": "generate_lifecycle_requirements",
-          "lineno": 12581,
+          "lineno": 12299,
           "complexity": 2
         },
         {
           "name": "_add_lifecycle_requirements_menu",
-          "lineno": 12588,
+          "lineno": 12306,
           "complexity": 1
         },
         {
           "name": "_refresh_phase_requirements_menu",
-          "lineno": 12595,
+          "lineno": 12313,
           "complexity": 5
         },
         {
           "name": "export_cybersecurity_goal_requirements",
-          "lineno": 12617,
+          "lineno": 12335,
           "complexity": 1
         },
         {
           "name": "show_cut_sets",
-          "lineno": 12621,
+          "lineno": 12339,
           "complexity": 12
         },
         {
           "name": "show_common_cause_view",
-          "lineno": 12665,
+          "lineno": 12383,
           "complexity": 21
         },
         {
           "name": "build_cause_effect_data",
-          "lineno": 12733,
+          "lineno": 12451,
           "complexity": 27
         },
         {
           "name": "_build_cause_effect_graph",
-          "lineno": 12821,
+          "lineno": 12539,
           "complexity": 27
         },
         {
           "name": "render_cause_effect_diagram",
-          "lineno": 12936,
+          "lineno": 12654,
           "complexity": 8
         },
         {
           "name": "show_cause_effect_chain",
-          "lineno": 13008,
+          "lineno": 12726,
           "complexity": 11
         },
         {
           "name": "show_cut_sets",
-          "lineno": 13189,
+          "lineno": 12907,
           "complexity": 12
         },
         {
           "name": "show_common_cause_view",
-          "lineno": 13233,
+          "lineno": 12951,
           "complexity": 21
         },
         {
           "name": "show_cut_sets",
-          "lineno": 13301,
+          "lineno": 13019,
           "complexity": 12
         },
         {
           "name": "show_common_cause_view",
-          "lineno": 13345,
+          "lineno": 13063,
           "complexity": 21
         },
         {
           "name": "show_cut_sets",
-          "lineno": 13413,
+          "lineno": 13131,
           "complexity": 12
         },
         {
           "name": "show_common_cause_view",
-          "lineno": 13457,
+          "lineno": 13175,
           "complexity": 21
         },
         {
           "name": "manage_mission_profiles",
-          "lineno": 13525,
+          "lineno": 13243,
           "complexity": 41
         },
         {
           "name": "load_default_mechanisms",
-          "lineno": 13666,
+          "lineno": 13384,
           "complexity": 5
         },
         {
           "name": "manage_mechanism_libraries",
-          "lineno": 13693,
+          "lineno": 13411,
           "complexity": 31
         },
         {
           "name": "manage_scenario_libraries",
-          "lineno": 13951,
+          "lineno": 13669,
           "complexity": 62
         },
         {
           "name": "manage_odd_libraries",
-          "lineno": 14314,
+          "lineno": 14032,
           "complexity": 52
         },
         {
           "name": "open_reliability_window",
-          "lineno": 14671,
+          "lineno": 14389,
           "complexity": 1
         },
         {
           "name": "open_fmeda_window",
-          "lineno": 14674,
+          "lineno": 14392,
           "complexity": 1
         },
         {
           "name": "open_hazop_window",
-          "lineno": 14677,
+          "lineno": 14395,
           "complexity": 1
         },
         {
           "name": "open_risk_assessment_window",
-          "lineno": 14680,
+          "lineno": 14398,
           "complexity": 1
         },
         {
           "name": "open_stpa_window",
-          "lineno": 14683,
+          "lineno": 14401,
           "complexity": 1
         },
         {
           "name": "open_threat_window",
-          "lineno": 14686,
+          "lineno": 14404,
           "complexity": 1
         },
         {
           "name": "open_causal_bayesian_network_window",
-          "lineno": 14689,
+          "lineno": 14407,
           "complexity": 1
         },
         {
           "name": "open_fi2tc_window",
-          "lineno": 14692,
+          "lineno": 14410,
           "complexity": 1
         },
         {
           "name": "open_tc2fi_window",
-          "lineno": 14695,
+          "lineno": 14413,
           "complexity": 1
         },
         {
           "name": "open_fault_prioritization_window",
-          "lineno": 14698,
+          "lineno": 14416,
           "complexity": 1
         },
         {
           "name": "open_safety_management_toolbox",
-          "lineno": 14701,
+          "lineno": 14419,
           "complexity": 8
         },
         {
           "name": "open_diagram_rules_toolbox",
-          "lineno": 14741,
+          "lineno": 14459,
           "complexity": 5
         },
         {
           "name": "open_requirement_patterns_toolbox",
-          "lineno": 14763,
+          "lineno": 14481,
           "complexity": 5
         },
         {
           "name": "open_report_template_toolbox",
-          "lineno": 14787,
+          "lineno": 14505,
           "complexity": 5
         },
         {
           "name": "open_report_template_manager",
-          "lineno": 14811,
+          "lineno": 14529,
           "complexity": 5
         },
         {
           "name": "reload_config",
-          "lineno": 14836,
+          "lineno": 14554,
           "complexity": 8
         },
         {
           "name": "open_search_toolbox",
-          "lineno": 14856,
+          "lineno": 14574,
           "complexity": 3
         },
         {
           "name": "open_style_editor",
-          "lineno": 14865,
+          "lineno": 14583,
           "complexity": 1
         },
         {
           "name": "open_metrics_tab",
-          "lineno": 14869,
+          "lineno": 14587,
           "complexity": 1
         },
         {
           "name": "apply_style",
-          "lineno": 14876,
+          "lineno": 14594,
           "complexity": 1
         },
         {
           "name": "refresh_styles",
-          "lineno": 14881,
+          "lineno": 14599,
           "complexity": 5
         },
         {
           "name": "show_hazard_explorer",
-          "lineno": 14890,
+          "lineno": 14608,
           "complexity": 1
         },
         {
           "name": "show_requirements_explorer",
-          "lineno": 14893,
+          "lineno": 14611,
           "complexity": 3
         },
         {
           "name": "_register_close",
-          "lineno": 14901,
+          "lineno": 14619,
           "complexity": 2
         },
         {
           "name": "_create_fta_tab",
-          "lineno": 14908,
+          "lineno": 14626,
           "complexity": 4
         },
         {
           "name": "create_fta_diagram",
-          "lineno": 14966,
+          "lineno": 14684,
           "complexity": 2
         },
         {
           "name": "create_cta_diagram",
-          "lineno": 14973,
+          "lineno": 14691,
           "complexity": 1
         },
         {
           "name": "enable_fta_actions",
-          "lineno": 14977,
+          "lineno": 14695,
           "complexity": 4
         },
         {
           "name": "enable_paa_actions",
-          "lineno": 14990,
+          "lineno": 14708,
           "complexity": 4
         },
         {
           "name": "_update_analysis_menus",
-          "lineno": 14997,
+          "lineno": 14715,
           "complexity": 2
         },
         {
           "name": "_create_paa_tab",
-          "lineno": 15005,
+          "lineno": 14723,
           "complexity": 1
         },
         {
           "name": "create_paa_diagram",
-          "lineno": 15009,
+          "lineno": 14727,
           "complexity": 1
         },
         {
           "name": "paa_manager",
-          "lineno": 15014,
+          "lineno": 14732,
           "complexity": 2
         },
         {
           "name": "_reset_fta_state",
-          "lineno": 15020,
+          "lineno": 14738,
           "complexity": 1
         },
         {
           "name": "ensure_fta_tab",
-          "lineno": 15029,
+          "lineno": 14747,
           "complexity": 3
         },
         {
           "name": "_on_tab_close",
-          "lineno": 15041,
+          "lineno": 14759,
           "complexity": 12
         },
         {
           "name": "_on_tab_change",
-          "lineno": 15080,
+          "lineno": 14798,
           "complexity": 25
         },
         {
           "name": "_init_nav_button_style",
-          "lineno": 15147,
+          "lineno": 14865,
           "complexity": 1
         },
         {
           "name": "_update_tool_tab_visibility",
-          "lineno": 15163,
+          "lineno": 14881,
           "complexity": 13
         },
         {
           "name": "_update_doc_tab_visibility",
-          "lineno": 15195,
+          "lineno": 14913,
           "complexity": 13
         },
         {
           "name": "_make_doc_tab_visible",
-          "lineno": 15227,
+          "lineno": 14945,
           "complexity": 4
         },
         {
           "name": "_select_prev_tool_tab",
-          "lineno": 15240,
+          "lineno": 14958,
           "complexity": 6
         },
         {
           "name": "_select_next_tool_tab",
-          "lineno": 15258,
+          "lineno": 14976,
           "complexity": 6
         },
         {
           "name": "_select_prev_tab",
-          "lineno": 15276,
+          "lineno": 14994,
           "complexity": 6
         },
         {
           "name": "_select_next_tab",
-          "lineno": 15294,
+          "lineno": 15012,
           "complexity": 6
         },
         {
           "name": "_new_tab",
-          "lineno": 15312,
+          "lineno": 15030,
           "complexity": 6
         },
         {
           "name": "_truncate_tab_title",
-          "lineno": 15344,
+          "lineno": 15062,
           "complexity": 2
         },
         {
           "name": "_format_diag_title",
-          "lineno": 15351,
+          "lineno": 15069,
           "complexity": 2
         },
         {
           "name": "_create_icon",
-          "lineno": 15357,
+          "lineno": 15075,
           "complexity": 1
         },
         {
           "name": "open_use_case_diagram",
-          "lineno": 15361,
+          "lineno": 15079,
           "complexity": 1
         },
         {
           "name": "open_activity_diagram",
-          "lineno": 15364,
+          "lineno": 15082,
           "complexity": 1
         },
         {
           "name": "open_block_diagram",
-          "lineno": 15367,
+          "lineno": 15085,
           "complexity": 1
         },
         {
           "name": "open_internal_block_diagram",
-          "lineno": 15370,
+          "lineno": 15088,
           "complexity": 1
         },
         {
           "name": "open_control_flow_diagram",
-          "lineno": 15373,
+          "lineno": 15091,
           "complexity": 1
         },
         {
           "name": "manage_architecture",
-          "lineno": 15376,
+          "lineno": 15094,
           "complexity": 3
         },
         {
           "name": "manage_gsn",
-          "lineno": 15385,
+          "lineno": 15103,
           "complexity": 1
         },
         {
           "name": "manage_safety_management",
-          "lineno": 15388,
+          "lineno": 15106,
           "complexity": 4
         },
         {
           "name": "manage_safety_cases",
-          "lineno": 15403,
+          "lineno": 15121,
           "complexity": 4
         },
         {
           "name": "open_gsn_diagram",
-          "lineno": 15418,
+          "lineno": 15136,
           "complexity": 1
         },
         {
           "name": "open_arch_window",
-          "lineno": 15421,
+          "lineno": 15139,
           "complexity": 11
         },
         {
           "name": "open_management_window",
-          "lineno": 15453,
+          "lineno": 15171,
           "complexity": 12
         },
         {
           "name": "_diagram_copy_strategy1",
-          "lineno": 15482,
+          "lineno": 15200,
           "complexity": 4
         },
         {
           "name": "_diagram_copy_strategy2",
-          "lineno": 15492,
+          "lineno": 15210,
           "complexity": 4
         },
         {
           "name": "_diagram_copy_strategy3",
-          "lineno": 15502,
+          "lineno": 15220,
           "complexity": 4
         },
         {
           "name": "_diagram_copy_strategy4",
-          "lineno": 15512,
+          "lineno": 15230,
           "complexity": 5
         },
         {
           "name": "_diagram_cut_strategy1",
-          "lineno": 15523,
+          "lineno": 15241,
           "complexity": 4
         },
         {
           "name": "_diagram_cut_strategy2",
-          "lineno": 15533,
+          "lineno": 15251,
           "complexity": 4
         },
         {
           "name": "_diagram_cut_strategy3",
-          "lineno": 15543,
+          "lineno": 15261,
           "complexity": 4
         },
         {
           "name": "_diagram_cut_strategy4",
-          "lineno": 15553,
+          "lineno": 15271,
           "complexity": 5
         },
         {
           "name": "copy_node",
-          "lineno": 15564,
+          "lineno": 15282,
           "complexity": 12
         },
         {
           "name": "cut_node",
-          "lineno": 15594,
+          "lineno": 15312,
           "complexity": 14
         },
         {
           "name": "_reset_gsn_clone",
-          "lineno": 15628,
+          "lineno": 15346,
           "complexity": 4
         },
         {
           "name": "_clone_for_paste_strategy1",
-          "lineno": 15642,
+          "lineno": 15360,
           "complexity": 4
         },
         {
           "name": "_clone_for_paste_strategy2",
-          "lineno": 15652,
+          "lineno": 15370,
           "complexity": 4
         },
         {
           "name": "_clone_for_paste_strategy3",
-          "lineno": 15662,
+          "lineno": 15380,
           "complexity": 4
         },
         {
           "name": "_clone_for_paste_strategy4",
-          "lineno": 15673,
+          "lineno": 15391,
           "complexity": 1
         },
         {
           "name": "_clone_for_paste",
-          "lineno": 15679,
+          "lineno": 15397,
           "complexity": 5
         },
         {
           "name": "_prepare_node_for_paste",
-          "lineno": 15698,
+          "lineno": 15416,
           "complexity": 5
         },
         {
           "name": "paste_node",
-          "lineno": 15714,
+          "lineno": 15432,
           "complexity": 58
         },
         {
           "name": "_get_diag_type",
-          "lineno": 15839,
+          "lineno": 15557,
           "complexity": 4
         },
         {
           "name": "_window_has_focus",
-          "lineno": 15848,
+          "lineno": 15566,
           "complexity": 4
         },
         {
           "name": "_window_in_selected_tab",
-          "lineno": 15857,
+          "lineno": 15575,
           "complexity": 6
         },
         {
           "name": "_gsn_window_strategy1",
-          "lineno": 15874,
+          "lineno": 15592,
           "complexity": 4
         },
         {
           "name": "_gsn_window_strategy2",
-          "lineno": 15880,
+          "lineno": 15598,
           "complexity": 5
         },
         {
           "name": "_gsn_window_strategy3",
-          "lineno": 15887,
+          "lineno": 15605,
           "complexity": 3
         },
         {
           "name": "_gsn_window_strategy4",
-          "lineno": 15893,
+          "lineno": 15611,
           "complexity": 4
         },
         {
           "name": "_focused_gsn_window",
-          "lineno": 15900,
+          "lineno": 15618,
           "complexity": 3
         },
         {
           "name": "_cbn_window_strategy1",
-          "lineno": 15912,
+          "lineno": 15630,
           "complexity": 3
         },
         {
           "name": "_cbn_window_strategy2",
-          "lineno": 15918,
+          "lineno": 15636,
           "complexity": 4
         },
         {
           "name": "_cbn_window_strategy3",
-          "lineno": 15925,
+          "lineno": 15643,
           "complexity": 2
         },
         {
           "name": "_cbn_window_strategy4",
-          "lineno": 15931,
+          "lineno": 15649,
           "complexity": 3
         },
         {
           "name": "_focused_cbn_window",
-          "lineno": 15938,
+          "lineno": 15656,
           "complexity": 3
         },
         {
           "name": "_arch_window_strategy1",
-          "lineno": 15950,
+          "lineno": 15668,
           "complexity": 6
         },
         {
           "name": "_arch_window_strategy2",
-          "lineno": 15957,
+          "lineno": 15675,
           "complexity": 7
         },
         {
           "name": "_arch_window_strategy3",
-          "lineno": 15965,
+          "lineno": 15683,
           "complexity": 5
         },
         {
           "name": "_arch_window_strategy4",
-          "lineno": 15972,
+          "lineno": 15690,
           "complexity": 6
         },
         {
           "name": "_focused_arch_window",
-          "lineno": 15980,
+          "lineno": 15698,
           "complexity": 3
         },
         {
           "name": "clone_node_preserving_id",
-          "lineno": 15992,
+          "lineno": 15710,
           "complexity": 6
         },
         {
           "name": "_find_gsn_diagram",
-          "lineno": 16044,
+          "lineno": 15762,
           "complexity": 7
         },
         {
           "name": "_copy_attrs_no_xy_strategy1",
-          "lineno": 16070,
+          "lineno": 15788,
           "complexity": 4
         },
         {
           "name": "_copy_attrs_no_xy_strategy2",
-          "lineno": 16079,
+          "lineno": 15797,
           "complexity": 5
         },
         {
           "name": "_copy_attrs_no_xy_strategy3",
-          "lineno": 16089,
+          "lineno": 15807,
           "complexity": 5
         },
         {
           "name": "_copy_attrs_no_xy_strategy4",
-          "lineno": 16100,
+          "lineno": 15818,
           "complexity": 5
         },
         {
           "name": "_copy_attrs_no_xy",
-          "lineno": 16112,
+          "lineno": 15830,
           "complexity": 3
         },
         {
           "name": "_collect_sync_nodes_strategy1",
-          "lineno": 16128,
+          "lineno": 15846,
           "complexity": 7
         },
         {
           "name": "_collect_sync_nodes_strategy2",
-          "lineno": 16147,
+          "lineno": 15865,
           "complexity": 7
         },
         {
           "name": "_collect_sync_nodes_strategy3",
-          "lineno": 16166,
+          "lineno": 15884,
           "complexity": 10
         },
         {
           "name": "_collect_sync_nodes_strategy4",
-          "lineno": 16189,
+          "lineno": 15907,
           "complexity": 1
         },
         {
           "name": "_collect_sync_nodes",
-          "lineno": 16192,
+          "lineno": 15910,
           "complexity": 4
         },
         {
           "name": "_sync_nodes_by_id_strategy1",
-          "lineno": 16207,
+          "lineno": 15925,
           "complexity": 12
         },
         {
           "name": "_sync_nodes_by_id_strategy2",
-          "lineno": 16229,
+          "lineno": 15947,
           "complexity": 10
         },
         {
           "name": "_sync_nodes_by_id_strategy3",
-          "lineno": 16246,
+          "lineno": 15964,
           "complexity": 13
         },
         {
           "name": "_sync_nodes_by_id_strategy4",
-          "lineno": 16264,
+          "lineno": 15982,
           "complexity": 1
         },
         {
           "name": "sync_nodes_by_id",
-          "lineno": 16267,
+          "lineno": 15985,
           "complexity": 3
         },
         {
           "name": "edit_user_name",
-          "lineno": 16289,
+          "lineno": 16007,
           "complexity": 1
         },
         {
           "name": "edit_description",
-          "lineno": 16292,
+          "lineno": 16010,
           "complexity": 3
         },
         {
           "name": "edit_rationale",
-          "lineno": 16308,
+          "lineno": 16026,
           "complexity": 3
         },
         {
           "name": "edit_value",
-          "lineno": 16319,
+          "lineno": 16037,
           "complexity": 6
         },
         {
           "name": "edit_gate_type",
-          "lineno": 16335,
+          "lineno": 16053,
           "complexity": 5
         },
         {
           "name": "edit_severity",
-          "lineno": 16348,
+          "lineno": 16066,
           "complexity": 1
         },
         {
           "name": "edit_controllability",
-          "lineno": 16354,
+          "lineno": 16072,
           "complexity": 1
         },
         {
           "name": "edit_page_flag",
-          "lineno": 16360,
+          "lineno": 16078,
           "complexity": 4
         },
         {
           "name": "set_last_saved_state",
-          "lineno": 16379,
+          "lineno": 16097,
           "complexity": 1
         },
         {
           "name": "has_unsaved_changes",
-          "lineno": 16383,
+          "lineno": 16101,
           "complexity": 1
         },
         {
           "name": "_strip_object_positions",
-          "lineno": 16391,
+          "lineno": 16109,
           "complexity": 6
         },
         {
           "name": "push_undo_state",
-          "lineno": 16409,
+          "lineno": 16127,
           "complexity": 8
         },
         {
           "name": "_push_undo_state_v1",
-          "lineno": 16436,
+          "lineno": 16154,
           "complexity": 6
         },
         {
           "name": "_push_undo_state_v2",
-          "lineno": 16457,
+          "lineno": 16175,
           "complexity": 6
         },
         {
           "name": "_push_undo_state_v3",
-          "lineno": 16471,
+          "lineno": 16189,
           "complexity": 6
         },
         {
           "name": "_push_undo_state_v4",
-          "lineno": 16485,
+          "lineno": 16203,
           "complexity": 5
         },
         {
           "name": "_undo_hotkey",
-          "lineno": 16496,
+          "lineno": 16214,
           "complexity": 1
         },
         {
           "name": "_redo_hotkey",
-          "lineno": 16501,
+          "lineno": 16219,
           "complexity": 1
         },
         {
           "name": "undo",
-          "lineno": 16506,
+          "lineno": 16224,
           "complexity": 6
         },
         {
           "name": "redo",
-          "lineno": 16523,
+          "lineno": 16241,
           "complexity": 6
         },
         {
           "name": "clear_undo_history",
-          "lineno": 16540,
+          "lineno": 16258,
           "complexity": 1
         },
         {
           "name": "_undo_v1",
-          "lineno": 16549,
+          "lineno": 16267,
           "complexity": 6
         },
         {
           "name": "_undo_v2",
-          "lineno": 16565,
+          "lineno": 16283,
           "complexity": 6
         },
         {
           "name": "_undo_v3",
-          "lineno": 16581,
+          "lineno": 16299,
           "complexity": 6
         },
         {
           "name": "_undo_v4",
-          "lineno": 16597,
+          "lineno": 16315,
           "complexity": 7
         },
         {
           "name": "_redo_v1",
-          "lineno": 16616,
+          "lineno": 16334,
           "complexity": 3
         },
         {
           "name": "_redo_v2",
-          "lineno": 16628,
+          "lineno": 16346,
           "complexity": 3
         },
         {
           "name": "_redo_v3",
-          "lineno": 16640,
+          "lineno": 16358,
           "complexity": 3
         },
         {
           "name": "_redo_v4",
-          "lineno": 16652,
+          "lineno": 16370,
           "complexity": 3
         },
         {
           "name": "confirm_close",
-          "lineno": 16664,
+          "lineno": 16382,
           "complexity": 4
         },
         {
           "name": "show_about",
-          "lineno": 16679,
+          "lineno": 16397,
           "complexity": 1
         },
         {
           "name": "export_model_data",
-          "lineno": 16691,
+          "lineno": 16409,
           "complexity": 46
         },
         {
           "name": "_load_project_properties",
-          "lineno": 16883,
+          "lineno": 16601,
           "complexity": 4
         },
         {
           "name": "_load_fault_tree_events",
-          "lineno": 16902,
+          "lineno": 16620,
           "complexity": 11
         },
         {
           "name": "apply_model_data",
-          "lineno": 16926,
+          "lineno": 16644,
           "complexity": 124
         },
         {
           "name": "save_model",
-          "lineno": 17461,
+          "lineno": 17179,
           "complexity": 1
         },
         {
           "name": "_reset_on_load",
-          "lineno": 17464,
+          "lineno": 17182,
           "complexity": 8
         },
         {
           "name": "_prompt_save_before_load_v1",
-          "lineno": 17511,
+          "lineno": 17229,
           "complexity": 1
         },
         {
           "name": "_prompt_save_before_load_v2",
-          "lineno": 17516,
+          "lineno": 17234,
           "complexity": 1
         },
         {
           "name": "_prompt_save_before_load_v3",
-          "lineno": 17521,
+          "lineno": 17239,
           "complexity": 1
         },
         {
           "name": "_prompt_save_before_load_v4",
-          "lineno": 17525,
+          "lineno": 17243,
           "complexity": 1
         },
         {
           "name": "_prompt_save_before_load",
-          "lineno": 17532,
+          "lineno": 17250,
           "complexity": 1
         },
         {
           "name": "load_model",
-          "lineno": 17535,
+          "lineno": 17253,
           "complexity": 1
         },
         {
           "name": "_reregister_document",
-          "lineno": 17538,
+          "lineno": 17256,
           "complexity": 2
         },
         {
           "name": "update_global_requirements_from_nodes",
-          "lineno": 17547,
+          "lineno": 17265,
           "complexity": 5
         },
         {
           "name": "generate_report",
-          "lineno": 17559,
+          "lineno": 17277,
           "complexity": 3
         },
         {
           "name": "build_html_report",
-          "lineno": 17567,
+          "lineno": 17285,
           "complexity": 6
         },
         {
           "name": "resolve_original",
-          "lineno": 17596,
+          "lineno": 17314,
           "complexity": 4
         },
         {
           "name": "open_page_diagram",
-          "lineno": 17602,
+          "lineno": 17320,
           "complexity": 5
         },
         {
           "name": "go_back",
-          "lineno": 17641,
+          "lineno": 17359,
           "complexity": 2
         },
         {
           "name": "draw_page_subtree",
-          "lineno": 17650,
+          "lineno": 17368,
           "complexity": 2
         },
         {
           "name": "draw_page_grid",
-          "lineno": 17660,
+          "lineno": 17378,
           "complexity": 5
         },
         {
           "name": "draw_page_connections_subtree",
-          "lineno": 17669,
+          "lineno": 17387,
           "complexity": 4
         },
         {
           "name": "draw_page_nodes_subtree",
-          "lineno": 17683,
+          "lineno": 17401,
           "complexity": 2
         },
         {
           "name": "draw_node_on_page_canvas",
-          "lineno": 17688,
+          "lineno": 17406,
           "complexity": 16
         },
         {
           "name": "on_ctrl_mousewheel_page",
-          "lineno": 17800,
+          "lineno": 17518,
           "complexity": 2
         },
         {
           "name": "close_page_diagram",
-          "lineno": 17806,
+          "lineno": 17524,
           "complexity": 5
         },
         {
           "name": "start_peer_review",
-          "lineno": 17853,
+          "lineno": 17571,
           "complexity": 10
         },
         {
           "name": "start_joint_review",
-          "lineno": 17913,
+          "lineno": 17631,
           "complexity": 32
         },
         {
           "name": "open_review_document",
-          "lineno": 18041,
+          "lineno": 17759,
           "complexity": 3
         },
         {
           "name": "open_review_toolbox",
-          "lineno": 18051,
+          "lineno": 17769,
           "complexity": 6
         },
         {
           "name": "send_review_email",
-          "lineno": 18069,
+          "lineno": 17787,
           "complexity": 61
         },
         {
           "name": "review_is_closed",
-          "lineno": 18340,
+          "lineno": 18058,
           "complexity": 6
         },
         {
           "name": "review_is_closed_for",
-          "lineno": 18354,
+          "lineno": 18072,
           "complexity": 6
         },
         {
           "name": "get_requirements_for_review",
-          "lineno": 18368,
+          "lineno": 18086,
           "complexity": 10
         },
         {
           "name": "update_requirement_statuses",
-          "lineno": 18387,
+          "lineno": 18105,
           "complexity": 11
         },
         {
           "name": "compute_requirement_asil",
-          "lineno": 18420,
+          "lineno": 18138,
           "complexity": 3
         },
         {
           "name": "find_safety_goal_node",
-          "lineno": 18430,
+          "lineno": 18148,
           "complexity": 3
         },
         {
           "name": "compute_validation_criteria",
-          "lineno": 18436,
+          "lineno": 18154,
           "complexity": 7
         },
         {
           "name": "update_validation_criteria",
-          "lineno": 18458,
+          "lineno": 18176,
           "complexity": 2
         },
         {
           "name": "update_requirement_asil",
-          "lineno": 18464,
+          "lineno": 18182,
           "complexity": 2
         },
         {
           "name": "update_all_validation_criteria",
-          "lineno": 18470,
+          "lineno": 18188,
           "complexity": 2
         },
         {
           "name": "update_all_requirement_asil",
-          "lineno": 18474,
+          "lineno": 18192,
           "complexity": 3
         },
         {
           "name": "update_base_event_requirement_asil",
-          "lineno": 18480,
+          "lineno": 18198,
           "complexity": 6
         },
         {
           "name": "ensure_asil_consistency",
-          "lineno": 18494,
+          "lineno": 18212,
           "complexity": 1
         },
         {
           "name": "invalidate_reviews_for_hara",
-          "lineno": 18502,
+          "lineno": 18220,
           "complexity": 4
         },
         {
           "name": "invalidate_reviews_for_requirement",
-          "lineno": 18515,
+          "lineno": 18233,
           "complexity": 4
         },
         {
           "name": "add_version",
-          "lineno": 18527,
+          "lineno": 18245,
           "complexity": 1
         },
         {
           "name": "compare_versions",
-          "lineno": 18531,
+          "lineno": 18249,
           "complexity": 1
         },
         {
           "name": "merge_review_comments",
-          "lineno": 18535,
+          "lineno": 18253,
           "complexity": 1
         },
         {
           "name": "calculate_diff_nodes",
-          "lineno": 18539,
+          "lineno": 18257,
           "complexity": 1
         },
         {
           "name": "calculate_diff_between",
-          "lineno": 18543,
+          "lineno": 18261,
           "complexity": 1
         },
         {
           "name": "node_map_from_data",
-          "lineno": 18547,
+          "lineno": 18265,
           "complexity": 1
         },
         {
           "name": "set_current_user",
-          "lineno": 18551,
+          "lineno": 18269,
           "complexity": 1
         },
         {
           "name": "get_current_user_role",
-          "lineno": 18554,
+          "lineno": 18272,
           "complexity": 1
         },
         {
           "name": "focus_on_node",
-          "lineno": 18557,
+          "lineno": 18275,
           "complexity": 6
         },
         {
           "name": "get_review_targets",
-          "lineno": 18569,
+          "lineno": 18287,
           "complexity": 1
         },
         {
@@ -3171,1634 +3401,1675 @@
         },
         {
           "name": "save_props",
-          "lineno": 2123,
+          "lineno": 1841,
           "complexity": 9
         },
         {
           "name": "filter_events",
-          "lineno": 2356,
+          "lineno": 2074,
           "complexity": 2
         },
         {
           "name": "build_conn_set",
-          "lineno": 2365,
+          "lineno": 2083,
           "complexity": 3
         },
         {
           "name": "collect_ids",
-          "lineno": 2411,
+          "lineno": 2129,
           "complexity": 2
         },
         {
           "name": "collect_nodes",
-          "lineno": 2421,
+          "lineno": 2139,
           "complexity": 3
         },
         {
           "name": "diff_segments",
-          "lineno": 2429,
+          "lineno": 2147,
           "complexity": 6
         },
         {
           "name": "draw_segment_text",
-          "lineno": 2444,
+          "lineno": 2162,
           "complexity": 8
         },
         {
           "name": "draw_connections",
-          "lineno": 2470,
+          "lineno": 2188,
           "complexity": 10
         },
         {
           "name": "draw_node",
-          "lineno": 2497,
+          "lineno": 2215,
           "complexity": 25
         },
         {
           "name": "filter_events",
-          "lineno": 2621,
+          "lineno": 2339,
           "complexity": 2
         },
         {
           "name": "build_conn_set",
-          "lineno": 2630,
+          "lineno": 2348,
           "complexity": 3
         },
         {
           "name": "collect_ids",
-          "lineno": 2676,
+          "lineno": 2394,
           "complexity": 2
         },
         {
           "name": "collect_nodes",
-          "lineno": 2686,
+          "lineno": 2404,
           "complexity": 3
         },
         {
           "name": "diff_segments",
-          "lineno": 2694,
+          "lineno": 2412,
           "complexity": 6
         },
         {
           "name": "draw_segment_text",
-          "lineno": 2709,
+          "lineno": 2427,
           "complexity": 8
         },
         {
           "name": "draw_connections",
-          "lineno": 2735,
+          "lineno": 2453,
           "complexity": 10
         },
         {
           "name": "draw_node",
-          "lineno": 2762,
+          "lineno": 2480,
           "complexity": 25
         },
         {
           "name": "filter_events",
-          "lineno": 2886,
+          "lineno": 2604,
           "complexity": 2
         },
         {
           "name": "build_conn_set",
-          "lineno": 2895,
+          "lineno": 2613,
           "complexity": 3
         },
         {
           "name": "collect_ids",
-          "lineno": 2941,
+          "lineno": 2659,
           "complexity": 2
         },
         {
           "name": "collect_nodes",
-          "lineno": 2951,
+          "lineno": 2669,
           "complexity": 3
         },
         {
           "name": "diff_segments",
-          "lineno": 2959,
+          "lineno": 2677,
           "complexity": 6
         },
         {
           "name": "draw_segment_text",
-          "lineno": 2974,
+          "lineno": 2692,
           "complexity": 8
         },
         {
           "name": "draw_connections",
-          "lineno": 3000,
+          "lineno": 2718,
           "complexity": 10
         },
         {
           "name": "draw_node",
-          "lineno": 3027,
+          "lineno": 2745,
           "complexity": 25
         },
         {
           "name": "filter_events",
-          "lineno": 3151,
+          "lineno": 2869,
           "complexity": 2
         },
         {
           "name": "build_conn_set",
-          "lineno": 3160,
+          "lineno": 2878,
           "complexity": 3
         },
         {
           "name": "collect_ids",
-          "lineno": 3206,
+          "lineno": 2924,
           "complexity": 2
         },
         {
           "name": "collect_nodes",
-          "lineno": 3216,
+          "lineno": 2934,
           "complexity": 3
         },
         {
           "name": "diff_segments",
-          "lineno": 3224,
+          "lineno": 2942,
           "complexity": 6
         },
         {
           "name": "draw_segment_text",
-          "lineno": 3239,
+          "lineno": 2957,
           "complexity": 8
         },
         {
           "name": "draw_connections",
-          "lineno": 3265,
+          "lineno": 2983,
           "complexity": 10
         },
         {
           "name": "draw_node",
-          "lineno": 3292,
+          "lineno": 3010,
           "complexity": 25
         },
         {
           "name": "filter_events",
-          "lineno": 3416,
+          "lineno": 3134,
           "complexity": 2
         },
         {
           "name": "build_conn_set",
-          "lineno": 3425,
+          "lineno": 3143,
           "complexity": 3
         },
         {
           "name": "collect_ids",
-          "lineno": 3471,
+          "lineno": 3189,
           "complexity": 2
         },
         {
           "name": "collect_nodes",
-          "lineno": 3481,
+          "lineno": 3199,
           "complexity": 3
         },
         {
           "name": "diff_segments",
-          "lineno": 3489,
+          "lineno": 3207,
           "complexity": 6
         },
         {
           "name": "draw_segment_text",
-          "lineno": 3504,
+          "lineno": 3222,
           "complexity": 8
         },
         {
           "name": "draw_connections",
-          "lineno": 3530,
+          "lineno": 3248,
           "complexity": 10
         },
         {
           "name": "draw_node",
-          "lineno": 3557,
+          "lineno": 3275,
           "complexity": 25
         },
         {
           "name": "filter_events",
-          "lineno": 3681,
+          "lineno": 3399,
           "complexity": 2
         },
         {
           "name": "build_conn_set",
-          "lineno": 3690,
+          "lineno": 3408,
           "complexity": 3
         },
         {
           "name": "collect_ids",
-          "lineno": 3736,
+          "lineno": 3454,
           "complexity": 2
         },
         {
           "name": "collect_nodes",
-          "lineno": 3746,
+          "lineno": 3464,
           "complexity": 3
         },
         {
           "name": "diff_segments",
-          "lineno": 3754,
+          "lineno": 3472,
           "complexity": 6
         },
         {
           "name": "draw_segment_text",
-          "lineno": 3769,
+          "lineno": 3487,
           "complexity": 8
         },
         {
           "name": "draw_connections",
-          "lineno": 3795,
+          "lineno": 3513,
           "complexity": 10
         },
         {
           "name": "draw_node",
-          "lineno": 3822,
+          "lineno": 3540,
           "complexity": 24
         },
         {
           "name": "filter_events",
-          "lineno": 3935,
+          "lineno": 3653,
           "complexity": 2
         },
         {
           "name": "build_conn_set",
-          "lineno": 3944,
+          "lineno": 3662,
           "complexity": 3
         },
         {
           "name": "collect_ids",
-          "lineno": 3990,
+          "lineno": 3708,
           "complexity": 2
         },
         {
           "name": "collect_nodes",
-          "lineno": 4000,
+          "lineno": 3718,
           "complexity": 3
         },
         {
           "name": "diff_segments",
-          "lineno": 4008,
+          "lineno": 3726,
           "complexity": 6
         },
         {
           "name": "draw_segment_text",
-          "lineno": 4023,
+          "lineno": 3741,
           "complexity": 8
         },
         {
           "name": "draw_connections",
-          "lineno": 4049,
+          "lineno": 3767,
           "complexity": 10
         },
         {
           "name": "draw_node",
-          "lineno": 4076,
+          "lineno": 3794,
           "complexity": 24
         },
         {
           "name": "filter_events",
-          "lineno": 4189,
+          "lineno": 3907,
           "complexity": 2
         },
         {
           "name": "build_conn_set",
-          "lineno": 4198,
+          "lineno": 3916,
           "complexity": 3
         },
         {
           "name": "collect_ids",
-          "lineno": 4244,
+          "lineno": 3962,
           "complexity": 2
         },
         {
           "name": "collect_nodes",
-          "lineno": 4254,
+          "lineno": 3972,
           "complexity": 3
         },
         {
           "name": "diff_segments",
-          "lineno": 4262,
+          "lineno": 3980,
           "complexity": 6
         },
         {
           "name": "draw_segment_text",
-          "lineno": 4277,
+          "lineno": 3995,
           "complexity": 8
         },
         {
           "name": "draw_connections",
-          "lineno": 4303,
+          "lineno": 4021,
           "complexity": 10
         },
         {
           "name": "draw_node",
-          "lineno": 4330,
+          "lineno": 4048,
           "complexity": 24
         },
         {
           "name": "filter_events",
-          "lineno": 4443,
+          "lineno": 4161,
           "complexity": 2
         },
         {
           "name": "build_conn_set",
-          "lineno": 4452,
+          "lineno": 4170,
           "complexity": 3
         },
         {
           "name": "collect_ids",
-          "lineno": 4498,
+          "lineno": 4216,
           "complexity": 2
         },
         {
           "name": "collect_nodes",
-          "lineno": 4508,
+          "lineno": 4226,
           "complexity": 3
         },
         {
           "name": "diff_segments",
-          "lineno": 4516,
+          "lineno": 4234,
           "complexity": 6
         },
         {
           "name": "draw_segment_text",
-          "lineno": 4531,
+          "lineno": 4249,
           "complexity": 8
         },
         {
           "name": "draw_connections",
-          "lineno": 4557,
+          "lineno": 4275,
           "complexity": 10
         },
         {
           "name": "draw_node",
-          "lineno": 4584,
+          "lineno": 4302,
           "complexity": 25
         },
         {
           "name": "traverse",
-          "lineno": 4897,
+          "lineno": 4615,
           "complexity": 3
         },
         {
           "name": "map_nodes",
-          "lineno": 4966,
+          "lineno": 4684,
           "complexity": 2
         },
         {
           "name": "traverse",
-          "lineno": 5137,
+          "lineno": 4855,
           "complexity": 3
         },
         {
           "name": "traverse",
-          "lineno": 5196,
+          "lineno": 4914,
           "complexity": 6
         },
         {
           "name": "get_node_bbox",
-          "lineno": 5342,
+          "lineno": 5060,
           "complexity": 1
         },
         {
           "name": "bboxes_overlap",
-          "lineno": 5345,
+          "lineno": 5063,
           "complexity": 4
         },
         {
           "name": "to_px",
-          "lineno": 5386,
+          "lineno": 5104,
           "complexity": 1
         },
         {
           "name": "scale_image",
-          "lineno": 5714,
+          "lineno": 5432,
           "complexity": 1
         },
         {
           "name": "_element_base_matrix",
-          "lineno": 5721,
+          "lineno": 5439,
           "complexity": 1
         },
         {
           "name": "_element_discretization",
-          "lineno": 5799,
+          "lineno": 5517,
           "complexity": 1
         },
         {
           "name": "_element_hazop",
-          "lineno": 5837,
+          "lineno": 5555,
           "complexity": 5
         },
         {
           "name": "_element_fi2tc",
-          "lineno": 5863,
+          "lineno": 5581,
           "complexity": 4
         },
         {
           "name": "_element_tc2fi",
-          "lineno": 5894,
+          "lineno": 5612,
           "complexity": 4
         },
         {
           "name": "_element_risk",
-          "lineno": 5925,
+          "lineno": 5643,
           "complexity": 4
         },
         {
           "name": "_element_cbn",
-          "lineno": 5967,
+          "lineno": 5685,
           "complexity": 8
         },
         {
           "name": "_element_safety_goals",
-          "lineno": 6016,
+          "lineno": 5734,
           "complexity": 17
         },
         {
           "name": "_element_top_events",
-          "lineno": 6096,
+          "lineno": 5814,
           "complexity": 9
         },
         {
           "name": "_element_page_diagrams",
-          "lineno": 6154,
+          "lineno": 5872,
           "complexity": 7
         },
         {
           "name": "_element_sysml_diagrams",
-          "lineno": 6192,
+          "lineno": 5910,
           "complexity": 4
         },
         {
           "name": "_element_fmea_tables",
-          "lineno": 6216,
+          "lineno": 5934,
           "complexity": 11
         },
         {
           "name": "_element_fmeda_tables",
-          "lineno": 6278,
+          "lineno": 5996,
           "complexity": 10
         },
         {
           "name": "_element_traceability",
-          "lineno": 6336,
+          "lineno": 6054,
           "complexity": 6
         },
         {
           "name": "_element_cut_sets",
-          "lineno": 6364,
+          "lineno": 6082,
           "complexity": 10
         },
         {
           "name": "_element_common_cause",
-          "lineno": 6404,
+          "lineno": 6122,
           "complexity": 14
         },
         {
           "name": "_element_safety_security_reports",
-          "lineno": 6441,
+          "lineno": 6159,
           "complexity": 4
         },
         {
           "name": "_element_spi_table",
-          "lineno": 6466,
+          "lineno": 6184,
           "complexity": 3
         },
         {
           "name": "_make_requirement_table",
-          "lineno": 6508,
+          "lineno": 6226,
           "complexity": 4
         },
         {
           "name": "_build_element",
-          "lineno": 6542,
+          "lineno": 6260,
           "complexity": 38
         },
         {
           "name": "_tokenize",
-          "lineno": 6693,
+          "lineno": 6411,
           "complexity": 2
         },
         {
           "name": "_refresh_children",
-          "lineno": 7069,
+          "lineno": 6787,
           "complexity": 3
         },
         {
           "name": "rec",
-          "lineno": 7363,
+          "lineno": 7081,
           "complexity": 3
         },
         {
           "name": "layout",
-          "lineno": 7666,
+          "lineno": 7384,
           "complexity": 3
         },
         {
           "name": "rec",
-          "lineno": 7696,
+          "lineno": 7414,
           "complexity": 2
         },
         {
           "name": "rec",
-          "lineno": 8250,
+          "lineno": 7968,
           "complexity": 6
         },
         {
           "name": "iter_analysis_events",
-          "lineno": 8762,
+          "lineno": 8480,
           "complexity": 7
         },
         {
           "name": "alloc_from_data",
-          "lineno": 9697,
+          "lineno": 9415,
           "complexity": 12
         },
         {
           "name": "goals_from_data",
-          "lineno": 9715,
+          "lineno": 9433,
           "complexity": 21
         },
         {
           "name": "insert_diff",
-          "lineno": 9749,
+          "lineno": 9467,
           "complexity": 6
         },
         {
           "name": "insert_list_diff",
-          "lineno": 9762,
+          "lineno": 9480,
           "complexity": 9
         },
         {
           "name": "save",
-          "lineno": 9818,
+          "lineno": 9536,
           "complexity": 1
         },
         {
           "name": "save",
-          "lineno": 9866,
+          "lineno": 9584,
           "complexity": 1
         },
         {
           "name": "_get_requirement_allocations",
-          "lineno": 9914,
+          "lineno": 9632,
           "complexity": 6
         },
         {
           "name": "refresh_tree",
-          "lineno": 9926,
+          "lineno": 9644,
           "complexity": 3
         },
         {
           "name": "add_req",
-          "lineno": 10055,
+          "lineno": 9773,
           "complexity": 2
         },
         {
           "name": "edit_req",
-          "lineno": 10061,
+          "lineno": 9779,
           "complexity": 3
         },
         {
           "name": "del_req",
-          "lineno": 10071,
+          "lineno": 9789,
           "complexity": 8
         },
         {
           "name": "link_to_diagram",
-          "lineno": 10087,
+          "lineno": 9805,
           "complexity": 21
         },
         {
           "name": "link_requirement",
-          "lineno": 10152,
+          "lineno": 9870,
           "complexity": 7
         },
         {
           "name": "save_csv",
-          "lineno": 10177,
+          "lineno": 9895,
           "complexity": 6
         },
         {
           "name": "refresh",
-          "lineno": 10274,
+          "lineno": 9992,
           "complexity": 2
         },
         {
           "name": "add_tc",
-          "lineno": 10281,
+          "lineno": 9999,
           "complexity": 2
         },
         {
           "name": "edit_tc",
-          "lineno": 10287,
+          "lineno": 10005,
           "complexity": 4
         },
         {
           "name": "del_tc",
-          "lineno": 10298,
+          "lineno": 10016,
           "complexity": 3
         },
         {
           "name": "export_csv",
-          "lineno": 10307,
+          "lineno": 10025,
           "complexity": 4
         },
         {
           "name": "add_tc",
-          "lineno": 10317,
+          "lineno": 10035,
           "complexity": 2
         },
         {
           "name": "edit_tc",
-          "lineno": 10323,
+          "lineno": 10041,
           "complexity": 4
         },
         {
           "name": "del_tc",
-          "lineno": 10333,
+          "lineno": 10051,
           "complexity": 3
         },
         {
           "name": "refresh",
-          "lineno": 10363,
+          "lineno": 10081,
           "complexity": 2
         },
         {
           "name": "add",
-          "lineno": 10368,
+          "lineno": 10086,
           "complexity": 2
         },
         {
           "name": "rename",
-          "lineno": 10374,
+          "lineno": 10092,
           "complexity": 5
         },
         {
           "name": "delete",
-          "lineno": 10388,
+          "lineno": 10106,
           "complexity": 3
         },
         {
           "name": "refresh",
-          "lineno": 10418,
+          "lineno": 10136,
           "complexity": 2
         },
         {
           "name": "add",
-          "lineno": 10423,
+          "lineno": 10141,
           "complexity": 2
         },
         {
           "name": "rename",
-          "lineno": 10429,
+          "lineno": 10147,
           "complexity": 3
         },
         {
           "name": "delete",
-          "lineno": 10440,
+          "lineno": 10158,
           "complexity": 3
         },
         {
           "name": "refresh",
-          "lineno": 10469,
+          "lineno": 10187,
           "complexity": 2
         },
         {
           "name": "add",
-          "lineno": 10474,
+          "lineno": 10192,
           "complexity": 2
         },
         {
           "name": "rename",
-          "lineno": 10480,
+          "lineno": 10198,
           "complexity": 3
         },
         {
           "name": "delete",
-          "lineno": 10491,
+          "lineno": 10209,
           "complexity": 3
         },
         {
           "name": "refresh",
-          "lineno": 10533,
+          "lineno": 10251,
           "complexity": 2
         },
         {
           "name": "export_csv",
-          "lineno": 10540,
+          "lineno": 10258,
           "complexity": 4
         },
         {
           "name": "add_fi",
-          "lineno": 10550,
+          "lineno": 10268,
           "complexity": 2
         },
         {
           "name": "edit_fi",
-          "lineno": 10556,
+          "lineno": 10274,
           "complexity": 4
         },
         {
           "name": "del_fi",
-          "lineno": 10566,
+          "lineno": 10284,
           "complexity": 3
         },
         {
           "name": "add_mal",
-          "lineno": 10595,
+          "lineno": 10313,
           "complexity": 5
         },
         {
           "name": "edit_mal",
-          "lineno": 10608,
+          "lineno": 10326,
           "complexity": 6
         },
         {
           "name": "del_mal",
-          "lineno": 10629,
+          "lineno": 10347,
           "complexity": 3
         },
         {
           "name": "__init__",
-          "lineno": 10649,
+          "lineno": 10367,
           "complexity": 2
         },
         {
           "name": "body",
-          "lineno": 10659,
+          "lineno": 10377,
           "complexity": 63
         },
         {
           "name": "apply",
-          "lineno": 10963,
+          "lineno": 10681,
           "complexity": 33
         },
         {
           "name": "add_existing_requirement",
-          "lineno": 11048,
+          "lineno": 10766,
           "complexity": 8
         },
         {
           "name": "comment_requirement",
-          "lineno": 11066,
+          "lineno": 10784,
           "complexity": 2
         },
         {
           "name": "comment_fmea",
-          "lineno": 11077,
+          "lineno": 10795,
           "complexity": 1
         },
         {
           "name": "add_fault",
-          "lineno": 11082,
+          "lineno": 10800,
           "complexity": 6
         },
         {
           "name": "add_safety_requirement",
-          "lineno": 11097,
+          "lineno": 10815,
           "complexity": 8
         },
         {
           "name": "edit_safety_requirement",
-          "lineno": 11130,
+          "lineno": 10848,
           "complexity": 7
         },
         {
           "name": "delete_safety_requirement",
-          "lineno": 11154,
+          "lineno": 10872,
           "complexity": 2
         },
         {
           "name": "__init__",
-          "lineno": 11164,
+          "lineno": 10882,
           "complexity": 1
         },
         {
           "name": "body",
-          "lineno": 11170,
+          "lineno": 10888,
           "complexity": 4
         },
         {
           "name": "apply",
-          "lineno": 11184,
+          "lineno": 10902,
           "complexity": 4
         },
         {
           "name": "__init__",
-          "lineno": 11194,
+          "lineno": 10912,
           "complexity": 1
         },
         {
           "name": "body",
-          "lineno": 11200,
+          "lineno": 10918,
           "complexity": 2
         },
         {
           "name": "apply",
-          "lineno": 11208,
+          "lineno": 10926,
           "complexity": 2
         },
         {
           "name": "__init__",
-          "lineno": 11214,
+          "lineno": 10932,
           "complexity": 1
         },
         {
           "name": "body",
-          "lineno": 11220,
+          "lineno": 10938,
           "complexity": 3
         },
         {
           "name": "apply",
-          "lineno": 11229,
+          "lineno": 10947,
           "complexity": 4
         },
         {
           "name": "__init__",
-          "lineno": 11239,
+          "lineno": 10957,
           "complexity": 2
         },
         {
           "name": "body",
-          "lineno": 11245,
+          "lineno": 10963,
           "complexity": 4
         },
         {
           "name": "apply",
-          "lineno": 11255,
+          "lineno": 10973,
           "complexity": 2
         },
         {
           "name": "refresh_tree",
-          "lineno": 11520,
+          "lineno": 11238,
           "complexity": 39
         },
         {
           "name": "on_double",
-          "lineno": 11661,
+          "lineno": 11379,
           "complexity": 5
         },
         {
           "name": "add_failure_mode",
-          "lineno": 11675,
+          "lineno": 11393,
           "complexity": 19
         },
         {
           "name": "remove_from_fmea",
-          "lineno": 11722,
+          "lineno": 11440,
           "complexity": 5
         },
         {
           "name": "delete_failure_mode",
-          "lineno": 11737,
+          "lineno": 11455,
           "complexity": 6
         },
         {
           "name": "comment_fmea_entry",
-          "lineno": 11754,
+          "lineno": 11472,
           "complexity": 3
         },
         {
           "name": "on_close",
-          "lineno": 11768,
+          "lineno": 11486,
           "complexity": 4
         },
         {
           "name": "refresh_tree",
-          "lineno": 12027,
+          "lineno": 11745,
           "complexity": 5
         },
         {
           "name": "add_sg",
-          "lineno": 12125,
+          "lineno": 11843,
           "complexity": 4
         },
         {
           "name": "edit_sg",
-          "lineno": 12143,
+          "lineno": 11861,
           "complexity": 5
         },
         {
           "name": "del_sg",
-          "lineno": 12165,
+          "lineno": 11883,
           "complexity": 5
         },
         {
           "name": "edit_selected",
-          "lineno": 12245,
+          "lineno": 11963,
           "complexity": 5
         },
         {
           "name": "on_double_click",
-          "lineno": 12443,
+          "lineno": 12161,
           "complexity": 16
         },
         {
           "name": "edit_selected",
-          "lineno": 12499,
+          "lineno": 12217,
           "complexity": 5
         },
         {
           "name": "export_csv",
-          "lineno": 12519,
+          "lineno": 12237,
           "complexity": 4
         },
         {
           "name": "on_right_click",
-          "lineno": 12542,
+          "lineno": 12260,
           "complexity": 2
         },
         {
           "name": "export_csv",
-          "lineno": 12652,
+          "lineno": 12370,
           "complexity": 4
         },
         {
           "name": "refresh",
-          "lineno": 12691,
+          "lineno": 12409,
           "complexity": 17
         },
         {
           "name": "export_csv",
-          "lineno": 12717,
+          "lineno": 12435,
           "complexity": 4
         },
         {
           "name": "to_canvas",
-          "lineno": 12971,
+          "lineno": 12689,
           "complexity": 1
         },
         {
           "name": "draw_row",
-          "lineno": 13080,
+          "lineno": 12798,
           "complexity": 3
         },
         {
           "name": "on_select",
-          "lineno": 13156,
+          "lineno": 12874,
           "complexity": 3
         },
         {
           "name": "export_csv",
-          "lineno": 13176,
+          "lineno": 12894,
           "complexity": 4
         },
         {
           "name": "export_csv",
-          "lineno": 13220,
+          "lineno": 12938,
           "complexity": 4
         },
         {
           "name": "refresh",
-          "lineno": 13259,
+          "lineno": 12977,
           "complexity": 17
         },
         {
           "name": "export_csv",
-          "lineno": 13285,
+          "lineno": 13003,
           "complexity": 4
         },
         {
           "name": "export_csv",
-          "lineno": 13332,
+          "lineno": 13050,
           "complexity": 4
         },
         {
           "name": "refresh",
-          "lineno": 13371,
+          "lineno": 13089,
           "complexity": 17
         },
         {
           "name": "export_csv",
-          "lineno": 13397,
+          "lineno": 13115,
           "complexity": 4
         },
         {
           "name": "export_csv",
-          "lineno": 13444,
+          "lineno": 13162,
           "complexity": 4
         },
         {
           "name": "refresh",
-          "lineno": 13483,
+          "lineno": 13201,
           "complexity": 17
         },
         {
           "name": "export_csv",
-          "lineno": 13509,
+          "lineno": 13227,
           "complexity": 4
         },
         {
           "name": "refresh",
-          "lineno": 13537,
+          "lineno": 13255,
           "complexity": 3
         },
         {
           "name": "add_profile",
-          "lineno": 13632,
+          "lineno": 13350,
           "complexity": 4
         },
         {
           "name": "edit_profile",
-          "lineno": 13640,
+          "lineno": 13358,
           "complexity": 5
         },
         {
           "name": "delete_profile",
-          "lineno": 13651,
+          "lineno": 13369,
           "complexity": 4
         },
         {
           "name": "refresh_libs",
-          "lineno": 13718,
+          "lineno": 13436,
           "complexity": 2
         },
         {
           "name": "refresh_mechs",
-          "lineno": 13724,
+          "lineno": 13442,
           "complexity": 3
         },
         {
           "name": "hide_tip",
-          "lineno": 13745,
+          "lineno": 13463,
           "complexity": 2
         },
         {
           "name": "show_tip",
-          "lineno": 13751,
+          "lineno": 13469,
           "complexity": 2
         },
         {
           "name": "on_tree_motion",
-          "lineno": 13772,
+          "lineno": 13490,
           "complexity": 4
         },
         {
           "name": "add_lib",
-          "lineno": 13782,
+          "lineno": 13500,
           "complexity": 2
         },
         {
           "name": "edit_lib",
-          "lineno": 13789,
+          "lineno": 13507,
           "complexity": 3
         },
         {
           "name": "del_lib",
-          "lineno": 13799,
+          "lineno": 13517,
           "complexity": 2
         },
         {
           "name": "clone_lib",
-          "lineno": 13806,
+          "lineno": 13524,
           "complexity": 6
         },
         {
           "name": "add_mech",
-          "lineno": 13837,
+          "lineno": 13555,
           "complexity": 5
         },
         {
           "name": "edit_mech",
-          "lineno": 13881,
+          "lineno": 13599,
           "complexity": 5
         },
         {
           "name": "del_mech",
-          "lineno": 13924,
+          "lineno": 13642,
           "complexity": 3
         },
         {
           "name": "refresh_libs",
-          "lineno": 13987,
+          "lineno": 13705,
           "complexity": 2
         },
         {
           "name": "refresh_scenarios",
-          "lineno": 13993,
+          "lineno": 13711,
           "complexity": 4
         },
         {
           "name": "add_lib",
-          "lineno": 14248,
+          "lineno": 13966,
           "complexity": 2
         },
         {
           "name": "edit_lib",
-          "lineno": 14254,
+          "lineno": 13972,
           "complexity": 2
         },
         {
           "name": "delete_lib",
-          "lineno": 14263,
+          "lineno": 13981,
           "complexity": 2
         },
         {
           "name": "add_scen",
-          "lineno": 14270,
+          "lineno": 13988,
           "complexity": 3
         },
         {
           "name": "edit_scen",
-          "lineno": 14280,
+          "lineno": 13998,
           "complexity": 3
         },
         {
           "name": "del_scen",
-          "lineno": 14292,
+          "lineno": 14010,
           "complexity": 3
         },
         {
           "name": "refresh_libs",
-          "lineno": 14336,
+          "lineno": 14054,
           "complexity": 2
         },
         {
           "name": "refresh_elems",
-          "lineno": 14342,
+          "lineno": 14060,
           "complexity": 7
         },
         {
           "name": "add_lib",
-          "lineno": 14580,
+          "lineno": 14298,
           "complexity": 12
         },
         {
           "name": "edit_lib",
-          "lineno": 14607,
+          "lineno": 14325,
           "complexity": 3
         },
         {
           "name": "delete_lib",
-          "lineno": 14617,
+          "lineno": 14335,
           "complexity": 2
         },
         {
           "name": "add_elem",
-          "lineno": 14625,
+          "lineno": 14343,
           "complexity": 2
         },
         {
           "name": "edit_elem",
-          "lineno": 14635,
+          "lineno": 14353,
           "complexity": 3
         },
         {
           "name": "del_elem",
-          "lineno": 14648,
+          "lineno": 14366,
           "complexity": 3
         },
         {
           "name": "_close",
-          "lineno": 14902,
+          "lineno": 14620,
           "complexity": 2
         },
         {
           "name": "_search_modules",
-          "lineno": 16058,
+          "lineno": 15776,
           "complexity": 5
         },
         {
           "name": "scrub",
-          "lineno": 16396,
+          "lineno": 16114,
           "complexity": 6
         },
         {
           "name": "node_to_html",
-          "lineno": 17568,
+          "lineno": 17286,
           "complexity": 6
         },
         {
           "name": "visit",
-          "lineno": 2367,
+          "lineno": 2085,
           "complexity": 2
         },
         {
           "name": "req_lines",
-          "lineno": 2514,
+          "lineno": 2232,
           "complexity": 2
         },
         {
           "name": "visit",
-          "lineno": 2632,
+          "lineno": 2350,
           "complexity": 2
         },
         {
           "name": "req_lines",
-          "lineno": 2779,
+          "lineno": 2497,
           "complexity": 2
         },
         {
           "name": "visit",
-          "lineno": 2897,
+          "lineno": 2615,
           "complexity": 2
         },
         {
           "name": "req_lines",
-          "lineno": 3044,
+          "lineno": 2762,
           "complexity": 2
         },
         {
           "name": "visit",
-          "lineno": 3162,
+          "lineno": 2880,
           "complexity": 2
         },
         {
           "name": "req_lines",
-          "lineno": 3309,
+          "lineno": 3027,
           "complexity": 2
         },
         {
           "name": "visit",
-          "lineno": 3427,
+          "lineno": 3145,
           "complexity": 2
         },
         {
           "name": "req_lines",
-          "lineno": 3574,
+          "lineno": 3292,
           "complexity": 2
         },
         {
           "name": "visit",
-          "lineno": 3692,
+          "lineno": 3410,
           "complexity": 2
         },
         {
           "name": "visit",
-          "lineno": 3946,
+          "lineno": 3664,
           "complexity": 2
         },
         {
           "name": "visit",
-          "lineno": 4200,
+          "lineno": 3918,
           "complexity": 2
         },
         {
           "name": "visit",
-          "lineno": 4454,
+          "lineno": 4172,
           "complexity": 2
         },
         {
           "name": "req_lines",
-          "lineno": 4601,
+          "lineno": 4319,
           "complexity": 2
         },
         {
           "name": "avg_parent_position",
-          "lineno": 5325,
+          "lineno": 5043,
           "complexity": 3
         },
         {
           "name": "get_immediate_parent_assurance",
-          "lineno": 6020,
+          "lineno": 5738,
           "complexity": 8
         },
         {
           "name": "_visible",
-          "lineno": 8308,
+          "lineno": 8026,
           "complexity": 1
         },
         {
           "name": "_in_any_module",
-          "lineno": 8316,
+          "lineno": 8034,
           "complexity": 4
         },
         {
           "name": "_add_module",
-          "lineno": 8322,
+          "lineno": 8040,
           "complexity": 4
         },
         {
           "name": "_collect_gsn_diagrams",
-          "lineno": 8359,
+          "lineno": 8077,
           "complexity": 2
         },
         {
           "name": "add_gsn_module",
-          "lineno": 8379,
+          "lineno": 8097,
           "complexity": 4
         },
         {
           "name": "add_gsn_diagram",
-          "lineno": 8397,
+          "lineno": 8115,
           "complexity": 2
         },
         {
           "name": "add_pkg",
-          "lineno": 8451,
+          "lineno": 8169,
           "complexity": 14
         },
         {
           "name": "_ensure_haz_root",
-          "lineno": 8525,
+          "lineno": 8243,
           "complexity": 2
         },
         {
           "name": "_ensure_risk_root",
-          "lineno": 8567,
+          "lineno": 8285,
           "complexity": 2
         },
         {
           "name": "_ensure_safety_root",
-          "lineno": 8584,
+          "lineno": 8302,
           "complexity": 2
         },
         {
           "name": "traverse",
-          "lineno": 9701,
+          "lineno": 9419,
           "complexity": 5
         },
         {
           "name": "gather",
-          "lineno": 9719,
+          "lineno": 9437,
           "complexity": 2
         },
         {
           "name": "collect_goal_names",
-          "lineno": 9726,
+          "lineno": 9444,
           "complexity": 7
         },
         {
           "name": "__init__",
-          "lineno": 9956,
+          "lineno": 9674,
           "complexity": 2
         },
         {
           "name": "body",
-          "lineno": 9960,
+          "lineno": 9678,
           "complexity": 1
         },
         {
           "name": "apply",
-          "lineno": 10005,
+          "lineno": 9723,
           "complexity": 3
         },
         {
           "name": "validate",
-          "lineno": 10027,
+          "lineno": 9745,
           "complexity": 4
         },
         {
           "name": "_toggle_fields",
-          "lineno": 10034,
+          "lineno": 9752,
           "complexity": 3
         },
         {
           "name": "auto_fault",
-          "lineno": 10718,
+          "lineno": 10436,
           "complexity": 5
         },
         {
           "name": "mode_sel",
-          "lineno": 10732,
+          "lineno": 10450,
           "complexity": 6
         },
         {
           "name": "update_sg",
-          "lineno": 10776,
+          "lineno": 10494,
           "complexity": 9
         },
         {
           "name": "comp_sel",
-          "lineno": 10910,
+          "lineno": 10628,
           "complexity": 3
         },
         {
           "name": "calculate_fmeda",
-          "lineno": 11333,
+          "lineno": 11051,
           "complexity": 5
         },
         {
           "name": "add_component",
-          "lineno": 11369,
+          "lineno": 11087,
           "complexity": 5
         },
         {
           "name": "choose_libs",
-          "lineno": 11438,
+          "lineno": 11156,
           "complexity": 4
         },
         {
           "name": "load_bom",
-          "lineno": 11460,
+          "lineno": 11178,
           "complexity": 4
         },
         {
           "name": "__init__",
-          "lineno": 12054,
+          "lineno": 11772,
           "complexity": 1
         },
         {
           "name": "body",
-          "lineno": 12059,
+          "lineno": 11777,
           "complexity": 2
         },
         {
           "name": "apply",
-          "lineno": 12112,
+          "lineno": 11830,
           "complexity": 2
         },
         {
           "name": "map_nodes",
-          "lineno": 12636,
+          "lineno": 12354,
           "complexity": 2
         },
         {
           "name": "to_canvas",
-          "lineno": 13108,
+          "lineno": 12826,
           "complexity": 1
         },
         {
           "name": "map_nodes",
-          "lineno": 13204,
+          "lineno": 12922,
           "complexity": 2
         },
         {
           "name": "map_nodes",
-          "lineno": 13316,
+          "lineno": 13034,
           "complexity": 2
         },
         {
           "name": "map_nodes",
-          "lineno": 13428,
+          "lineno": 13146,
           "complexity": 2
         },
         {
           "name": "__init__",
-          "lineno": 13549,
+          "lineno": 13267,
           "complexity": 1
         },
         {
           "name": "body",
-          "lineno": 13553,
+          "lineno": 13271,
           "complexity": 8
         },
         {
           "name": "apply",
-          "lineno": 13595,
+          "lineno": 13313,
           "complexity": 20
         },
         {
           "name": "__init__",
-          "lineno": 14021,
+          "lineno": 13739,
           "complexity": 2
         },
         {
           "name": "body",
-          "lineno": 14026,
+          "lineno": 13744,
           "complexity": 6
         },
         {
           "name": "apply",
-          "lineno": 14047,
+          "lineno": 13765,
           "complexity": 3
         },
         {
           "name": "__init__",
-          "lineno": 14055,
+          "lineno": 13773,
           "complexity": 2
         },
         {
           "name": "body",
-          "lineno": 14072,
+          "lineno": 13790,
           "complexity": 23
         },
         {
           "name": "update_description",
-          "lineno": 14176,
+          "lineno": 13894,
           "complexity": 4
         },
         {
           "name": "load_desc_links",
-          "lineno": 14208,
+          "lineno": 13926,
           "complexity": 2
         },
         {
           "name": "show_elem",
-          "lineno": 14221,
+          "lineno": 13939,
           "complexity": 9
         },
         {
           "name": "apply",
-          "lineno": 14233,
+          "lineno": 13951,
           "complexity": 3
         },
         {
           "name": "__init__",
-          "lineno": 14360,
+          "lineno": 14078,
           "complexity": 2
         },
         {
           "name": "add_attr_row",
-          "lineno": 14365,
+          "lineno": 14083,
           "complexity": 2
         },
         {
           "name": "body",
-          "lineno": 14400,
+          "lineno": 14118,
           "complexity": 19
         },
         {
           "name": "apply",
-          "lineno": 14554,
+          "lineno": 14272,
           "complexity": 3
         },
         {
           "name": "load_comp",
-          "lineno": 17035,
+          "lineno": 16753,
           "complexity": 3
         },
         {
           "name": "peer_completed",
-          "lineno": 17953,
+          "lineno": 17671,
           "complexity": 4
         },
         {
           "name": "_popup",
-          "lineno": 10225,
+          "lineno": 9943,
           "complexity": 3
         },
         {
           "name": "_on_double",
-          "lineno": 10235,
+          "lineno": 9953,
           "complexity": 2
         },
         {
           "name": "mech_sel",
-          "lineno": 10855,
+          "lineno": 10573,
           "complexity": 9
         },
         {
           "name": "refresh_attr_fields",
-          "lineno": 11397,
+          "lineno": 11115,
           "complexity": 4
         },
         {
           "name": "ok",
-          "lineno": 11415,
+          "lineno": 11133,
           "complexity": 2
         },
         {
           "name": "ok",
-          "lineno": 11447,
+          "lineno": 11165,
           "complexity": 3
         },
         {
           "name": "update_dc",
-          "lineno": 13581,
+          "lineno": 13299,
           "complexity": 5
         },
         {
           "name": "body",
-          "lineno": 13843,
+          "lineno": 13561,
           "complexity": 2
         },
         {
           "name": "apply",
-          "lineno": 13864,
+          "lineno": 13582,
           "complexity": 2
         },
         {
           "name": "body",
-          "lineno": 13891,
+          "lineno": 13609,
           "complexity": 2
         },
         {
           "name": "apply",
-          "lineno": 13914,
+          "lineno": 13632,
           "complexity": 2
         },
         {
           "name": "remove_row",
-          "lineno": 14376,
+          "lineno": 14094,
           "complexity": 2
         },
         {
           "name": "update_metrics",
-          "lineno": 14469,
+          "lineno": 14187,
           "complexity": 1
         },
         {
           "name": "on_vt_select",
-          "lineno": 14510,
+          "lineno": 14228,
           "complexity": 5
         },
         {
           "name": "refresh_vt",
-          "lineno": 14530,
+          "lineno": 14248,
           "complexity": 4
         },
         {
           "name": "map_nodes",
-          "lineno": 6374,
+          "lineno": 6092,
           "complexity": 2
         }
       ]
     },
     {
-      "file": "mainappsrc/use_case_diagram_subapp.py",
-      "loc": 18,
+      "file": "mainappsrc/sotif_manager.py",
+      "loc": 133,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 24,
+          "complexity": 1
+        },
+        {
+          "name": "build_goal_dialog",
+          "lineno": 30,
+          "complexity": 5
+        },
+        {
+          "name": "collect_goal_data",
+          "lineno": 107,
+          "complexity": 1
+        },
+        {
+          "name": "get_spi_targets_for_goal",
+          "lineno": 124,
+          "complexity": 2
+        },
+        {
+          "name": "iter_spi_rows",
+          "lineno": 130,
+          "complexity": 9
+        },
+        {
+          "name": "probabilities_for",
+          "lineno": 159,
+          "complexity": 1
+        },
+        {
+          "name": "_update_val",
+          "lineno": 82,
+          "complexity": 2
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/cta_manager.py",
+      "loc": 29,
       "functions": [
         {
           "name": "__init__",
@@ -4806,56 +5077,55 @@
           "complexity": 1
         },
         {
-          "name": "open",
-          "lineno": 14,
-          "complexity": 2
-        }
-      ]
-    },
-    {
-      "file": "mainappsrc/gsn_manager.py",
-      "loc": 52,
-      "functions": [
+          "name": "register_menu",
+          "lineno": 16,
+          "complexity": 1
+        },
         {
-          "name": "__init__",
+          "name": "_create_tab",
           "lineno": 22,
           "complexity": 1
         },
         {
-          "name": "manage_gsn",
-          "lineno": 28,
-          "complexity": 3
+          "name": "create_diagram",
+          "lineno": 26,
+          "complexity": 2
         },
         {
-          "name": "open_diagram",
-          "lineno": 39,
+          "name": "enable_actions",
+          "lineno": 33,
           "complexity": 4
-        },
-        {
-          "name": "refresh",
-          "lineno": 55,
-          "complexity": 10
         }
       ]
     },
     {
-      "file": "mainappsrc/reliability_subapp.py",
-      "loc": 28,
+      "file": "mainappsrc/fta_subapp.py",
+      "loc": 67,
       "functions": [
         {
-          "name": "open_reliability_window",
-          "lineno": 13,
+          "name": "generate_recommendations_for_top_event",
+          "lineno": 12,
+          "complexity": 4
+        },
+        {
+          "name": "back_all_pages",
+          "lineno": 26,
           "complexity": 3
         },
         {
-          "name": "open_fmeda_window",
-          "lineno": 23,
-          "complexity": 1
+          "name": "move_top_event_up",
+          "lineno": 36,
+          "complexity": 6
         },
         {
-          "name": "open_fault_prioritization_window",
-          "lineno": 28,
-          "complexity": 3
+          "name": "move_top_event_down",
+          "lineno": 55,
+          "complexity": 6
+        },
+        {
+          "name": "get_top_level_nodes",
+          "lineno": 74,
+          "complexity": 2
         }
       ]
     },
@@ -4911,6 +5181,27 @@
       ]
     },
     {
+      "file": "mainappsrc/reliability_subapp.py",
+      "loc": 28,
+      "functions": [
+        {
+          "name": "open_reliability_window",
+          "lineno": 13,
+          "complexity": 3
+        },
+        {
+          "name": "open_fmeda_window",
+          "lineno": 23,
+          "complexity": 1
+        },
+        {
+          "name": "open_fault_prioritization_window",
+          "lineno": 28,
+          "complexity": 3
+        }
+      ]
+    },
+    {
       "file": "mainappsrc/tree_subapp.py",
       "loc": 310,
       "functions": [
@@ -4942,238 +5233,64 @@
       ]
     },
     {
-      "file": "mainappsrc/block_diagram_subapp.py",
-      "loc": 18,
-      "functions": [
-        {
-          "name": "__init__",
-          "lineno": 11,
-          "complexity": 1
-        },
-        {
-          "name": "open",
-          "lineno": 14,
-          "complexity": 2
-        }
-      ]
+      "file": "mainappsrc/models/fta/__init__.py",
+      "loc": 3,
+      "functions": []
     },
     {
-      "file": "mainappsrc/control_flow_diagram_subapp.py",
-      "loc": 22,
+      "file": "mainappsrc/models/fta/fault_tree_node.py",
+      "loc": 268,
       "functions": [
         {
           "name": "__init__",
-          "lineno": 11,
+          "lineno": 13,
+          "complexity": 7
+        },
+        {
+          "name": "update_validation_target",
+          "lineno": 106,
           "complexity": 1
         },
         {
-          "name": "open",
-          "lineno": 14,
-          "complexity": 2
-        }
-      ]
-    },
-    {
-      "file": "mainappsrc/style_subapp.py",
-      "loc": 189,
-      "functions": [
-        {
-          "name": "__init__",
-          "lineno": 17,
-          "complexity": 1
+          "name": "name",
+          "lineno": 120,
+          "complexity": 4
         },
         {
-          "name": "apply",
-          "lineno": 22,
+          "name": "to_dict",
+          "lineno": 129,
+          "complexity": 6
+        },
+        {
+          "name": "from_dict",
+          "lineno": 199,
           "complexity": 10
         },
         {
-          "name": "_build_pill",
-          "lineno": 154,
-          "complexity": 8
+          "name": "clone",
+          "lineno": 281,
+          "complexity": 3
         }
       ]
     },
     {
-      "file": "mainappsrc/internal_block_diagram_subapp.py",
-      "loc": 22,
-      "functions": [
-        {
-          "name": "__init__",
-          "lineno": 11,
-          "complexity": 1
-        },
-        {
-          "name": "open",
-          "lineno": 14,
-          "complexity": 2
-        }
-      ]
-    },
-    {
-      "file": "mainappsrc/version.py",
-      "loc": 23,
-      "functions": [
-        {
-          "name": "get_version",
-          "lineno": 14,
-          "complexity": 4
-        }
-      ]
-    },
-    {
-      "file": "mainappsrc/__init__.py",
+      "file": "mainappsrc/models/gsn/__init__.py",
       "loc": 5,
       "functions": []
     },
     {
-      "file": "mainappsrc/risk_assessment_subapp.py",
-      "loc": 429,
+      "file": "mainappsrc/models/gsn/module.py",
+      "loc": 25,
       "functions": [
         {
-          "name": "get_hazop_by_name",
-          "lineno": 25,
+          "name": "to_dict",
+          "lineno": 20,
           "complexity": 3
         },
         {
-          "name": "get_hara_by_name",
-          "lineno": 31,
+          "name": "from_dict",
+          "lineno": 30,
           "complexity": 3
-        },
-        {
-          "name": "update_hara_statuses",
-          "lineno": 37,
-          "complexity": 7
-        },
-        {
-          "name": "update_fta_statuses",
-          "lineno": 55,
-          "complexity": 7
-        },
-        {
-          "name": "get_safety_goal_asil",
-          "lineno": 72,
-          "complexity": 15
-        },
-        {
-          "name": "get_hara_goal_asil",
-          "lineno": 87,
-          "complexity": 6
-        },
-        {
-          "name": "get_cyber_goal_cal",
-          "lineno": 96,
-          "complexity": 9
-        },
-        {
-          "name": "get_top_event_safety_goals",
-          "lineno": 111,
-          "complexity": 7
-        },
-        {
-          "name": "calculate_fmeda_metrics",
-          "lineno": 122,
-          "complexity": 8
-        },
-        {
-          "name": "compute_fmeda_metrics",
-          "lineno": 151,
-          "complexity": 17
-        },
-        {
-          "name": "sync_hara_to_safety_goals",
-          "lineno": 222,
-          "complexity": 27
-        },
-        {
-          "name": "sync_cyber_risk_to_goals",
-          "lineno": 295,
-          "complexity": 9
-        },
-        {
-          "name": "open_hazop_window",
-          "lineno": 314,
-          "complexity": 3
-        },
-        {
-          "name": "open_risk_assessment_window",
-          "lineno": 322,
-          "complexity": 3
-        },
-        {
-          "name": "open_stpa_window",
-          "lineno": 330,
-          "complexity": 3
-        },
-        {
-          "name": "open_threat_window",
-          "lineno": 338,
-          "complexity": 3
-        },
-        {
-          "name": "open_causal_bayesian_network_window",
-          "lineno": 346,
-          "complexity": 3
-        },
-        {
-          "name": "open_fi2tc_window",
-          "lineno": 355,
-          "complexity": 3
-        },
-        {
-          "name": "open_tc2fi_window",
-          "lineno": 363,
-          "complexity": 3
-        },
-        {
-          "name": "show_hazard_list",
-          "lineno": 371,
-          "complexity": 12
-        },
-        {
-          "name": "show_hazard_editor",
-          "lineno": 462,
-          "complexity": 1
-        },
-        {
-          "name": "show_hazard_explorer",
-          "lineno": 465,
-          "complexity": 3
-        },
-        {
-          "name": "refresh",
-          "lineno": 415,
-          "complexity": 2
-        },
-        {
-          "name": "add",
-          "lineno": 420,
-          "complexity": 3
-        },
-        {
-          "name": "rename",
-          "lineno": 429,
-          "complexity": 5
-        },
-        {
-          "name": "delete",
-          "lineno": 444,
-          "complexity": 3
-        },
-        {
-          "name": "__init__",
-          "lineno": 388,
-          "complexity": 1
-        },
-        {
-          "name": "body",
-          "lineno": 393,
-          "complexity": 1
-        },
-        {
-          "name": "apply",
-          "lineno": 409,
-          "complexity": 1
         }
       ]
     },
@@ -5284,22 +5401,6 @@
       ]
     },
     {
-      "file": "mainappsrc/models/gsn/module.py",
-      "loc": 25,
-      "functions": [
-        {
-          "name": "to_dict",
-          "lineno": 20,
-          "complexity": 3
-        },
-        {
-          "name": "from_dict",
-          "lineno": 30,
-          "complexity": 3
-        }
-      ]
-    },
-    {
       "file": "mainappsrc/models/gsn/nodes.py",
       "loc": 209,
       "functions": [
@@ -5336,49 +5437,8 @@
       ]
     },
     {
-      "file": "mainappsrc/models/gsn/__init__.py",
-      "loc": 5,
-      "functions": []
-    },
-    {
-      "file": "mainappsrc/models/fta/fault_tree_node.py",
-      "loc": 268,
-      "functions": [
-        {
-          "name": "__init__",
-          "lineno": 13,
-          "complexity": 7
-        },
-        {
-          "name": "update_validation_target",
-          "lineno": 106,
-          "complexity": 1
-        },
-        {
-          "name": "name",
-          "lineno": 120,
-          "complexity": 4
-        },
-        {
-          "name": "to_dict",
-          "lineno": 129,
-          "complexity": 6
-        },
-        {
-          "name": "from_dict",
-          "lineno": 199,
-          "complexity": 10
-        },
-        {
-          "name": "clone",
-          "lineno": 281,
-          "complexity": 3
-        }
-      ]
-    },
-    {
-      "file": "mainappsrc/models/fta/__init__.py",
-      "loc": 3,
+      "file": "mainappsrc/models/gov/__init__.py",
+      "loc": 0,
       "functions": []
     },
     {
@@ -5393,20 +5453,9 @@
       ]
     },
     {
-      "file": "mainappsrc/models/gov/__init__.py",
+      "file": "mainappsrc/models/sysml/__init__.py",
       "loc": 0,
       "functions": []
-    },
-    {
-      "file": "mainappsrc/models/sysml/sysml_spec.py",
-      "loc": 71,
-      "functions": [
-        {
-          "name": "load_sysml_properties",
-          "lineno": 6,
-          "complexity": 6
-        }
-      ]
     },
     {
       "file": "mainappsrc/models/sysml/sysml_repository.py",
@@ -5745,9 +5794,15 @@
       ]
     },
     {
-      "file": "mainappsrc/models/sysml/__init__.py",
-      "loc": 0,
-      "functions": []
+      "file": "mainappsrc/models/sysml/sysml_spec.py",
+      "loc": 71,
+      "functions": [
+        {
+          "name": "load_sysml_properties",
+          "lineno": 6,
+          "complexity": 6
+        }
+      ]
     }
   ]
 }
