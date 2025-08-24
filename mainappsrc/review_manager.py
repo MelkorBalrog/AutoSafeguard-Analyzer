@@ -678,3 +678,33 @@ class ReviewManager:
                     target_map[slabel] = ("fmea_field", node.unique_id, key)
                     targets.append(slabel)
         return targets, target_map
+
+    def calculate_diff_nodes(self, old_data):
+        old_map = self.node_map_from_data(old_data["top_events"])
+        new_map = self.node_map_from_data([e.to_dict() for e in self.app.top_events])
+        changed = []
+        for nid, nd in new_map.items():
+            if nid not in old_map or json.dumps(old_map.get(nid, {}), sort_keys=True) != json.dumps(nd, sort_keys=True):
+                changed.append(nid)
+        return changed
+
+    def calculate_diff_between(self, data1, data2):
+        map1 = self.node_map_from_data(data1["top_events"])
+        map2 = self.node_map_from_data(data2["top_events"])
+        changed = []
+        for nid, nd in map2.items():
+            if nid not in map1 or json.dumps(map1.get(nid, {}), sort_keys=True) != json.dumps(nd, sort_keys=True):
+                changed.append(nid)
+        return changed
+
+    def node_map_from_data(self, top_events):
+        result = {}
+
+        def visit(d):
+            result[d["unique_id"]] = d
+            for ch in d.get("children", []):
+                visit(ch)
+
+        for t in top_events:
+            visit(t)
+        return result
