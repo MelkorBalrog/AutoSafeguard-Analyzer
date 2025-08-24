@@ -479,6 +479,7 @@ try:  # pragma: no cover - support direct module import
     from .internal_block_diagram_subapp import InternalBlockDiagramSubApp
     from .control_flow_diagram_subapp import ControlFlowDiagramSubApp
     from .fta_subapp import FTASubApp
+    from .project_editor_subapp import ProjectEditorSubApp
     from .risk_assessment_subapp import RiskAssessmentSubApp
     from .reliability_subapp import ReliabilitySubApp
     from .version import VERSION
@@ -493,6 +494,7 @@ except Exception:  # pragma: no cover
     from internal_block_diagram_subapp import InternalBlockDiagramSubApp
     from control_flow_diagram_subapp import ControlFlowDiagramSubApp
     from fta_subapp import FTASubApp
+    from project_editor_subapp import ProjectEditorSubApp
     from risk_assessment_subapp import RiskAssessmentSubApp
     from reliability_subapp import ReliabilitySubApp
     from version import VERSION
@@ -643,6 +645,7 @@ class AutoMLApp:
         self._init_nav_button_style()
         self.tree_app = TreeSubApp()
         self.fta_app = FTASubApp()
+        self.project_editor_app = ProjectEditorSubApp()
         self.risk_app = RiskAssessmentSubApp()
         # Risk assessment helpers also provide FMEDA metric calculations
         # so expose them through a dedicated ``fmeda`` attribute for clarity.
@@ -1694,27 +1697,7 @@ class AutoMLApp:
         self.update_views()
 
     def add_top_level_event(self):
-        new_event = FaultTreeNode("", "TOP EVENT")
-        new_event.x, new_event.y = 300, 200
-        new_event.is_top_event = True
-        diag_mode = getattr(self, "diagram_mode", "FTA")
-        if diag_mode == "CTA":
-            self.cta_events.append(new_event)
-            self.cta_root_node = new_event
-            wp = "CTA"
-        elif diag_mode == "PAA":
-            self.paa_events.append(new_event)
-            self.paa_root_node = new_event
-            wp = "Prototype Assurance Analysis"
-        else:
-            self.top_events.append(new_event)
-            self.fta_root_node = new_event
-            wp = "FTA"
-        self.root_node = new_event
-        if hasattr(self, "safety_mgmt_toolbox"):
-            self.safety_mgmt_toolbox.register_created_work_product(wp, new_event.user_name)
-        self._update_shared_product_goals()
-        self.update_views()
+        return self.fta_app.add_top_level_event(self)
 
     def _build_probability_frame(
         self,
@@ -1725,32 +1708,15 @@ class AutoMLApp:
         row: int,
         dialog_font: tkFont.Font,
     ) -> dict:
-        """Create a labelled frame of probability entries.
-
-        Returns a mapping of level -> ``StringVar`` for the entered values.
-        """
-        try:
-            frame = ttk.LabelFrame(parent, text=title, style="Toolbox.TLabelframe")
-        except TypeError:
-            frame = ttk.LabelFrame(parent, text=title)
-        frame.grid(row=row, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
-
-        vars_dict: dict[int, tk.StringVar] = {}
-        for idx, lvl in enumerate(levels):
-            ttk.Label(frame, text=f"{lvl}:", font=dialog_font).grid(
-                row=0, column=idx * 2, padx=2, pady=2
-            )
-            var = tk.StringVar(value=str(values.get(lvl, 0.0)))
-            ttk.Entry(
-                frame,
-                textvariable=var,
-                width=8,
-                font=dialog_font,
-                validate="key",
-                validatecommand=(parent.register(self.validate_float), "%P"),
-            ).grid(row=0, column=idx * 2 + 1, padx=2, pady=2)
-            vars_dict[lvl] = var
-        return vars_dict
+        return self.project_editor_app.build_probability_frame(
+            self,
+            parent,
+            title,
+            levels,
+            values,
+            row,
+            dialog_font,
+        )
 
     def _apply_project_properties(
         self,
@@ -1762,129 +1728,19 @@ class AutoMLApp:
         smt,
         freeze: bool,
     ) -> None:
-        """Persist updated project properties and refresh probability tables."""
-        self.project_properties["pdf_report_name"] = name
-        self.project_properties["pdf_detailed_formulas"] = detailed
-        self.project_properties["exposure_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-        }
-        self.project_properties["controllability_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-        }
-        self.project_properties["severity_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-        }
-        update_probability_tables(
-            self.project_properties["exposure_probabilities"],
-            self.project_properties["controllability_probabilities"],
-            self.project_properties["severity_probabilities"],
+        return self.project_editor_app.apply_project_properties(
+            self,
+            name,
+            detailed,
+            exp_vars,
+            ctrl_vars,
+            sev_vars,
+            smt,
+            freeze,
         )
-        if smt:
-            self.governance_manager.freeze_governance_diagrams(freeze)
 
     def edit_project_properties(self):
-        prop_win = tk.Toplevel(self.root)
-        prop_win.title("Project Properties")
-        prop_win.resizable(False, False)
-        dialog_font = tkFont.Font(family="Arial", size=10)
-
-        ttk.Label(prop_win, text="PDF Report Name:", font=dialog_font).grid(
-            row=0, column=0, padx=10, pady=10, sticky="w"
-        )
-        pdf_entry = ttk.Entry(prop_win, width=40, font=dialog_font)
-        pdf_entry.insert(0, self.project_properties.get("pdf_report_name", "AutoML-Analyzer PDF Report"))
-        pdf_entry.grid(row=0, column=1, padx=10, pady=10)
-
-        # Checkbox to choose between detailed formulas or score results only.
-        var_detailed = tk.BooleanVar(
-            value=self.project_properties.get("pdf_detailed_formulas", True)
-        )
-        chk = ttk.Checkbutton(
-            prop_win,
-            text="Show Detailed Formulas in PDF Report",
-            variable=var_detailed,
-        )
-        chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-
-        smt = getattr(self, "safety_mgmt_toolbox", None)
-        all_frozen = False
-        if smt:
-            diagrams = smt.list_diagrams()
-            all_frozen = diagrams and all(smt.diagram_frozen(d) for d in diagrams)
-        var_freeze = tk.BooleanVar(
-            value=self.project_properties.get("freeze_governance_diagrams", bool(all_frozen))
-        )
-        ttk.Checkbutton(
-            prop_win,
-            text="Freeze Governance Diagrams",
-            variable=var_freeze,
-        ).grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-
-        exp_vars = self._build_probability_frame(
-            prop_win,
-            "Exposure Probabilities P(E|HB)",
-            range(1, 5),
-            self.project_properties.get("exposure_probabilities", {}),
-            3,
-            dialog_font,
-        )
-        ctrl_vars = self._build_probability_frame(
-            prop_win,
-            "Controllability Probabilities P(C|E)",
-            range(1, 4),
-            self.project_properties.get("controllability_probabilities", {}),
-            4,
-            dialog_font,
-        )
-        sev_vars = self._build_probability_frame(
-            prop_win,
-            "Severity Probabilities P(S|C)",
-            range(1, 4),
-            self.project_properties.get("severity_probabilities", {}),
-            5,
-            dialog_font,
-        )
-
-        def save_props() -> None:
-            new_name = pdf_entry.get().strip()
-            if not new_name:
-                messagebox.showwarning(
-                    "Project Properties", "PDF Report Name cannot be empty."
-                )
-                return
-
-            self.project_properties["pdf_report_name"] = new_name
-            self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
-            self.project_properties["exposure_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-            }
-            self.project_properties["controllability_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-            }
-            self.project_properties["severity_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-            }
-            self.project_properties["freeze_governance_diagrams"] = var_freeze.get()
-            update_probability_tables(
-                self.project_properties["exposure_probabilities"],
-                self.project_properties["controllability_probabilities"],
-                self.project_properties["severity_probabilities"],
-            )
-            if smt:
-                self.governance_manager.freeze_governance_diagrams(var_freeze.get())
-            messagebox.showinfo(
-                "Project Properties", "Project properties updated."
-            )
-            prop_win.destroy()
-
-        ttk.Button(prop_win, text="Save", command=save_props, width=10).grid(
-            row=6, column=0, columnspan=2, pady=10
-        )
-        prop_win.update_idletasks()
-        prop_win.minsize(prop_win.winfo_width(), prop_win.winfo_height())
-        prop_win.transient(self.root)
-        prop_win.grab_set()
-        self.root.wait_window(prop_win)
+        return self.project_editor_app.edit_project_properties(self)
 
     def create_diagram_image(self):
         self.canvas.update()

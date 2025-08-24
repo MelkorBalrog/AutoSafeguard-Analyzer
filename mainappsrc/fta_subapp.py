@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from config.automl_constants import dynamic_recommendations
 from gui import messagebox
+try:  # pragma: no cover - support direct module import
+    from .models.fta.fault_tree_node import FaultTreeNode
+except Exception:  # pragma: no cover
+    from models.fta.fault_tree_node import FaultTreeNode
 
 
 class FTASubApp:
@@ -74,3 +78,27 @@ class FTASubApp:
     def get_top_level_nodes(self, app):
         all_nodes = app.get_all_nodes()
         return [node for node in all_nodes if not node.parents]
+
+    def add_top_level_event(self, app):
+        """Create and register a new top-level event for the active diagram."""
+        new_event = FaultTreeNode("", "TOP EVENT")
+        new_event.x, new_event.y = 300, 200
+        new_event.is_top_event = True
+        diag_mode = getattr(app, "diagram_mode", "FTA")
+        if diag_mode == "CTA":
+            app.cta_events.append(new_event)
+            app.cta_root_node = new_event
+            wp = "CTA"
+        elif diag_mode == "PAA":
+            app.paa_events.append(new_event)
+            app.paa_root_node = new_event
+            wp = "Prototype Assurance Analysis"
+        else:
+            app.top_events.append(new_event)
+            app.fta_root_node = new_event
+            wp = "FTA"
+        app.root_node = new_event
+        if hasattr(app, "safety_mgmt_toolbox"):
+            app.safety_mgmt_toolbox.register_created_work_product(wp, new_event.user_name)
+        app._update_shared_product_goals()
+        app.update_views()
