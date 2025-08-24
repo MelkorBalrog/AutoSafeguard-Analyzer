@@ -1,4 +1,4 @@
-version: 0.2.8
+version: 0.2.9
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1638,6 +1638,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.9 - Display splash screen during dependency checks and startup.
 - 0.2.8 - Renamed core module to `automl_core.py` and launcher to `automl.py`.
 - 0.2.7 - Launcher now shows the splash screen during application load.
 - 0.2.6 - Introduced WindowControllers class for centralized window management.
