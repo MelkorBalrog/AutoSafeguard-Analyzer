@@ -242,18 +242,7 @@ from gui import messagebox, logger, add_treeview_scrollbars
 from gui.button_utils import enable_listbox_hover_highlight
 from gui.tooltip import ToolTip
 from gui.style_manager import StyleManager
-from gui.review_toolbox import (
-    ReviewToolbox,
-    ReviewData,
-    ReviewParticipant,
-    ReviewComment,
-    ParticipantDialog,
-    EmailConfigDialog,
-    ReviewScopeDialog,
-    UserSelectDialog as ReviewUserSelectDialog,
-    ReviewDocumentDialog,
-    VersionCompareDialog,
-)
+from gui.review_toolbox import ReviewData, ReviewParticipant, ReviewComment
 from functools import partial
 # Governance helper class
 from mainappsrc.governance_manager import GovernanceManager
@@ -1781,7 +1770,27 @@ class AutoMLApp:
         self.update_views()
 
     def add_top_level_event(self):
-        return self.fta_app.add_top_level_event(self)
+        new_event = FaultTreeNode("", "TOP EVENT")
+        new_event.x, new_event.y = 300, 200
+        new_event.is_top_event = True
+        diag_mode = getattr(self, "diagram_mode", "FTA")
+        if diag_mode == "CTA":
+            self.cta_events.append(new_event)
+            self.cta_root_node = new_event
+            wp = "CTA"
+        elif diag_mode == "PAA":
+            self.paa_events.append(new_event)
+            self.paa_root_node = new_event
+            wp = "Prototype Assurance Analysis"
+        else:
+            self.top_events.append(new_event)
+            self.fta_root_node = new_event
+            wp = "FTA"
+        self.root_node = new_event
+        if hasattr(self, "safety_mgmt_toolbox"):
+            self.safety_mgmt_toolbox.register_created_work_product(wp, new_event.user_name)
+        self._update_shared_product_goals()
+        self.update_views()
 
     def _build_probability_frame(
         self,
@@ -1792,15 +1801,32 @@ class AutoMLApp:
         row: int,
         dialog_font: tkFont.Font,
     ) -> dict:
-        return self.project_editor_app.build_probability_frame(
-            self,
-            parent,
-            title,
-            levels,
-            values,
-            row,
-            dialog_font,
-        )
+        """Create a labelled frame of probability entries.
+
+        Returns a mapping of level -> ``StringVar`` for the entered values.
+        """
+        try:
+            frame = ttk.LabelFrame(parent, text=title, style="Toolbox.TLabelframe")
+        except TypeError:
+            frame = ttk.LabelFrame(parent, text=title)
+        frame.grid(row=row, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+
+        vars_dict: dict[int, tk.StringVar] = {}
+        for idx, lvl in enumerate(levels):
+            ttk.Label(frame, text=f"{lvl}:", font=dialog_font).grid(
+                row=0, column=idx * 2, padx=2, pady=2
+            )
+            var = tk.StringVar(value=str(values.get(lvl, 0.0)))
+            ttk.Entry(
+                frame,
+                textvariable=var,
+                width=8,
+                font=dialog_font,
+                validate="key",
+                validatecommand=(parent.register(self.validate_float), "%P"),
+            ).grid(row=0, column=idx * 2 + 1, padx=2, pady=2)
+            vars_dict[lvl] = var
+        return vars_dict
 
     def _apply_project_properties(
         self,
@@ -1812,19 +1838,129 @@ class AutoMLApp:
         smt,
         freeze: bool,
     ) -> None:
-        return self.project_editor_app.apply_project_properties(
-            self,
-            name,
-            detailed,
-            exp_vars,
-            ctrl_vars,
-            sev_vars,
-            smt,
-            freeze,
+        """Persist updated project properties and refresh probability tables."""
+        self.project_properties["pdf_report_name"] = name
+        self.project_properties["pdf_detailed_formulas"] = detailed
+        self.project_properties["exposure_probabilities"] = {
+            lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
+        }
+        self.project_properties["controllability_probabilities"] = {
+            lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
+        }
+        self.project_properties["severity_probabilities"] = {
+            lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
+        }
+        update_probability_tables(
+            self.project_properties["exposure_probabilities"],
+            self.project_properties["controllability_probabilities"],
+            self.project_properties["severity_probabilities"],
         )
+        if smt:
+            self.governance_manager.freeze_governance_diagrams(freeze)
 
     def edit_project_properties(self):
-        return self.project_editor_app.edit_project_properties(self)
+        prop_win = tk.Toplevel(self.root)
+        prop_win.title("Project Properties")
+        prop_win.resizable(False, False)
+        dialog_font = tkFont.Font(family="Arial", size=10)
+
+        ttk.Label(prop_win, text="PDF Report Name:", font=dialog_font).grid(
+            row=0, column=0, padx=10, pady=10, sticky="w"
+        )
+        pdf_entry = ttk.Entry(prop_win, width=40, font=dialog_font)
+        pdf_entry.insert(0, self.project_properties.get("pdf_report_name", "AutoML-Analyzer PDF Report"))
+        pdf_entry.grid(row=0, column=1, padx=10, pady=10)
+
+        # Checkbox to choose between detailed formulas or score results only.
+        var_detailed = tk.BooleanVar(
+            value=self.project_properties.get("pdf_detailed_formulas", True)
+        )
+        chk = ttk.Checkbutton(
+            prop_win,
+            text="Show Detailed Formulas in PDF Report",
+            variable=var_detailed,
+        )
+        chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
+
+        smt = getattr(self, "safety_mgmt_toolbox", None)
+        all_frozen = False
+        if smt:
+            diagrams = smt.list_diagrams()
+            all_frozen = diagrams and all(smt.diagram_frozen(d) for d in diagrams)
+        var_freeze = tk.BooleanVar(
+            value=self.project_properties.get("freeze_governance_diagrams", bool(all_frozen))
+        )
+        ttk.Checkbutton(
+            prop_win,
+            text="Freeze Governance Diagrams",
+            variable=var_freeze,
+        ).grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
+
+        exp_vars = self._build_probability_frame(
+            prop_win,
+            "Exposure Probabilities P(E|HB)",
+            range(1, 5),
+            self.project_properties.get("exposure_probabilities", {}),
+            3,
+            dialog_font,
+        )
+        ctrl_vars = self._build_probability_frame(
+            prop_win,
+            "Controllability Probabilities P(C|E)",
+            range(1, 4),
+            self.project_properties.get("controllability_probabilities", {}),
+            4,
+            dialog_font,
+        )
+        sev_vars = self._build_probability_frame(
+            prop_win,
+            "Severity Probabilities P(S|C)",
+            range(1, 4),
+            self.project_properties.get("severity_probabilities", {}),
+            5,
+            dialog_font,
+        )
+
+        def save_props() -> None:
+            new_name = pdf_entry.get().strip()
+            if not new_name:
+                messagebox.showwarning(
+                    "Project Properties", "PDF Report Name cannot be empty."
+                )
+                return
+
+            self.project_properties["pdf_report_name"] = new_name
+            self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
+            self.project_properties["exposure_probabilities"] = {
+                lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
+            }
+            self.project_properties["controllability_probabilities"] = {
+                lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
+            }
+            self.project_properties["severity_probabilities"] = {
+                lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
+            }
+            self.project_properties["freeze_governance_diagrams"] = var_freeze.get()
+            update_probability_tables(
+                self.project_properties["exposure_probabilities"],
+                self.project_properties["controllability_probabilities"],
+                self.project_properties["severity_probabilities"],
+            )
+            if smt:
+                self.governance_manager.freeze_governance_diagrams(var_freeze.get())
+            messagebox.showinfo(
+                "Project Properties", "Project properties updated."
+            )
+            prop_win.destroy()
+
+        ttk.Button(prop_win, text="Save", command=save_props, width=10).grid(
+            row=6, column=0, columnspan=2, pady=10
+        )
+        prop_win.update_idletasks()
+        prop_win.minsize(prop_win.winfo_width(), prop_win.winfo_height())
+        prop_win.transient(self.root)
+        prop_win.grab_set()
+        self.root.wait_window(prop_win)
 
     def create_diagram_image(self):
         self.canvas.update()
@@ -1840,1297 +1976,86 @@ class AutoMLApp:
         return img.convert("RGB")
 
     def get_page_nodes(self, node):
-        return self.diagram_export_app.get_page_nodes(node)
+        result = []
+        if node.is_page and node != self.root_node:
+            result.append(node)
+        for child in node.children:
+            result.extend(self.get_page_nodes(child))
+        return result
 
     def capture_page_diagram(self, page_node):
-        return self.diagram_export_app.capture_page_diagram(page_node)
-
-    def capture_gsn_diagram(self, diagram):
-        return self.diagram_export_app.capture_gsn_diagram(diagram)
-
-    def capture_sysml_diagram(self, diagram):
-        return self.diagram_export_app.capture_sysml_diagram(diagram)
-
-    def capture_cbn_diagram(self, doc):
-        return self.diagram_export_app.capture_cbn_diagram(doc)
-
-    def capture_diff_diagram(self, top_event):
-        return self.diagram_export_app.capture_diff_diagram(top_event)
-
-
-    def build_base_events_table_html(self,root_node):
         """
-        Traverse the fault tree starting from root_node and collect all base events (leaf nodes).
-        Return an HTML string representing a table with columns:
-        Node ID, Name, Score, Description, and Rationale.
-        
-        The table header cells are styled with an orange background (#FFCC99),
-        and multiline descriptions/rationales are preserved by converting newlines to <br>.
+        Create an off-screen Toplevel with a Canvas, draw the page diagram (using PageDiagram),
+        and return a PIL Image of the diagram.
         """
-        base_events = []
-        
-        # Collect all leaf nodes (base events).
-        def traverse(n):
-            if not n.children:
-                base_events.append(n)
-            else:
-                for child in n.children:
-                    traverse(child)
-        traverse(root_node)
-        
-        # Build the HTML table.
-        html_lines = []
-        html_lines.append('<table style="border-collapse: collapse; width: 100%;">')
-        
-        # Table header row with orange background.
-        html_lines.append(
-            '  <thead>'
-            '    <tr style="background-color: #FFCC99;">'
-            '      <th style="border: 1px solid #ccc; padding: 8px;">Node ID</th>'
-            '      <th style="border: 1px solid #ccc; padding: 8px;">Name</th>'
-            '      <th style="border: 1px solid #ccc; padding: 8px;">Score</th>'
-            '      <th style="border: 1px solid #ccc; padding: 8px;">Description</th>'
-            '      <th style="border: 1px solid #ccc; padding: 8px;">Rationale</th>'
-            '    </tr>'
-            '  </thead>'
-        )
-        html_lines.append('  <tbody>')
-        
-        for node in base_events:
-            node_id = str(node.unique_id)
-            name = node.name or f"Node {node.unique_id}"
-            score = f"{node.quant_value:.2f}" if node.quant_value is not None else "N/A"
-            
-            # Convert newlines to <br> for multiline display.
-            desc = node.description.strip().replace('\n', '<br>') if node.description else "N/A"
-            rat = node.rationale.strip().replace('\n', '<br>') if node.rationale else "N/A"
-            
-            row_html = (
-                '    <tr>'
-                f'      <td style="border: 1px solid #ccc; padding: 8px; vertical-align: top;">{node_id}</td>'
-                f'      <td style="border: 1px solid #ccc; padding: 8px; vertical-align: top;">{name}</td>'
-                f'      <td style="border: 1px solid #ccc; padding: 8px; vertical-align: top;">{score}</td>'
-                f'      <td style="border: 1px solid #ccc; padding: 8px; vertical-align: top;">{desc}</td>'
-                f'      <td style="border: 1px solid #ccc; padding: 8px; vertical-align: top;">{rat}</td>'
-                '    </tr>'
-            )
-            html_lines.append(row_html)
-        
-        html_lines.append('  </tbody>')
-        html_lines.append('</table>')
-        
-        return "\n".join(html_lines)
+        from io import BytesIO
+        from PIL import Image
 
-    
-    def build_dynamic_recommendations_table(events, app):
-        """
-        (Optional) If you still want to have a compact table of per-event recommendations,
-        this function builds a multiline LongTable with columns:
-        [Event Name, Prototype Assurance Level (PAL), Severity, Controllability, Description, Rationale, Dynamic Recommendations].
-        (Not used in the final report if you prefer only the consolidated argumentation.)
-        """
-        style_sheet = getSampleStyleSheet()
-        header_style = ParagraphStyle(
-            name="CompactHeader",
-            parent=style_sheet["BodyText"],
-            fontSize=4,
-            leading=5,
-            wordWrap='CJK',
-            alignment=1
-        )
-        body_style = ParagraphStyle(
-            name="CompactBody",
-            parent=style_sheet["BodyText"],
-            fontSize=5,
-            leading=6,
-            wordWrap='CJK'
-        )
-        
-        data = [[
-            Paragraph("<b>Event Name</b>", header_style),
-            Paragraph("<b>Prototype Assurance Level (PAL)</b>", header_style),
-            Paragraph("<b>Severity</b>", header_style),
-            Paragraph("<b>Controllability</b>", header_style),
-            Paragraph("<b>Description</b>", header_style),
-            Paragraph("<b>Rationale</b>", header_style),
-            Paragraph("<b>Recommendations</b>", header_style),
-        ]]
-        
-        for event in events:
-            event_name = event.name if event.name else f"Node {event.unique_id}"
-            if event.quant_value is not None:
-                disc_level = AutoML_Helper.discretize_level(event.quant_value)
-                assurance_str = app.assurance_level_text(disc_level)
-            else:
-                assurance_str = "N/A"
-            severity_str = str(event.severity) if event.severity is not None else "N/A"
-            controllability_str = str(event.controllability) if event.controllability is not None else "N/A"
-            desc_text = (event.description or "N/A").strip().replace("\n", "<br/>")
-            rat_text = (event.rationale or "N/A").strip().replace("\n", "<br/>")
-            rec_text = app.generate_argumentation_report(event)
-            if isinstance(rec_text, list):
-                rec_text = "\n".join(str(x) for x in rec_text)
-            rec_text = rec_text.strip().replace("\n", "<br/>")
-            data.append([
-                Paragraph(event_name, body_style),
-                Paragraph(assurance_str, body_style),
-                Paragraph(severity_str, body_style),
-                Paragraph(controllability_str, body_style),
-                Paragraph(desc_text, body_style),
-                Paragraph(rat_text, body_style),
-                Paragraph(rec_text, body_style),
-            ])
-        
-        col_widths = [100, 60, 40, 40, 150, 150, 200]
-        table = LongTable(data, colWidths=col_widths, repeatRows=1, splitByRow=1)
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.orange),
-            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-            ('ROWHEIGHT', (0,0), (-1,0), 12),
-            ('GRID', (0,0), (-1,-1), 0.25, colors.grey),
-            ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('FONTSIZE', (0,1), (-1,-1), 5),
-            ('LEFTPADDING', (0,0), (-1,-1), 1),
-            ('RIGHTPADDING', (0,0), (-1,-1), 1),
-            ('TOPPADDING', (0,0), (-1,-1), 1),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 1),
-            ('SPLITTABLE', (0,0), (-1,-1), True),
-        ]))
-        return table
-
-
-    def _generate_pdf_report(self):
-        """Generate a PDF report based on the configurable template."""
-
-        report_title = self.project_properties.get(
-            "pdf_report_name", "AutoML-Analyzer PDF Report"
-        )
-        path = filedialog.asksaveasfilename(
-            defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")]
-        )
-        if not path:
-            return
-
-        template_path = filedialog.askopenfilename(
-            title="Select Report Template",
-            defaultextension=".json",
-            filetypes=[("JSON files", "*.json")],
-            initialdir=_REPORT_TEMPLATE_PATH.parent,
-            initialfile=_REPORT_TEMPLATE_PATH.name,
-        )
-        if not template_path:
-            return
-
-        try:
-            from reportlab.lib.pagesizes import letter, landscape
-            from reportlab.lib.units import inch
-            from reportlab.platypus import (
-                Paragraph,
-                Spacer,
-                SimpleDocTemplate,
-                Image as RLImage,
-                Table,
-                TableStyle,
-                PageBreak,
-            )
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-            from reportlab.lib import colors
-            from io import BytesIO
-            from PIL import Image, ImageDraw
-        except Exception:
-            messagebox.showerror(
-                "Report",
-                "Reportlab and Pillow packages are required to generate PDF reports.",
-            )
-            return
-
-        try:
-            template = load_report_template(template_path)
-        except Exception as exc:
-            messagebox.showerror("Report", f"Failed to load report template\n{exc}")
-            return
-
-        doc = SimpleDocTemplate(
-            path,
-            pagesize=landscape(letter),
-            leftMargin=0.8 * inch,
-            rightMargin=0.8 * inch,
-            topMargin=0.5 * inch,
-            bottomMargin=0.5 * inch,
-        )
-        styles = getSampleStyleSheet()
-        pdf_styles = styles
-        preformatted_style = ParagraphStyle(
-            name="Preformatted",
-            parent=pdf_styles["Normal"],
-            fontName="Courier",
-            fontSize=8,
-            leading=10,
-        )
-
-        def scale_image(img, max_width=500, max_height=300):
-            w, h = img.size
-            scale = min(max_width / w, max_height / h, 1)
-            return w * scale, h * scale
-
-        story = [Paragraph(report_title, styles["Title"]), Spacer(1, 12)]
-
-        def _element_base_matrix():
-            header_style = ParagraphStyle(
-                name="SafetyGoalsHeader",
-                parent=pdf_styles["Normal"],
-                fontSize=10,
-                leading=12,
-                alignment=1,
-            )
-            data = [
-                [
-                    Paragraph("<b>Robustness \\ Confidence</b>", header_style),
-                    Paragraph("<b>1 (Level 1)</b>", header_style),
-                    Paragraph("<b>2 (Level 2)</b>", header_style),
-                    Paragraph("<b>3 (Level 3)</b>", header_style),
-                    Paragraph("<b>4 (Level 4)</b>", header_style),
-                    Paragraph("<b>5 (Level 5)</b>", header_style),
-                ],
-                [
-                    Paragraph("<b>1 (Level 1)</b>", header_style),
-                    Paragraph("PAL5", pdf_styles["Normal"]),
-                    Paragraph("PAL5", pdf_styles["Normal"]),
-                    Paragraph("PAL4", pdf_styles["Normal"]),
-                    Paragraph("PAL4", pdf_styles["Normal"]),
-                    Paragraph("PAL4", pdf_styles["Normal"]),
-                ],
-                [
-                    Paragraph("<b>2 (Level 2)</b>", header_style),
-                    Paragraph("PAL5", pdf_styles["Normal"]),
-                    Paragraph("PAL5", pdf_styles["Normal"]),
-                    Paragraph("PAL4", pdf_styles["Normal"]),
-                    Paragraph("PAL3", pdf_styles["Normal"]),
-                    Paragraph("PAL3", pdf_styles["Normal"]),
-                ],
-                [
-                    Paragraph("<b>3 (Level 3)</b>", header_style),
-                    Paragraph("PAL4", pdf_styles["Normal"]),
-                    Paragraph("PAL4", pdf_styles["Normal"]),
-                    Paragraph("PAL3", pdf_styles["Normal"]),
-                    Paragraph("PAL3", pdf_styles["Normal"]),
-                    Paragraph("PAL1", pdf_styles["Normal"]),
-                ],
-                [
-                    Paragraph("<b>4 (Level 4)</b>", header_style),
-                    Paragraph("PAL4", pdf_styles["Normal"]),
-                    Paragraph("PAL3", pdf_styles["Normal"]),
-                    Paragraph("PAL3", pdf_styles["Normal"]),
-                    Paragraph("PAL1", pdf_styles["Normal"]),
-                    Paragraph("PAL1", pdf_styles["Normal"]),
-                ],
-                [
-                    Paragraph("<b>5 (Level 5)</b>", header_style),
-                    Paragraph("PAL4", pdf_styles["Normal"]),
-                    Paragraph("PAL3", pdf_styles["Normal"]),
-                    Paragraph("PAL1", pdf_styles["Normal"]),
-                    Paragraph("PAL1", pdf_styles["Normal"]),
-                    Paragraph("PAL1", pdf_styles["Normal"]),
-                ],
-            ]
-            table = Table(data, colWidths=[80, 70, 70, 70, 70, 70])
-            table.setStyle(
-                TableStyle(
-                    [
-                        ("BACKGROUND", (0, 0), (-1, 0), colors.lightblue),
-                        ("BACKGROUND", (0, 0), (0, -1), colors.lightblue),
-                        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                        ("FONTSIZE", (0, 0), (-1, -1), 8),
-                    ]
-                )
-            )
-            return [
-                Paragraph("Table 1: Base Assurance Inversion Matrix", pdf_styles["Heading3"]),
-                Spacer(1, 6),
-                table,
-                Spacer(1, 12),
-            ]
-
-        def _element_discretization():
-            header_style = ParagraphStyle(
-                name="DiscretizationHeader",
-                parent=pdf_styles["Normal"],
-                fontSize=10,
-                leading=12,
-                alignment=1,
-            )
-            data = [
-                [
-                    Paragraph("<b>Continuous Value (Rounded)</b>", header_style),
-                    Paragraph("<b>Prototype Assurance Level (PAL)</b>", header_style),
-                ],
-                [Paragraph("< 1.5", header_style), Paragraph("Level 1 (PAL1)", pdf_styles["Normal"])],
-                [Paragraph("1.5 – < 2.5", header_style), Paragraph("Level 2 (PAL2)", pdf_styles["Normal"])],
-                [Paragraph("2.5 – < 3.5", header_style), Paragraph("Level 3 (PAL3)", pdf_styles["Normal"])],
-                [Paragraph("3.5 – < 4.5", header_style), Paragraph("Level 4 (PAL4)", pdf_styles["Normal"])],
-                [Paragraph("≥ 4.5", header_style), Paragraph("Level 5 (PAL5)", pdf_styles["Normal"])],
-            ]
-            table = Table(data, colWidths=[150, 200])
-            table.setStyle(
-                TableStyle(
-                    [
-                        ("BACKGROUND", (0, 0), (-1, 0), colors.lightblue),
-                        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                        ("FONTSIZE", (0, 0), (-1, -1), 8),
-                    ]
-                )
-            )
-            return [
-                Paragraph("Table 2: Output Discretization Mapping", pdf_styles["Heading3"]),
-                Spacer(1, 6),
-                table,
-                Spacer(1, 12),
-            ]
-
-        def _element_hazop():
-            items: list = []
-            if self.hazop_docs:
-                items.append(PageBreak())
-                items.append(Paragraph("HAZOP Analyses", pdf_styles["Heading2"]))
-                items.append(Spacer(1, 12))
-                for hz_doc in self.hazop_docs:
-                    items.append(Paragraph(hz_doc.name, pdf_styles["Heading3"]))
-                    data = [["Function", "Malfunction", "Hazard", "Safety"]]
-                    for e in hz_doc.entries:
-                        data.append([e.function, e.malfunction, e.hazard, "Yes" if e.safety else "No"])
-                    table = Table(data, repeatRows=1)
-                    table.setStyle(
-                        TableStyle(
-                            [
-                                ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                            ]
-                        )
-                    )
-                    items.append(table)
-                    items.append(Spacer(1, 12))
-            return items
-
-        def _element_fi2tc():
-            items: list = []
-            if self.fi2tc_docs:
-                items.append(PageBreak())
-                items.append(Paragraph("FI2TC Analyses", pdf_styles["Heading2"]))
-                items.append(Spacer(1, 12))
-                for fi_doc in self.fi2tc_docs:
-                    items.append(Paragraph(fi_doc.name, pdf_styles["Heading3"]))
-                    data = [["System Function", "Functional Insufficiencies", "Triggering Conditions", "Severity"]]
-                    for row in fi_doc.entries:
-                        data.append([
-                            row.get("system_function", ""),
-                            row.get("functional_insufficiencies", ""),
-                            row.get("triggering_conditions", ""),
-                            row.get("severity", ""),
-                        ])
-                    table = Table(data, repeatRows=1)
-                    table.setStyle(
-                        TableStyle(
-                            [
-                                ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                            ]
-                        )
-                    )
-                    items.append(table)
-                    items.append(Spacer(1, 12))
-            return items
-
-        def _element_tc2fi():
-            items: list = []
-            if self.tc2fi_docs:
-                items.append(PageBreak())
-                items.append(Paragraph("TC2FI Analyses", pdf_styles["Heading2"]))
-                items.append(Spacer(1, 12))
-                for tc_doc in self.tc2fi_docs:
-                    items.append(Paragraph(tc_doc.name, pdf_styles["Heading3"]))
-                    data = [["Known Use Case", "Functional Insufficiencies", "Triggering Conditions", "Severity"]]
-                    for row in tc_doc.entries:
-                        data.append([
-                            row.get("known_use_case", ""),
-                            row.get("functional_insufficiencies", ""),
-                            row.get("triggering_conditions", ""),
-                            row.get("severity", ""),
-                        ])
-                    table = Table(data, repeatRows=1)
-                    table.setStyle(
-                        TableStyle(
-                            [
-                                ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                            ]
-                        )
-                    )
-                    items.append(table)
-                    items.append(Spacer(1, 12))
-            return items
-
-        def _element_risk():
-            items: list = []
-            if self.hara_docs:
-                items.append(PageBreak())
-                items.append(Paragraph("Risk Assessment", pdf_styles["Heading2"]))
-                items.append(Spacer(1, 12))
-                for hara_doc in self.hara_docs:
-                    items.append(Paragraph(hara_doc.name, pdf_styles["Heading3"]))
-                    data = [[
-                        "Malfunction",
-                        "Hazard",
-                        "Severity",
-                        "Exposure",
-                        "Controllability",
-                        "ASIL",
-                        "Safety Goal",
-                    ]]
-                    for e in hara_doc.entries:
-                        data.append([
-                            e.malfunction,
-                            e.hazard,
-                            str(e.severity),
-                            str(e.exposure),
-                            str(e.controllability),
-                            e.asil,
-                            e.safety_goal,
-                        ])
-                    table = Table(data, repeatRows=1)
-                    table.setStyle(
-                        TableStyle(
-                            [
-                                ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                            ]
-                        )
-                    )
-                    items.append(table)
-                    items.append(Spacer(1, 12))
-            return items
-
-        def _element_cbn():
-            items: list = []
-            if getattr(self, "cbn_docs", []):
-                items.append(PageBreak())
-                items.append(Paragraph("Causal Bayesian Network Analyses", pdf_styles["Heading2"]))
-                items.append(Spacer(1, 12))
-                for cbn_doc in self.cbn_docs:
-                    items.append(Paragraph(cbn_doc.name, pdf_styles["Heading3"]))
-                    img = self.capture_cbn_diagram(cbn_doc)
-                    if img is not None:
-                        buf = BytesIO()
-                        img.save(buf, format="PNG")
-                        buf.seek(0)
-                        desired_width, desired_height = scale_image(img)
-                        rl_img = RLImage(buf, width=desired_width, height=desired_height)
-                        items.append(rl_img)
-                        items.append(Spacer(1, 12))
-                    network = cbn_doc.network
-                    for var in network.nodes:
-                        items.append(Paragraph(var, pdf_styles["Heading4"]))
-                        data = [["Combination", "P(True)", "P(Parents)", "P(All)"]]
-                        parents = network.parents.get(var, [])
-                        for combo, p_true, combo_prob, joint_prob in network.cpd_rows(var):
-                            combo_str = (
-                                ", ".join(f"{p}={v}" for p, v in zip(parents, combo))
-                                if parents
-                                else "(prior)"
-                            )
-                            data.append([
-                                combo_str,
-                                f"{p_true:.3f}",
-                                f"{combo_prob:.3f}",
-                                f"{joint_prob:.3f}",
-                            ])
-                        table = Table(data, repeatRows=1)
-                        table.setStyle(
-                            TableStyle(
-                                [
-                                    ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                                    ("FONTSIZE", (0, 0), (-1, -1), 8),
-                                ]
-                            )
-                        )
-                        items.append(table)
-                        items.append(Spacer(1, 12))
-            return items
-
-        def _element_safety_goals():
-            items: list = []
-            level_labels = {1: "PAL1", 2: "PAL2", 3: "PAL3", 4: "PAL4", 5: "PAL5"}
-
-            def get_immediate_parent_assurance(node):
-                if node.parents:
-                    assurances = []
-                    for p in node.parents:
-                        parent = p if p.is_primary_instance else p.original
-                        try:
-                            val = int(parent.quant_value)
-                        except (TypeError, ValueError):
-                            val = 1
-                        assurances.append(val)
-                    return max(assurances) if assurances else int(
-                        node.quant_value if node.quant_value is not None else 1
-                    )
-                else:
-                    return int(node.quant_value if node.quant_value is not None else 1)
-
-            grouped_by_linked: dict = {}
-            for node in self.get_all_nodes_in_model():
-                if hasattr(node, "safety_requirements") and node.safety_requirements:
-                    safety_goal = (
-                        node.safety_goal_description.strip()
-                        if node.safety_goal_description.strip() != ""
-                        else node.name
-                    )
-                    parent_assur = get_immediate_parent_assurance(node)
-                    assurance_str = f"Level {parent_assur} ({level_labels.get(parent_assur, 'N/A')})"
-                    linked_rec = self.generate_recommendations_for_top_event(node)
-                    extra_recs = self.get_extra_recommendations_list(
-                        node.description, AutoML_Helper.discretize_level(node.quant_value)
-                    )
-                    if not extra_recs:
-                        extra_recs = ["No Extra Recommendation"]
-                    grouped_by_linked.setdefault(linked_rec, {})
-                    for extra in extra_recs:
-                        grouped_by_linked.setdefault(linked_rec, {}).setdefault(extra, [])
-                        grouped_by_linked[linked_rec][extra].append(
-                            f"- {safety_goal} (Assurance: {assurance_str})"
-                        )
-
-            sg_data = [
-                [
-                    Paragraph("<b>Linked Recommendation</b>", pdf_styles["Normal"]),
-                    Paragraph(
-                        "<b>Safety Goals Grouped by Extra Recommendation</b>",
-                        pdf_styles["Normal"],
-                    ),
-                ]
-            ]
-            for linked_rec, extra_groups in grouped_by_linked.items():
-                nested_text = ""
-                for extra_rec, goals in extra_groups.items():
-                    nested_text += f"<b>{extra_rec}:</b><br/>" + "<br/>".join(goals) + "<br/><br/>"
-                sg_data.append([
-                    Paragraph(linked_rec, pdf_styles["Normal"]),
-                    Paragraph(nested_text, pdf_styles["Normal"]),
-                ])
-            if len(sg_data) > 1:
-                table = Table(sg_data, colWidths=[200, 400])
-                table.setStyle(
-                    TableStyle(
-                        [
-                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                            ("FONTSIZE", (0, 0), (-1, -1), 10),
-                            ("ALIGN", (0, 0), (-1, 0), "CENTER"),
-                        ]
-                    )
-                )
-                items.append(Paragraph("Safety Goals Summary:", pdf_styles["Heading2"]))
-                items.append(Spacer(1, 12))
-                items.append(table)
-                items.append(Spacer(1, 12))
-                items.append(PageBreak())
-            return items
-
-        def _element_top_events():
-            items: list = []
-            cause_effect_rows = self.build_cause_effect_data()
-            processed_ids = set()
-            for idx, event in enumerate(self.top_events, start=1):
-                if event.unique_id in processed_ids:
-                    continue
-                processed_ids.add(event.unique_id)
-                items.append(
-                    Paragraph(
-                        f"Top-Level Event #{idx}: {event.name}", pdf_styles["Heading2"]
-                    )
-                )
-                items.append(Spacer(1, 12))
-                argumentation_text = self.generate_argumentation_report(event)
-                if isinstance(argumentation_text, list):
-                    argumentation_text = "\n".join(str(x) for x in argumentation_text)
-                argumentation_text = argumentation_text.replace("\n", "<br/>")
-                items.append(Paragraph(argumentation_text, preformatted_style))
-                items.append(Spacer(1, 12))
-
-                event_img = self.capture_event_diagram(event)
-                if event_img is not None:
-                    buf = BytesIO()
-                    event_img.save(buf, format="PNG")
-                    buf.seek(0)
-                    desired_width, desired_height = scale_image(event_img)
-                    rl_img = RLImage(buf, width=desired_width, height=desired_height)
-                    items.append(Paragraph("Detailed Diagram (Subtree):", pdf_styles["Heading3"]))
-                    items.append(Spacer(1, 12))
-                    items.append(rl_img)
-                    items.append(Spacer(1, 12))
-
-                ce_row = next(
-                    (
-                        r
-                        for r in cause_effect_rows
-                        if r["malfunction"] == getattr(event, "malfunction", "")
-                    ),
-                    None,
-                )
-                if ce_row:
-                    ce_img = self.render_cause_effect_diagram(ce_row)
-                    if ce_img:
-                        buf = BytesIO()
-                        ce_img.save(buf, format="PNG")
-                        buf.seek(0)
-                        desired_width, desired_height = scale_image(ce_img)
-                        rl_img2 = RLImage(buf, width=desired_width, height=desired_height)
-                        items.append(
-                            Paragraph("Cause and Effect Diagram:", pdf_styles["Heading3"])
-                        )
-                        items.append(Spacer(1, 12))
-                        items.append(rl_img2)
-                        items.append(Spacer(1, 12))
-                items.append(PageBreak())
-            return items
-
-        def _element_page_diagrams():
-            items: list = []
-            unique_page_nodes = {}
-            for evt in self.top_events:
-                for pg in self.get_page_nodes(evt):
-                    if pg.is_primary_instance:
-                        unique_page_nodes[pg.unique_id] = pg
-
-            if unique_page_nodes:
-                items.append(Paragraph("Page Diagrams:", pdf_styles["Heading2"]))
-                items.append(Spacer(1, 12))
-
-            for page_node in unique_page_nodes.values():
-                page_img = self.capture_page_diagram(page_node)
-                if page_img is not None:
-                    buf = BytesIO()
-                    page_img.save(buf, format="PNG")
-                    buf.seek(0)
-                    desired_width, desired_height = scale_image(page_img)
-                    rl_page_img = RLImage(buf, width=desired_width, height=desired_height)
-                    items.append(
-                        Paragraph(
-                            f"Page Diagram for: {page_node.name}", pdf_styles["Heading3"]
-                        )
-                    )
-                    items.append(Spacer(1, 12))
-                    items.append(rl_page_img)
-                    items.append(Spacer(1, 12))
-                else:
-                    items.append(
-                        Paragraph(
-                            "A page diagram could not be captured.",
-                            pdf_styles["Normal"],
-                        )
-                    )
-                    items.append(Spacer(1, 12))
-            return items
-
-        def _element_sysml_diagrams():
-            items: list = []
-            from mainappsrc.models.sysml.sysml_repository import SysMLRepository
-
-            repo = SysMLRepository.get_instance()
-            diagrams = list(repo.diagrams.values())
-            if diagrams:
-                items.append(Paragraph("SysML Diagrams:", pdf_styles["Heading2"]))
-                items.append(Spacer(1, 12))
-
-            for diag in diagrams:
-                img = self.capture_sysml_diagram(diag)
-                if img is not None:
-                    buf = BytesIO()
-                    img.save(buf, format="PNG")
-                    buf.seek(0)
-                    desired_width, desired_height = scale_image(img)
-                    rl_img = RLImage(buf, width=desired_width, height=desired_height)
-                    items.append(Paragraph(diag.name, pdf_styles["Heading3"]))
-                    items.append(Spacer(1, 12))
-                    items.append(rl_img)
-                    items.append(Spacer(1, 12))
-            return items
-
-        def _element_fmea_tables():
-            items: list = []
-            if self.fmeas:
-                items.append(PageBreak())
-                items.append(Paragraph("FMEA Tables", pdf_styles["Heading2"]))
-                items.append(Spacer(1, 12))
-                for fmea in self.fmeas:
-                    items.append(Paragraph(fmea['name'], pdf_styles["Heading3"]))
-                    data = [[
-                        "Component",
-                        "Parent",
-                        "Failure Mode",
-                        "Failure Effect",
-                        "Cause",
-                        "S",
-                        "O",
-                        "D",
-                        "RPN",
-                        "Requirements",
-                        "Malfunction",
-                    ]]
-                    for be in fmea['entries']:
-                        src = self.get_failure_mode_node(be)
-                        comp = self.get_component_name_for_node(src) or "N/A"
-                        parent = src.parents[0] if src.parents else None
-                        parent_name = (
-                            parent.user_name
-                            if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES
-                            else ""
-                        )
-                        req_ids = "; ".join([r.get("id") for r in getattr(be, 'safety_requirements', [])])
-                        rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
-                        failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
-                        row = [
-                            comp,
-                            parent_name,
-                            failure_mode,
-                            be.fmea_effect,
-                            getattr(be, 'fmea_cause', ''),
-                            be.fmea_severity,
-                            be.fmea_occurrence,
-                            be.fmea_detection,
-                            rpn,
-                            req_ids,
-                            getattr(be, 'fmeda_malfunction', ''),
-                        ]
-                        data.append(row)
-                    table = Table(data, repeatRows=1)
-                    table.setStyle(
-                        TableStyle(
-                            [
-                                ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                            ]
-                        )
-                    )
-                    items.append(table)
-                    items.append(Spacer(1, 12))
-            return items
-
-        def _element_fmeda_tables():
-            items: list = []
-            if self.fmedas:
-                items.append(PageBreak())
-                items.append(Paragraph("FMEDA Tables", pdf_styles["Heading2"]))
-                items.append(Spacer(1, 12))
-                for fmeda in self.fmedas:
-                    items.append(Paragraph(fmeda['name'], pdf_styles["Heading3"]))
-                    data = [[
-                        "Component",
-                        "Parent",
-                        "Failure Mode",
-                        "Malfunction",
-                        "Safety Goal",
-                        "Fault Type",
-                        "Fraction",
-                        "FIT",
-                        "DiagCov",
-                        "Mechanism",
-                    ]]
-                    for be in fmeda['entries']:
-                        src = self.get_failure_mode_node(be)
-                        comp = self.get_component_name_for_node(src) or "N/A"
-                        parent = src.parents[0] if src.parents else None
-                        parent_name = (
-                            parent.user_name
-                            if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES
-                            else ""
-                        )
-                        failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
-                        row = [
-                            comp,
-                            parent_name,
-                            failure_mode,
-                            getattr(be, 'fmeda_malfunction', ''),
-                            getattr(be, 'fmeda_safety_goal', ''),
-                            getattr(be, 'fmeda_fault_type', ''),
-                            f"{getattr(be, 'fmeda_fault_fraction', 0)}",
-                            f"{getattr(be, 'fmeda_fit', 0)}",
-                            f"{getattr(be, 'fmeda_diag_cov', 0)}",
-                            getattr(be, 'fmeda_mechanism', ''),
-                        ]
-                        data.append(row)
-                    table = Table(data, repeatRows=1)
-                    table.setStyle(
-                        TableStyle(
-                            [
-                                ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                            ]
-                        )
-                    )
-                    items.append(table)
-                    items.append(Spacer(1, 12))
-            return items
-
-        def _element_traceability():
-            items: list = []
-            basic_events = [
-                n
-                for n in self.get_all_nodes(self.root_node)
-                if n.node_type.upper() == "BASIC EVENT"
-            ]
-            if basic_events:
-                items.append(PageBreak())
-                items.append(Paragraph("FTA-FMEA Traceability", pdf_styles["Heading2"]))
-                data = [["Basic Event", "Component"]]
-                for be in basic_events:
-                    comp = self.get_component_name_for_node(be) or "N/A"
-                    data.append([be.user_name or f"BE {be.unique_id}", comp])
-                table = Table(data, repeatRows=1)
-                table.setStyle(
-                    TableStyle(
-                        [
-                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                            ("FONTSIZE", (0, 0), (-1, -1), 8),
-                        ]
-                    )
-                )
-                items.append(table)
-                items.append(Spacer(1, 12))
-            return items
-
-        def _element_cut_sets():
-            items: list = []
-            cut_sets_exist = any(self.calculate_cut_sets(te) for te in self.top_events)
-            if cut_sets_exist:
-                items.append(PageBreak())
-                items.append(Paragraph("FTA Cut Sets", pdf_styles["Heading2"]))
-                data = [["Top Event", "Cut Set #", "Basic Events"]]
-                for te in self.top_events:
-                    nodes_by_id = {}
-
-                    def map_nodes(n):
-                        nodes_by_id[n.unique_id] = n
-                        for child in n.children:
-                            map_nodes(child)
-
-                    map_nodes(te)
-                    cut_sets = self.calculate_cut_sets(te)
-                    te_label = te.user_name or f"Top Event {te.unique_id}"
-                    for idx, cs in enumerate(cut_sets, start=1):
-                        names = ", ".join(
-                            f"{nodes_by_id[uid].user_name or nodes_by_id[uid].node_type} [{uid}]"
-                            for uid in sorted(cs)
-                        )
-                        data.append([te_label if idx == 1 else "", str(idx), names])
-                        te_label = ""
-                table = Table(data, repeatRows=1)
-                table.setStyle(
-                    TableStyle(
-                        [
-                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                            ("FONTSIZE", (0, 0), (-1, -1), 8),
-                        ]
-                    )
-                )
-                items.append(table)
-                items.append(Spacer(1, 12))
-            return items
-
-        def _element_common_cause():
-            items: list = []
-            events_by_cause = {}
-            for fmea in self.fmeas:
-                for be in fmea['entries']:
-                    cause = be.description
-                    label = f"{fmea['name']}:{be.user_name or be.description or be.unique_id}"
-                    events_by_cause.setdefault(cause, set()).add(label)
-            for fmeda in self.fmedas:
-                for be in fmeda['entries']:
-                    cause = be.description
-                    label = f"{fmeda['name']}:{be.user_name or be.description or be.unique_id}"
-                    events_by_cause.setdefault(cause, set()).add(label)
-            for be in self.get_all_basic_events():
-                cause = be.description or ""
-                label = be.user_name or f"BE {be.unique_id}"
-                events_by_cause.setdefault(cause, set()).add(label)
-            cc_rows = [[cause, ", ".join(sorted(evts))] for cause, evts in events_by_cause.items() if len(evts) > 1]
-            if cc_rows:
-                items.append(PageBreak())
-                items.append(Paragraph("Common Cause Analysis", pdf_styles["Heading2"]))
-                data = [["Cause", "Events"]] + cc_rows
-                table = Table(data, repeatRows=1)
-                table.setStyle(
-                    TableStyle(
-                        [
-                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                            ("FONTSIZE", (0, 0), (-1, -1), 8),
-                        ]
-                    )
-                )
-                items.append(table)
-                items.append(Spacer(1, 12))
-            return items
-
-        def _element_safety_security_reports():
-            items: list = []
-            library = getattr(self, "safety_case_library", None)
-            if library and getattr(library, "cases", None):
-                items.append(PageBreak())
-                items.append(Paragraph("Safety & Security Reports", pdf_styles["Heading2"]))
-                items.append(Spacer(1, 12))
-                data = [["Name"]]
-                for case in library.cases:
-                    data.append([case.name])
-                table = Table(data, repeatRows=1)
-                table.setStyle(
-                    TableStyle(
-                        [
-                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                            ("FONTSIZE", (0, 0), (-1, -1), 8),
-                        ]
-                    )
-                )
-                items.append(table)
-                items.append(Spacer(1, 12))
-            return items
-
-        def _element_spi_table():
-            items: list = []
-            tree = getattr(self, "_spi_tree", None)
-            if tree:
-                columns = list(tree["columns"])
-                data = [list(columns)]
-                for iid in tree.get_children(""):
-                    data.append(list(tree.item(iid, "values")))
-                table = Table(data, repeatRows=1)
-                table.setStyle(
-                    TableStyle(
-                        [
-                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                            ("FONTSIZE", (0, 0), (-1, -1), 8),
-                        ]
-                    )
-                )
-                items.append(table)
-                items.append(Spacer(1, 12))
-            return items
-
-        requirement_element_map = {
-            "req_vehicle": ("vehicle", "Vehicle"),
-            "req_operational": ("operational", "Operational"),
-            "req_operational_safety": ("operational safety", "Operational Safety"),
-            "req_functional_safety": ("functional safety", "Functional Safety"),
-            "req_technical_safety": ("technical safety", "Technical Safety"),
-            "req_ai_safety": ("AI safety", "AI Safety"),
-            "req_functional_modification": ("functional modification", "Functional Modification"),
-            "req_cybersecurity": ("cybersecurity", "Cybersecurity"),
-            "req_production": ("production", "Production"),
-            "req_service": ("service", "Service"),
-            "req_field_monitoring": ("field monitoring", "Field Monitoring"),
-            "req_decommissioning": ("decommissioning", "Decommissioning"),
-            "req_product": ("product", "Product"),
-            "req_legal": ("legal", "Legal"),
-            "req_organizational": ("organizational", "Organizational"),
-            "req_spi": ("spi", "Spi"),
-        }
-
-        def _make_requirement_table(req_type: str, title: str):
-            items: list = []
-            reqs = [
-                r for r in global_requirements.values() if r.get("req_type") == req_type
-            ]
-            if reqs:
-                items.append(PageBreak())
-                items.append(Paragraph(f"{title} Requirements", pdf_styles["Heading2"]))
-                items.append(Spacer(1, 12))
-                data = [["ID", "Text", "ASIL", "CAL"]]
-                for r in sorted(reqs, key=lambda x: x.get("id", "")):
-                    data.append(
-                        [
-                            r.get("id", ""),
-                            r.get("text", ""),
-                            r.get("asil", ""),
-                            r.get("cal", ""),
-                        ]
-                    )
-                table = Table(data, repeatRows=1)
-                table.setStyle(
-                    TableStyle(
-                        [
-                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                            ("FONTSIZE", (0, 0), (-1, -1), 8),
-                        ]
-                    )
-                )
-                items.append(table)
-                items.append(Spacer(1, 12))
-            return items
-
-        def _build_element(name: str, kind: str | None):
-            if kind:
-                if kind == "diagram":
-                    label = name
-                elif kind.startswith("diagram:"):
-                    label = kind.split(":", 1)[1]
-                else:
-                    label = None
-                if label is not None:
-                    img = Image.new("RGB", (400, 200), "white")
-                    if hasattr(img, "save"):
-                        draw = ImageDraw.Draw(img)
-                        if hasattr(draw, "rectangle"):
-                            draw.rectangle([0, 0, 399, 199], outline="black")
-                        if hasattr(draw, "text"):
-                            draw.text((10, 10), f"{label} diagram", fill="black")
-                        buf = BytesIO()
-                        img.save(buf, format="PNG")
-                        buf.seek(0)
-                        return [RLImage(buf)]
-                    return [Paragraph(f"[{label} diagram]", pdf_styles["Normal"])]
-                if kind.startswith("analysis:"):
-                    analysis_type = kind.split(":", 1)[1]
-                    return [
-                        Paragraph(
-                            f"[{analysis_type} analysis from diagrams]",
-                            pdf_styles["Normal"],
-                        )
-                    ]
-            if kind == "base_matrix":
-                return _element_base_matrix()
-            if kind == "discretization":
-                return _element_discretization()
-            if kind == "hazop":
-                return _element_hazop()
-            if kind == "fi2tc":
-                return _element_fi2tc()
-            if kind == "tc2fi":
-                return _element_tc2fi()
-            if kind == "risk":
-                return _element_risk()
-            if kind == "cbn":
-                return _element_cbn()
-            if kind == "safety_goals":
-                return _element_safety_goals()
-            if kind == "top_events":
-                return _element_top_events()
-            if kind == "page_diagrams":
-                return _element_page_diagrams()
-            if kind == "sysml_diagrams":
-                return _element_sysml_diagrams()
-            if kind == "fmea_tables":
-                return _element_fmea_tables()
-            if kind == "fmeda_tables":
-                return _element_fmeda_tables()
-            if kind == "traceability":
-                return _element_traceability()
-            if kind == "cut_sets":
-                return _element_cut_sets()
-            if kind == "common_cause":
-                return _element_common_cause()
-            if kind == "safety_security_reports":
-                return _element_safety_security_reports()
-            if kind == "spi_table":
-                return _element_spi_table()
-            if kind == "activity_actions":
-                data = [["Action"], ["Start"], ["Stop"]]
-                table = Table(data, repeatRows=1)
-                table.setStyle(
-                    TableStyle(
-                        [
-                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                            ("FONTSIZE", (0, 0), (-1, -1), 8),
-                        ]
-                    )
-                )
-                return [table]
-            if kind == "req_matrix_alloc":
-                data = [["Requirement", "Allocation"], ["REQ-1", "Block A"], ["REQ-2", "Block B"]]
-                table = Table(data, repeatRows=1)
-                table.setStyle(
-                    TableStyle(
-                        [
-                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                            ("FONTSIZE", (0, 0), (-1, -1), 8),
-                        ]
-                    )
-                )
-                return [table]
-            if kind == "product_goals":
-                return [
-                    Paragraph("Goal 1", pdf_styles["Normal"]),
-                    Paragraph("Goal 2", pdf_styles["Normal"]),
-                ]
-            if kind == "fsc_info":
-                return [
-                    Paragraph(
-                        "[functional safety concept information]",
-                        pdf_styles["Normal"],
-                    )
-                ]
-            if kind == "trace_matrix_pg_fsr":
-                data = [["Product Goal", "FSR"], ["PG1", "FSR1"], ["PG2", "FSR2"]]
-                table = Table(data, repeatRows=1)
-                table.setStyle(
-                    TableStyle(
-                        [
-                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                            ("FONTSIZE", (0, 0), (-1, -1), 8),
-                        ]
-                    )
-                )
-                return [table]
-            if kind == "trace_matrix_fsc":
-                data = [["TSR", "FSR"], ["TSR1", "FSR1"], ["TSR2", "FSR2"]]
-                table = Table(data, repeatRows=1)
-                table.setStyle(
-                    TableStyle(
-                        [
-                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                            ("FONTSIZE", (0, 0), (-1, -1), 8),
-                        ]
-                    )
-                )
-                return [table]
-            if kind == "item_description":
-                text = getattr(self, "item_definition", {}).get("description", "")
-                if not text:
-                    text = "[item description]"
-                return [Paragraph(text, pdf_styles["Normal"])]
-            if kind == "assumptions":
-                text = getattr(self, "item_definition", {}).get("assumptions", "")
-                if not text:
-                    text = "[assumptions]"
-                return [Paragraph(text, pdf_styles["Normal"])]
-            if name in requirement_element_map:
-                req_type, title = requirement_element_map[name]
-                return _make_requirement_table(req_type, title)
-            return [Paragraph(f"[{name}]", styles["Normal"])]
-
-        elements = template.get("elements", {})
-        import re as _re
-
-        def _tokenize(text: str):
-            replaced = text
-            for placeholder in elements:
-                replaced = replaced.replace(
-                    f"<{placeholder}>", f"[[[element:{placeholder}]]]"
-                )
-            replaced = _re.sub(
-                r'<img\s+src="([^"]+)"\s*/?>',
-                lambda m: f"[[[img:{m.group(1)}]]]",
-                replaced,
-            )
-            replaced = _re.sub(
-                r'<a\s+href="([^"]+)">([^<]*)</a>',
-                lambda m: f"[[[link:{m.group(1)}|{m.group(2)}]]]",
-                replaced,
-            )
-            return _re.split(r"(\[\[\[[^\]]+\]\]\])", replaced)
-
-        for sec in template.get("sections", []):
-            story.append(Paragraph(sec.get("title", ""), styles["Heading2"]))
-            tokens = _tokenize(sec.get("content", ""))
-            for tok in tokens:
-                if not tok:
-                    continue
-                if tok.startswith("[[[") and tok.endswith("]]]"):
-                    inner = tok[3:-3]
-                    if inner.startswith("element:"):
-                        name = inner.split(":", 1)[1]
-                        story.extend(_build_element(name, elements.get(name)))
-                    elif inner.startswith("img:"):
-                        src = inner.split(":", 1)[1]
-                        try:
-                            story.append(RLImage(src))
-                        except Exception:
-                            story.append(
-                                Paragraph(f"[Missing image: {src}]", styles["Normal"])
-                            )
-                    elif inner.startswith("link:"):
-                        href, text = inner.split(":", 1)[1].split("|", 1)
-                        story.append(
-                            Paragraph(
-                                f'<link href="{href}">{text}</link>', styles["Normal"]
-                            )
-                        )
-                else:
-                    text = tok.strip()
-                    if text:
-                        for line in text.split("\n"):
-                            if line:
-                                story.append(Paragraph(line, styles["Normal"]))
-            story.append(Spacer(1, 12))
-
-        try:
-            doc.build(story)
-            json_path = Path(path).with_suffix(".json")
-            json_path.write_text(json.dumps(template, indent=2))
-            messagebox.showinfo("PDF Report", "PDF report generated!")
-        except Exception as exc:
-            messagebox.showerror("Report", f"Failed to generate PDF: {exc}")
-
-    def generate_pdf_report(self):
-        self._generate_pdf_report()
-
-    def capture_event_diagram(self, event_node):
+        # Create a temporary Toplevel window and canvas
         temp = tk.Toplevel(self.root)
         temp.withdraw()
         canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
         canvas.pack()
-        self.draw_subtree_with_filter(canvas, event_node, self.get_all_nodes(event_node))
+        
+        # Create and redraw the page diagram
+        pd = PageDiagram(self, page_node, canvas)
+        pd.redraw_canvas()
+        
+        # Remove grid if present and force an update
         canvas.delete("grid")
+        canvas.update()
+        
+        # Get the bounding box; print debug info if empty.
+        bbox = canvas.bbox("all")
+        if not bbox:
+            print(f"Debug: No drawing found for page node {page_node.unique_id} - bbox is empty.")
+            temp.destroy()
+            return None
+        
+        x, y, x2, y2 = bbox
+        width, height = x2 - x, y2 - y
+        print(f"Debug: Capturing page diagram for node {page_node.unique_id} with bbox=({x},{y},{x2},{y2})")
+        
+        # Get the PostScript output for the region.
+        ps = canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
+        ps_bytes = BytesIO(ps.encode("utf-8"))
+
+        try:
+            img = Image.open(ps_bytes)
+            img.load(scale=3)
+        except Exception as e:
+            print(f"Debug: Error loading image for page node {page_node.unique_id}: {e}")
+            img = None
+        temp.destroy()
+        return img.convert("RGB") if img else None
+
+    def capture_gsn_diagram(self, diagram):
+        """Return a PIL Image of the given GSN diagram."""
+        from io import BytesIO
+        from PIL import Image
+        from gui.causal_bayesian_network_window import (
+            CausalBayesianNetworkWindow,
+        )
+
+        temp = tk.Toplevel(self.root)
+        temp.withdraw()
+        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
+        canvas.pack()
+
+        try:
+            diagram.draw(canvas)
+        except Exception:
+            temp.destroy()
+            return None
+
         canvas.update()
         bbox = canvas.bbox("all")
         if not bbox:
             temp.destroy()
             return None
         x, y, x2, y2 = bbox
-        margin_left = 100
-        margin_top  = 30
-        new_x = x - margin_left
-        new_y = y - margin_top
-        new_width = (x2 - x) + 2 * margin_left
-        new_height = (y2 - y) + 2 * margin_top
-        ps = canvas.postscript(colormode="color", x=new_x, y=new_y, width=new_width, height=new_height)
-        from io import BytesIO
+        width, height = x2 - x, y2 - y
+        ps = canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
         ps_bytes = BytesIO(ps.encode("utf-8"))
         try:
             img = Image.open(ps_bytes)
@@ -3140,7 +2065,82 @@ class AutoMLApp:
         temp.destroy()
         return img.convert("RGB") if img else None
 
-    def draw_subtree_with_filter(self, canvas, root_event, visible_nodes):
+    def capture_sysml_diagram(self, diagram):
+        """Return a PIL Image of the given SysML diagram."""
+        from io import BytesIO
+        from PIL import Image
+        from gui.causal_bayesian_network_window import (
+            CausalBayesianNetworkWindow,
+        )
+
+        temp = tk.Toplevel(self.root)
+        temp.withdraw()
+        if diagram.diag_type == "Use Case Diagram":
+            win = UseCaseDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Activity Diagram":
+            win = ActivityDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Block Diagram":
+            win = BlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Internal Block Diagram":
+            win = InternalBlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Control Flow Diagram":
+            win = ControlFlowDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Governance Diagram":
+            win = GovernanceDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        else:
+            temp.destroy()
+            return None
+
+        win.redraw()
+        win.canvas.update()
+        bbox = win.canvas.bbox("all")
+        if not bbox:
+            temp.destroy()
+            return None
+
+        x, y, x2, y2 = bbox
+        width, height = x2 - x, y2 - y
+        ps = win.canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
+        ps_bytes = BytesIO(ps.encode("utf-8"))
+        try:
+            img = Image.open(ps_bytes)
+            img.load(scale=3)
+        except Exception:
+            img = None
+        temp.destroy()
+        return img.convert("RGB") if img else None
+
+    def capture_cbn_diagram(self, doc):
+        """Return a PIL Image of the given Causal Bayesian Network diagram."""
+        from io import BytesIO
+        from PIL import Image
+        from gui.causal_bayesian_network_window import (
+            CausalBayesianNetworkWindow,
+        )
+
+        temp = tk.Toplevel(self.root)
+        temp.withdraw()
+        try:
+            win = CausalBayesianNetworkWindow(temp, self)
+            win.doc_var.set(doc.name)
+            win.select_doc()
+            win.canvas.update()
+            bbox = win.canvas.bbox("all")
+            if not bbox:
+                temp.destroy()
+                return None
+            x, y, x2, y2 = bbox
+            width, height = x2 - x, y2 - y
+            ps = win.canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
+            ps_bytes = BytesIO(ps.encode("utf-8"))
+            try:
+                img = Image.open(ps_bytes)
+                img.load(scale=3)
+            except Exception:
+                img = None
+        finally:
+            temp.destroy()
+        return img.convert("RGB") if img else None    def draw_subtree_with_filter(self, canvas, root_event, visible_nodes):
         self.draw_connections_subtree(canvas, root_event, set())
         for n in visible_nodes:
             self.draw_node_on_canvas_pdf(canvas, n)
@@ -14173,571 +13173,24 @@ class AutoMLApp:
 
     # --- Review Toolbox Methods ---
     def start_peer_review(self):
-        dialog = ParticipantDialog(self.root, joint=False)
-
-        if dialog.result:
-            moderators, parts = dialog.result
-            name = simpledialog.askstring("Review Name", "Enter unique review name:")
-            if not name:
-                return
-            description = askstring_fixed(
-                simpledialog,
-                "Description",
-                "Enter a short description:",
-            )
-            if description is None:
-                description = ""
-            if not moderators:
-                messagebox.showerror("Review", "Please specify a moderator")
-                return
-            if not parts:
-                messagebox.showerror("Review", "At least one reviewer required")
-                return
-            due_date = simpledialog.askstring("Due Date", "Enter due date (YYYY-MM-DD):")
-            if any(r.name == name for r in self.reviews):
-                messagebox.showerror("Review", "Name already exists")
-                return
-            scope = ReviewScopeDialog(self.root, self)
-            (
-                fta_ids,
-                fmea_names,
-                fmeda_names,
-                hazop_names,
-                hara_names,
-                stpa_names,
-                fi2tc_names,
-                tc2fi_names,
-            ) = scope.result if scope.result else ([], [], [], [], [], [], [], [])
-            review = ReviewData(
-                name=name,
-                description=description,
-                mode='peer',
-                moderators=moderators,
-                participants=parts,
-                comments=[],
-                fta_ids=fta_ids,
-                fmea_names=fmea_names,
-                fmeda_names=fmeda_names,
-                hazop_names=hazop_names,
-                hara_names=hara_names,
-                stpa_names=stpa_names,
-                fi2tc_names=fi2tc_names,
-                tc2fi_names=tc2fi_names,
-                due_date=due_date,
-            )
-            self.reviews.append(review)
-            self.review_data = review
-            self.current_user = moderators[0].name if moderators else parts[0].name
-            self.open_review_document(review)
-            self.send_review_email(review)
-            self.open_review_toolbox()
+        return self.review_manager.start_peer_review()
 
     def start_joint_review(self):
-        dialog = ParticipantDialog(self.root, joint=True)
-        if dialog.result:
-            moderators, participants = dialog.result
-            name = simpledialog.askstring("Review Name", "Enter unique review name:")
-            if not name:
-                return
-            description = askstring_fixed(
-                simpledialog,
-                "Description",
-                "Enter a short description:",
-            )
-            if description is None:
-                description = ""
-            if not moderators:
-                messagebox.showerror("Review", "Please specify a moderator")
-                return
-            if not any(p.role == 'reviewer' for p in participants):
-                messagebox.showerror("Review", "At least one reviewer required")
-                return
-            if not any(p.role == 'approver' for p in participants):
-                messagebox.showerror("Review", "At least one approver required")
-                return
-            due_date = simpledialog.askstring("Due Date", "Enter due date (YYYY-MM-DD):")
-            if any(r.name == name for r in self.reviews):
-                messagebox.showerror("Review", "Name already exists")
-                return
-            scope = ReviewScopeDialog(self.root, self)
-            (
-                fta_ids,
-                fmea_names,
-                fmeda_names,
-                hazop_names,
-                hara_names,
-                stpa_names,
-                fi2tc_names,
-                tc2fi_names,
-            ) = scope.result if scope.result else ([], [], [], [], [], [], [], [])
-
-            # Ensure each selected element has a completed peer review
-            def peer_completed(pred):
-                return any(
-                    r.mode == 'peer'
-                    and getattr(r, 'reviewed', False)
-                    and pred(r)
-                    for r in self.reviews
-                )
-
-            for tid in fta_ids:
-                if not peer_completed(lambda r: tid in r.fta_ids):
-                    messagebox.showerror(
-                        "Review",
-                        "Peer review must be reviewed before starting joint review",
-                    )
-                    return
-            for name_fta in fmea_names:
-                if not peer_completed(lambda r: name_fta in r.fmea_names):
-                    messagebox.showerror(
-                        "Review",
-                        "Peer review must be reviewed before starting joint review",
-                    )
-                    return
-            for name_fd in fmeda_names:
-                if not peer_completed(lambda r: name_fd in r.fmeda_names):
-                    messagebox.showerror(
-                        "Review",
-                        "Peer review must be reviewed before starting joint review",
-                    )
-                    return
-            for name_hz in hazop_names:
-                if not peer_completed(lambda r: name_hz in getattr(r, 'hazop_names', [])):
-                    messagebox.showerror(
-                        "Review",
-                        "Peer review must be reviewed before starting joint review",
-                    )
-                    return
-            for name_hara in hara_names:
-                if not peer_completed(lambda r: name_hara in getattr(r, 'hara_names', [])):
-                    messagebox.showerror(
-                        "Review",
-                        "Peer review must be reviewed before starting joint review",
-                    )
-                    return
-            for name_stpa in stpa_names:
-                if not peer_completed(lambda r: name_stpa in getattr(r, 'stpa_names', [])):
-                    messagebox.showerror(
-                        "Review",
-                        "Peer review must be reviewed before starting joint review",
-                    )
-                    return
-            for name_fi in fi2tc_names:
-                if not peer_completed(lambda r: name_fi in getattr(r, 'fi2tc_names', [])):
-                    messagebox.showerror(
-                        "Review",
-                        "Peer review must be reviewed before starting joint review",
-                    )
-                    return
-            for name_tc in tc2fi_names:
-                if not peer_completed(lambda r: name_tc in getattr(r, 'tc2fi_names', [])):
-                    messagebox.showerror(
-                        "Review",
-                        "Peer review must be reviewed before starting joint review",
-                    )
-                    return
-            review = ReviewData(
-                name=name,
-                description=description,
-                mode='joint',
-                moderators=moderators,
-                participants=participants,
-                comments=[],
-                fta_ids=fta_ids,
-                fmea_names=fmea_names,
-                fmeda_names=fmeda_names,
-                hazop_names=hazop_names,
-                hara_names=hara_names,
-                stpa_names=stpa_names,
-                fi2tc_names=fi2tc_names,
-                tc2fi_names=tc2fi_names,
-                due_date=due_date,
-            )
-            self.reviews.append(review)
-            self.review_data = review
-            self.current_user = moderators[0].name if moderators else participants[0].name
-            self.open_review_document(review)
-            self.send_review_email(review)
-            self.open_review_toolbox()
+        return self.review_manager.start_joint_review()
 
     def open_review_document(self, review):
-        if hasattr(self, "_review_doc_tab") and self._review_doc_tab.winfo_exists():
-            self.doc_nb.select(self._review_doc_tab)
-        else:
-            title = f"Review {review.name}"
-            self._review_doc_tab = self._new_tab(title)
-            self._review_doc_window = ReviewDocumentDialog(self._review_doc_tab, self, review)
-            self._review_doc_window.pack(fill=tk.BOTH, expand=True)
-        self.refresh_all()
+        return self.review_manager.open_review_document(review)
 
     def open_review_toolbox(self):
-        if not self.reviews:
-            messagebox.showwarning("Review", "No reviews defined")
-            return
-        if not self.review_data and self.reviews:
-            self.review_data = self.reviews[0]
-        self.update_hara_statuses()
-        self.update_fta_statuses()
-        self.update_requirement_statuses()
-        if hasattr(self, "_review_tab") and self._review_tab.winfo_exists():
-            self.doc_nb.select(self._review_tab)
-        else:
-            self._review_tab = self._new_tab("Review")
-            self.review_window = ReviewToolbox(self._review_tab, self)
-            self.review_window.pack(fill=tk.BOTH, expand=True)
-        self.refresh_all()
-        self.user_manager.set_current_user()
+        return self.review_manager.open_review_toolbox()
 
     def send_review_email(self, review):
-        """Send the review summary to all reviewers via configured SMTP."""
-        recipients = [p.email for p in review.participants if p.role == 'reviewer' and p.email]
-        if not recipients:
-            return
+        return self.review_manager.send_review_email(review)
 
-        # Determine the current user's email if available
-        current_email = next((p.email for p in review.participants
-                              if p.name == self.current_user), "")
+    def capture_diff_diagram(self, top_event):
+        return self.review_manager.capture_diff_diagram(top_event)
 
-        if not getattr(self, "email_config", None):
-            cfg = EmailConfigDialog(self.root, default_email=current_email).result
-            self.email_config = cfg
-
-        cfg = getattr(self, "email_config", None)
-        if not cfg:
-            return
-
-        subject = f"Review: {review.name}"
-        lines = [f"Review Name: {review.name}", f"Description: {review.description}", ""]
-        if review.fta_ids:
-            lines.append("FTAs:")
-            for tid in review.fta_ids:
-                te = next((t for t in self.top_events if t.unique_id == tid), None)
-                if te:
-                    lines.append(f" - {te.name}")
-            lines.append("")
-        if review.fmea_names:
-            lines.append("FMEAs:")
-            for name in review.fmea_names:
-                lines.append(f" - {name}")
-            lines.append("")
-        if getattr(review, 'hazop_names', []):
-            lines.append("HAZOPs:")
-            for name in review.hazop_names:
-                lines.append(f" - {name}")
-            lines.append("")
-        if getattr(review, 'hara_names', []):
-            lines.append("Risk Assessments:")
-            for name in review.hara_names:
-                lines.append(f" - {name}")
-            lines.append("")
-        content = "\n".join(lines)
-        msg = EmailMessage()
-        msg['Subject'] = subject
-        msg['From'] = cfg['email']
-        msg['To'] = ', '.join(recipients)
-        msg.set_content(content)
-
-        html_lines = ["<html><body>", "<pre>", html.escape(content), "</pre>"]
-        image_cids = []
-        images = []
-        for tid in review.fta_ids:
-            node = self.find_node_by_id_all(tid)
-            if not node:
-                continue
-            img = self.capture_diff_diagram(node)
-            if img is None:
-                continue
-            buf = BytesIO()
-            img.save(buf, format="PNG")
-            buf.seek(0)
-            cid = make_msgid()
-            label = node.user_name or node.name or f"id{tid}"
-            html_lines.append(f"<p><b>FTA: {html.escape(label)}</b><br>" +
-                             f"<img src=\"cid:{cid[1:-1]}\" alt=\"{html.escape(label)}\"></p>")
-            image_cids.append(cid)
-            images.append(buf.getvalue())
-        diff_html = self.build_requirement_diff_html(review)
-        if diff_html:
-            html_lines.append("<b>Requirements:</b><br>" + diff_html)
-        html_lines.append("</body></html>")
-        html_body = "\n".join(html_lines)
-        msg.add_alternative(html_body, subtype="html")
-        html_part = msg.get_payload()[1]
-        for cid, data in zip(image_cids, images):
-            html_part.add_related(data, "image", "png", cid=cid)
-
-        # Attach FMEA tables as CSV files (can be opened with Excel)
-        for name in review.fmea_names:
-            fmea = next((f for f in self.fmeas if f["name"] == name), None)
-            if not fmea:
-                continue
-            out = StringIO()
-            writer = csv.writer(out)
-            columns = [
-                "Component",
-                "Parent",
-                "Failure Mode",
-                "Failure Effect",
-                "Cause",
-                "S",
-                "O",
-                "D",
-                "RPN",
-                "Requirements",
-            ]
-            writer.writerow(columns)
-            for be in fmea["entries"]:
-                src = self.get_failure_mode_node(be)
-                comp = self.get_component_name_for_node(src) or "N/A"
-                parent = src.parents[0] if src.parents else None
-                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
-                req_ids = "; ".join(
-                    [f"{req['req_type']}:{req['text']}" for req in getattr(be, 'safety_requirements', [])]
-                )
-                rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
-                failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
-                row = [
-                    comp,
-                    parent_name,
-                    failure_mode,
-                    be.fmea_effect,
-                    getattr(be, "fmea_cause", ""),
-                    be.fmea_severity,
-                    be.fmea_occurrence,
-                    be.fmea_detection,
-                    rpn,
-                    req_ids,
-                ]
-                writer.writerow(row)
-            csv_bytes = out.getvalue().encode('utf-8')
-            out.close()
-            msg.add_attachment(
-                csv_bytes,
-                maintype="text",
-                subtype="csv",
-                filename=f"fmea_{name}.csv",
-            )
-        for name in getattr(review, 'fmeda_names', []):
-            fmeda = next((f for f in self.fmedas if f["name"] == name), None)
-            if not fmeda:
-                continue
-            out = StringIO()
-            writer = csv.writer(out)
-            columns = [
-                "Component","Parent","Failure Mode","Malfunction","Safety Goal","FaultType","Fraction","FIT","DiagCov","Mechanism"
-            ]
-            writer.writerow(columns)
-            for be in fmeda["entries"]:
-                src = self.get_failure_mode_node(be)
-                comp = self.get_component_name_for_node(src) or "N/A"
-                parent = src.parents[0] if src.parents else None
-                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
-                row = [
-                    comp,
-                    parent_name,
-                    be.description or (be.user_name or f"BE {be.unique_id}"),
-                    be.fmeda_malfunction,
-                    be.fmeda_safety_goal,
-                    be.fmeda_fault_type,
-                    f"{be.fmeda_fault_fraction:.2f}",
-                    f"{be.fmeda_fit:.2f}",
-                    f"{be.fmeda_diag_cov:.2f}",
-                    getattr(be, "fmeda_mechanism", ""),
-                ]
-                writer.writerow(row)
-            csv_bytes = out.getvalue().encode('utf-8')
-            out.close()
-            msg.add_attachment(
-                csv_bytes,
-                maintype="text",
-                subtype="csv",
-                filename=f"fmeda_{name}.csv",
-            )
-        for name in getattr(review, 'hazop_names', []):
-            doc = next((d for d in self.hazop_docs if d.name == name), None)
-            if not doc:
-                continue
-            out = StringIO()
-            writer = csv.writer(out)
-            columns = [
-                "Function",
-                "Malfunction",
-                "Type",
-                "Scenario",
-                "Conditions",
-                "Hazard",
-                "Safety",
-                "Rationale",
-                "Covered",
-                "Covered By",
-            ]
-            writer.writerow(columns)
-            for e in doc.entries:
-                writer.writerow([
-                    self.get_entry_field(e, "function"),
-                    self.get_entry_field(e, "malfunction"),
-                    self.get_entry_field(e, "mtype"),
-                    self.get_entry_field(e, "scenario"),
-                    self.get_entry_field(e, "conditions"),
-                    self.get_entry_field(e, "hazard"),
-                    "Yes" if self.get_entry_field(e, "safety", False) else "No",
-                    self.get_entry_field(e, "rationale"),
-                    "Yes" if self.get_entry_field(e, "covered", False) else "No",
-                    self.get_entry_field(e, "covered_by"),
-                ])
-            csv_bytes = out.getvalue().encode("utf-8")
-            out.close()
-            msg.add_attachment(
-                csv_bytes,
-                maintype="text",
-                subtype="csv",
-                filename=f"hazop_{name}.csv",
-            )
-        for name in getattr(review, 'hara_names', []):
-            doc = next((d for d in self.hara_docs if d.name == name), None)
-            if not doc:
-                continue
-            out = StringIO()
-            writer = csv.writer(out)
-            columns = [
-                "Malfunction",
-                "Severity",
-                "Severity Rationale",
-                "Controllability",
-                "Cont. Rationale",
-                "Exposure",
-                "Exp. Rationale",
-                "ASIL",
-                "Safety Goal",
-            ]
-            writer.writerow(columns)
-            for e in doc.entries:
-                writer.writerow([
-                    self.get_entry_field(e, "malfunction"),
-                    self.get_entry_field(e, "severity"),
-                    self.get_entry_field(e, "sev_rationale"),
-                    self.get_entry_field(e, "controllability"),
-                    self.get_entry_field(e, "cont_rationale"),
-                    self.get_entry_field(e, "exposure"),
-                    self.get_entry_field(e, "exp_rationale"),
-                    self.get_entry_field(e, "asil"),
-                    self.get_entry_field(e, "safety_goal"),
-                ])
-            csv_bytes = out.getvalue().encode("utf-8")
-            out.close()
-            msg.add_attachment(
-                csv_bytes,
-                maintype="text",
-                subtype="csv",
-                filename=f"hara_{name}.csv",
-            )
-        try:
-            port = cfg.get('port', 465)
-            if port == 465:
-                with smtplib.SMTP_SSL(cfg['server'], port) as server:
-                    server.login(cfg['email'], cfg['password'])
-                    server.send_message(msg)
-            else:
-                with smtplib.SMTP(cfg['server'], port) as server:
-                    server.starttls()
-                    server.login(cfg['email'], cfg['password'])
-                    server.send_message(msg)
-        except smtplib.SMTPAuthenticationError:
-            messagebox.showerror(
-                "Email",
-                "Login failed. If your account uses two-factor authentication, "
-                "create an app password and use that instead of your normal password."
-            )
-            self.email_config = None
-        except (socket.gaierror, ConnectionRefusedError, smtplib.SMTPConnectError) as e:
-            messagebox.showerror(
-                "Email",
-                "Failed to connect to the SMTP server. Check the address, port and internet connection."
-            )
-            self.email_config = None
-        except Exception as e:
-            messagebox.showerror("Email", f"Failed to send review email: {e}")
-
-
-    def review_is_closed(self):
-        if not self.review_data:
-            return False
-        if getattr(self.review_data, "closed", False):
-            return True
-        if self.review_data.due_date:
-            try:
-                due = datetime.datetime.strptime(self.review_data.due_date, "%Y-%m-%d").date()
-                if datetime.date.today() > due:
-                    return True
-            except ValueError:
-                pass
-        return False
-
-    def review_is_closed_for(self, review):
-        if not review:
-            return False
-        if getattr(review, "closed", False):
-            return True
-        if review.due_date:
-            try:
-                due = datetime.datetime.strptime(review.due_date, "%Y-%m-%d").date()
-                if datetime.date.today() > due:
-                    return True
-            except ValueError:
-                pass
-        return False
-
-    def get_requirements_for_review(self, review):
-        """Return a set of requirement IDs included in the given review."""
-        req_ids = set()
-        for tid in getattr(review, "fta_ids", []):
-            node = self.find_node_by_id_all(tid)
-            if not node:
-                continue
-            for n in self.get_all_nodes(node):
-                for r in getattr(n, "safety_requirements", []):
-                    req_ids.add(r.get("id"))
-        for name in getattr(review, "fmea_names", []):
-            fmea = next((f for f in self.fmeas if f["name"] == name), None)
-            if not fmea:
-                continue
-            for e in fmea.get("entries", []):
-                for r in e.get("safety_requirements", []):
-                    req_ids.add(r.get("id"))
-        return req_ids
-
-    def update_requirement_statuses(self):
-        status_order = {
-            "draft": 0,
-            "in review": 1,
-            "peer reviewed": 2,
-            "pending approval": 3,
-            "approved": 4,
-        }
-        for req in global_requirements.values():
-            req.setdefault("status", "draft")
-        for review in self.reviews:
-            ids = self.get_requirements_for_review(review)
-            closed = self.review_is_closed_for(review)
-            for rid in ids:
-                req = global_requirements.get(rid)
-                if not req:
-                    continue
-                if review.mode == "joint":
-                    if review.approved:
-                        status = "approved"
-                    elif closed:
-                        status = "pending approval"
-                    else:
-                        status = "in review"
-                else:  # peer review
-                    if getattr(review, "reviewed", False) or closed:
-                        status = "peer reviewed"
-                    else:
-                        status = "in review"
-                if status_order[status] > status_order.get(req.get("status", "draft"), 0):
-                    req["status"] = status
-
+    # --- End Review Toolbox Methods ---
 
     def compute_requirement_asil(self, req_id):
         """Return highest ASIL across all safety goals linked to the requirement."""
