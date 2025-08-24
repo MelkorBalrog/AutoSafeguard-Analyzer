@@ -1,4 +1,4 @@
-version: 0.2.1
+version: 0.2.2
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1636,6 +1636,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.2 - Moved risk assessment helpers into dedicated sub-app.
 - 0.2.1 - Extracted review diff and version functions into ReviewManager.
 - 0.1.12 - Delegated reliability and risk-analysis windows to dedicated sub-app wrappers.
 - 0.1.11 - Split fault-tree and risk assessment logic into dedicated sub-app wrappers.

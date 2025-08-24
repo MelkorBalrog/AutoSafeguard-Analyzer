@@ -1537,93 +1537,28 @@ class AutoMLApp:
         return None
 
     def get_hazop_by_name(self, name):
-        for d in self.hazop_docs:
-            if d.name == name:
-                return d
-        return None
+        return self.risk_app.get_hazop_by_name(self, name)
 
     def get_hara_by_name(self, name):
-        for d in self.hara_docs:
-            if d.name == name:
-                return d
-        return None
+        return self.risk_app.get_hara_by_name(self, name)
 
     def update_hara_statuses(self):
-        """Update each risk assessment document's status based on linked reviews."""
-        for doc in self.hara_docs:
-            status = "draft"
-            for review in self.reviews:
-                if doc.name in getattr(review, "hara_names", []):
-                    if review.mode == "joint" and review.approved and self.review_is_closed_for(review):
-                        status = "closed"
-                        break
-                    else:
-                        status = "in review"
-            doc.status = status
-            doc.approved = status == "closed"
+        return self.risk_app.update_hara_statuses(self)
 
     def update_fta_statuses(self):
-        """Update status for each top level event based on linked reviews."""
-        for te in self.top_events:
-            status = "draft"
-            for review in self.reviews:
-                if te.unique_id in getattr(review, "fta_ids", []):
-                    if review.mode == "joint" and review.approved and self.review_is_closed_for(review):
-                        status = "closed"
-                        break
-                    else:
-                        status = "in review"
-            te.status = status
+        return self.risk_app.update_fta_statuses(self)
 
     def get_safety_goal_asil(self, sg_name):
-        """Return the highest ASIL level for a safety goal name across approved risk assessments."""
-        best = "QM"
-        for doc in getattr(self, "hara_docs", []):
-            if not getattr(doc, "approved", False) and getattr(doc, "status", "") != "closed":
-                continue
-            for e in doc.entries:
-                if sg_name and sg_name == e.safety_goal and ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(best, 0):
-                    best = e.asil
-        for te in self.top_events:
-            if sg_name and (sg_name == te.user_name or sg_name == te.safety_goal_description):
-                if ASIL_ORDER.get(te.safety_goal_asil or "QM", 0) > ASIL_ORDER.get(best, 0):
-                    best = te.safety_goal_asil or "QM"
-        return best
+        return self.risk_app.get_safety_goal_asil(self, sg_name)
 
     def get_hara_goal_asil(self, sg_name):
-        """Return highest ASIL from all risk assessment entries for the given safety goal."""
-        best = "QM"
-        for doc in getattr(self, "hara_docs", []):
-            for e in doc.entries:
-                if sg_name and sg_name == e.safety_goal and ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(best, 0):
-                    best = e.asil
-        return best
+        return self.risk_app.get_hara_goal_asil(self, sg_name)
 
     def get_cyber_goal_cal(self, goal_id):
-        """Return highest CAL from risk assessments for the given cybersecurity goal."""
-        order = {level: idx for idx, level in enumerate(CAL_LEVEL_OPTIONS, start=1)}
-        best = CAL_LEVEL_OPTIONS[0]
-        for doc in getattr(self, "hara_docs", []):
-            for e in getattr(doc, "entries", []):
-                cyber = getattr(e, "cyber", None)
-                if not cyber or not cyber.cybersecurity_goal:
-                    continue
-                if goal_id and goal_id == cyber.cybersecurity_goal:
-                    cal = getattr(cyber, "cal", CAL_LEVEL_OPTIONS[0])
-                    if order.get(cal, 0) > order.get(best, 0):
-                        best = cal
-        return best
+        return self.risk_app.get_cyber_goal_cal(self, goal_id)
 
     def get_top_event_safety_goals(self, node):
-        """Return names of safety goals for top events containing ``node``."""
-        result = []
-        target = self.get_failure_mode_node(node)
-        for te in self.top_events:
-            if any(n.unique_id == target.unique_id for n in self.get_all_nodes(te)):
-                sg = te.safety_goal_description or te.user_name or ""
-                if sg:
-                    result.append(sg)
-        return result
+        return self.risk_app.get_top_event_safety_goals(self, node)
 
     def get_safety_goals_for_malfunctions(self, malfunctions: list[str]) -> list[str]:
         """Return safety goal names for given malfunctions."""
