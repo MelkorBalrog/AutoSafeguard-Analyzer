@@ -1384,6 +1384,7 @@ class AutoMLApp:
                     if rid and rid not in reqs2:
                         reqs2[rid] = r
         import difflib, html
+
         def html_diff(a, b):
             matcher = difflib.SequenceMatcher(None, a, b)
             parts = []
@@ -1690,6 +1691,7 @@ class AutoMLApp:
                     parts.append(html.escape(a[i1:i2]))
                     parts.append(f"<span style='color:red'>{html.escape(a[i1:i2])}</span>")
                     parts.append(f"<span style='color:blue'>{html.escape(b[j1:j2])}</span>")
+                elif tag == "replace":
                     parts.append(f"<span style='color:red'>{html.escape(a[i1:i2])}</span>")
                     parts.append(f"<span style='color:blue'>{html.escape(b[j1:j2])}</span>")
             return "".join(parts)
@@ -1822,12 +1824,10 @@ class AutoMLApp:
                     if d.get("name") in getattr(review, "stpa_names", [])
                 ],
             }
-
         data1 = filter_data(base_data)
         data2 = filter_data(current)
         map1 = self.node_map_from_data(data1["top_events"])
         map2 = self.node_map_from_data(data2["top_events"])
-
         def collect_reqs(node_dict, target):
             for r in node_dict.get("safety_requirements", []):
                 rid = r.get("id")
@@ -1835,14 +1835,12 @@ class AutoMLApp:
                     target[rid] = r
             for ch in node_dict.get("children", []):
                 collect_reqs(ch, target)
-
         reqs1, reqs2 = {}, {}
         for nid in review.fta_ids:
             if nid in map1:
                 collect_reqs(map1[nid], reqs1)
             if nid in map2:
                 collect_reqs(map2[nid], reqs2)
-
         fmea1 = {f["name"]: f for f in data1.get("fmeas", [])}
         fmea2 = {f["name"]: f for f in data2.get("fmeas", [])}
         for name in review.fmea_names:
@@ -1998,13 +1996,11 @@ class AutoMLApp:
             if d.name == name:
                 return d
         return None
-
     def get_hara_by_name(self, name):
         for d in self.hara_docs:
             if d.name == name:
                 return d
         return None
-
     def update_hara_statuses(self):
         """Update each risk assessment document's status based on linked reviews."""
         for doc in self.hara_docs:
@@ -2044,6 +2040,7 @@ class AutoMLApp:
                 if ASIL_ORDER.get(te.safety_goal_asil or "QM", 0) > ASIL_ORDER.get(best, 0):
                     best = te.safety_goal_asil or "QM"
         return best
+
     def get_hara_goal_asil(self, sg_name):
         """Return highest ASIL from all risk assessment entries for the given safety goal."""
         best = "QM"
@@ -2052,6 +2049,7 @@ class AutoMLApp:
                 if sg_name and sg_name == e.safety_goal and ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(best, 0):
                     best = e.asil
         return best
+
     def get_cyber_goal_cal(self, goal_id):
         """Return highest CAL from risk assessments for the given cybersecurity goal."""
         order = {level: idx for idx, level in enumerate(CAL_LEVEL_OPTIONS, start=1)}
@@ -2060,7 +2058,6 @@ class AutoMLApp:
             for e in getattr(doc, "entries", []):
                 cyber = getattr(e, "cyber", None)
                 if not cyber or not cyber.cybersecurity_goal:
-                    continue
                 if goal_id and goal_id == cyber.cybersecurity_goal:
                     cal = getattr(cyber, "cal", CAL_LEVEL_OPTIONS[0])
                     if order.get(cal, 0) > order.get(best, 0):
@@ -2098,7 +2095,6 @@ class AutoMLApp:
             if name in mals:
                 return True
         return False
-
     def add_malfunction(self, name: str) -> None:
         """Add a malfunction to the list if it does not already exist."""
         self.push_undo_state()
@@ -2118,15 +2114,18 @@ class AutoMLApp:
                 self.top_events[0].malfunction = name
                 self.root_node = self.top_events[0]
                 self.update_views()
+            else:
                 self.create_top_event_for_malfunction(name)
     def add_fault(self, name: str) -> None:
         """Add a fault to the list if not already present."""
         self.push_undo_state()
         append_unique_insensitive(self.faults, name)
+
     def add_failure(self, name: str) -> None:
         """Add a failure to the list if not already present."""
         self.push_undo_state()
         append_unique_insensitive(self.failures, name)
+
     def add_hazard(self, name: str, severity: int | str = 1) -> None:
         """Add a hazard to the list if not already present."""
         self.push_undo_state()
@@ -2238,7 +2237,6 @@ class AutoMLApp:
                     e.user_name = pg["name"]
                     e.name_readonly = True
                     e.product_goal = pg
-            else:
                 self.shared_product_goals.pop(mal, None)
                 ev = events[0]
                 ev.name_readonly = False
@@ -2301,6 +2299,7 @@ class AutoMLApp:
             if changed:
                 be.fmea_cause = ";".join([c for c in causes if c])
         self.update_views()
+
     def rename_failure(self, old: str, new: str) -> None:
         self.push_undo_state()
         if not old or old == new:
@@ -2315,6 +2314,7 @@ class AutoMLApp:
             if getattr(n, "fmea_effect", "") == old:
                 n.fmea_effect = new
         self.update_views()
+
     def _replace_name_in_list(self, value: str, old: str, new: str) -> str:
         parts = []
         changed = False
@@ -2328,6 +2328,7 @@ class AutoMLApp:
             else:
                 parts.append(p)
         return ";".join(parts) if changed else value
+
     def _remove_name_from_list(self, value: str, name: str) -> str:
         parts = []
         for p in value.split(";"):
@@ -2340,6 +2341,7 @@ class AutoMLApp:
         name = (name or "").strip()
         if not name or name in self.triggering_conditions:
             return
+
         node = FaultTreeNode(name, "Triggering Condition")
         self.triggering_condition_nodes.append(node)
         if name not in self.triggering_conditions:
@@ -3525,7 +3527,6 @@ class AutoMLApp:
                 conn_status[c] = "removed"
             elif c in conns2 and c not in conns1:
                 conn_status[c] = "added"
-            else:
                 conn_status[c] = "existing"
         status = {}
         for nid in set(map1) | set(map2):
@@ -3533,6 +3534,7 @@ class AutoMLApp:
                 status[nid] = "removed"
             elif nid in map2 and nid not in map1:
                 status[nid] = "added"
+            else:
                 if json.dumps(map1[nid], sort_keys=True) != json.dumps(map2[nid], sort_keys=True):
                     status[nid] = "added"
                 else:
@@ -3655,6 +3657,7 @@ class AutoMLApp:
                 (f"Subtype: {subtype_text}\n", "black"),
                 (f"{display_label}\n", "black"),
             ] + desc_segments + [("\n\n", "black")] + rat_segments
+
             top_text = "".join(seg[0] for seg in segments)
             bottom_text = n.name
             fill = self.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
@@ -3753,8 +3756,8 @@ class AutoMLApp:
                 conn_status[c] = "removed"
             elif c in conns2 and c not in conns1:
                 conn_status[c] = "added"
+            else:
                 conn_status[c] = "existing"
-
         status = {}
         for nid in set(map1) | set(map2):
             if nid in map1 and nid not in map2:
@@ -3871,234 +3874,6 @@ class AutoMLApp:
             elif st == "removed":
                 color = "red"
 
-            source = n if getattr(n, "is_primary_instance", True) else getattr(n, "original", n)
-            subtype_text = source.input_subtype if source.input_subtype else "N/A"
-            display_label = source.display_label
-            old_data = map1.get(n.unique_id)
-            new_data = map2.get(n.unique_id)
-            if old_data and new_data:
-                desc_segments = [("Desc: ", "black")] + diff_segments(old_data.get("description", ""), new_data.get("description", ""))
-                rat_segments = [("Rationale: ", "black")] + diff_segments(old_data.get("rationale", ""), new_data.get("rationale", ""))
-            else:
-                desc_segments = [("Desc: " + source.description, "black")]
-                rat_segments = [("Rationale: " + source.rationale, "black")]
-            segments = [
-                (f"Type: {source.node_type}\n", "black"),
-                (f"Subtype: {subtype_text}\n", "black"),
-                (f"{display_label}\n", "black"),
-            ] + desc_segments + [("\n\n", "black")] + rat_segments
-            top_text = "".join(seg[0] for seg in segments)
-            bottom_text = n.name
-            fill = self.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
-            eff_x, eff_y = n.x, n.y
-            typ = n.node_type.upper()
-            items_before = canvas.find_all()
-            if typ in GATE_NODE_TYPES:
-                if n.gate_type and n.gate_type.upper() == "OR":
-                    if self.fta_drawing_helper:
-                        self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
-                else:
-                    if self.fta_drawing_helper:
-                        self.fta_drawing_helper.draw_rotated_and_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
-            else:
-                if self.fta_drawing_helper:
-                    self.fta_drawing_helper.draw_circle_event_shape(canvas, eff_x, eff_y, 45, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
-            items_after = canvas.find_all()
-            text_id = None
-            for item in items_after:
-                if item in items_before:
-                    continue
-                if canvas.type(item) == "text" and canvas.itemcget(item, "text") == top_text:
-                    text_id = item
-                    break
-            if text_id and any(c in ("red", "blue") for _, c in segments):
-                bbox = canvas.bbox(text_id)
-                cx = (bbox[0] + bbox[2]) / 2
-                cy = (bbox[1] + bbox[3]) / 2
-                canvas.itemconfigure(text_id, state="hidden")
-                draw_segment_text(canvas, cx, cy, segments, self.diagram_font)
-            for ch in n.children:
-                draw_node(ch)
-        for r in new_roots:
-            draw_connections(r)
-            draw_node(r)
-        existing_pairs = set()
-        for p in node_objs.values():
-            for ch in p.children:
-                existing_pairs.add((p.unique_id, ch.unique_id))
-        for (pid, cid), st in conn_status.items():
-            if st != "removed":
-                continue
-            if (pid, cid) in existing_pairs:
-                continue
-            if pid in node_objs and cid in node_objs and pid in allow_ids and cid in allow_ids:
-                parent = node_objs[pid]
-                child = node_objs[cid]
-                parent_pt = (parent.x, parent.y + 20)
-                child_pt = (child.x, child.y - 25)
-                if self.fta_drawing_helper:
-                    self.fta_drawing_helper.draw_90_connection(canvas, parent_pt, child_pt, outline_color="red", line_width=1)
-        canvas.update()
-        bbox = canvas.bbox("all")
-        if not bbox:
-            temp.destroy()
-            return None
-        x, y, x2, y2 = bbox
-        ps = canvas.postscript(colormode="color", x=x, y=y, width=x2 - x, height=y2 - y)
-        ps_bytes = BytesIO(ps.encode("utf-8"))
-        try:
-            img = Image.open(ps_bytes)
-            img.load(scale=3)
-        except Exception:
-            img = None
-        temp.destroy()
-        return img.convert("RGB") if img else None
-    def capture_diff_diagram(self, top_event):
-        """Return an image of the FTA with diff colouring versus last version."""
-        if not self.versions:
-            return self.capture_page_diagram(top_event)
-        from io import BytesIO
-        from PIL import Image
-        import difflib
-        current = self.export_model_data(include_versions=False)
-        base_data = self.versions[-1]["data"]
-        def filter_events(data):
-            return [t for t in data.get("top_events", []) if t["unique_id"] == top_event.unique_id]
-        data1 = {"top_events": filter_events(base_data)}
-        data2 = {"top_events": filter_events(current)}
-        map1 = self.node_map_from_data(data1["top_events"])
-        map2 = self.node_map_from_data(data2["top_events"])
-        def build_conn_set(events):
-            conns = set()
-            def visit(d):
-                for ch in d.get("children", []):
-                    conns.add((d["unique_id"], ch["unique_id"]))
-                    visit(ch)
-            for t in events:
-                visit(t)
-            return conns
-        conns1 = build_conn_set(data1["top_events"])
-        conns2 = build_conn_set(data2["top_events"])
-        conn_status = {}
-        for c in conns1 | conns2:
-            if c in conns1 and c not in conns2:
-                conn_status[c] = "removed"
-            elif c in conns2 and c not in conns1:
-                conn_status[c] = "added"
-            else:
-                conn_status[c] = "existing"
-        status = {}
-        for nid in set(map1) | set(map2):
-            if nid in map1 and nid not in map2:
-                status[nid] = "removed"
-            elif nid in map2 and nid not in map1:
-                status[nid] = "added"
-            else:
-                if json.dumps(map1[nid], sort_keys=True) != json.dumps(map2[nid], sort_keys=True):
-                    status[nid] = "added"
-                    status[nid] = "existing"
-        module = sys.modules.get(self.__class__.__module__)
-        FaultTreeNodeCls = getattr(module, 'FaultTreeNode', None)
-        if not FaultTreeNodeCls and self.top_events:
-            FaultTreeNodeCls = type(self.top_events[0])
-        new_roots = [FaultTreeNodeCls.from_dict(t) for t in data2["top_events"]]
-        removed_ids = [nid for nid, st in status.items() if st == "removed"]
-        for rid in removed_ids:
-            if rid in map1:
-                nd = map1[rid]
-                new_roots.append(FaultTreeNodeCls.from_dict(nd))
-        allow_ids = set()
-        def collect_ids(d):
-            allow_ids.add(d["unique_id"])
-            for ch in d.get("children", []):
-                collect_ids(ch)
-        if top_event.unique_id in map1:
-            collect_ids(map1[top_event.unique_id])
-        if top_event.unique_id in map2:
-            collect_ids(map2[top_event.unique_id])
-        node_objs = {}
-        def collect_nodes(n):
-            if n.unique_id not in node_objs:
-                node_objs[n.unique_id] = n
-            for ch in n.children:
-                collect_nodes(ch)
-        for r in new_roots:
-            collect_nodes(r)
-        def diff_segments(old, new):
-            matcher = difflib.SequenceMatcher(None, old, new)
-            segments = []
-            for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-                if tag == "equal":
-                    segments.append((old[i1:i2], "black"))
-                elif tag == "delete":
-                    segments.append((old[i1:i2], "red"))
-                elif tag == "insert":
-                    segments.append((new[j1:j2], "blue"))
-                elif tag == "replace":
-                    segments.append((old[i1:i2], "red"))
-                    segments.append((new[j1:j2], "blue"))
-            return segments
-        def draw_segment_text(canvas, cx, cy, segments, font_obj):
-            lines = [[]]
-            for text, color in segments:
-                parts = text.split("\n")
-                for idx, part in enumerate(parts):
-                    if idx > 0:
-                        lines.append([])
-                    lines[-1].append((part, color))
-            line_height = font_obj.metrics("linespace")
-            total_height = line_height * len(lines)
-            start_y = cy - total_height / 2
-            for line in lines:
-                line_width = sum(font_obj.measure(part) for part, _ in line)
-                start_x = cx - line_width / 2
-                x = start_x
-                for part, color in line:
-                    if part:
-                        canvas.create_text(x, start_y, text=part, anchor="nw", fill=color, font=font_obj)
-                        x += font_obj.measure(part)
-                start_y += line_height
-        temp = tk.Toplevel(self.root)
-        temp.withdraw()
-        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
-        canvas.pack()
-        def draw_connections(n):
-            if n.unique_id not in allow_ids:
-                for ch in n.children:
-                    draw_connections(ch)
-                return
-            region_width = 60
-            parent_bottom = (n.x, n.y + 20)
-            for i, ch in enumerate(n.children):
-                if ch.unique_id not in allow_ids:
-                    continue
-                parent_conn = (
-                    n.x - region_width / 2 + (i + 0.5) * (region_width / len(n.children)),
-                    parent_bottom[1],
-                )
-                child_top = (ch.x, ch.y - 25)
-                edge_st = conn_status.get((n.unique_id, ch.unique_id), "existing")
-                if status.get(n.unique_id) == "removed" or status.get(ch.unique_id) == "removed":
-                    edge_st = "removed"
-                color = "gray"
-                if edge_st == "added":
-                    color = "blue"
-                elif edge_st == "removed":
-                    color = "red"
-                if self.fta_drawing_helper:
-                    self.fta_drawing_helper.draw_90_connection(canvas, parent_conn, child_top, outline_color=color, line_width=1)
-                draw_connections(ch)
-        def draw_node(n):
-            if n.unique_id not in allow_ids:
-                for ch in n.children:
-                    draw_node(ch)
-                return
-            st = status.get(n.unique_id, "existing")
-            color = "dimgray"
-            if st == "added":
-                color = "blue"
-            elif st == "removed":
-                color = "red"
             source = n if getattr(n, "is_primary_instance", True) else getattr(n, "original", n)
             subtype_text = source.input_subtype if source.input_subtype else "N/A"
             display_label = source.display_label
@@ -4226,6 +4001,7 @@ class AutoMLApp:
             else:
                 if json.dumps(map1[nid], sort_keys=True) != json.dumps(map2[nid], sort_keys=True):
                     status[nid] = "added"
+                else:
                     status[nid] = "existing"
 
         module = sys.modules.get(self.__class__.__module__)
@@ -4272,7 +4048,6 @@ class AutoMLApp:
                     segments.append((old[i1:i2], "red"))
                     segments.append((new[j1:j2], "blue"))
             return segments
-
         def draw_segment_text(canvas, cx, cy, segments, font_obj):
             lines = [[]]
             for text, color in segments:
@@ -4293,12 +4068,10 @@ class AutoMLApp:
                         canvas.create_text(x, start_y, text=part, anchor="nw", fill=color, font=font_obj)
                         x += font_obj.measure(part)
                 start_y += line_height
-
         temp = tk.Toplevel(self.root)
         temp.withdraw()
         canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
         canvas.pack()
-
         def draw_connections(n):
             if n.unique_id not in allow_ids:
                 for ch in n.children:
@@ -4325,6 +4098,238 @@ class AutoMLApp:
                     self.fta_drawing_helper.draw_90_connection(canvas, parent_conn, child_top, outline_color=color, line_width=1)
                 draw_connections(ch)
 
+        def draw_node(n):
+            if n.unique_id not in allow_ids:
+                for ch in n.children:
+                    draw_node(ch)
+                return
+            st = status.get(n.unique_id, "existing")
+            color = "dimgray"
+            if st == "added":
+                color = "blue"
+            elif st == "removed":
+                color = "red"
+
+            source = n if getattr(n, "is_primary_instance", True) else getattr(n, "original", n)
+            subtype_text = source.input_subtype if source.input_subtype else "N/A"
+            display_label = source.display_label
+            old_data = map1.get(n.unique_id)
+            new_data = map2.get(n.unique_id)
+            if old_data and new_data:
+                desc_segments = [("Desc: ", "black")] + diff_segments(old_data.get("description", ""), new_data.get("description", ""))
+                rat_segments = [("Rationale: ", "black")] + diff_segments(old_data.get("rationale", ""), new_data.get("rationale", ""))
+            else:
+                desc_segments = [("Desc: " + source.description, "black")]
+                rat_segments = [("Rationale: " + source.rationale, "black")]
+            segments = [
+                (f"Type: {source.node_type}\n", "black"),
+                (f"Subtype: {subtype_text}\n", "black"),
+                (f"{display_label}\n", "black"),
+            ] + desc_segments + [("\n\n", "black")] + rat_segments
+
+            top_text = "".join(seg[0] for seg in segments)
+            bottom_text = n.name
+            fill = self.get_node_fill_color(n, getattr(canvas, "diagram_mode", None))
+            eff_x, eff_y = n.x, n.y
+            typ = n.node_type.upper()
+            items_before = canvas.find_all()
+            if typ in GATE_NODE_TYPES:
+                if n.gate_type and n.gate_type.upper() == "OR":
+                    if self.fta_drawing_helper:
+                        self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
+                else:
+                    if self.fta_drawing_helper:
+                        self.fta_drawing_helper.draw_rotated_and_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
+            else:
+                if self.fta_drawing_helper:
+                    self.fta_drawing_helper.draw_circle_event_shape(canvas, eff_x, eff_y, 45, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
+
+            items_after = canvas.find_all()
+            text_id = None
+            for item in items_after:
+                if item in items_before:
+                if canvas.type(item) == "text" and canvas.itemcget(item, "text") == top_text:
+                    text_id = item
+                    break
+            if text_id and any(c in ("red", "blue") for _, c in segments):
+                bbox = canvas.bbox(text_id)
+                cx = (bbox[0] + bbox[2]) / 2
+                cy = (bbox[1] + bbox[3]) / 2
+                canvas.itemconfigure(text_id, state="hidden")
+                draw_segment_text(canvas, cx, cy, segments, self.diagram_font)
+            for ch in n.children:
+                draw_node(ch)
+        for r in new_roots:
+            draw_connections(r)
+            draw_node(r)
+
+        existing_pairs = set()
+        for p in node_objs.values():
+            for ch in p.children:
+                existing_pairs.add((p.unique_id, ch.unique_id))
+        for (pid, cid), st in conn_status.items():
+            if st != "removed":
+                continue
+            if (pid, cid) in existing_pairs:
+                continue
+            if pid in node_objs and cid in node_objs and pid in allow_ids and cid in allow_ids:
+                parent = node_objs[pid]
+                child = node_objs[cid]
+                parent_pt = (parent.x, parent.y + 20)
+                child_pt = (child.x, child.y - 25)
+                if self.fta_drawing_helper:
+                    self.fta_drawing_helper.draw_90_connection(canvas, parent_pt, child_pt, outline_color="red", line_width=1)
+        canvas.update()
+        bbox = canvas.bbox("all")
+        if not bbox:
+            temp.destroy()
+            return None
+        x, y, x2, y2 = bbox
+        ps = canvas.postscript(colormode="color", x=x, y=y, width=x2 - x, height=y2 - y)
+        ps_bytes = BytesIO(ps.encode("utf-8"))
+        try:
+            img = Image.open(ps_bytes)
+            img.load(scale=3)
+        except Exception:
+            img = None
+        temp.destroy()
+        return img.convert("RGB") if img else None
+    def capture_diff_diagram(self, top_event):
+        """Return an image of the FTA with diff colouring versus last version."""
+        if not self.versions:
+            return self.capture_page_diagram(top_event)
+        from io import BytesIO
+        from PIL import Image
+        import difflib
+        current = self.export_model_data(include_versions=False)
+        base_data = self.versions[-1]["data"]
+        def filter_events(data):
+            return [t for t in data.get("top_events", []) if t["unique_id"] == top_event.unique_id]
+        data1 = {"top_events": filter_events(base_data)}
+        data2 = {"top_events": filter_events(current)}
+        map1 = self.node_map_from_data(data1["top_events"])
+        map2 = self.node_map_from_data(data2["top_events"])
+        def build_conn_set(events):
+            conns = set()
+            def visit(d):
+                for ch in d.get("children", []):
+                    conns.add((d["unique_id"], ch["unique_id"]))
+                    visit(ch)
+            for t in events:
+                visit(t)
+            return conns
+        conns1 = build_conn_set(data1["top_events"])
+        conns2 = build_conn_set(data2["top_events"])
+
+        conn_status = {}
+        for c in conns1 | conns2:
+            if c in conns1 and c not in conns2:
+                conn_status[c] = "removed"
+            elif c in conns2 and c not in conns1:
+                conn_status[c] = "added"
+            else:
+                conn_status[c] = "existing"
+        status = {}
+        for nid in set(map1) | set(map2):
+            if nid in map1 and nid not in map2:
+                status[nid] = "removed"
+            elif nid in map2 and nid not in map1:
+                status[nid] = "added"
+            else:
+                if json.dumps(map1[nid], sort_keys=True) != json.dumps(map2[nid], sort_keys=True):
+                    status[nid] = "added"
+                else:
+                    status[nid] = "existing"
+        module = sys.modules.get(self.__class__.__module__)
+        FaultTreeNodeCls = getattr(module, 'FaultTreeNode', None)
+        if not FaultTreeNodeCls and self.top_events:
+            FaultTreeNodeCls = type(self.top_events[0])
+        new_roots = [FaultTreeNodeCls.from_dict(t) for t in data2["top_events"]]
+        removed_ids = [nid for nid, st in status.items() if st == "removed"]
+        for rid in removed_ids:
+            if rid in map1:
+                nd = map1[rid]
+                new_roots.append(FaultTreeNodeCls.from_dict(nd))
+        allow_ids = set()
+        def collect_ids(d):
+            allow_ids.add(d["unique_id"])
+            for ch in d.get("children", []):
+                collect_ids(ch)
+        if top_event.unique_id in map1:
+            collect_ids(map1[top_event.unique_id])
+        if top_event.unique_id in map2:
+            collect_ids(map2[top_event.unique_id])
+        node_objs = {}
+        def collect_nodes(n):
+            if n.unique_id not in node_objs:
+                node_objs[n.unique_id] = n
+            for ch in n.children:
+                collect_nodes(ch)
+        for r in new_roots:
+            collect_nodes(r)
+        def diff_segments(old, new):
+            matcher = difflib.SequenceMatcher(None, old, new)
+            segments = []
+            for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+                if tag == "equal":
+                    segments.append((old[i1:i2], "black"))
+                elif tag == "delete":
+                    segments.append((old[i1:i2], "red"))
+                elif tag == "insert":
+                    segments.append((new[j1:j2], "blue"))
+                elif tag == "replace":
+                    segments.append((old[i1:i2], "red"))
+                    segments.append((new[j1:j2], "blue"))
+            return segments
+        def draw_segment_text(canvas, cx, cy, segments, font_obj):
+            lines = [[]]
+            for text, color in segments:
+                parts = text.split("\n")
+                for idx, part in enumerate(parts):
+                    if idx > 0:
+                        lines.append([])
+                    lines[-1].append((part, color))
+            line_height = font_obj.metrics("linespace")
+            total_height = line_height * len(lines)
+            start_y = cy - total_height / 2
+            for line in lines:
+                line_width = sum(font_obj.measure(part) for part, _ in line)
+                start_x = cx - line_width / 2
+                x = start_x
+                for part, color in line:
+                    if part:
+                        canvas.create_text(x, start_y, text=part, anchor="nw", fill=color, font=font_obj)
+                        x += font_obj.measure(part)
+                start_y += line_height
+        temp = tk.Toplevel(self.root)
+        temp.withdraw()
+        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
+        canvas.pack()
+        def draw_connections(n):
+            if n.unique_id not in allow_ids:
+                for ch in n.children:
+                    draw_connections(ch)
+                return
+            region_width = 60
+            parent_bottom = (n.x, n.y + 20)
+            for i, ch in enumerate(n.children):
+                if ch.unique_id not in allow_ids:
+                    continue
+                parent_conn = (
+                    n.x - region_width / 2 + (i + 0.5) * (region_width / len(n.children)),
+                    parent_bottom[1],
+                child_top = (ch.x, ch.y - 25)
+                edge_st = conn_status.get((n.unique_id, ch.unique_id), "existing")
+                if status.get(n.unique_id) == "removed" or status.get(ch.unique_id) == "removed":
+                    edge_st = "removed"
+                color = "gray"
+                if edge_st == "added":
+                    color = "blue"
+                elif edge_st == "removed":
+                    color = "red"
+                if self.fta_drawing_helper:
+                    self.fta_drawing_helper.draw_90_connection(canvas, parent_conn, child_top, outline_color=color, line_width=1)
+                draw_connections(ch)
         def draw_node(n):
             if n.unique_id not in allow_ids:
                 for ch in n.children:
@@ -4539,7 +4544,6 @@ class AutoMLApp:
                 for keyword, rec_text in extra_dict.items():
                     if keyword.lower() in desc_lower:
                         rec_to_nodes.setdefault(rec_text, []).append(node)
-
         if not rec_to_nodes:
             print("Debug: No matching recommendations found for any node.")
             return None
@@ -4654,6 +4658,7 @@ class AutoMLApp:
         html_lines.append('</table>')
         
         return "\n".join(html_lines)
+
     def build_argumentation(self, node):
         if not node.children:
             return ""
@@ -4780,7 +4785,6 @@ class AutoMLApp:
             #f"<b>Relevant AVSC Guidelines:</b> {avsc_guid}<br/>"
         )
         return text
-
     def get_extra_recommendations_list(self, description, level):
         """
         Given a node's description and its Prototype Assurance Level (PAL), return a list of extra recommendations.
@@ -4819,6 +4823,7 @@ class AutoMLApp:
         if recommendations:
             return "\nExtra Testing Recommendations:\n" + "\n".join(f"- {r}" for r in recommendations)
         return ""
+
     def get_recommendation_from_description(self, description, level):
         """
         Given a node's description and its Prototype Assurance Level (PAL), this function iterates over all keys 
@@ -4915,6 +4920,7 @@ class AutoMLApp:
             if getattr(node, "input_subtype", ""):
                 node_info["subtype"] = node.input_subtype
             nodes.append(node_info)
+
             for child in getattr(node, "children", []):
                 edges.append({"source": str(node.unique_id), "target": str(child.unique_id)})
                 traverse(child)
@@ -4976,12 +4982,11 @@ class AutoMLApp:
         # --- 2) Identify the top event as 'root' (layer 0) ---
         if fta_model["nodes"]:
             top_event_id = fta_model["nodes"][0]["id"]
+        else:
             img = Image.new("RGB", (400, 300), "white")
             draw = ImageDraw.Draw(img)
             draw.text((200, 150), "No nodes to display", fill="black", anchor="mm")
             img.save(output_path)
-            return
-
         # --- 3) BFS layering from top_event to find each node's layer ---
         layers = {}
         layers[top_event_id] = 0
@@ -5016,6 +5021,7 @@ class AutoMLApp:
 
         for layer in sorted(layer_dict.keys()):
             node_list = layer_dict[layer]
+
             # Sort siblings by average parent index (optional)
             def avg_parent_position(n):
                 parents = list(G.predecessors(n))
@@ -5023,18 +5029,23 @@ class AutoMLApp:
                     return 0
                 # we assume all parents are in a smaller layer
                 return sum(layer_dict[layers[p]].index(p) for p in parents) / len(parents)
+
             node_list.sort(key=avg_parent_position)
+
             # Place them at x = layer*gap, y around 0
             middle = (len(node_list) - 1) / 2.0
             for i, n in enumerate(node_list):
                 x = layer * horizontal_gap
                 y = (i - middle) * vertical_gap
                 pos[n] = (x, y)
+
         # --- 5) Light collision-avoidance pass (optional) ---
         def get_node_bbox(p, box_size=0.3):
             return (p[0] - box_size, p[1] - box_size, p[0] + box_size, p[1] + box_size)
+
         def bboxes_overlap(b1, b2):
             return not (b1[2] < b2[0] or b1[0] > b2[2] or b1[3] < b2[1] or b1[1] > b2[3])
+
         for _ in range(10):
             for n1 in G.nodes():
                 for n2 in G.nodes():
@@ -5051,12 +5062,14 @@ class AutoMLApp:
                         shift = (delta/dist)*push
                         pos[n1] = tuple(p1 + shift)
                         pos[n2] = tuple(p2 - shift)
+
         # --- 6) Draw the diagram with REVERSED edges (child->parent) ---
         # Convert layout coordinates to image pixels
         xs = [p[0] for p in pos.values()]
         ys = [p[1] for p in pos.values()]
         min_x, max_x = min(xs), max(xs)
         min_y, max_y = min(ys), max(ys)
+
         # Ensure the canvas leaves enough room so that nodes at the
         # extremities are fully visible.  The previous implementation used a
         # fixed margin of 50 pixels which was smaller than half of the node's
@@ -5076,9 +5089,7 @@ class AutoMLApp:
             px = int((x - min_x) * scale) + margin_x
             py = int((max_y - y) * scale) + margin_y
             return px, py
-
         px_pos = {n: to_px(pos[n]) for n in pos}
-
         test_mod = sys.modules.get("test_cause_effect_diagram") or sys.modules.get("tests.test_cause_effect_diagram")
         if test_mod and hasattr(test_mod, "created_sizes"):
             test_mod.created_sizes.append((width, height))
@@ -5120,9 +5131,8 @@ class AutoMLApp:
             tw = bbox[2] - bbox[0]
             th = bbox[3] - bbox[1]
             draw.multiline_text((x - tw/2, y - th/2), lbl, font=font, fill="black", align="center")
-
         img.save(output_path)
-
+                  
     def build_dynamic_recommendations_table(events, app):
         """
         (Optional) If you still want to have a compact table of per-event recommendations,
@@ -5211,10 +5221,13 @@ class AutoMLApp:
                 for req in node.safety_requirements:
                     req_set.add(f"[{req['id']}] [{req['req_type']}] {req['text']}")
         return req_set
-    def get_combined_safety_requirements(self,node):
-        Returns a list of safety requirement dicts for the given node.
-        If the node is a clone, it also combines the original node's safety_requirements.
-        """
+                  
+    def get_combined_safety_requirements(self, node):
+        """Return all safety requirements associated with *node*.
+        The returned list contains the requirements defined directly on the
+        node.  If the node is a clone, the requirements from its original node
+        are also included so callers always receive the complete set of
+        applicable safety requirements."""
         req_list = []
         # Always take the node's own requirements if they exist.
         if hasattr(node, "safety_requirements") and node.safety_requirements:
@@ -5223,10 +5236,11 @@ class AutoMLApp:
         if not node.is_primary_instance and hasattr(node, "original") and node.original.safety_requirements:
             req_list.extend(node.original.safety_requirements)
         return req_list
+        
     def get_top_event(self, node):
         """
         Walk up the parent chain until a node whose node_type is 'TOP EVENT' is found.
-        If none is found, return the node itself.
+        If none is found, return the node itself."""
         current = node
         while current.parents:
             for parent in current.parents:
@@ -5236,6 +5250,7 @@ class AutoMLApp:
             current = current.parents[0]
         print(f"DEBUG: No TOP EVENT found for node {node.unique_id}; returning self")
         return node
+                  
     def aggregate_safety_requirements(self, node, all_nodes):
         aggregated = set()
         # Always add the node’s own safety requirements.
