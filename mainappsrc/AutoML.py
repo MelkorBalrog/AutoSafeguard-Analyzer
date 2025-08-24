@@ -300,6 +300,7 @@ from mainappsrc.window_controllers import WindowControllers
 from mainappsrc.fmeda_manager import FMEDAManager
 from mainappsrc.fmea_service import FMEAService
 from mainappsrc.review_manager import ReviewManager
+from mainappsrc.diagram_renderer import DiagramRenderer
 from analysis.user_config import (
     load_user_config,
     save_user_config,
@@ -643,6 +644,8 @@ class AutoMLApp:
         self.fmeda = self.risk_app
         self.reliability_app = ReliabilitySubApp()
         self.helper = AutoML_Helper
+        # Dedicated renderer for all diagram-related operations.
+        self.diagram_renderer = DiagramRenderer(self)
         # style-aware icons used across tree views
         style_mgr = StyleManager.get_instance()
 

@@ -6,6 +6,8 @@ AutoML is an automotive modeling and analysis tool built around a SysML-based me
 
 The metamodel blends concepts from key automotive standards—ISO 26262 (functional safety), ISO 21448 (SOTIF), ISO 21434 (cybersecurity) and ISO 8800 (safety and AI)—so one project can address safety, cybersecurity and assurance requirements side by side.
 
+Diagram drawing is centralised in a dedicated :class:`DiagramRenderer`, providing a clear interface for generating and exporting diagrams.
+
 ## Getting Started
 
 1. **Install dependencies**
