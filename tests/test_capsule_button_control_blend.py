@@ -5,7 +5,7 @@ import tkinter as tk
 import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from gui.capsule_button import CapsuleButton, _darken
+from gui.controls.capsule_button import CapsuleButton, _darken
 
 
 def test_capsule_button_tints_parent_background():

@@ -5,7 +5,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from .capsule_button import _lighten
+from .controls.capsule_button import _lighten
 
 
 def set_uniform_button_width(widget: tk.Misc) -> None:
@@ -43,7 +43,7 @@ def _lighten_color(color: str, factor: float = 1.2) -> str:
 
     The base colour channels are scaled by *factor* and then blended with
     white and a hint of pastel green.  This mirrors the behaviour of the
-    :func:`_lighten` helper used by :class:`gui.capsule_button.CapsuleButton` so
+    :func:`_lighten` helper used by :class:`gui.controls.capsule_button.CapsuleButton` so
     hover images across the application share the same gentle glow.
     """
 
