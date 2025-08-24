@@ -310,6 +310,7 @@ from mainappsrc.event_dispatcher import EventDispatcher
 from mainappsrc.page_diagram import PageDiagram
 from mainappsrc.fmeda_manager import FMEDAManager
 from mainappsrc.fmea_service import FMEAService
+from mainappsrc.review_manager import ReviewManager
 from analysis.user_config import (
     load_user_config,
     save_user_config,
@@ -772,6 +773,7 @@ class AutoMLApp:
         self.fmea_service = FMEAService(self)
         self.cta_manager = ControlTreeManager(self)
         self.requirements_manager = RequirementsManagerSubApp(self)
+        self.review_manager = ReviewManager(self)
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
@@ -18588,111 +18590,28 @@ class AutoMLApp:
         self.update_requirement_statuses()
 
     def add_version(self):
-        version_num = len(self.versions) + 1
-        name = f"v{version_num}"
-        baseline = simpledialog.askstring(
-            "Baseline Name", "Enter baseline name (optional):"
-        )
-        if baseline:
-            name += f" - {baseline}"
-        # Exclude the versions list when capturing a snapshot to avoid
-        # recursively embedding previous versions within each saved state.
-        data = self.export_model_data(include_versions=False)
-        self.versions.append({"name": name, "data": data})
+        return self.review_manager.add_version()
+
 
     def compare_versions(self):
-        if not self.versions:
-            messagebox.showinfo("Versions", "No previous versions")
-            return
-        if hasattr(self, "_compare_tab") and self._compare_tab.winfo_exists():
-            self.doc_nb.select(self._compare_tab)
-            return
-        self._compare_tab = self._new_tab("Compare")
-        dlg = VersionCompareDialog(self._compare_tab, self)
-        dlg.pack(fill=tk.BOTH, expand=True)
+        return self.review_manager.compare_versions()
+
 
     def merge_review_comments(self):
-        path = filedialog.askopenfilename(defaultextension=".json", filetypes=[("JSON", "*.json")])
-        if not path:
-            return
-        with open(path, "r") as f:
-            data = json.load(f)
+        return self.review_manager.merge_review_comments()
 
-        for rd in data.get("reviews", []):
-            participants = [ReviewParticipant(**p) for p in rd.get("participants", [])]
-            comments = [ReviewComment(**c) for c in rd.get("comments", [])]
-            moderators = [ReviewParticipant(**m) for m in rd.get("moderators", [])]
-            if not moderators and rd.get("moderator"):
-                moderators = [ReviewParticipant(rd.get("moderator"), "", "moderator")]
-            review = next((r for r in self.reviews if r.name == rd.get("name", "")), None)
-            if review is None:
-                review = ReviewData(
-                    name=rd.get("name", ""),
-                    description=rd.get("description", ""),
-                    mode=rd.get("mode", "peer"),
-                    moderators=moderators,
-                    participants=participants,
-                    comments=comments,
-                    approved=rd.get("approved", False),
-                    fta_ids=rd.get("fta_ids", []),
-                    fmea_names=rd.get("fmea_names", []),
-                    fmeda_names=rd.get("fmeda_names", []),
-                    hazop_names=rd.get("hazop_names", []),
-                    hara_names=rd.get("hara_names", []),
-                    stpa_names=rd.get("stpa_names", []),
-                    fi2tc_names=rd.get("fi2tc_names", []),
-                    tc2fi_names=rd.get("tc2fi_names", []),
-                    due_date=rd.get("due_date", ""),
-                    closed=rd.get("closed", False),
-                )
-                self.reviews.append(review)
-                continue
-            for p in participants:
-                if all(p.name != ep.name for ep in review.participants):
-                    review.participants.append(p)
-            for m in moderators:
-                if all(m.name != em.name for em in review.moderators):
-                    review.moderators.append(m)
-            review.due_date = rd.get("due_date", review.due_date)
-            review.closed = rd.get("closed", review.closed)
-            next_id = len(review.comments) + 1
-            for c in comments:
-                review.comments.append(ReviewComment(next_id, c.node_id, c.text, c.reviewer,
-                                                     target_type=c.target_type, req_id=c.req_id,
-                                                     field=c.field, resolved=c.resolved,
-                                                     resolution=c.resolution))
-                next_id += 1
-        messagebox.showinfo("Merge", "Comments merged")
 
     def calculate_diff_nodes(self, old_data):
-        old_map = self.node_map_from_data(old_data["top_events"])
-        new_map = self.node_map_from_data([e.to_dict() for e in self.top_events])
-        changed = []
-        for nid, nd in new_map.items():
-            if nid not in old_map:
-                changed.append(nid)
-            elif json.dumps(old_map[nid], sort_keys=True) != json.dumps(nd, sort_keys=True):
-                changed.append(nid)
-        return changed
+        return self.review_manager.calculate_diff_nodes(old_data)
+
 
     def calculate_diff_between(self, data1, data2):
-        map1 = self.node_map_from_data(data1["top_events"])
-        map2 = self.node_map_from_data(data2["top_events"])
-        changed = []
-        for nid, nd in map2.items():
-            if nid not in map1 or json.dumps(map1.get(nid, {}), sort_keys=True) != json.dumps(nd, sort_keys=True):
-                changed.append(nid)
-        return changed
+        return self.review_manager.calculate_diff_between(data1, data2)
+
 
     def node_map_from_data(self, top_events):
-        result = {}
-        def visit(d):
-            result[d["unique_id"]] = d
-            for ch in d.get("children", []):
-                visit(ch)
-        for t in top_events:
-            visit(t)
-        return result
+        return self.review_manager.node_map_from_data(top_events)
+
 
     def set_current_user(self):
         self.user_manager.set_current_user()
@@ -18713,62 +18632,8 @@ class AutoMLApp:
             pass
 
     def get_review_targets(self):
-        targets = []
-        target_map = {}
+        return self.review_manager.get_review_targets()
 
-        # Determine which FTAs and FMEAs are part of the current review.
-        if self.review_data:
-            allowed_ftas = set(self.review_data.fta_ids)
-            allowed_fmeas = set(self.review_data.fmea_names)
-            allowed_fmedas = set(getattr(self.review_data, 'fmeda_names', []))
-        else:
-            allowed_ftas = set()
-            allowed_fmeas = set()
-            allowed_fmedas = set()
-
-        # Collect nodes from the selected FTAs (or all if none selected).
-        nodes = []
-        if allowed_ftas:
-            for te in self.top_events:
-                if te.unique_id in allowed_ftas:
-                    nodes.extend(self.get_all_nodes(te))
-        else:
-            nodes = self.get_all_nodes_in_model()
-
-        # Determine which nodes have FMEA entries in the selected FMEAs.
-        fmea_node_ids = set()
-        if allowed_fmeas or allowed_fmedas:
-            for fmea in self.fmeas:
-                if fmea["name"] in allowed_fmeas:
-                    fmea_node_ids.update(be.unique_id for be in fmea["entries"])
-            for d in self.fmedas:
-                if d["name"] in allowed_fmedas:
-                    fmea_node_ids.update(be.unique_id for be in d["entries"])
-        else:
-            # When no FMEA was selected, do not offer FMEA-related targets
-            fmea_node_ids = set()
-
-        for node in nodes:
-            label = node.user_name or node.description or f"Node {node.unique_id}"
-            targets.append(label)
-            target_map[label] = ("node", node.unique_id)
-            if hasattr(node, "safety_requirements"):
-                for req in node.safety_requirements:
-                    rlabel = f"{label} [Req {req.get('id')}]"
-                    targets.append(rlabel)
-                    target_map[rlabel] = ("requirement", node.unique_id, req.get("id"))
-
-            if node.node_type.upper() == "BASIC EVENT" and node.unique_id in fmea_node_ids:
-                flabel = f"{label} [FMEA]"
-                targets.append(flabel)
-                target_map[flabel] = ("fmea", node.unique_id)
-                for field in ["Failure Mode", "Effect", "Cause", "Severity", "Occurrence", "Detection", "RPN"]:
-                    slabel = f"{label} [FMEA {field}]"
-                    key = field.lower().replace(' ', '_')
-                    target_map[slabel] = ("fmea_field", node.unique_id, key)
-                    targets.append(slabel)
-
-        return targets, target_map
 
 def load_user_data() -> tuple[dict, tuple[str, str]]:
     """Load cached users and last user config concurrently."""
