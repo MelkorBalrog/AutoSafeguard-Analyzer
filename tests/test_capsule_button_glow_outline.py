@@ -5,7 +5,7 @@ import tkinter as tk
 import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from gui.capsule_button import CapsuleButton, _lighten
+from gui.controls.capsule_button import CapsuleButton, _lighten
 
 
 def test_glow_edges_only():

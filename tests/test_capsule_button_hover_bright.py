@@ -1,6 +1,6 @@
 import tkinter as tk
 import pytest
-from gui.capsule_button import CapsuleButton, _lighten
+from gui.controls.capsule_button import CapsuleButton, _lighten
 
 def test_hover_brightens_entire_button():
     try:

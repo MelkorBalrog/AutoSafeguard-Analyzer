@@ -29,7 +29,7 @@ def _dialog_init_with_color(self, parent, title=None):
 
 simpledialog.Dialog.__init__ = _dialog_init_with_color
 
-from .capsule_button import CapsuleButton, _interpolate_color, _glow_color  # noqa: F401
+from .controls.capsule_button import CapsuleButton, _interpolate_color, _glow_color  # noqa: F401
 
 
 class _StyledButton(CapsuleButton):

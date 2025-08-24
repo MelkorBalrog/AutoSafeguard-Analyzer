@@ -2,7 +2,7 @@ import tkinter as tk
 
 import pytest
 
-from gui.capsule_button import CapsuleButton, _darken
+from gui.controls.capsule_button import CapsuleButton, _darken
 
 
 def test_capsule_button_has_inner_outline():

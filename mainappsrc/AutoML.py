@@ -406,7 +406,6 @@ from config.automl_constants import (
     WORK_PRODUCT_INFO as BASE_WORK_PRODUCT_INFO,
     WORK_PRODUCT_PARENTS as BASE_WORK_PRODUCT_PARENTS,
     PMHF_TARGETS,
-    VALID_SUBTYPES,
     AUTHOR,
     AUTHOR_EMAIL,
     AUTHOR_LINKEDIN,
@@ -479,6 +478,7 @@ try:  # pragma: no cover - support direct module import
     from .internal_block_diagram_subapp import InternalBlockDiagramSubApp
     from .control_flow_diagram_subapp import ControlFlowDiagramSubApp
     from .fta_subapp import FTASubApp
+    from .project_editor_subapp import ProjectEditorSubApp
     from .risk_assessment_subapp import RiskAssessmentSubApp
     from .reliability_subapp import ReliabilitySubApp
     from .version import VERSION
@@ -493,6 +493,7 @@ except Exception:  # pragma: no cover
     from internal_block_diagram_subapp import InternalBlockDiagramSubApp
     from control_flow_diagram_subapp import ControlFlowDiagramSubApp
     from fta_subapp import FTASubApp
+    from project_editor_subapp import ProjectEditorSubApp
     from risk_assessment_subapp import RiskAssessmentSubApp
     from reliability_subapp import ReliabilitySubApp
     from version import VERSION
@@ -643,6 +644,7 @@ class AutoMLApp:
         self._init_nav_button_style()
         self.tree_app = TreeSubApp()
         self.fta_app = FTASubApp()
+        self.project_editor_app = ProjectEditorSubApp()
         self.risk_app = RiskAssessmentSubApp()
         # Risk assessment helpers also provide FMEDA metric calculations
         # so expose them through a dedicated ``fmeda`` attribute for clarity.
@@ -1516,6 +1518,91 @@ class AutoMLApp:
 
     def get_top_level_nodes(self):
         return self.fta_app.get_top_level_nodes(self)
+
+    def get_all_nodes_no_filter(self, node):
+        return self.fta_app.get_all_nodes_no_filter(self, node)
+
+    def derive_requirements_for_event(self, event):
+        return self.fta_app.derive_requirements_for_event(self, event)
+
+    def get_combined_safety_requirements(self, node):
+        return self.fta_app.get_combined_safety_requirements(self, node)
+
+    def get_top_event(self, node):
+        return self.fta_app.get_top_event(self, node)
+
+    def aggregate_safety_requirements(self, node, all_nodes):
+        return self.fta_app.aggregate_safety_requirements(self, node, all_nodes)
+
+    def generate_top_event_summary(self, top_event):
+        return self.fta_app.generate_top_event_summary(self, top_event)
+
+    def get_all_nodes(self, node=None):
+        return self.fta_app.get_all_nodes(self, node)
+
+    def get_all_nodes_table(self, root_node):
+        return self.fta_app.get_all_nodes_table(self, root_node)
+
+    def get_all_nodes_in_model(self):
+        return self.fta_app.get_all_nodes_in_model(self)
+
+    def get_all_basic_events(self):
+        return self.fta_app.get_all_basic_events(self)
+
+    def get_all_gates(self):
+        return self.fta_app.get_all_gates(self)
+
+    def metric_to_text(self, metric_type, value):
+        return self.fta_app.metric_to_text(self, metric_type, value)
+
+    def assurance_level_text(self, level):
+        return self.fta_app.assurance_level_text(level)
+
+    def calculate_cut_sets(self, node):
+        return self.fta_app.calculate_cut_sets(self, node)
+
+    def build_hierarchical_argumentation(self, node, indent=0):
+        return self.fta_app.build_hierarchical_argumentation(self, node, indent)
+
+    def build_hierarchical_argumentation_common(self, node, indent=0, described=None):
+        return self.fta_app.build_hierarchical_argumentation_common(self, node, indent, described)
+
+    def build_page_argumentation(self, page_node):
+        return self.fta_app.build_page_argumentation(self, page_node)
+
+    def build_unified_recommendation_table(self):
+        return self.fta_app.build_unified_recommendation_table(self)
+
+    def get_extra_recommendations_list(self, description, level):
+        return self.fta_app.get_extra_recommendations_list(self, description, level)
+
+    def get_extra_recommendations_from_level(self, description, level):
+        return self.fta_app.get_extra_recommendations_from_level(self, description, level)
+
+    def get_recommendation_from_description(self, description, level):
+        return self.fta_app.get_recommendation_from_description(self, description, level)
+
+    def build_argumentation(self, node):
+        return self.fta_app.build_argumentation(self, node)
+
+    def auto_create_argumentation(self, node, suppress_top_event_recommendations=False):
+        return self.fta_app.auto_create_argumentation(self, node, suppress_top_event_recommendations)
+
+    def analyze_common_causes(self, node):
+        return self.fta_app.analyze_common_causes(self, node)
+
+    def build_text_report(self, node, indent=0):
+        return self.fta_app.build_text_report(self, node, indent)
+
+    def all_children_are_base_events(self, node):
+        return self.fta_app.all_children_are_base_events(self, node)
+
+    def build_simplified_fta_model(self, top_event):
+        return self.fta_app.build_simplified_fta_model(self, top_event)
+
+    @staticmethod
+    def auto_generate_fta_diagram(fta_model, output_path):
+        return FTASubApp.auto_generate_fta_diagram(fta_model, output_path)
         
     def find_node_by_id_all(self, unique_id):
         for top in self.top_events:
@@ -1694,27 +1781,7 @@ class AutoMLApp:
         self.update_views()
 
     def add_top_level_event(self):
-        new_event = FaultTreeNode("", "TOP EVENT")
-        new_event.x, new_event.y = 300, 200
-        new_event.is_top_event = True
-        diag_mode = getattr(self, "diagram_mode", "FTA")
-        if diag_mode == "CTA":
-            self.cta_events.append(new_event)
-            self.cta_root_node = new_event
-            wp = "CTA"
-        elif diag_mode == "PAA":
-            self.paa_events.append(new_event)
-            self.paa_root_node = new_event
-            wp = "Prototype Assurance Analysis"
-        else:
-            self.top_events.append(new_event)
-            self.fta_root_node = new_event
-            wp = "FTA"
-        self.root_node = new_event
-        if hasattr(self, "safety_mgmt_toolbox"):
-            self.safety_mgmt_toolbox.register_created_work_product(wp, new_event.user_name)
-        self._update_shared_product_goals()
-        self.update_views()
+        return self.fta_app.add_top_level_event(self)
 
     def _build_probability_frame(
         self,
@@ -1725,32 +1792,15 @@ class AutoMLApp:
         row: int,
         dialog_font: tkFont.Font,
     ) -> dict:
-        """Create a labelled frame of probability entries.
-
-        Returns a mapping of level -> ``StringVar`` for the entered values.
-        """
-        try:
-            frame = ttk.LabelFrame(parent, text=title, style="Toolbox.TLabelframe")
-        except TypeError:
-            frame = ttk.LabelFrame(parent, text=title)
-        frame.grid(row=row, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
-
-        vars_dict: dict[int, tk.StringVar] = {}
-        for idx, lvl in enumerate(levels):
-            ttk.Label(frame, text=f"{lvl}:", font=dialog_font).grid(
-                row=0, column=idx * 2, padx=2, pady=2
-            )
-            var = tk.StringVar(value=str(values.get(lvl, 0.0)))
-            ttk.Entry(
-                frame,
-                textvariable=var,
-                width=8,
-                font=dialog_font,
-                validate="key",
-                validatecommand=(parent.register(self.validate_float), "%P"),
-            ).grid(row=0, column=idx * 2 + 1, padx=2, pady=2)
-            vars_dict[lvl] = var
-        return vars_dict
+        return self.project_editor_app.build_probability_frame(
+            self,
+            parent,
+            title,
+            levels,
+            values,
+            row,
+            dialog_font,
+        )
 
     def _apply_project_properties(
         self,
@@ -1762,129 +1812,19 @@ class AutoMLApp:
         smt,
         freeze: bool,
     ) -> None:
-        """Persist updated project properties and refresh probability tables."""
-        self.project_properties["pdf_report_name"] = name
-        self.project_properties["pdf_detailed_formulas"] = detailed
-        self.project_properties["exposure_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-        }
-        self.project_properties["controllability_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-        }
-        self.project_properties["severity_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-        }
-        update_probability_tables(
-            self.project_properties["exposure_probabilities"],
-            self.project_properties["controllability_probabilities"],
-            self.project_properties["severity_probabilities"],
+        return self.project_editor_app.apply_project_properties(
+            self,
+            name,
+            detailed,
+            exp_vars,
+            ctrl_vars,
+            sev_vars,
+            smt,
+            freeze,
         )
-        if smt:
-            self.governance_manager.freeze_governance_diagrams(freeze)
 
     def edit_project_properties(self):
-        prop_win = tk.Toplevel(self.root)
-        prop_win.title("Project Properties")
-        prop_win.resizable(False, False)
-        dialog_font = tkFont.Font(family="Arial", size=10)
-
-        ttk.Label(prop_win, text="PDF Report Name:", font=dialog_font).grid(
-            row=0, column=0, padx=10, pady=10, sticky="w"
-        )
-        pdf_entry = ttk.Entry(prop_win, width=40, font=dialog_font)
-        pdf_entry.insert(0, self.project_properties.get("pdf_report_name", "AutoML-Analyzer PDF Report"))
-        pdf_entry.grid(row=0, column=1, padx=10, pady=10)
-
-        # Checkbox to choose between detailed formulas or score results only.
-        var_detailed = tk.BooleanVar(
-            value=self.project_properties.get("pdf_detailed_formulas", True)
-        )
-        chk = ttk.Checkbutton(
-            prop_win,
-            text="Show Detailed Formulas in PDF Report",
-            variable=var_detailed,
-        )
-        chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-
-        smt = getattr(self, "safety_mgmt_toolbox", None)
-        all_frozen = False
-        if smt:
-            diagrams = smt.list_diagrams()
-            all_frozen = diagrams and all(smt.diagram_frozen(d) for d in diagrams)
-        var_freeze = tk.BooleanVar(
-            value=self.project_properties.get("freeze_governance_diagrams", bool(all_frozen))
-        )
-        ttk.Checkbutton(
-            prop_win,
-            text="Freeze Governance Diagrams",
-            variable=var_freeze,
-        ).grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-
-        exp_vars = self._build_probability_frame(
-            prop_win,
-            "Exposure Probabilities P(E|HB)",
-            range(1, 5),
-            self.project_properties.get("exposure_probabilities", {}),
-            3,
-            dialog_font,
-        )
-        ctrl_vars = self._build_probability_frame(
-            prop_win,
-            "Controllability Probabilities P(C|E)",
-            range(1, 4),
-            self.project_properties.get("controllability_probabilities", {}),
-            4,
-            dialog_font,
-        )
-        sev_vars = self._build_probability_frame(
-            prop_win,
-            "Severity Probabilities P(S|C)",
-            range(1, 4),
-            self.project_properties.get("severity_probabilities", {}),
-            5,
-            dialog_font,
-        )
-
-        def save_props() -> None:
-            new_name = pdf_entry.get().strip()
-            if not new_name:
-                messagebox.showwarning(
-                    "Project Properties", "PDF Report Name cannot be empty."
-                )
-                return
-
-            self.project_properties["pdf_report_name"] = new_name
-            self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
-            self.project_properties["exposure_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-            }
-            self.project_properties["controllability_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-            }
-            self.project_properties["severity_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-            }
-            self.project_properties["freeze_governance_diagrams"] = var_freeze.get()
-            update_probability_tables(
-                self.project_properties["exposure_probabilities"],
-                self.project_properties["controllability_probabilities"],
-                self.project_properties["severity_probabilities"],
-            )
-            if smt:
-                self.governance_manager.freeze_governance_diagrams(var_freeze.get())
-            messagebox.showinfo(
-                "Project Properties", "Project properties updated."
-            )
-            prop_win.destroy()
-
-        ttk.Button(prop_win, text="Save", command=save_props, width=10).grid(
-            row=6, column=0, columnspan=2, pady=10
-        )
-        prop_win.update_idletasks()
-        prop_win.minsize(prop_win.winfo_width(), prop_win.winfo_height())
-        prop_win.transient(self.root)
-        prop_win.grab_set()
-        self.root.wait_window(prop_win)
+        return self.project_editor_app.edit_project_properties(self)
 
     def create_diagram_image(self):
         self.canvas.update()
@@ -1917,194 +1857,6 @@ class AutoMLApp:
     def capture_diff_diagram(self, top_event):
         return self.diagram_export_app.capture_diff_diagram(top_event)
 
-    def metric_to_text(self, metric_type, value):
-        if value is None:
-            return "unknown"
-        disc = AutoML_Helper.discretize_level(value)
-        if metric_type == "maturity":
-            return "high maturity" if disc == 5 else "low maturity" if disc == 1 else f"a maturity of {disc}"
-        elif metric_type == "rigor":
-            return "high rigor" if disc == 5 else "low rigor" if disc == 1 else f"a rigor of {disc}"
-        elif metric_type == "severity":
-            return "high severity" if disc >= 3 else "low severity" if disc == 1 else f"a severity of {disc}"
-        else:
-            return str(disc)
-
-    def assurance_level_text(self, level):
-        mapping = {1:"PAL1", 2:"PAL2", 3:"PAL3", 4:"PAL4", 5:"PAL5"}
-        return mapping.get(level, str(level))
-
-    def calculate_cut_sets(self, node):
-        if not node.children:
-            return [{node.unique_id}]
-        gate = (node.gate_type or "AND").upper() if node.node_type.upper() in GATE_NODE_TYPES else "AND"
-        child_cut_sets = [self.calculate_cut_sets(child) for child in node.children]
-        if gate == "OR":
-            result = []
-            for cuts in child_cut_sets:
-                result.extend(cuts)
-            return result
-        elif gate == "AND":
-            result = [set()]
-            for cuts in child_cut_sets:
-                temp = []
-                for partial in result:
-                    for cs in cuts:
-                        temp.append(partial.union(cs))
-                result = temp
-            return result
-        else:
-            result = []
-            for cuts in child_cut_sets:
-                result.extend(cuts)
-            return result
-
-    def build_hierarchical_argumentation(self, node, indent=0):
-        indent_str = "    " * indent
-        node_name = node.user_name if node.user_name else f"Node {node.unique_id}"
-        details = f"{node.node_type}"
-        if node.input_subtype:
-            details += f" ({node.input_subtype})"
-        if node.description:
-            details += f": {node.description}"
-        metric_type = "maturity" if node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"] else "rigor"
-        metric_descr = self.metric_to_text(metric_type, node.quant_value)
-        line = f"{indent_str}- {node_name} ({details}) -> {metric_descr}"
-        if node.rationale and node.node_type.upper() not in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-            line += f" [Rationale: {node.rationale.strip()}]"
-        child_lines = [self.build_hierarchical_argumentation(child, indent+1) for child in node.children]
-        if child_lines:
-            line += "\n" + "\n".join(child_lines)
-        return line
-
-    def build_hierarchical_argumentation_common(self, node, indent=0, described=None):
-        if described is None:
-            described = set()
-        indent_str = "    " * indent
-        node_name = node.user_name if node.user_name else f"Node {node.unique_id}"
-        if node.unique_id not in described:
-            details = f"{node.node_type}"
-            if node.input_subtype:
-                details += f" ({node.input_subtype})"
-            if node.description:
-                details += f": {node.description}"
-            described.add(node.unique_id)
-        else:
-            details = f"{node.node_type} (see common cause: {node_name})"
-        metric_type = "maturity" if node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"] else "rigor"
-        metric_descr = self.metric_to_text(metric_type, node.quant_value)
-        line = f"{indent_str}- {node_name} ({details}) -> {metric_descr}"
-        if node.rationale and node.node_type.upper() not in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-            line += f" [Rationale: {node.rationale.strip()}]"
-        child_lines = [self.build_hierarchical_argumentation_common(child, indent+1, described) for child in node.children]
-        if child_lines:
-            line += "\n" + "\n".join(child_lines)
-        return line
-
-    def build_page_argumentation(self, page_node):
-        return self.build_hierarchical_argumentation(page_node)
-
-    def build_unified_recommendation_table(self):
-        """
-        Collect ALL nodes across ALL top-level events, group them by the
-        recommendation(s) they trigger, and return a single LongTable.
-        
-        *Only primary nodes (originals) are used so that clones are not duplicated.
-        Each node gets its own row, so large text can split across pages.
-        """
-        from reportlab.platypus import LongTable, Paragraph
-        from reportlab.lib import colors
-        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-        from reportlab.platypus import TableStyle
-
-        style_sheet = getSampleStyleSheet()
-        body_style = style_sheet["BodyText"]
-        header_style = ParagraphStyle(
-            name="RecHeader",
-            parent=body_style,
-            fontSize=5,
-            leading=6,
-            wordWrap='CJK',
-            alignment=1
-        )
-
-        # 1) Gather ALL nodes from ALL top events.
-        # Assumes get_all_nodes_in_model() is defined to merge all nodes.
-        all_nodes = self.get_all_nodes_in_model()
-        if not all_nodes:
-            print("Debug: No nodes found in the entire model.")
-            return None
-
-        # 2) Filter out clones: only include primary instances.
-        primary_nodes = [n for n in all_nodes if n.is_primary_instance]
-
-        # 3) Build a mapping: recommendation text -> list of nodes that trigger it.
-        rec_to_nodes = {}
-        for node in primary_nodes:
-            # Only consider nodes with a quant_value and a nonempty description.
-            if node.quant_value is not None and node.description:
-                discrete = AutoML_Helper.discretize_level(node.quant_value)
-                extra_dict = dynamic_recommendations.get(discrete, {}).get("Extra Recommendations", {})
-                desc_lower = node.description.lower()
-                for keyword, rec_text in extra_dict.items():
-                    if keyword.lower() in desc_lower:
-                        rec_to_nodes.setdefault(rec_text, []).append(node)
-
-        if not rec_to_nodes:
-            print("Debug: No matching recommendations found for any node.")
-            return None
-
-        # 4) Build the table rows.
-        # We use two columns: "Extra Recommendation" and "Metric Details"
-        # For each recommendation, the first row shows the recommendation text and the details
-        # for the first node; subsequent rows leave the recommendation column blank.
-        data = [[
-            Paragraph("<b>Extra Recommendation</b>", header_style),
-            Paragraph("<b>Metric Details</b>", header_style)
-        ]]
-
-        for rec_text, nodes in rec_to_nodes.items():
-            first_row = True
-            for node in nodes:
-                # Use the node's display_label if it does not fall back to "Node ..."; otherwise, use the quant_value.
-                metric_str = (node.display_label 
-                              if node.display_label and not node.display_label.startswith("Node")
-                              else (f"{node.quant_value:.2f}" if node.quant_value is not None else "N/A"))
-                desc = (node.description or "N/A").strip().replace("\n", "<br/>")
-                rat = (node.rationale or "N/A").strip().replace("\n", "<br/>")
-                node_details = (
-                    f"{node.unique_id}: {node.name}"
-                    f"<br/><b>Metric:</b> {metric_str}"
-                    f"<br/><b>Desc:</b> {desc}"
-                    f"<br/><b>Rationale:</b> {rat}"
-                )
-                if first_row:
-                    data.append([
-                        Paragraph(rec_text, body_style),
-                        Paragraph(node_details, body_style)
-                    ])
-                    first_row = False
-                else:
-                    data.append([
-                        "",
-                        Paragraph(node_details, body_style)
-                    ])
-
-        # 5) Create and style the LongTable.
-        col_widths = [200, 450]
-        table = LongTable(data, colWidths=col_widths, repeatRows=1, splitByRow=True)
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.orange),
-            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-            ('GRID', (0,0), (-1,-1), 0.25, colors.grey),
-            ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('FONTSIZE', (0,0), (-1,-1), 5),
-            ('LEFTPADDING', (0,0), (-1,-1), 2),
-            ('RIGHTPADDING', (0,0), (-1,-1), 2),
-            ('TOPPADDING', (0,0), (-1,-1), 2),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-        ]))
-        return table
 
     def build_base_events_table_html(self,root_node):
         """
@@ -2169,496 +1921,7 @@ class AutoMLApp:
         
         return "\n".join(html_lines)
 
-    def build_argumentation(self, node):
-        if not node.children:
-            return ""
-        header = ""
-        if node.node_type.upper() == "TOP EVENT":
-            disc = AutoML_Helper.discretize_level(node.quant_value)
-            assurance_descr = self.assurance_level_text(disc)
-            severity_str = f"{node.severity}" if node.severity is not None else "N/A"
-            controllability_str = f"{node.controllability}" if node.controllability is not None else "N/A"
-            header += (
-                f"Prototype Assurance Level (PAL) Explanation:<br/>"
-                f"Based on the aggregated scores of its child nodes, this top event has been assigned an Prototype Assurance Level (PAL) of <b>{assurance_descr}</b> "
-                f"with a severity rating of <b>{severity_str}</b> and controllability <b>{controllability_str}</b>.<br/><br/>"
-            )
-            # Append the dynamically generated recommendations.
-            header += self.generate_recommendations_for_top_event(node) + "<br/>"
-        # Now generate the cut-set table.
-        nodes_by_id = {}
-        def map_nodes(n):
-            nodes_by_id[n.unique_id] = n
-            for child in n.children:
-                map_nodes(child)
-        map_nodes(node)
-        cut_sets = self.calculate_cut_sets(node)
-        cut_set_table = "Cut Set Table:<br/>"
-        for i, cs in enumerate(cut_sets, start=1):
-            cs_ids = ", ".join(f"Node {uid}" for uid in sorted(cs))
-            cut_set_table += f"Cut Set {i}: {cs_ids}<br/>"
-        node_definitions = "Node Definitions:<br/>"
-        unique_ids = set()
-        for cs in cut_sets:
-            unique_ids.update(cs)
-        for uid in sorted(unique_ids):
-            n = nodes_by_id.get(uid)
-            if n is None:
-                continue
-            subtype = n.input_subtype if n.input_subtype is not None else (
-                VALID_SUBTYPES["Confidence"][0] if n.node_type.upper() == "CONFIDENCE LEVEL"
-                else VALID_SUBTYPES.get("Prototype Assurance Level (PAL)", ["Default"])[0]
-            )
-            desc = n.description.strip() if n.description else "No description provided."
-            node_definitions += f"Node {uid}: {n.name}<br/>"
-            node_definitions += f"Type: {n.node_type}, Subtype: {subtype}<br/>"
-            node_definitions += f"Description: {desc}<br/><br/>"
-        diagram_note = "Cause-and-Effect Diagram is generated below.<br/>"
-        return header + cut_set_table + "<br/>" + node_definitions + "<br/>" + diagram_note
-       
-    def auto_create_argumentation(self, node, suppress_top_event_recommendations=False):
-        """
-        Generate qualitative argumentation text for a given node.
-        For a TOP EVENT (unless suppressed), include dynamic recommendations from the dictionary
-        filtered by the node’s description. For non–top-level nodes, simply display the node's input score,
-        description, and rationale.
-        """
-        level = AutoML_Helper.discretize_level(node.quant_value) if node.quant_value is not None else 1
-
-        if node.node_type.upper() == "TOP EVENT" and not suppress_top_event_recommendations:
-            assurance_descr = self.assurance_level_text(level)
-            severity_str = f"{node.severity}" if node.severity is not None else "N/A"
-            controllability_str = f"{node.controllability}" if node.controllability is not None else "N/A"
-            header = (
-                f"Prototype Assurance Level (PAL) Explanation:\n"
-                f"This top event is assigned an Prototype Assurance Level (PAL) of '{assurance_descr}' with a severity rating of {severity_str} and controllability {controllability_str}.\n\n"
-            )
-            # Instead of showing all dynamic recommendations, select only those triggered by the description.
-            rec_from_desc = self.get_recommendation_from_description(node.description, level)
-            if rec_from_desc:
-                base_arg = header + "Dynamic Recommendation:\n" + rec_from_desc
-            else:
-                # If no keyword found, show the full recommendations.
-                rec = dynamic_recommendations.get(level, {})
-                rec_lines = []
-                for category in ["Testing Requirements", "IFTD Responsibilities", "Preventive Maintenance Actions", "Relevant AVSC Guidelines"]:
-                    if category in rec:
-                        rec_lines.append(f"{category}: {rec[category]}")
-                rec_text = "\n".join(rec_lines)
-                base_arg = header + "Recommendations:\n" + rec_text
-        elif node.node_type.upper() == "TOP EVENT" and suppress_top_event_recommendations:
-            base_arg = f"Top Event: Input score: {node.quant_value:.2f}" if node.quant_value is not None else "Top Event: No input score provided."
-        else:
-            base_arg = f"Input score: {node.quant_value:.2f}" if node.quant_value is not None else "No input score provided."
-
-        own_text = ""
-        if node.description:
-            own_text += f"Description: {node.description}\n"
-        if node.rationale:
-            own_text += f"Rationale: {node.rationale}\n"
-        if not own_text:
-            own_text = "No additional details provided."
-            
-        return base_arg + "\n\n" + own_text
-
-    def generate_argumentation_report(self, event):
-        """
-        Generate dynamic assurance-level argumentation for a top-level event.
-        In this version, the event’s description is added at the very beginning,
-        followed by the Prototype Assurance Level (PAL) explanation (including the rationale behind its severity)
-        and the dynamic recommendations.
-        """
-        # Ensure a quant_value exists; default to 1.
-        quant = event.quant_value if event.quant_value is not None else 1
-        level = AutoML_Helper.discretize_level(quant)
-        assurance_level = self.assurance_level_text(level)
-        severity = event.severity if event.severity is not None else "N/A"
-        controllability = event.controllability if event.controllability is not None else "N/A"
-        
-        # Get dynamic recommendations from the dictionary.
-        rec = dynamic_recommendations.get(level, {})
-        test_req = rec.get("Testing Requirements", "N/A")
-        iftd_resp = rec.get("IFTD Responsibilities", "N/A")
-        maint_act = rec.get("Preventive Maintenance Actions", "N/A")
-        avsc_guid = rec.get("Relevant AVSC Guidelines", "N/A")
-        
-        # Get and clean up the top event’s description and rationale.
-        top_description = event.description.strip() if event.description and event.description.strip() else "N/A"
-        top_rationale = event.rationale.strip() if event.rationale and event.rationale.strip() else "N/A"
-        
-        text = (
-            f"Description:<br/>{top_description}<br/><br/>"
-            f"Prototype Assurance Level (PAL) Explanation:<br/>"
-            f"This top event is assigned an Prototype Assurance Level (PAL) of <b>{assurance_level}</b> "
-            f"with a severity rating of <b>{severity}</b> and controllability <b>{controllability}</b>.<br/>"
-            f"Rationale for Severity: {top_rationale}<br/><br/>"
-            #"Dynamic Recommendations:<br/>"
-            #f"<b>Testing Requirements:</b> {test_req}<br/>"
-            #f"<b>IFTD Responsibilities:</b> {iftd_resp}<br/>"
-            #f"<b>Preventive Maintenance Actions:</b> {maint_act}<br/>"
-            #f"<b>Relevant AVSC Guidelines:</b> {avsc_guid}<br/>"
-        )
-        return text
-
-    def get_extra_recommendations_list(self, description, level):
-        """
-        Given a node's description and its Prototype Assurance Level (PAL), return a list of extra recommendations.
-        This function iterates over all keys in the level's "Extra Recommendations" dictionary and
-        collects the recommendation text for every keyword found in the description.
-        """
-        if not description:
-            return []
-        desc = description.lower()
-        level_extras = dynamic_recommendations.get(level, {}).get("Extra Recommendations", {})
-        rec_list = []
-        for keyword, rec in level_extras.items():
-            if keyword.lower() in desc:
-                rec_list.append(rec)
-        return rec_list
-
-    def get_extra_recommendations_from_level(self,description, level):
-        """
-        Given a node's description and its Prototype Assurance Level (PAL) (1-5), look up keywords from the level's 
-        "Extra Recommendations" in the dynamic_recommendations dictionary. If any keyword is found in the description
-        (within a proximity of malfunction words), return the extra recommendations.
-        """
-        if not description:
-            return ""
-        desc = description.lower()
-        level_extras = dynamic_recommendations.get(level, {}).get("Extra Recommendations", {})
-        malfunction_words = ["unintended", "no", "not", "excessive", "incorrect"]
-        
-        recommendations = []
-        for keyword, rec in level_extras.items():
-            # Check if the keyword is present.
-            if re.search(r'\b' + re.escape(keyword) + r'\b', desc):
-                # Look for a malfunction word within 5 words of the keyword.
-                pattern = r'\b' + re.escape(keyword) + r'\b(?:\W+\w+){0,5}\W+(?:' + "|".join(malfunction_words) + r')\b'
-                if re.search(pattern, desc):
-                    recommendations.append(rec)
-        if recommendations:
-            return "\nExtra Testing Recommendations:\n" + "\n".join(f"- {r}" for r in recommendations)
-        return ""
-
-    def get_recommendation_from_description(self, description, level):
-        """
-        Given a node's description and its Prototype Assurance Level (PAL), this function iterates over all keys 
-        in the corresponding level's "Extra Recommendations" dictionary. It checks if each keyword 
-        appears in the description (in a case-insensitive manner) and concatenates all matching recommendations.
-        """
-        if not description:
-            return ""
-        desc = description.lower()
-        level_extras = dynamic_recommendations.get(level, {}).get("Extra Recommendations", {})
-        rec_list = []
-        for keyword, rec in level_extras.items():
-            if keyword.lower() in desc:
-                rec_list.append(rec)
-        return " ".join(rec_list)
     
-    def analyze_common_causes(self, node):
-        occurrence = {}
-        def traverse(n):
-            if n.unique_id in occurrence:
-                occurrence[n.unique_id]["count"] += 1
-            else:
-                occurrence[n.unique_id] = {"node": n, "count": 1}
-            for child in n.children:
-                traverse(child)
-        traverse(node)
-        report_lines = ["Common Cause Analysis:"]
-        for uid, info in occurrence.items():
-            if info["count"] > 1:
-                n = info["node"]
-                name = n.user_name if n.user_name else f"Node {n.unique_id}"
-                report_lines.append(f" - {name} (Type: {n.node_type}) appears {info['count']} times. Description: {n.description or 'No description'}")
-        if len(report_lines) == 1:
-            report_lines.append(" None found.")
-        return "\n".join(report_lines)
-
-    def build_text_report(self, node, indent=0):
-        report = "    " * indent + f"{node.name} ({node.node_type}"
-        if node.node_type.upper() in GATE_NODE_TYPES:
-            report += f", {node.gate_type}"
-        report += ")"
-        if node.display_label:
-            report += f" => {node.display_label}"
-        arg_text = self.build_argumentation(node)
-        if arg_text:
-            report += f"\n{'    ' * (indent+1)}Argumentation: {arg_text}"
-        report += "\n\n"
-        for child in node.children:
-            report += self.build_text_report(child, indent+1)
-        return report
-
-    def all_children_are_base_events(self,node):
-        """
-        Return True if *every* child of 'node' is a base event 
-        (i.e. Confidence Level or Robustness Score).
-        """
-        # If node has no children, we treat it as "False" (it’s effectively a leaf, not a gate).
-        if not node.children:
-            return False
-
-        for child in node.children:
-            t = child.node_type.upper()
-            if t not in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-                return False
-        return True
-
-    def build_simplified_fta_model(self, top_event):
-        """
-        Build a simplified FTA model from the fault tree by including only the gate-level nodes.
-        If a node is a GATE, RIGOR LEVEL, or TOP EVENT but all its children are base events,
-        we will skip showing its gate_type.
-        """
-        nodes = []
-        edges = []
-
-        visited = set()
-
-        def traverse(node):
-            if node.unique_id in visited:
-                return
-            visited.add(node.unique_id)
-
-            node_type_up = node.node_type.upper()
-            node_info = {
-                "id": str(node.unique_id),
-                "label": node.name,
-            }
-
-            # Include gate type only when the node itself is a gate and it has
-            # at least one non-base child.  Previously only gate nodes were
-            # added to the model which meant that basic events—the actual
-            # causes in the chain—were omitted from the generated diagram. As a
-            # result the PDF report often displayed just the top event with no
-            # contributing causes.  By recording every node and linking it to
-            # its parent, all causes now appear in the output.
-            if node_type_up in GATE_NODE_TYPES and not self.all_children_are_base_events(node):
-                node_info["gate_type"] = node.gate_type
-            if getattr(node, "input_subtype", ""):
-                node_info["subtype"] = node.input_subtype
-
-            nodes.append(node_info)
-
-            for child in getattr(node, "children", []):
-                edges.append({"source": str(node.unique_id), "target": str(child.unique_id)})
-                traverse(child)
-
-        traverse(top_event)
-        return {"nodes": nodes, "edges": edges}
-
-    @staticmethod
-    def auto_generate_fta_diagram(fta_model, output_path):
-        """
-        Generate a cause-and-effect diagram with a layered (hierarchical) layout,
-        but draw the arrows in reverse (child -> parent).
-        """
-        import networkx as nx
-        from PIL import Image, ImageDraw, ImageFont
-        import numpy as np
-        import math
-        import sys
-
-        # --- 1) Build the directed graph (parent->child) ---
-        G = nx.DiGraph()
-        node_labels = {}
-        node_colors = {}
-
-        for node in fta_model["nodes"]:
-            node_id = node["id"]
-            label   = node.get("label", f"Node {node_id}")
-
-            # If there's a gate_type, append it to the label
-            gate_type = node.get("gate_type", "")
-            if gate_type:
-                # e.g. label = "Node 1\n(AND)"
-                label += f"\n({gate_type.upper()})"
-
-            G.add_node(node_id)
-            node_labels[node_id] = label
-
-            # Keep your color logic based on "subtype":
-            subtype = node.get("subtype", "").lower()
-            if "vehicle level function" in subtype:
-                node_colors[node_id] = "lightcoral"
-            elif "ai error" in subtype:
-                node_colors[node_id] = "lightyellow"
-            elif "failure" in subtype:
-                node_colors[node_id] = "lightblue"
-            elif "functional insufficiency" in subtype:
-                node_colors[node_id] = "lightgreen"
-            else:
-                node_colors[node_id] = "white"  # clone
-
-        # Add edges
-        for edge in fta_model["edges"]:
-            src = edge["source"]
-            tgt = edge["target"]
-            if not G.has_node(src) or not G.has_node(tgt):
-                continue
-            G.add_edge(src, tgt)
-
-        # --- 2) Identify the top event as 'root' (layer 0) ---
-        if fta_model["nodes"]:
-            top_event_id = fta_model["nodes"][0]["id"]
-        else:
-            img = Image.new("RGB", (400, 300), "white")
-            draw = ImageDraw.Draw(img)
-            draw.text((200, 150), "No nodes to display", fill="black", anchor="mm")
-            img.save(output_path)
-            return
-
-        # --- 3) BFS layering from top_event to find each node's layer ---
-        layers = {}
-        layers[top_event_id] = 0
-        queue = [top_event_id]
-        visited = set([top_event_id])
-
-        while queue:
-            current = queue.pop(0)
-            current_layer = layers[current]
-            for child in G.successors(current):
-                if child not in visited:
-                    visited.add(child)
-                    layers[child] = current_layer + 1
-                    queue.append(child)
-
-        # Any node not reached gets placed in a higher layer
-        max_layer = max(layers.values()) if layers else 0
-        for n in G.nodes():
-            if n not in layers:
-                max_layer += 1
-                layers[n] = max_layer
-
-        # Group nodes by layer
-        layer_dict = {}
-        for node_id, layer in layers.items():
-            layer_dict.setdefault(layer, []).append(node_id)
-
-        # --- 4) Assign (x, y) by layer ---
-        horizontal_gap = 2.0
-        vertical_gap   = 1.0
-        pos = {}
-
-        for layer in sorted(layer_dict.keys()):
-            node_list = layer_dict[layer]
-
-            # Sort siblings by average parent index (optional)
-            def avg_parent_position(n):
-                parents = list(G.predecessors(n))
-                if not parents:
-                    return 0
-                # we assume all parents are in a smaller layer
-                return sum(layer_dict[layers[p]].index(p) for p in parents) / len(parents)
-
-            node_list.sort(key=avg_parent_position)
-
-            # Place them at x = layer*gap, y around 0
-            middle = (len(node_list) - 1) / 2.0
-            for i, n in enumerate(node_list):
-                x = layer * horizontal_gap
-                y = (i - middle) * vertical_gap
-                pos[n] = (x, y)
-
-        # --- 5) Light collision-avoidance pass (optional) ---
-        def get_node_bbox(p, box_size=0.3):
-            return (p[0] - box_size, p[1] - box_size, p[0] + box_size, p[1] + box_size)
-
-        def bboxes_overlap(b1, b2):
-            return not (b1[2] < b2[0] or b1[0] > b2[2] or b1[3] < b2[1] or b1[1] > b2[3])
-
-        for _ in range(10):
-            for n1 in G.nodes():
-                for n2 in G.nodes():
-                    if n1 == n2:
-                        continue
-                    b1 = get_node_bbox(pos[n1])
-                    b2 = get_node_bbox(pos[n2])
-                    if bboxes_overlap(b1, b2):
-                        p1 = np.array(pos[n1])
-                        p2 = np.array(pos[n2])
-                        delta = p1 - p2
-                        dist = np.linalg.norm(delta) + 1e-9
-                        push = 0.02
-                        shift = (delta/dist)*push
-                        pos[n1] = tuple(p1 + shift)
-                        pos[n2] = tuple(p2 - shift)
-
-        # --- 6) Draw the diagram with REVERSED edges (child->parent) ---
-        # Convert layout coordinates to image pixels
-        xs = [p[0] for p in pos.values()]
-        ys = [p[1] for p in pos.values()]
-        min_x, max_x = min(xs), max(xs)
-        min_y, max_y = min(ys), max(ys)
-
-        # Ensure the canvas leaves enough room so that nodes at the
-        # extremities are fully visible.  The previous implementation used a
-        # fixed margin of 50 pixels which was smaller than half of the node's
-        # width (60px).  As a result, nodes located at the left or right
-        # boundary were clipped in the exported diagram.  By basing the margins
-        # on the node dimensions we guarantee that every node remains within
-        # view.
-        node_w, node_h = 120, 60
-        scale = 150
-        margin_x = int(node_w / 2) + 20
-        margin_y = int(node_h / 2) + 20
-        width = int((max_x - min_x) * scale) + 2 * margin_x
-        height = int((max_y - min_y) * scale) + 2 * margin_y
-
-        def to_px(pt):
-            x, y = pt
-            px = int((x - min_x) * scale) + margin_x
-            py = int((max_y - y) * scale) + margin_y
-            return px, py
-
-        px_pos = {n: to_px(pos[n]) for n in pos}
-
-        test_mod = sys.modules.get("test_cause_effect_diagram") or sys.modules.get("tests.test_cause_effect_diagram")
-        if test_mod and hasattr(test_mod, "created_sizes"):
-            test_mod.created_sizes.append((width, height))
-        img = Image.new("RGB", (width, height), "white")
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.load_default()
-
-        # Draw reversed edges (child -> parent)
-        for src, tgt in G.edges():
-            start = px_pos[tgt]
-            end = px_pos[src]
-            draw.line([start, end], fill="gray", width=2)
-
-            dx = end[0] - start[0]
-            dy = end[1] - start[1]
-            length = math.hypot(dx, dy)
-            if length:
-                ux, uy = dx / length, dy / length
-                arrow = 10
-                left = (end[0] - ux * arrow - uy * arrow / 2,
-                        end[1] - uy * arrow + ux * arrow / 2)
-                right = (end[0] - ux * arrow + uy * arrow / 2,
-                         end[1] - uy * arrow - ux * arrow / 2)
-                draw.polygon([end, left, right], fill="gray")
-
-        # Draw nodes
-        for n, (x, y) in px_pos.items():
-            left = x - node_w / 2
-            top = y - node_h / 2
-            right = x + node_w / 2
-            bottom = y + node_h / 2
-            draw.rectangle(
-                [left, top, right, bottom],
-                fill=node_colors[n],
-                outline=StyleManager.get_instance().outline_color,
-            )
-            lbl = node_labels.get(n, str(n))
-            bbox = draw.multiline_textbbox((0, 0), lbl, font=font, align="center")
-            tw = bbox[2] - bbox[0]
-            th = bbox[3] - bbox[1]
-            draw.multiline_text((x - tw/2, y - th/2), lbl, font=font, fill="black", align="center")
-
-        img.save(output_path)
-
     def build_dynamic_recommendations_table(events, app):
         """
         (Optional) If you still want to have a compact table of per-event recommendations,
@@ -2735,136 +1998,6 @@ class AutoMLApp:
         ]))
         return table
 
-    def get_all_nodes_no_filter(self,node):
-        nodes = [node]
-        for child in node.children:
-            nodes.extend(self.get_all_nodes_no_filter(child))
-        return nodes
-        
-    def derive_requirements_for_event(self, event):
-        req_set = set()
-        for node in self.get_all_nodes(event):
-            if hasattr(node, "safety_requirements"):
-                for req in node.safety_requirements:
-                    req_set.add(f"[{req['id']}] [{req['req_type']}] {req['text']}")
-        return req_set
-
-    def get_combined_safety_requirements(self,node):
-        """
-        Returns a list of safety requirement dicts for the given node.
-        If the node is a clone, it also combines the original node's safety_requirements.
-        """
-        req_list = []
-        # Always take the node's own requirements if they exist.
-        if hasattr(node, "safety_requirements") and node.safety_requirements:
-            req_list.extend(node.safety_requirements)
-        # If node is a clone, also add requirements from its original.
-        if not node.is_primary_instance and hasattr(node, "original") and node.original.safety_requirements:
-            req_list.extend(node.original.safety_requirements)
-        return req_list
-
-    def get_top_event(self, node):
-        """
-        Walk up the parent chain until a node whose node_type is 'TOP EVENT' is found.
-        If none is found, return the node itself.
-        """
-        current = node
-        while current.parents:
-            for parent in current.parents:
-                if parent.node_type.upper() == "TOP EVENT":
-                    print(f"DEBUG: Found TOP EVENT for node {node.unique_id}: {parent.name}")
-                    return parent
-            current = current.parents[0]
-        print(f"DEBUG: No TOP EVENT found for node {node.unique_id}; returning self")
-        return node
-
-    def aggregate_safety_requirements(self, node, all_nodes):
-        aggregated = set()
-        # Always add the node’s own safety requirements.
-        for req in node.get("safety_requirements", []):
-            aggregated.add(req["id"])
-        
-        # If this node is a clone, also add the original’s aggregated safety requirements.
-        if node.get("original_id"):
-            original = all_nodes.get(node["original_id"])
-            if original:
-                aggregated.update(self.aggregate_safety_requirements(original, all_nodes))
-        
-        # NEW: Also add safety requirements from the node’s immediate parents.
-        for parent in node.get("parents", []):
-            for req in parent.get("safety_requirements", []):
-                aggregated.add(req["id"])
-        
-        # Recurse into children.
-        for child in node.get("children", []):
-            aggregated.update(self.aggregate_safety_requirements(child, all_nodes))
-        
-        node["aggregated_safety_requirements"] = sorted(aggregated)
-        return aggregated
-
-    def generate_top_event_summary(self, top_event):
-        """
-        Generates a structured, easy-to-read summary for a top-level event.
-        
-        It recursively collects all base nodes (nodes with type "CONFIDENCE LEVEL" or "ROBUSTNESS SCORE")
-        from the event’s entire subtree (using originals for clones) and then constructs a multi-line summary
-        that includes:
-          - The top-level event name.
-          - The required Prototype Assurance Level (PAL) (with numeric score) and the severity rating.
-          - A bullet-point list of base nodes with their scores and rationales.
-        """
-        # Retrieve all nodes from the entire subtree (including originals for clones)
-        all_nodes = self.get_all_nodes_no_filter(top_event)
-        
-        # Filter base nodes (confidence or robustness)
-        base_nodes = [n for n in all_nodes if n.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]]
-        
-        # Build a bullet list for base nodes
-        bullet_lines = []
-        for bn in base_nodes:
-            # Use the original's details for clones
-            orig = bn if bn.is_primary_instance else bn.original
-            identifier = orig.name if orig.name else f"Node {orig.unique_id}"
-            score = f"{orig.quant_value:.2f}" if orig.quant_value is not None else "N/A"
-            rationale = orig.rationale.strip() if orig.rationale and orig.rationale.strip() != "" else "No rationale provided"
-            bullet_lines.append(f"• {identifier}: Score = {score}, Rationale: {rationale}")
-        base_summary = "\n".join(bullet_lines) if bullet_lines else "No base nodes available."
-        
-        # Map overall assurance value to a descriptive level
-        overall_assurance = top_event.quant_value if top_event.quant_value is not None else 1.0
-        if overall_assurance >= 4.5:
-            assurance_descr = "PAL5"
-        elif overall_assurance >= 3.5:
-            assurance_descr = "PAL4"
-        elif overall_assurance >= 2.5:
-            assurance_descr = "PAL3"
-        elif overall_assurance >= 1.5:
-            assurance_descr = "PAL2"
-        else:
-            assurance_descr = "PAL1"
-        
-        # Use the top event's severity and controllability (defaults if missing)
-        try:
-            overall_severity = float(top_event.severity) if top_event.severity is not None else 3.0
-        except Exception:
-            overall_severity = 3.0
-        try:
-            overall_cont = float(top_event.controllability) if top_event.controllability is not None else 3.0
-        except Exception:
-            overall_cont = 3.0
-        
-        # Build the structured summary sentence
-        summary_sentence = (
-            f"Top-Level Event: {top_event.name}\n\n"
-            f"Assurance Requirement:\n"
-            f"  - Required Prototype Assurance Level (PAL): {assurance_descr} (Score: {overall_assurance:.2f})\n"
-            f"  - Severity Rating: {overall_severity:.2f}\n"
-            f"  - Controllability: {overall_cont:.2f}\n\n"
-            f"Rationale:\n"
-            f"  Based on analysis of its base nodes, the following factors contributed to this level:\n"
-            f"{base_summary}"
-        )
-        return summary_sentence
 
     def _generate_pdf_report(self):
         """Generate a PDF report based on the configurable template."""
@@ -4911,41 +4044,6 @@ class AutoMLApp:
                 n.x += offset
         self.update_views()
 
-    def get_all_nodes_table(self,root_node):
-        """
-        Recursively traverse the entire fault tree starting from root_node without any filtering.
-        Returns a list of all nodes.
-        """
-        collector = []
-        def rec(n):
-            collector.append(n)
-            for child in n.children:
-                rec(child)
-        rec(root_node)
-        return collector
-
-    def get_all_nodes_in_model(self):
-        """
-        Return a list of *all* nodes across *all* top-level events in self.top_events.
-        """
-        all_nodes = []
-        events = self.top_events + getattr(self, "cta_events", []) + getattr(self, "paa_events", [])
-        for te in events:
-            nodes = self.get_all_nodes_table(te)
-            all_nodes.extend(nodes)
-        return all_nodes
-
-    def get_all_basic_events(self):
-        """Return a list of all basic events across all top-level trees."""
-        return [n for n in self.get_all_nodes_in_model() if n.node_type.upper() == "BASIC EVENT"]
-
-    def get_all_gates(self):
-        """Return a list of all gate nodes (including top events)."""
-        return [
-            n
-            for n in self.get_all_nodes_in_model()
-            if n.node_type.upper() in GATE_NODE_TYPES
-        ]
 
     def get_all_triggering_conditions(self):
         """Return all triggering condition nodes."""
