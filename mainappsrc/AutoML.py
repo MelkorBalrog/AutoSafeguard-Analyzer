@@ -19336,6 +19336,8 @@ class AutoMLApp:
         repo = SysMLRepository.get_instance()
         data = {
             "top_events": [event.to_dict() for event in getattr(self, "top_events", [])],
+            "cta_events": [event.to_dict() for event in getattr(self, "cta_events", [])],
+            "paa_events": [event.to_dict() for event in getattr(self, "paa_events", [])],
             "fmeas": [
                 {
                     "name": f["name"],
@@ -19517,6 +19519,30 @@ class AutoMLApp:
             self.project_properties.get("severity_probabilities"),
         )
 
+       def _load_fault_tree_events(self, data: dict, ensure_root: bool) -> None:
+        """Initialise FTA, CTA and PAA events from *data*."""
+        if "top_events" in data:
+            self.top_events = [FaultTreeNode.from_dict(e) for e in data["top_events"]]
+        elif "root_node" in data:
+            root = FaultTreeNode.from_dict(data["root_node"])
+            self.top_events = [root]
+        else:
+            self.top_events = []
+
+        self.cta_events = [FaultTreeNode.from_dict(e) for e in data.get("cta_events", [])]
+        self.paa_events = [FaultTreeNode.from_dict(e) for e in data.get("paa_events", [])]
+
+        if (
+            ensure_root
+            and not self.top_events
+            and "top_events" not in data
+            and "root_node" not in data
+        ):
+            new_root = FaultTreeNode("Vehicle Level Function", "TOP EVENT")
+            new_root.x, new_root.y = 300, 200
+            self.top_events.append(new_root)
+        self.root_node = self.top_events[0] if self.top_events else None
+          
     def apply_model_data(self, data: dict, ensure_root: bool = True):
         """Load model state from a dictionary."""
 
@@ -19537,25 +19563,7 @@ class AutoMLApp:
             repo = SysMLRepository.get_instance()
             repo.from_dict(repo_data)
 
-        if "top_events" in data:
-            self.top_events = [FaultTreeNode.from_dict(e) for e in data["top_events"]]
-        elif "root_node" in data:
-            root = FaultTreeNode.from_dict(data["root_node"])
-            self.top_events = [root]
-        else:
-            self.top_events = []
-        self.cta_events = []
-
-        if (
-            ensure_root
-            and not self.top_events
-            and "top_events" not in data
-            and "root_node" not in data
-        ):
-            new_root = FaultTreeNode("Vehicle Level Function", "TOP EVENT")
-            new_root.x, new_root.y = 300, 200
-            self.top_events.append(new_root)
-        self.root_node = self.top_events[0] if self.top_events else None
+        self._load_fault_tree_events(data, ensure_root)
 
         global global_requirements
         global_requirements.clear()
@@ -19581,6 +19589,10 @@ class AutoMLApp:
         toolbox.set_active_module(toolbox.active_module)
         for te in self.top_events:
             toolbox.register_loaded_work_product("FTA", te.user_name)
+        for te in getattr(self, "cta_events", []):
+            toolbox.register_loaded_work_product("CTA", te.user_name)
+        for te in getattr(self, "paa_events", []):
+            toolbox.register_loaded_work_product("Prototype Assurance Analysis", te.user_name)
 
         for name in data.get("enabled_work_products", []):
             try:
