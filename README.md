@@ -1636,6 +1636,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.1.10 - Centralised constants and moved requirement logic into a RequirementsManager sub-app.
 - 0.1.9 - Split diagram creation into dedicated sub-apps and centralised PNG export.
 - 0.1.8 - Moved analysis tree logic into a dedicated TreeSubApp wrapper.
 - 0.1.7 - Refactored main application into modular sub-apps and added CLI version option.
