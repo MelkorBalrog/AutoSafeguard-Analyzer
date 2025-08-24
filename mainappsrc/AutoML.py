@@ -644,6 +644,9 @@ class AutoMLApp:
         self.tree_app = TreeSubApp()
         self.fta_app = FTASubApp()
         self.risk_app = RiskAssessmentSubApp()
+        # Risk assessment helpers also provide FMEDA metric calculations
+        # so expose them through a dedicated ``fmeda`` attribute for clarity.
+        self.fmeda = self.risk_app
         self.reliability_app = ReliabilitySubApp()
         self.helper = AutoML_Helper
         # style-aware icons used across tree views
@@ -1935,15 +1938,19 @@ class AutoMLApp:
         self.update_views()
 
     def calculate_fmeda_metrics(self, events):
-        return self.risk_app.calculate_fmeda_metrics(self, events)
+        """Delegate FMEDA metric calculation to the dedicated helper."""
+        return self.fmeda.calculate_fmeda_metrics(self, events)
 
     def compute_fmeda_metrics(self, events):
-        return self.risk_app.compute_fmeda_metrics(self, events)
+        """Delegate detailed FMEDA metric computation to the helper."""
+        return self.fmeda.compute_fmeda_metrics(self, events)
 
     def sync_hara_to_safety_goals(self):
+        """Synchronise HARA results with safety goals via the risk sub-app."""
         return self.risk_app.sync_hara_to_safety_goals(self)
 
     def sync_cyber_risk_to_goals(self):
+        """Synchronise cyber risk results with cybersecurity goals."""
         return self.risk_app.sync_cyber_risk_to_goals(self)
 
     def edit_selected(self):
