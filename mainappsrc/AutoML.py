@@ -248,14 +248,17 @@ from gui.review_toolbox import (
 )
 from functools import partial
 from gui.safety_management_toolbox import SafetyManagementToolbox
-from gui.gsn_explorer import GSNExplorer
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_case_explorer import SafetyCaseExplorer
-from gui.gsn_diagram_window import GSNDiagramWindow, GSN_WINDOWS
+from gui.gsn_diagram_window import GSN_WINDOWS
 from gui.causal_bayesian_network_window import CBN_WINDOWS
 from gui.gsn_config_window import GSNElementConfig
 from gui.search_toolbox import SearchToolbox
 from gsn import GSNDiagram, GSNModule
+try:
+    from .gsn_manager import GSNManager
+except ImportError:  # pragma: no cover
+    from gsn_manager import GSNManager
 from gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
@@ -893,6 +896,7 @@ class AutoMLApp:
         self.management_diagrams = []
         self.gsn_modules = []  # top-level GSN modules
         self.gsn_diagrams = []  # diagrams not assigned to a module
+        self.gsn_manager = GSNManager(self)
         # Track open diagram tabs to avoid duplicates
         self.diagram_tabs: dict[str, ttk.Frame] = {}
         self.top_events = []
@@ -1270,7 +1274,7 @@ class AutoMLApp:
         )
 
         gsn_menu = tk.Menu(menubar, tearoff=0)
-        gsn_menu.add_command(label="GSN Explorer", command=self.manage_gsn)
+        gsn_menu.add_command(label="GSN Explorer", command=self.gsn_manager.manage_gsn)
         self.work_product_menus.setdefault("GSN Argumentation", []).append(
             (gsn_menu, gsn_menu.index("end"))
         )
@@ -10447,6 +10451,8 @@ class AutoMLApp:
         self.update_views()
         # Regenerate requirement patterns for any model change
         regenerate_requirement_patterns()
+        # Refresh GSN views separately via the manager
+        self.gsn_manager.refresh()
         # Refresh any secondary windows that may be open
         for attr in dir(self):
             if attr.endswith("_window"):
@@ -17299,13 +17305,7 @@ class AutoMLApp:
         self.refresh_all()
 
     def manage_gsn(self):
-        if hasattr(self, "_gsn_tab") and self._gsn_tab.winfo_exists():
-            self.doc_nb.select(self._gsn_tab)
-        else:
-            self._gsn_tab = self._new_tab("GSN Explorer")
-            self._gsn_window = GSNExplorer(self._gsn_tab, self)
-            self._gsn_window.pack(fill=tk.BOTH, expand=True)
-        self.refresh_all()
+        self.gsn_manager.manage_gsn()
 
     def manage_safety_management(self):
         if not hasattr(self, "safety_mgmt_toolbox"):
@@ -17338,19 +17338,7 @@ class AutoMLApp:
         self.refresh_all()
 
     def open_gsn_diagram(self, diagram):
-        """Open a GSN diagram inside a new notebook tab."""
-        existing = self.diagram_tabs.get(diagram.diag_id)
-        if existing and str(existing) in self.doc_nb.tabs():
-            if existing.winfo_exists():
-                self.doc_nb.select(existing)
-                self.refresh_all()
-                return
-            self.diagram_tabs.pop(diagram.diag_id, None)
-        tab = self._new_tab(diagram.root.user_name)
-        self.diagram_tabs[diagram.diag_id] = tab
-        window = GSNDiagramWindow(tab, self, diagram)
-        setattr(tab, "gsn_window", window)
-        self.refresh_all()
+        self.gsn_manager.open_diagram(diagram)
 
     def open_arch_window(self, diag_id: str) -> None:
         """Open an existing architecture diagram from the repository."""
