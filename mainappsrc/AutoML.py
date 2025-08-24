@@ -2065,7 +2065,14 @@ class EditNodeDialog(simpledialog.Dialog):
                 target_node.safe_state = self.safe_state_entry.get().strip()
                 new_mal = self.mal_var.get().strip() or self.mal_sel_var.get().strip()
                 if new_mal:
-                    for te in self.app.top_events:
+                    events = []
+                    if target_node in self.app.top_events:
+                        events = self.app.top_events
+                    elif target_node in getattr(self.app, "cta_events", []):
+                        events = getattr(self.app, "cta_events", [])
+                    elif target_node in getattr(self.app, "paa_events", []):
+                        events = getattr(self.app, "paa_events", [])
+                    for te in events:
                         if te is not target_node and getattr(te, "malfunction", "") == new_mal:
                             messagebox.showerror(
                                 "Duplicate Malfunction",
