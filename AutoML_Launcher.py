@@ -6,6 +6,7 @@ executing :mod:`AutoML`.  When run inside the PyInstaller-built
 executable the dependencies are already bundled so the installation step
 is skipped.
 """
+import argparse
 import importlib
 import os
 import subprocess
@@ -14,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from tools.crash_report_logger import install_best
 from tools.memory_manager import manager as memory_manager
+from mainappsrc.version import VERSION
 
 # Hint PyInstaller to bundle AutoML and its dependencies (e.g. gui package)
 if False:  # pragma: no cover
@@ -30,6 +32,14 @@ REQUIRED_PACKAGES = [
 ]
 
 GS_PATH = Path(r"C:\\Program Files\\gs\\gs10.04.0\\bin\\gswin64c.exe")
+
+
+def parse_args() -> None:
+    """Handle command line arguments for the launcher."""
+
+    parser = argparse.ArgumentParser(description="Launch the AutoML application")
+    parser.add_argument("--version", action="version", version=VERSION)
+    parser.parse_args()
 
 
 def _install_ghostscript_via_winget() -> bool:
@@ -134,6 +144,7 @@ def ensure_packages() -> None:
 
 def main() -> None:
     """Entry point used by both source and bundled executions."""
+    parse_args()
     install_best()
     with ThreadPoolExecutor() as executor:
         futures = [

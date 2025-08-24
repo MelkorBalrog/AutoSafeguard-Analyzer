@@ -1,4 +1,4 @@
-version: 0.1.6
+version: 0.1.12
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1636,6 +1636,12 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.1.12 - Delegated reliability and risk-analysis windows to dedicated sub-app wrappers.
+- 0.1.11 - Split fault-tree and risk assessment logic into dedicated sub-app wrappers.
+- 0.1.10 - Centralised constants and moved requirement logic into a RequirementsManager sub-app.
+- 0.1.9 - Split diagram creation into dedicated sub-apps and centralised PNG export.
+- 0.1.8 - Moved analysis tree logic into a dedicated TreeSubApp wrapper.
+- 0.1.7 - Refactored main application into modular sub-apps and added CLI version option.
 - 0.1.6 - Fixed version display in Help → About and splash screen.
 - 0.1.5 - Added a pastel style with peach actions and steel-blue nodes.
 - 0.1.4 - Initial diagram style support documented.
