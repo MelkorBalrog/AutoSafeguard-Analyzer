@@ -126,13 +126,11 @@ def main() -> None:
     ensure_packages()
     ensure_ghostscript()
     base_path = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))
-    # Insert both the launcher directory and the 'mainappsrc' module location to ensure
-    # the project-specific AutoML module is discovered rather than any similarly
-    # named third-party package that may be installed in the environment.
-    mainappsrc_path = base_path / "mainappsrc"
-    for path in (str(mainappsrc_path), str(base_path)):
-        if path not in sys.path:
-            sys.path.insert(0, path)
+    # Ensure the repository root is on sys.path so the bundled AutoML package is
+    # discovered rather than any similarly named third-party package.
+    path = str(base_path)
+    if path not in sys.path:
+        sys.path.insert(0, path)
     automl = importlib.import_module("AutoML")
     automl.main()
     memory_manager.cleanup()

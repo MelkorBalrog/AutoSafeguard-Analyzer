@@ -10,12 +10,7 @@ sys.modules.setdefault("PIL.ImageDraw", types.ModuleType("PIL.ImageDraw"))
 sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
-import importlib.util
-
-module_path = pathlib.Path(__file__).resolve().parents[1] / "mainappsrc" / "AutoML.py"
-spec = importlib.util.spec_from_file_location("AutoML", module_path)
-AutoML = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(AutoML)
+import AutoML
 AutoMLApp = AutoML.AutoMLApp
 FaultTreeNode = AutoML.FaultTreeNode
 PageDiagram = AutoML.PageDiagram

@@ -1,4 +1,4 @@
-from mainappsrc.AutoML import PageDiagram
+from AutoML import PageDiagram
 
 class DummyApp:
     def __init__(self):
@@ -49,7 +49,7 @@ class DummyFont:
 
 
 def test_page_diagram_uses_own_mode(monkeypatch):
-    from mainappsrc import AutoML as auto_module
+    import AutoML as auto_module
 
     monkeypatch.setattr(auto_module.tkFont, "Font", lambda *a, **k: DummyFont())
     monkeypatch.setattr(auto_module, "fta_drawing_helper", StubDrawingHelper())

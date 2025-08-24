@@ -44,7 +44,7 @@ pyinstaller --noconfirm --onefile --windowed \
     --hidden-import=tkinter.scrolledtext \
     --hidden-import=tkinter.ttk \
     --add-data "styles:styles" \
-    --add-data "mainappsrc/AutoML.py:mainappsrc" \
+    --add-data "AutoML:AutoML" \
     --icon bin/AutoML.ico AutoML_Launcher.py
 
 # Move the resulting executable to the bin directory
