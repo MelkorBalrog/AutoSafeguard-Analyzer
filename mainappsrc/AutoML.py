@@ -9857,7 +9857,7 @@ class AutoMLApp:
             eff_y = int((node.y - min_y) * scale_factor)
             radius = int(45 * scale_factor)
             bbox = [eff_x - radius, eff_y - radius, eff_x + radius, eff_y + radius]
-            node_color = self.get_node_fill_color(node)
+            node_color = self.get_node_fill_color(node, getattr(self.canvas, "diagram_mode", None))
             draw.ellipse(bbox, outline="dimgray", fill=node_color)
             text = node.name
             text_size = draw.textsize(text, font=font)
@@ -23457,8 +23457,8 @@ class PageDiagram:
         outline_color = "red" if node == self.selected_node else "dimgray"
         line_width = 2 if node == self.selected_node else 1
 
-        # Determine the fill color (this function already uses the original's display_label)
-        fill_color = self.app.get_node_fill_color(node)
+        # Determine the fill color using this diagram's mode to avoid cross-tab color mixing
+        fill_color = self.app.get_node_fill_color(node, self.diagram_mode)
         font_obj = self.diagram_font
 
         # For shape selection, use the source’s node type and gate type.
