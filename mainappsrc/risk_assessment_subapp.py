@@ -642,6 +642,13 @@ class RiskAssessmentSubApp:
             app._cbn_window = CausalBayesianNetworkWindow(app._cbn_tab, app)
         app.refresh_all()
 
+    # ------------------------------------------------------------------
+    def create_cbn_export_window(self, app, parent):
+        """Return a CBN window bound to *parent* for export."""
+        from gui.causal_bayesian_network_window import CausalBayesianNetworkWindow
+
+        return CausalBayesianNetworkWindow(parent, app)
+
     def open_fi2tc_window(self, app):
         if hasattr(app, "_fi2tc_tab") and app._fi2tc_tab.winfo_exists():
             app.doc_nb.select(app._fi2tc_tab)

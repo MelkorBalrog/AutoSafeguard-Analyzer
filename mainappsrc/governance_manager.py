@@ -79,6 +79,13 @@ class GovernanceManager:
             pass
 
     # ------------------------------------------------------------------
+    def create_export_window(self, parent, diagram):
+        """Return a GovernanceDiagramWindow for *diagram*."""
+        from gui.architecture import GovernanceDiagramWindow
+
+        return GovernanceDiagramWindow(parent, self.app, diagram_id=diagram.diag_id)
+
+    # ------------------------------------------------------------------
     def _on_toolbox_change(self) -> None:
         """Handle toolbox modifications."""
         self.refresh_tool_enablement()
