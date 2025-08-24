@@ -232,7 +232,7 @@ class SafetyManagementExplorer(tk.Frame):
             return
         diag_id = self.toolbox.diagrams.get(obj)
         if diag_id and self.app:
-            self.app.open_arch_window(diag_id)
+            self.app.window_controllers.open_arch_window(diag_id)
 
     # ------------------------------------------------------------------
     def _on_double_click(self, _event):  # pragma: no cover - UI event

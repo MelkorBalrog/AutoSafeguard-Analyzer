@@ -24,7 +24,7 @@ class TreeSubApp:
             return
         node = app.find_node_by_id_all(node_id)
         if node:
-            app.open_page_diagram(node)
+            app.window_controllers.open_page_diagram(node)
 
     def on_analysis_tree_double_click(self, app, event):
         item = (
@@ -91,7 +91,7 @@ class TreeSubApp:
         elif kind == "gsn" and ident is not None:
             diag = getattr(app, "gsn_diagram_map", {}).get(ident)
             if diag:
-                app.open_gsn_diagram(diag)
+                app.window_controllers.open_gsn_diagram(diag)
         elif kind == "gsnmod":
             app.manage_gsn()
         elif kind == "reqs":
@@ -106,21 +106,21 @@ class TreeSubApp:
                 app.diagram_mode = "FTA"
                 app.ensure_fta_tab()
                 app.doc_nb.select(app.canvas_tab)
-                app.open_page_diagram(te)
+                app.window_controllers.open_page_diagram(te)
         elif kind == "cta" and ident is not None:
             te = next((t for t in getattr(app, "cta_events", []) if t.unique_id == int(ident)), None)
             if te:
                 app.diagram_mode = "CTA"
                 app.ensure_fta_tab()
                 app.doc_nb.select(app.canvas_tab)
-                app.open_page_diagram(te)
+                app.window_controllers.open_page_diagram(te)
         elif kind == "paa" and ident is not None:
             te = next((t for t in getattr(app, "paa_events", []) if t.unique_id == int(ident)), None)
             if te:
                 app.diagram_mode = "PAA"
                 app.ensure_fta_tab()
                 app.doc_nb.select(app.canvas_tab)
-                app.open_page_diagram(te)
+                app.window_controllers.open_page_diagram(te)
         elif kind == "safetycase":
             app.manage_safety_cases()
         elif kind == "safetyconcept":
@@ -128,7 +128,7 @@ class TreeSubApp:
         elif kind == "itemdef":
             app.show_item_definition_editor()
         elif kind == "arch":
-            app.open_arch_window(ident)
+            app.window_controllers.open_arch_window(ident)
         elif kind == "pkg":
             app.manage_architecture()
         else:

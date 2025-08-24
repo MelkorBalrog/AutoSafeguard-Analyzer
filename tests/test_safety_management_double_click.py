@@ -44,7 +44,9 @@ def test_double_click_opens_diagram_with_phase(monkeypatch):
     explorer.folder_icon = None
     explorer.diagram_icon = None
     calls = []
-    explorer.app = types.SimpleNamespace(open_arch_window=lambda _id: calls.append(_id))
+    explorer.app = types.SimpleNamespace(
+        window_controllers=types.SimpleNamespace(open_arch_window=lambda _id: calls.append(_id))
+    )
 
     SafetyManagementExplorer.populate(explorer)
 

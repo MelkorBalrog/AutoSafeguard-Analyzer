@@ -14,7 +14,10 @@ def test_open_diagram_uses_diag_id():
     def fake_open_arch_window(arg):
         called.append(arg)
 
-    app = types.SimpleNamespace(open_arch_window=fake_open_arch_window, diagram_tabs={})
+    app = types.SimpleNamespace(
+        window_controllers=types.SimpleNamespace(open_arch_window=fake_open_arch_window),
+        diagram_tabs={},
+    )
 
     explorer = ArchitectureManagerDialog.__new__(ArchitectureManagerDialog)
     explorer.repo = repo

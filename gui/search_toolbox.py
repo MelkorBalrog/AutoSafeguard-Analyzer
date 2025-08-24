@@ -200,7 +200,7 @@ class SearchToolbox(ttk.Frame):
                 )
                 self._add_result(
                     label,
-                    lambda n=node: self.app.open_page_diagram(getattr(n, "original", n)),
+                    lambda n=node: self.app.window_controllers.open_page_diagram(getattr(n, "original", n)),
                 )
 
     # ------------------------------------------------------------------

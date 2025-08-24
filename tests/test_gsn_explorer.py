@@ -346,7 +346,9 @@ def test_open_item_delegates_to_app(monkeypatch):
             explorer.tree.selection_item = iid
             break
 
-    explorer.app.open_gsn_diagram = lambda d: setattr(explorer.app, "opened", d)
+    explorer.app.window_controllers = types.SimpleNamespace(
+        open_gsn_diagram=lambda d: setattr(explorer.app, "opened", d)
+    )
     GSNExplorer.open_item(explorer)
 
     assert explorer.app.opened is diag

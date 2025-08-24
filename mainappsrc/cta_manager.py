@@ -28,7 +28,7 @@ class ControlTreeManager:
         self._create_tab()
         self.app.add_top_level_event()
         if getattr(self.app, "cta_root_node", None):
-            self.app.open_page_diagram(self.app.cta_root_node)
+            self.app.window_controllers.open_page_diagram(self.app.cta_root_node)
 
     def enable_actions(self, enabled: bool) -> None:
         """Enable or disable CTA-related menu actions."""

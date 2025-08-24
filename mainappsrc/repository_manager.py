@@ -80,33 +80,7 @@ class RepositoryManager:
 
     def open_arch_window(self, diag_id: str) -> None:
         """Open an existing architecture diagram from the repository."""
-        repo = SysMLRepository.get_instance()
-        diag = repo.diagrams.get(diag_id)
-        if not diag:
-            return
-        existing = self.app.diagram_tabs.get(diag.diag_id)
-        if existing and str(existing) in self.app.doc_nb.tabs():
-            if existing.winfo_exists():
-                self.app.doc_nb.select(existing)
-                self.app.refresh_all()
-                return
-        else:
-            self.app.diagram_tabs.pop(diag.diag_id, None)
-        tab = self.app._new_tab(self.app._format_diag_title(diag))
-        self.app.diagram_tabs[diag.diag_id] = tab
-        if diag.diag_type == "Use Case Diagram":
-            UseCaseDiagramWindow(tab, self.app, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Activity Diagram":
-            ActivityDiagramWindow(tab, self.app, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Governance Diagram":
-            GovernanceDiagramWindow(tab, self.app, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Block Diagram":
-            BlockDiagramWindow(tab, self.app, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Internal Block Diagram":
-            InternalBlockDiagramWindow(tab, self.app, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Control Flow Diagram":
-            ControlFlowDiagramWindow(tab, self.app, diagram_id=diag.diag_id)
-        self.app.refresh_all()
+        self.app.window_controllers.open_arch_window(diag_id)
 
     def open_management_window(self, idx: int) -> None:
         """Open a safety management diagram from the repository."""
@@ -196,7 +170,7 @@ class RepositoryManager:
         self._create_fta_tab("FTA")
         self.app.add_top_level_event()
         if getattr(self.app, "fta_root_node", None):
-            self.app.open_page_diagram(self.app.fta_root_node)
+            self.app.window_controllers.open_page_diagram(self.app.fta_root_node)
 
     def enable_fta_actions(self, enabled: bool) -> None:
         """Enable or disable FTA-related menu actions."""

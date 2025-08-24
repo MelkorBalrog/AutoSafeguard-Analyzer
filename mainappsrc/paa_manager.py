@@ -28,4 +28,4 @@ class PrototypeAssuranceManager:
         self._create_paa_tab()
         self.app.add_top_level_event()
         if getattr(self.app, "paa_root_node", None):
-            self.app.open_page_diagram(self.app.paa_root_node)
+            self.app.window_controllers.open_page_diagram(self.app.paa_root_node)

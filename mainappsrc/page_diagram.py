@@ -222,10 +222,10 @@ class PageDiagram:
         clicked_node = self.find_node_at_position(x, y)
         if clicked_node:
             if not clicked_node.is_primary_instance:
-                self.app.open_page_diagram(getattr(clicked_node, "original", clicked_node))
+                self.app.window_controllers.open_page_diagram(getattr(clicked_node, "original", clicked_node))
             else:
                 if clicked_node.is_page:
-                    self.app.open_page_diagram(clicked_node)
+                    self.app.window_controllers.open_page_diagram(clicked_node)
                 else:
                     from .AutoML import EditNodeDialog
 

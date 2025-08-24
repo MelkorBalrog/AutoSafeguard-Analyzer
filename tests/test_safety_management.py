@@ -19,6 +19,7 @@ sys.modules.setdefault("PIL.ImageDraw", PIL_stub.ImageDraw)
 sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
 from AutoML import AutoMLApp
+from mainappsrc.window_controllers import WindowControllers
 import AutoML
 from analysis.safety_management import (
     SafetyManagementToolbox,
@@ -1540,7 +1541,9 @@ def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
     explorer.item_map = {}
     explorer.folder_icon = None
     explorer.diagram_icon = None
-    explorer.app = types.SimpleNamespace(open_arch_window=lambda _id: None)
+    explorer.app = types.SimpleNamespace(
+        window_controllers=types.SimpleNamespace(open_arch_window=lambda _id: None)
+    )
 
     SafetyManagementExplorer.populate(explorer)
     monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Pkg")
@@ -1605,7 +1608,9 @@ def test_explorer_renames_folders_and_diagrams(monkeypatch):
     explorer.item_map = {}
     explorer.folder_icon = None
     explorer.diagram_icon = None
-    explorer.app = types.SimpleNamespace(open_arch_window=lambda _id: None)
+    explorer.app = types.SimpleNamespace(
+        window_controllers=types.SimpleNamespace(open_arch_window=lambda _id: None)
+    )
 
     SafetyManagementExplorer.populate(explorer)
     monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Pkg")
@@ -2502,13 +2507,14 @@ def test_focus_governance_diagram_sets_phase_and_hides_functions():
     changes: list[str] = []
     toolbox.on_change = lambda: changes.append("x")
     AutoML.GovernanceDiagramWindow = lambda *args, **kwargs: None
+    app.window_controllers = WindowControllers(app)
 
-    AutoMLApp.open_arch_window(app, d1)
+    app.window_controllers.open_arch_window(d1)
     app.doc_nb.select(app.diagram_tabs[d1])
     assert toolbox.active_module == "Phase1"
     assert app.lifecycle_var.value == "Phase1"
 
-    AutoMLApp.open_arch_window(app, d2)
+    app.window_controllers.open_arch_window(d2)
     app.doc_nb.select(app.diagram_tabs[d2])
     assert toolbox.active_module == "Phase2"
     assert app.lifecycle_var.value == "Phase2"
