@@ -125,11 +125,58 @@ def test_top_level_menu_gating():
     tk = AutoML.tk
     assert all(state == tk.DISABLED for state in app.fta_menu.states.values())
     assert all(state == tk.NORMAL for state in app.cta_menu.states.values())
+    assert all(state == tk.DISABLED for state in app.paa_menu.states.values())
 
     app.diagram_mode = "FTA"
     app._update_analysis_menus()
     assert all(state == tk.NORMAL for state in app.fta_menu.states.values())
     assert all(state == tk.DISABLED for state in app.cta_menu.states.values())
+    assert all(state == tk.DISABLED for state in app.paa_menu.states.values())
+
+    app.diagram_mode = "PAA"
+    app._update_analysis_menus()
+    assert all(state == tk.DISABLED for state in app.fta_menu.states.values())
+    assert all(state == tk.DISABLED for state in app.cta_menu.states.values())
+    assert all(state == tk.NORMAL for state in app.paa_menu.states.values())
+
+
+def test_tab_change_enables_active_diagram_actions():
+    app = AutoMLApp.__new__(AutoMLApp)
+
+    class Menu:
+        def __init__(self):
+            self.states = {}
+
+        def entryconfig(self, index, state):
+            self.states[index] = state
+
+    app.fta_menu = Menu()
+    app.cta_menu = Menu()
+    app.paa_menu = Menu()
+    app._fta_menu_indices = {
+        "add_gate": 0,
+        "add_basic_event": 1,
+        "add_gate_from_failure_mode": 2,
+        "add_fault_event": 3,
+    }
+    app._cta_menu_indices = {"add_trigger": 0, "add_functional_insufficiency": 1}
+    app._paa_menu_indices = {"add_confidence": 0, "add_robustness": 1}
+
+    canvas = types.SimpleNamespace(diagram_mode="CTA")
+    tab = types.SimpleNamespace(winfo_children=lambda: [canvas])
+    app.analysis_tabs = {"CTA": {"tab": tab, "canvas": canvas, "hbar": None, "vbar": None}}
+    app.cta_root_node = object()
+    app._make_doc_tab_visible = lambda tid: None
+    app.refresh_all = lambda: None
+
+    widget = types.SimpleNamespace(select=lambda: "tab1", nametowidget=lambda tid: tab)
+    event = types.SimpleNamespace(widget=widget)
+
+    app._on_tab_change(event)
+    tk = AutoML.tk
+    assert all(state == tk.DISABLED for state in app.fta_menu.states.values())
+    assert all(state == tk.NORMAL for state in app.cta_menu.states.values())
+    assert all(state == tk.DISABLED for state in app.paa_menu.states.values())
 
 
 def test_invalid_node_addition(monkeypatch):
