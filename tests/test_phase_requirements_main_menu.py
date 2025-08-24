@@ -12,6 +12,7 @@ sys.modules.setdefault("PIL.ImageDraw", types.ModuleType("ImageDraw"))
 sys.modules.setdefault("PIL.ImageFont", types.ModuleType("ImageFont"))
 
 from AutoML import AutoMLApp
+from mainappsrc.app_lifecycle_ui import AppLifecycleUI
 from analysis import SafetyManagementToolbox
 
 
@@ -48,7 +49,7 @@ def test_phase_requirements_menu_populated(monkeypatch):
 
     app.phase_req_menu = DummyMenu()
     req_menu = DummyMenu()
-    AutoMLApp._add_lifecycle_requirements_menu(app, req_menu)
+    AppLifecycleUI._add_lifecycle_requirements_menu(app.lifecycle_ui, req_menu)
     AutoMLApp._refresh_phase_requirements_menu(app)
 
     labels = [label for label, _ in app.phase_req_menu.items]
