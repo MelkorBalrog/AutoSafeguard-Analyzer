@@ -7,6 +7,10 @@ import re
 from analysis.fmeda_utils import GATE_NODE_TYPES
 from config.automl_constants import dynamic_recommendations, VALID_SUBTYPES
 from gui import messagebox
+try:  # pragma: no cover - support direct module import
+    from .models.fta.fault_tree_node import FaultTreeNode
+except Exception:  # pragma: no cover
+    from models.fta.fault_tree_node import FaultTreeNode
 
 
 class FTASubApp:

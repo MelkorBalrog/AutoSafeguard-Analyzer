@@ -1,4 +1,4 @@
-from gui.capsule_button import _lighten, _hex_to_rgb
+from gui.controls.capsule_button import _lighten, _hex_to_rgb
 
 
 def test_lighten_adds_white_and_green():
