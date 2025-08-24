@@ -359,6 +359,9 @@ from analysis.scenario_description import template_phrases
 import copy
 import tkinter.font as tkFont
 import builtins
+from user_manager import UserManager
+from project_manager import ProjectManager
+from diagram_controller import DiagramController
 
 builtins.REQUIREMENT_WORK_PRODUCTS = REQUIREMENT_WORK_PRODUCTS
 builtins.SafetyCaseTable = SafetyCaseTable
@@ -1109,6 +1112,7 @@ class AutoMLApp:
         self.clone_offset_counter = {}
         self._loaded_model_paths = []
         self.root.title("AutoML-Analyzer")
+        self.messagebox = messagebox
         self.version = VERSION
         self.zoom = 1.0
         self.rc_dragged = False
@@ -1415,6 +1419,11 @@ class AutoMLApp:
         # Provide the drawing helper to dialogs that may be opened later
         self.fta_drawing_helper = fta_drawing_helper
 
+        # Delegated managers
+        self.user_manager = UserManager(self)
+        self.project_manager = ProjectManager(self)
+        self.diagram_controller = DiagramController(self)
+
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
         self.fmedas = []  # list of FMEDA documents
@@ -1430,9 +1439,9 @@ class AutoMLApp:
 
         menubar = tk.Menu(root)
         file_menu = tk.Menu(menubar, tearoff=0)
-        file_menu.add_command(label="New AutoML Model", command=self.new_model, accelerator="Ctrl+N")
-        file_menu.add_command(label="Save AutoML Model", command=self.save_model, accelerator="Ctrl+S")
-        file_menu.add_command(label="Load AutoML Model", command=self.load_model, accelerator="Ctrl+O")
+        file_menu.add_command(label="New AutoML Model", command=self.project_manager.new_model, accelerator="Ctrl+N")
+        file_menu.add_command(label="Save AutoML Model", command=self.project_manager.save_model, accelerator="Ctrl+S")
+        file_menu.add_command(label="Load AutoML Model", command=self.project_manager.load_model, accelerator="Ctrl+O")
         file_menu.add_command(label="Project Properties", command=self.edit_project_properties)
         file_menu.add_command(label="Save PDF Report", command=self.generate_pdf_report)
         file_menu.add_separator()
@@ -1451,7 +1460,7 @@ class AutoMLApp:
         edit_menu.add_command(label="Cut", command=self.cut_node, accelerator="Ctrl+X")
         edit_menu.add_command(label="Paste", command=self.paste_node, accelerator="Ctrl+V")
         edit_menu.add_separator()
-        edit_menu.add_command(label="Edit User Name", command=self.edit_user_name, accelerator="Ctrl+U")
+        edit_menu.add_command(label="Edit User Name", command=self.user_manager.edit_user_name, accelerator="Ctrl+U")
         edit_menu.add_command(label="Edit Description", command=self.edit_description, accelerator="Ctrl+D")
         edit_menu.add_command(label="Edit Rationale", command=self.edit_rationale, accelerator="Ctrl+L")
         edit_menu.add_command(label="Edit Value", command=self.edit_value)
@@ -1532,15 +1541,15 @@ class AutoMLApp:
         review_menu.add_command(label="Start Peer Review", command=self.start_peer_review)
         review_menu.add_command(label="Start Joint Review", command=self.start_joint_review)
         review_menu.add_command(label="Open Review Toolbox", command=self.open_review_toolbox)
-        review_menu.add_command(label="Set Current User", command=self.set_current_user)
+        review_menu.add_command(label="Set Current User", command=self.user_manager.set_current_user)
         review_menu.add_command(label="Merge Review Comments", command=self.merge_review_comments)
         review_menu.add_command(label="Compare Versions", command=self.compare_versions)
         architecture_menu = tk.Menu(menubar, tearoff=0)
-        architecture_menu.add_command(label="Use Case Diagram", command=self.open_use_case_diagram)
-        architecture_menu.add_command(label="Activity Diagram", command=self.open_activity_diagram)
-        architecture_menu.add_command(label="Block Diagram", command=self.open_block_diagram)
-        architecture_menu.add_command(label="Internal Block Diagram", command=self.open_internal_block_diagram)
-        architecture_menu.add_command(label="Control Flow Diagram", command=self.open_control_flow_diagram)
+        architecture_menu.add_command(label="Use Case Diagram", command=self.diagram_controller.open_use_case_diagram)
+        architecture_menu.add_command(label="Activity Diagram", command=self.diagram_controller.open_activity_diagram)
+        architecture_menu.add_command(label="Block Diagram", command=self.diagram_controller.open_block_diagram)
+        architecture_menu.add_command(label="Internal Block Diagram", command=self.diagram_controller.open_internal_block_diagram)
+        architecture_menu.add_command(label="Control Flow Diagram", command=self.diagram_controller.open_control_flow_diagram)
         architecture_menu.add_separator()
         architecture_menu.add_command(
             label="AutoML Explorer",
@@ -1810,15 +1819,15 @@ class AutoMLApp:
 
         root.config(menu=menubar)
         root.bind('<<StyleChanged>>', self.refresh_styles)
-        root.bind("<Control-n>", lambda event: self.new_model())
-        root.bind("<Control-s>", lambda event: self.save_model())
-        root.bind("<Control-o>", lambda event: self.load_model())
+        root.bind("<Control-n>", lambda event: self.project_manager.new_model())
+        root.bind("<Control-s>", lambda event: self.project_manager.save_model())
+        root.bind("<Control-o>", lambda event: self.project_manager.load_model())
         root.bind("<Control-f>", lambda event: self.open_search_toolbox())
         root.bind("<Control-r>", lambda event: self.calculate_overall())
         root.bind("<Control-m>", lambda event: self.calculate_pmfh())
         root.bind("<Control-=>", lambda event: self.zoom_in())
         root.bind("<Control-minus>", lambda event: self.zoom_out())
-        root.bind("<Control-u>", lambda event: self.edit_user_name())
+        root.bind("<Control-u>", lambda event: self.user_manager.edit_user_name())
         root.bind("<Control-d>", lambda event: self.edit_description())
         root.bind("<Control-l>", lambda event: self.edit_rationale())
         root.bind("<Control-g>", lambda event: self.edit_gate_type())
@@ -1832,7 +1841,7 @@ class AutoMLApp:
         root.bind_all("<Control-c>", lambda event: self.copy_node(), add="+")
         root.bind_all("<Control-x>", lambda event: self.cut_node(), add="+")
         root.bind_all("<Control-v>", lambda event: self.paste_node(), add="+")
-        root.bind("<Control-p>", lambda event: self.save_diagram_png())
+        root.bind("<Control-p>", lambda event: self.diagram_controller.save_diagram_png())
         root.bind_all("<Control-z>", self._undo_hotkey, add="+")
         root.bind_all("<Control-y>", self._redo_hotkey, add="+")
         root.bind("<F1>", lambda event: self.show_about())
@@ -8670,51 +8679,7 @@ class AutoMLApp:
                                font=self.diagram_font)
 
     def save_diagram_png(self):
-        margin = 50
-        all_nodes = self.get_all_nodes(self.root_node)
-        if not all_nodes:
-            messagebox.showerror("Error", "No nodes to export.")
-            return
-        min_x = min(n.x for n in all_nodes) - margin
-        min_y = min(n.y for n in all_nodes) - margin
-        max_x = max(n.x for n in all_nodes) + margin
-        max_y = max(n.y for n in all_nodes) + margin
-        scale_factor = 4
-        width = int((max_x - min_x) * scale_factor)
-        height = int((max_y - min_y) * scale_factor)
-        img = Image.new("RGB", (width, height), "white")
-        draw = ImageDraw.Draw(img)
-        grid_size = self.grid_size
-        for x in range(0, int(max_x - min_x) + 1, grid_size):
-            x_pos = int(x * scale_factor)
-            draw.line([(x_pos, 0), (x_pos, height)], fill="#ddd")
-        for y in range(0, int(max_y - min_y) + 1, grid_size):
-            y_pos = int(y * scale_factor)
-            draw.line([(0, y_pos), (width, y_pos)], fill="#ddd")
-        try:
-            font = ImageFont.truetype("arial.ttf", 10 * scale_factor)
-        except IOError:
-            font = ImageFont.load_default()
-        for node in all_nodes:
-            eff_x = int((node.x - min_x) * scale_factor)
-            eff_y = int((node.y - min_y) * scale_factor)
-            radius = int(45 * scale_factor)
-            bbox = [eff_x - radius, eff_y - radius, eff_x + radius, eff_y + radius]
-            node_color = self.get_node_fill_color(node, getattr(self.canvas, "diagram_mode", None))
-            draw.ellipse(bbox, outline="dimgray", fill=node_color)
-            text = node.name
-            text_size = draw.textsize(text, font=font)
-            text_x = eff_x - text_size[0] // 2
-            text_y = eff_y - text_size[1] // 2
-            draw.text((text_x, text_y), text, fill="black", font=font)
-        file_path = filedialog.asksaveasfilename(defaultextension=".png",
-                                                 filetypes=[("PNG files", "*.png")])
-        if file_path:
-            try:
-                img.save(file_path, "PNG")
-                messagebox.showinfo("Saved", "High-resolution diagram exported as PNG.")
-            except Exception as e:
-                messagebox.showerror("Save Error", f"An error occurred: {e}")
+        self.diagram_controller.save_diagram_png()
 
     def on_treeview_click(self, event):
         sel = self.analysis_tree.selection()
@@ -9513,75 +9478,7 @@ class AutoMLApp:
             self.zoom_out()
 
     def new_model(self):
-        """Reset the application state and start a new model."""
-
-        if self.has_unsaved_changes():
-            result = messagebox.askyesnocancel(
-                "Unsaved Changes",
-                "Save changes before starting a new model?",
-            )
-            if result is None:
-                return
-            if result:
-                self.save_model()
-
-        # Close page diagrams if any
-        if hasattr(self, "page_diagram") and self.page_diagram is not None:
-            self.close_page_diagram()
-
-        # Close all open document tabs
-        for tab_id in list(self.doc_nb.tabs()):
-            self.doc_nb._closing_tab = tab_id
-            self.doc_nb.event_generate("<<NotebookTabClosed>>")
-            if tab_id in self.doc_nb.tabs():
-                try:
-                    self.doc_nb.forget(tab_id)
-                except tk.TclError:
-                    pass
-
-        # Reset FTA state without recreating the tab
-        self._reset_fta_state()
-
-        global AutoML_Helper, unique_node_id_counter
-        # Reset all repositories and model data
-        SysMLRepository.reset_instance()
-        AutoML_Helper = AutoMLHelper()
-        unique_node_id_counter = 1
-        self.zoom = 1.0
-        self.diagram_font.config(size=int(8 * self.zoom))
-
-        # Remove all previous FTA information
-        self.top_events = []
-        self.cta_events = []
-        self.root_node = None
-        self.selected_node = None
-        self.page_history = []
-
-        # Reset project properties and clear every stored document or library
-        self.project_properties = {
-            "pdf_report_name": "AutoML-Analyzer PDF Report",
-            "pdf_detailed_formulas": True,
-            "exposure_probabilities": EXPOSURE_PROBABILITIES.copy(),
-            "controllability_probabilities": CONTROLLABILITY_PROBABILITIES.copy(),
-            "severity_probabilities": SEVERITY_PROBABILITIES.copy(),
-        }
-        update_probability_tables(
-            self.project_properties["exposure_probabilities"],
-            self.project_properties["controllability_probabilities"],
-            self.project_properties["severity_probabilities"],
-        )
-        self.apply_model_data({}, ensure_root=False)
-
-        # Remove any undo/redo history from the previous project
-        self._undo_stack.clear()
-        self._redo_stack.clear()
-
-        # Clear the explorer tree and refresh the view
-        self.analysis_tree.delete(*self.analysis_tree.get_children())
-        self.update_views()
-        self.set_last_saved_state()
-        if self.canvas:
-            self.canvas.update()
+        self.project_manager.new_model()
 
     def compute_occurrence_counts(self):
         counts = {}
@@ -9654,7 +9551,7 @@ class AutoMLApp:
         menu.add_command(label="Cut", command=lambda: self.cut_node())
         menu.add_command(label="Paste", command=lambda: self.paste_node())
         menu.add_separator()
-        menu.add_command(label="Edit User Name", command=lambda: self.edit_user_name())
+        menu.add_command(label="Edit User Name", command=lambda: self.user_manager.edit_user_name())
         menu.add_command(label="Edit Description", command=lambda: self.edit_description())
         menu.add_command(label="Edit Rationale", command=lambda: self.edit_rationale())
         menu.add_command(label="Edit Value", command=lambda: self.edit_value())
@@ -18070,66 +17967,19 @@ class AutoMLApp:
         return create_icon(shape, color)
 
     def open_use_case_diagram(self):
-        """Prompt for a diagram name then open a new use case diagram."""
-        name = simpledialog.askstring("New Use Case Diagram", "Enter diagram name:")
-        if not name:
-            return
-        repo = SysMLRepository.get_instance()
-        diag = repo.create_diagram("Use Case Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(self._format_diag_title(diag))
-        self.diagram_tabs[diag.diag_id] = tab
-        UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.refresh_all()
+        self.diagram_controller.open_use_case_diagram()
 
     def open_activity_diagram(self):
-        """Prompt for a diagram name then open a new activity diagram."""
-        name = simpledialog.askstring("New Activity Diagram", "Enter diagram name:")
-        if not name:
-            return
-        repo = SysMLRepository.get_instance()
-        diag = repo.create_diagram("Activity Diagram", name=name, package=repo.root_package.elem_id)
-        if hasattr(self, "safety_mgmt_toolbox"):
-            self.safety_mgmt_toolbox.register_created_work_product("Activity Diagram", diag.name)
-        tab = self._new_tab(self._format_diag_title(diag))
-        self.diagram_tabs[diag.diag_id] = tab
-        ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.refresh_all()
+        self.diagram_controller.open_activity_diagram()
 
     def open_block_diagram(self):
-        """Prompt for a diagram name then open a new block diagram."""
-        name = simpledialog.askstring("New Block Diagram", "Enter diagram name:")
-        if not name:
-            return
-        repo = SysMLRepository.get_instance()
-        diag = repo.create_diagram("Block Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(self._format_diag_title(diag))
-        self.diagram_tabs[diag.diag_id] = tab
-        BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.refresh_all()
+        self.diagram_controller.open_block_diagram()
 
     def open_internal_block_diagram(self):
-        """Prompt for a diagram name then open a new internal block diagram."""
-        name = simpledialog.askstring("New Internal Block Diagram", "Enter diagram name:")
-        if not name:
-            return
-        repo = SysMLRepository.get_instance()
-        diag = repo.create_diagram("Internal Block Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(self._format_diag_title(diag))
-        self.diagram_tabs[diag.diag_id] = tab
-        InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.refresh_all()
+        self.diagram_controller.open_internal_block_diagram()
 
     def open_control_flow_diagram(self):
-        """Prompt for a diagram name then open a new control flow diagram."""
-        name = simpledialog.askstring("New Control Flow Diagram", "Enter diagram name:")
-        if not name:
-            return
-        repo = SysMLRepository.get_instance()
-        diag = repo.create_diagram("Control Flow Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(self._format_diag_title(diag))
-        self.diagram_tabs[diag.diag_id] = tab
-        ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.refresh_all()
+        self.diagram_controller.open_control_flow_diagram()
 
     def manage_architecture(self):
         if hasattr(self, "_arch_tab") and self._arch_tab.winfo_exists():
@@ -19053,19 +18903,8 @@ class AutoMLApp:
                 continue
 
     def edit_user_name(self):
-        if self.selected_node:
-            if getattr(self.selected_node, "name_readonly", False):
-                messagebox.showinfo("Product Goal", "Edit via Product Goal editor")
-                return
-            new_name = simpledialog.askstring("Edit User Name", "Enter new user name:", initialvalue=self.selected_node.user_name)
-            if new_name is not None:
-                self.selected_node.user_name = new_name.strip()
-                # Ensure all clones and the original stay in sync.
-                self.sync_nodes_by_id(self.selected_node)
-                self.update_views()
-        else:
-            messagebox.showwarning("Edit User Name", "Select a node first.")
-
+        self.user_manager.edit_user_name()
+       
     def edit_description(self):
         if self.selected_node:
             new_desc = askstring_fixed(
@@ -20266,82 +20105,7 @@ class AutoMLApp:
         self.update_views()
 
     def save_model(self):
-        path = filedialog.asksaveasfilename(
-            defaultextension=".autml",
-            filetypes=[("AutoML Project", "*.autml"), ("JSON", "*.json")],
-        )
-        if not path:
-            return
-        try:
-            from cryptography.fernet import Fernet
-        except Exception:  # pragma: no cover - dependency check
-            import subprocess
-            import sys
-
-            try:
-                subprocess.check_call(
-                    [sys.executable, "-m", "pip", "install", "cryptography"]
-                )
-                from cryptography.fernet import Fernet
-            except Exception:
-                messagebox.showerror(
-                    "Save Model", "cryptography package is required for encrypted save."
-                )
-                return
-        import base64
-        import gzip
-        import hashlib
-        import json
-        import os
-
-        for fmea in self.fmeas:
-            self.export_fmea_to_csv(fmea, fmea["file"])
-        for fmeda in self.fmedas:
-            self.export_fmeda_to_csv(fmeda, fmeda["file"])
-        data = self.export_model_data()
-
-        if path.endswith(".autml"):
-            try:
-                from cryptography.fernet import Fernet
-            except Exception:  # pragma: no cover - dependency check
-                messagebox.showwarning(
-                    "Save Model",
-                    (
-                        "cryptography package is required for encrypted save. "
-                        "Saving unencrypted JSON instead."
-                    ),
-                )
-                path = os.path.splitext(path)[0] + ".json"
-                with open(path, "w", encoding="utf-8") as f:
-                    json.dump(data, f, indent=2)
-            else:
-                import base64
-                import gzip
-                import hashlib
-
-                password = askstring_fixed(
-                    simpledialog,
-                    "Password",
-                    "Enter encryption password:",
-                    show="*",
-                )
-                if password is None:
-                    return
-                raw = json.dumps(data).encode("utf-8")
-                compressed = gzip.compress(raw)
-                key = base64.urlsafe_b64encode(
-                    hashlib.sha256(password.encode()).digest()
-                )
-                token = Fernet(key).encrypt(compressed)
-                with open(path, "wb") as f:
-                    f.write(token)
-        else:
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2)
-        messagebox.showinfo(
-            "Saved", "Model saved with all configuration and safety goal information."
-        )
-        self.set_last_saved_state()
+        self.project_manager.save_model()
 
     def _reset_on_load(self):
         """Close all open windows and clear state before loading a project."""
@@ -20415,92 +20179,7 @@ class AutoMLApp:
         return self._prompt_save_before_load_v3()
 
     def load_model(self):
-        import json
-
-        if getattr(self, "has_unsaved_changes", lambda: False)():
-            resp = self._prompt_save_before_load()
-            if resp is None:
-                return
-            if resp:
-                self.save_model()
-        path = filedialog.askopenfilename(
-            defaultextension=".autml",
-            filetypes=[("AutoML Project", "*.autml"), ("JSON", "*.json")],
-        )
-        if not path:
-            return
-        if path.endswith(".autml"):
-            try:
-                from cryptography.fernet import Fernet, InvalidToken
-            except Exception:  # pragma: no cover - dependency check
-                import subprocess
-                import sys
-
-                try:
-                    subprocess.check_call(
-                        [sys.executable, "-m", "pip", "install", "cryptography"]
-                    )
-                    from cryptography.fernet import Fernet, InvalidToken
-                except Exception:
-                    messagebox.showerror(
-                        "Load Model", "cryptography package is required for encrypted files."
-                    )
-                    return
-            import base64
-            import gzip
-            import hashlib
-            import json
-
-            password = askstring_fixed(
-                simpledialog,
-                "Password",
-                "Enter decryption password:",
-                show="*",
-            )
-            if password is None:
-                return
-            key = base64.urlsafe_b64encode(hashlib.sha256(password.encode()).digest())
-            with open(path, "rb") as f:
-                token = f.read()
-            try:
-                compressed = Fernet(key).decrypt(token)
-            except InvalidToken:
-                messagebox.showerror("Load Model", "Decryption failed. Check password.")
-                return
-            try:
-                raw = gzip.decompress(compressed).decode("utf-8")
-                data = json.loads(raw)
-            except Exception as exc:  # pragma: no cover - parsing failure
-                messagebox.showerror("Load Model", f"Failed to parse model: {exc}")
-                return
-        else:
-            with open(path, "r") as f:
-                raw = f.read()
-            try:
-                data = json.loads(raw)
-            except json.JSONDecodeError as exc:
-                import re
-
-                def clean(text: str) -> str:
-                    text = re.sub(r"//.*", "", text)
-                    text = re.sub(r"#.*", "", text)
-                    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
-                    text = re.sub(r",\s*(\]|\})", r"\1", text)
-                    return text
-
-                try:
-                    data = json.loads(clean(raw))
-                except json.JSONDecodeError:
-                    messagebox.showerror(
-                        "Load Model", f"Failed to parse JSON file:\n{exc}"
-                    )
-                    return
-
-        self._reset_on_load()
-        self.apply_model_data(data)
-        self.set_last_saved_state()
-        self._loaded_model_paths.append(path)
-        return
+        self.project_manager.load_model()
 
     def _reregister_document(self, analysis: str, name: str) -> None:
         phase = self.safety_mgmt_toolbox.doc_phases.get(analysis, {}).get(name)
@@ -21031,7 +20710,7 @@ class AutoMLApp:
             self.review_window = ReviewToolbox(self._review_tab, self)
             self.review_window.pack(fill=tk.BOTH, expand=True)
         self.refresh_all()
-        self.set_current_user()
+        self.user_manager.set_current_user()
 
     def send_review_email(self, review):
         """Send the review summary to all reviewers via configured SMTP."""
@@ -21599,29 +21278,10 @@ class AutoMLApp:
         return result
 
     def set_current_user(self):
-        if not self.review_data:
-            messagebox.showwarning("User", "Start a review first")
-            return
-        parts = self.review_data.participants + self.review_data.moderators
-        dlg = ReviewUserSelectDialog(self.root, parts, initial_name=self.current_user)
-        if not dlg.result:
-            return
-        name, _ = dlg.result
-        allowed = [p.name for p in parts]
-        if name not in allowed:
-            messagebox.showerror("User", "Name not found in participants")
-            return
-        self.current_user = name
+        self.user_manager.set_current_user()
 
     def get_current_user_role(self):
-        if not self.review_data:
-            return None
-        if self.current_user in [m.name for m in self.review_data.moderators]:
-            return "moderator"
-        for p in self.review_data.participants:
-            if p.name == self.current_user:
-                return p.role
-        return None
+        return self.user_manager.get_current_user_role()
 
     def focus_on_node(self, node):
         self.selected_node = node
