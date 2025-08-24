@@ -305,7 +305,7 @@ except Exception:  # pragma: no cover
     sys.path.append(base)
     sys.path.append(os.path.dirname(base))
     from page_diagram import PageDiagram
-from .event_dispatcher import EventDispatcher
+from mainappsrc.event_dispatcher import EventDispatcher
 from mainappsrc.page_diagram import PageDiagram
 from mainappsrc.fmeda_manager import FMEDAManager
 from mainappsrc.fmea_service import FMEAService
