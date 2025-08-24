@@ -254,7 +254,164 @@ from gui.review_toolbox import (
     ReviewDocumentDialog,
     VersionCompareDialog,
 )
-from mainappsrc.review_manager import ReviewManager
+from functools import partial
+# Governance helper class
+from mainappsrc.governance_manager import GovernanceManager
+from mainappsrc.paa_manager import PrototypeAssuranceManager
+from gui.safety_management_toolbox import SafetyManagementToolbox
+from gui.safety_management_explorer import SafetyManagementExplorer
+from gui.safety_case_explorer import SafetyCaseExplorer
+from gui.gsn_diagram_window import GSN_WINDOWS
+from gui.causal_bayesian_network_window import CBN_WINDOWS
+from gui.gsn_config_window import GSNElementConfig
+from gui.search_toolbox import SearchToolbox
+from gsn import GSNDiagram, GSNModule
+try:
+    from .gsn_manager import GSNManager
+except ImportError:  # pragma: no cover
+    from gsn_manager import GSNManager
+from gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
+from gui.closable_notebook import ClosableNotebook
+from gui.icon_factory import create_icon
+from gui.splash_screen import SplashScreen
+from gui.mac_button_style import (
+    apply_translucid_button_style,
+    apply_purplish_button_style,
+)
+from gui.dialogs.user_select_dialog import UserSelectDialog
+from gui.dialogs.decomposition_dialog import DecompositionDialog
+from dataclasses import asdict
+from pathlib import Path
+from analysis.mechanisms import (
+    DiagnosticMechanism,
+    MechanismLibrary,
+    ANNEX_D_MECHANISMS,
+    PAS_8800_MECHANISMS,
+)
+from config import load_diagram_rules, load_report_template
+from analysis.requirement_rule_generator import regenerate_requirement_patterns
+from pathlib import Path
+from collections.abc import Mapping
+import csv
+try:
+    from openpyxl import load_workbook
+except Exception:  # openpyxl may not be installed
+    load_workbook = None
+from gui.drawing_helper import FTADrawingHelper, fta_drawing_helper
+try:  # pragma: no cover
+    from .page_diagram import PageDiagram
+except Exception:  # pragma: no cover
+    import os, sys
+    base = os.path.dirname(__file__)
+    sys.path.append(base)
+    sys.path.append(os.path.dirname(base))
+    from page_diagram import PageDiagram
+from mainappsrc.event_dispatcher import EventDispatcher
+from mainappsrc.page_diagram import PageDiagram
+from mainappsrc.fmeda_manager import FMEDAManager
+from mainappsrc.fmea_service import FMEAService
+from analysis.user_config import (
+    load_user_config,
+    save_user_config,
+    set_current_user,
+    load_all_users,
+    set_last_user,
+    CURRENT_USER_NAME,
+    CURRENT_USER_EMAIL,
+)
+from analysis.risk_assessment import (
+    DERIVED_MATURITY_TABLE,
+    ASSURANCE_AGGREGATION_AND,
+    AND_DECOMPOSITION_TABLE,
+    OR_DECOMPOSITION_TABLE,
+    boolify,
+    AutoMLHelper,
+)
+from analysis.models import (
+    MissionProfile,
+    ReliabilityComponent,
+    ReliabilityAnalysis,
+    HazopEntry,
+    HaraEntry,
+    HazopDoc,
+    HaraDoc,
+    StpaEntry,
+    StpaDoc,
+    FI2TCDoc,
+    TC2FIDoc,
+    DamageScenario,
+    ThreatScenario,
+    AttackPath,
+    FunctionThreat,
+    ThreatEntry,
+    ThreatDoc,
+    QUALIFICATIONS,
+    COMPONENT_ATTR_TEMPLATES,
+    RELIABILITY_MODELS,
+    component_fit_map,
+    ASIL_LEVEL_OPTIONS,
+    ASIL_ORDER,
+    ASIL_TARGETS,
+    ASIL_TABLE,
+    ASIL_DECOMP_SCHEMES,
+    calc_asil,
+    global_requirements,
+    ensure_requirement_defaults,
+    REQUIREMENT_TYPE_OPTIONS,
+    REQUIREMENT_WORK_PRODUCTS,
+    CAL_LEVEL_OPTIONS,
+    CybersecurityGoal,
+)
+from gui.safety_case_table import SafetyCaseTable
+from gui.architecture import (
+    UseCaseDiagramWindow,
+    ActivityDiagramWindow,
+    BlockDiagramWindow,
+    InternalBlockDiagramWindow,
+    ControlFlowDiagramWindow,
+    GovernanceDiagramWindow,
+    ArchitectureManagerDialog,
+    parse_behaviors,
+    link_requirement_to_object,
+    unlink_requirement_from_object,
+    link_requirements,
+    unlink_requirements,
+    ARCH_WINDOWS,
+)
+from sysml.sysml_repository import SysMLRepository
+from analysis.fmeda_utils import compute_fmeda_metrics
+from analysis.scenario_description import template_phrases
+import copy
+import tkinter.font as tkFont
+import builtins
+try:  # pragma: no cover - support direct module import
+    from .user_manager import UserManager
+    from .project_manager import ProjectManager
+    from .diagram_controller import DiagramController
+    from .sotif_manager import SOTIFManager
+except Exception:  # pragma: no cover
+    import os, sys
+    base = os.path.dirname(__file__)
+    sys.path.append(base)
+    sys.path.append(os.path.dirname(base))
+    from user_manager import UserManager
+    from project_manager import ProjectManager
+    from diagram_controller import DiagramController
+    from sotif_manager import SOTIFManager
+from user_manager import UserManager
+from project_manager import ProjectManager
+from cyber_manager import CyberSecurityManager
+from diagram_controller import DiagramController
+from cta_manager import ControlTreeManager
+from config.automl_constants import (
+    dynamic_recommendations,
+    WORK_PRODUCT_INFO as BASE_WORK_PRODUCT_INFO,
+    WORK_PRODUCT_PARENTS as BASE_WORK_PRODUCT_PARENTS,
+)
+try:
+    from .repository_manager import RepositoryManager
+except Exception:  # pragma: no cover
+    from repository_manager import RepositoryManager
 
 
 
@@ -625,6 +782,7 @@ class AutoMLApp:
         self.gsn_modules = []  # top-level GSN modules
         self.gsn_diagrams = []  # diagrams not assigned to a module
         self.gsn_manager = GSNManager(self)
+        self.repository_manager = RepositoryManager(self)
         # Track open diagram tabs to avoid duplicates
         self.diagram_tabs: dict[str, ttk.Frame] = {}
         self.top_events = []
@@ -2299,17 +2457,7 @@ class AutoMLApp:
             doc.approved = status == "closed"
 
     def update_fta_statuses(self):
-        """Update status for each top level event based on linked reviews."""
-        for te in self.top_events:
-            status = "draft"
-            for review in self.reviews:
-                if te.unique_id in getattr(review, "fta_ids", []):
-                    if review.mode == "joint" and review.approved and self.review_is_closed_for(review):
-                        status = "closed"
-                        break
-                    else:
-                        status = "in review"
-            te.status = status
+        self.repository_manager.update_fta_statuses()
 
     def get_safety_goal_asil(self, sg_name):
         """Return the highest ASIL level for a safety goal name across approved risk assessments."""
@@ -3258,49 +3406,7 @@ class AutoMLApp:
         return img.convert("RGB") if img else None
 
     def capture_sysml_diagram(self, diagram):
-        """Return a PIL Image of the given SysML diagram."""
-        from io import BytesIO
-        from PIL import Image
-        from gui.causal_bayesian_network_window import (
-            CausalBayesianNetworkWindow,
-        )
-
-        temp = tk.Toplevel(self.root)
-        temp.withdraw()
-        if diagram.diag_type == "Use Case Diagram":
-            win = UseCaseDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Activity Diagram":
-            win = ActivityDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Block Diagram":
-            win = BlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Internal Block Diagram":
-            win = InternalBlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Control Flow Diagram":
-            win = ControlFlowDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Governance Diagram":
-            win = GovernanceDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        else:
-            temp.destroy()
-            return None
-
-        win.redraw()
-        win.canvas.update()
-        bbox = win.canvas.bbox("all")
-        if not bbox:
-            temp.destroy()
-            return None
-
-        x, y, x2, y2 = bbox
-        width, height = x2 - x, y2 - y
-        ps = win.canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
-        ps_bytes = BytesIO(ps.encode("utf-8"))
-        try:
-            img = Image.open(ps_bytes)
-            img.load(scale=3)
-        except Exception:
-            img = None
-        temp.destroy()
-        return img.convert("RGB") if img else None
+        return self.repository_manager.capture_sysml_diagram(diagram)
 
     def capture_cbn_diagram(self, doc):
         """Return a PIL Image of the given Causal Bayesian Network diagram."""
@@ -8311,10 +8417,11 @@ class AutoMLApp:
             self.active_phase_lbl.config(
                 text=f"Active phase: {phase or 'None'}"
             )
-        if not phase:
-            self.governance_manager.set_active_module(None)
-        else:
-            self.governance_manager.set_active_module(phase)
+        if hasattr(self, "governance_manager"):
+            if not phase:
+                self.governance_manager.set_active_module(None)
+            else:
+                self.governance_manager.set_active_module(phase)
         self.update_views()
         if hasattr(self, "refresh_tool_enablement"):
             try:
@@ -16319,86 +16426,17 @@ class AutoMLApp:
         return _close
 
     def _create_fta_tab(self, diagram_mode: str = "FTA"):
-        """Create the main FTA tab with canvas and bindings.
-
-        Parameters
-        ----------
-        diagram_mode: str
-            The operational mode of the diagram (``"FTA"`` or ``"CTA"``).
-        """
-        tabs = getattr(self, "analysis_tabs", {})
-        existing = tabs.get(diagram_mode)
-        
-        if existing and existing["tab"].winfo_exists():
-            self.canvas_tab = existing["tab"]
-            self.canvas_frame = existing["tab"]
-            self.canvas = existing["canvas"]
-            self.hbar = existing["hbar"]
-            self.vbar = existing["vbar"]
-            self.diagram_mode = diagram_mode
-            self.doc_nb.select(self.canvas_tab)
-            self._update_analysis_menus(diagram_mode)
-            return
-
-        canvas_tab = ttk.Frame(self.doc_nb)
-        self.doc_nb.add(canvas_tab, text="FTA" if diagram_mode == "FTA" else diagram_mode)
-
-        canvas = tk.Canvas(canvas_tab, bg=StyleManager.get_instance().canvas_bg)
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        hbar = ttk.Scrollbar(canvas_tab, orient=tk.HORIZONTAL, command=canvas.xview)
-        hbar.pack(side=tk.BOTTOM, fill=tk.X)
-        vbar = ttk.Scrollbar(canvas_tab, orient=tk.VERTICAL, command=canvas.yview)
-        vbar.pack(side=tk.RIGHT, fill=tk.Y)
-        canvas.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set,
-                      scrollregion=(0, 0, 2000, 2000))
-        canvas.bind("<ButtonPress-3>", self.on_right_mouse_press)
-        canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
-        canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
-        canvas.bind("<Button-1>", self.on_canvas_click)
-        canvas.bind("<B1-Motion>", self.on_canvas_drag)
-        canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-        canvas.bind("<Double-1>", self.on_canvas_double_click)
-        canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
-
-        canvas.diagram_mode = diagram_mode
-        self.analysis_tabs[diagram_mode] = {
-            "tab": canvas_tab,
-            "canvas": canvas,
-            "hbar": hbar,
-            "vbar": vbar,
-        }
-        self.canvas_tab = canvas_tab
-        self.canvas_frame = canvas_tab
-        self.canvas = canvas
-        self.hbar = hbar
-        self.vbar = vbar
-        self.diagram_mode = diagram_mode
-        self.doc_nb.select(canvas_tab)
-        self._update_analysis_menus(diagram_mode)
+        self.repository_manager._create_fta_tab(diagram_mode)
 
     def create_fta_diagram(self):
-        """Initialize an FTA diagram and its top-level event."""
-        self._create_fta_tab("FTA")
-        self.add_top_level_event()
-        if getattr(self, "fta_root_node", None):
-            self.open_page_diagram(self.fta_root_node)
+        self.repository_manager.create_fta_diagram()
 
     def create_cta_diagram(self):
         """Initialize a CTA diagram and its top-level event."""
         self.cta_manager.create_diagram()
 
     def enable_fta_actions(self, enabled: bool) -> None:
-        """Enable or disable FTA-related menu actions."""
-        mode = getattr(self, "diagram_mode", "FTA")
-        if hasattr(self, "fta_menu"):
-            state = tk.NORMAL if enabled else tk.DISABLED
-            for key in (
-                "add_gate",
-                "add_basic_event",
-                "add_gate_from_failure_mode",
-                "add_fault_event",
-            ):
-                self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
+        self.repository_manager.enable_fta_actions(enabled)
                 
     def enable_paa_actions(self, enabled: bool) -> None:
         """Enable or disable PAA-related menu actions."""
@@ -16431,25 +16469,10 @@ class AutoMLApp:
         return self._paa_manager
 
     def _reset_fta_state(self):
-        """Clear references to the FTA tab and its canvas."""
-        self.canvas_tab = None
-        self.canvas_frame = None
-        self.canvas = None
-        self.hbar = None
-        self.vbar = None
-        self.page_diagram = None
+        self.repository_manager._reset_fta_state()
 
     def ensure_fta_tab(self):
-        """Recreate the FTA tab if it was closed."""
-        mode = getattr(self, "diagram_mode", "FTA")
-        tab_info = self.analysis_tabs.get(mode)
-        if not tab_info or not tab_info["tab"].winfo_exists():
-            self._create_fta_tab(mode)
-        else:
-            self.canvas_tab = tab_info["tab"]
-            self.canvas = tab_info["canvas"]
-            self.hbar = tab_info["hbar"]
-            self.vbar = tab_info["vbar"]
+        self.repository_manager.ensure_fta_tab()
 
     def _on_tab_close(self, event):
         tab_id = self.doc_nb._closing_tab
@@ -16832,65 +16855,10 @@ class AutoMLApp:
         self.gsn_manager.open_diagram(diagram)
 
     def open_arch_window(self, diag_id: str) -> None:
-        """Open an existing architecture diagram from the repository."""
-        repo = SysMLRepository.get_instance()
-        diag = repo.diagrams.get(diag_id)
-        if not diag:
-            return
-        existing = self.diagram_tabs.get(diag.diag_id)
-        # Ensure the existing tab is still managed by the notebook
-        if existing and str(existing) in self.doc_nb.tabs():
-            if existing.winfo_exists():
-                self.doc_nb.select(existing)
-                self.refresh_all()
-                return
-        else:
-            # Remove stale reference if the tab was closed
-            self.diagram_tabs.pop(diag.diag_id, None)
-        tab = self._new_tab(self._format_diag_title(diag))
-        self.diagram_tabs[diag.diag_id] = tab
-        if diag.diag_type == "Use Case Diagram":
-            UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Activity Diagram":
-            ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Governance Diagram":
-            GovernanceDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Block Diagram":
-            BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Internal Block Diagram":
-            InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Control Flow Diagram":
-            ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.refresh_all()
+        self.repository_manager.open_arch_window(diag_id)
 
     def open_management_window(self, idx: int) -> None:
-        """Open a safety management diagram from the repository."""
-        if idx < 0 or idx >= len(self.management_diagrams):
-            return
-        diag = self.management_diagrams[idx]
-        existing = self.diagram_tabs.get(diag.diag_id)
-        if existing and str(existing) in self.doc_nb.tabs():
-            if existing.winfo_exists():
-                self.doc_nb.select(existing)
-                self.refresh_all()
-                return
-        else:
-            self.diagram_tabs.pop(diag.diag_id, None)
-        tab = self._new_tab(self._format_diag_title(diag))
-        self.diagram_tabs[diag.diag_id] = tab
-        if diag.diag_type == "Use Case Diagram":
-            UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Activity Diagram":
-            ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Governance Diagram":
-            GovernanceDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Block Diagram":
-            BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Internal Block Diagram":
-            InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Control Flow Diagram":
-            ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.refresh_all()
+        self.repository_manager.open_management_window(idx)
 
     def _diagram_copy_strategy1(self):
         win = self._focused_cbn_window()
