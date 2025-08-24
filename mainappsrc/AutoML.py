@@ -19010,7 +19010,7 @@ class AutoMLApp:
             self.project_properties.get("severity_probabilities"),
         )
 
-       def _load_fault_tree_events(self, data: dict, ensure_root: bool) -> None:
+    def _load_fault_tree_events(self, data: dict, ensure_root: bool) -> None:
         """Initialise FTA, CTA and PAA events from *data*."""
         if "top_events" in data:
             self.top_events = [FaultTreeNode.from_dict(e) for e in data["top_events"]]
