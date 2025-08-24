@@ -15,6 +15,13 @@ AutoMLApp = automl.AutoMLApp
 FaultTreeNode = automl.FaultTreeNode
 messagebox = automl.messagebox
 
+page_spec = importlib.util.spec_from_file_location(
+    "page_diagram", repo_root / "mainappsrc/page_diagram.py"
+)
+page_module = importlib.util.module_from_spec(page_spec)
+page_spec.loader.exec_module(page_module)
+PageDiagram = page_module.PageDiagram
+fta_drawing_helper = page_module.fta_drawing_helper
 
 def _make_app_with_nodes():
     app = AutoMLApp.__new__(AutoMLApp)
@@ -83,3 +90,66 @@ def test_fta_copy_paste_clone_across_module():
     assert first is child
     assert second is not child
     assert second.original is child
+
+
+class DummyFont:
+    def measure(self, text):
+        return len(text) * 7
+
+    def metrics(self, key):
+        return 10
+
+
+class DummyCanvas:
+    def create_line(self, *a, **k):
+        pass
+
+    def create_rectangle(self, *a, **k):
+        pass
+
+    def create_polygon(self, *a, **k):
+        pass
+
+    def create_text(self, *a, **k):
+        pass
+
+    def create_oval(self, *a, **k):
+        pass
+
+
+def test_fta_clone_draws_original_shape(monkeypatch):
+    root = FaultTreeNode("Root", "TOP EVENT")
+    child = FaultTreeNode("Child", "GATE", parent=root)
+    child.gate_type = "OR"
+    root.children.append(child)
+    clone = child.clone(parent=root)
+
+    app = types.SimpleNamespace(
+        project_properties={},
+        get_node_fill_color=lambda n, m: "lightgray",
+        occurrence_counts={},
+    )
+
+    pd = PageDiagram.__new__(PageDiagram)
+    pd.app = app
+    pd.root_node = root
+    pd.canvas = DummyCanvas()
+    pd.diagram_mode = "FTA"
+    pd.zoom = 1.0
+    pd.diagram_font = DummyFont()
+    pd.selected_node = None
+
+    called = {}
+
+    def fake_or_clone(*args, **kwargs):
+        called["or"] = True
+
+    monkeypatch.setattr(fta_drawing_helper, "draw_rotated_or_gate_clone_shape", fake_or_clone)
+    monkeypatch.setattr(fta_drawing_helper, "draw_circle_event_clone_shape", lambda *a, **k: called.setdefault("circle", True))
+    monkeypatch.setattr(fta_drawing_helper, "draw_triangle_clone_shape", lambda *a, **k: called.setdefault("triangle", True))
+    monkeypatch.setattr(fta_drawing_helper, "draw_rotated_and_gate_clone_shape", lambda *a, **k: called.setdefault("and", True))
+
+    pd.draw_node(clone)
+
+    assert called.get("or")
+    assert "circle" not in called

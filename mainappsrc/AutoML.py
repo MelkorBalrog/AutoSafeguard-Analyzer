@@ -8166,13 +8166,18 @@ class AutoMLApp:
                                                    line_width=1,
                                                    font_obj=self.diagram_font)
         elif node_type_upper in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-            fta_drawing_helper.draw_circle_event_shape(canvas, eff_x, eff_y, 45 * self.zoom,
-                                                       top_text=top_text,
-                                                       bottom_text=bottom_text,
-                                                       fill=fill_color,
-                                                       outline_color="dimgray",
-                                                       line_width=1,
-                                                       font_obj=self.diagram_font)
+            fta_drawing_helper.draw_circle_event_clone_shape(
+                canvas,
+                eff_x,
+                eff_y,
+                45 * self.zoom,
+                top_text=top_text,
+                bottom_text=bottom_text,
+                fill=fill_color,
+                outline_color="dimgray",
+                line_width=1,
+                font_obj=self.diagram_font,
+            )
         elif node_type_upper in GATE_NODE_TYPES:
             if node.gate_type.upper() == "OR":
                 fta_drawing_helper.draw_rotated_or_gate_clone_shape(canvas, eff_x, eff_y,
@@ -8193,13 +8198,18 @@ class AutoMLApp:
                                                                      line_width=1,
                                                                      font_obj=self.diagram_font)
         else:
-            fta_drawing_helper.draw_circle_event_shape(canvas, eff_x, eff_y, 45 * self.zoom,
-                                                       top_text=top_text,
-                                                       bottom_text=bottom_text,
-                                                       fill=fill_color,
-                                                       outline_color="dimgray",
-                                                       line_width=1,
-                                                       font_obj=self.diagram_font)
+            fta_drawing_helper.draw_circle_event_clone_shape(
+                canvas,
+                eff_x,
+                eff_y,
+                45 * self.zoom,
+                top_text=top_text,
+                bottom_text=bottom_text,
+                fill=fill_color,
+                outline_color="dimgray",
+                line_width=1,
+                font_obj=self.diagram_font,
+            )
 
         # In detailed mode, also draw the equations.
         if self.project_properties.get("pdf_detailed_formulas", True):
@@ -10555,7 +10565,7 @@ class AutoMLApp:
                         obj_id=node.unique_id,
                     )
             elif node_type_upper in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-                fta_drawing_helper.draw_circle_event_shape(
+                fta_drawing_helper.draw_circle_event_clone_shape(
                     self.canvas,
                     eff_x,
                     eff_y,
@@ -10569,7 +10579,7 @@ class AutoMLApp:
                     obj_id=node.unique_id,
                 )
             else:
-                fta_drawing_helper.draw_circle_event_shape(
+                fta_drawing_helper.draw_circle_event_clone_shape(
                     self.canvas,
                     eff_x,
                     eff_y,

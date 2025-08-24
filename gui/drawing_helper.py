@@ -183,7 +183,7 @@ class FTADrawingHelper:
         font_obj=None,
         obj_id: str = "",
     ):
-        """Draw a page connector for a cloned node using GSN's shared-marker notation."""
+        """Draw a page connector for a cloned node using a bottom line marker."""
         outline_color = self._resolve_outline(outline_color)
         # Draw the base triangle.
         self.draw_triangle_shape(
@@ -199,10 +199,17 @@ class FTADrawingHelper:
             font_obj=font_obj,
             obj_id=obj_id,
         )
-        # Add a small shared marker in the upper-right corner to indicate a clone.
-        marker_x = x + scale / 2
-        marker_y = y - scale * 0.3
-        self.draw_shared_marker(canvas, marker_x, marker_y, 1)
+        # Add a small horizontal line below the shape to indicate a clone.
+        line_y = y + scale * 0.5
+        canvas.create_line(
+            x - scale * 0.4,
+            line_y,
+            x + scale * 0.4,
+            line_y,
+            fill=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
 
     def draw_shared_marker(self, canvas, x, y, zoom):
         """Draw a small shared marker at the given canvas coordinates."""
@@ -584,10 +591,17 @@ class FTADrawingHelper:
             font_obj=font_obj,
             obj_id=obj_id,
         )
-        # Add shared marker at the upper-right corner of the gate.
-        marker_x = x + scale / 2
-        marker_y = y - scale * 0.3
-        self.draw_shared_marker(canvas, marker_x, marker_y, 1)
+        # Draw a horizontal line below the gate to indicate no children.
+        line_y = y + scale * 0.8
+        canvas.create_line(
+            x - scale * 0.4,
+            line_y,
+            x + scale * 0.4,
+            line_y,
+            fill=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
 
     def draw_rotated_or_gate_clone_shape(
         self,
@@ -618,10 +632,17 @@ class FTADrawingHelper:
             font_obj=font_obj,
             obj_id=obj_id,
         )
-        # Add shared marker at the upper-right corner of the gate.
-        marker_x = x + scale / 2
-        marker_y = y - scale * 0.3
-        self.draw_shared_marker(canvas, marker_x, marker_y, 1)
+        # Draw a horizontal line below the gate to indicate no children.
+        line_y = y + scale * 0.8
+        canvas.create_line(
+            x - scale * 0.4,
+            line_y,
+            x + scale * 0.4,
+            line_y,
+            fill=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
 
     def draw_triangle_shape(
         self,
@@ -805,6 +826,45 @@ class FTADrawingHelper:
                            font=font_obj, anchor="center",
                            width=bottom_box_width,
                            tags=(obj_id,))
+
+    def draw_circle_event_clone_shape(
+        self,
+        canvas,
+        x,
+        y,
+        radius,
+        top_text="",
+        bottom_text="",
+        fill="lightyellow",
+        outline_color=None,
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        """Draw a circular event clone with a bottom line marker."""
+        self.draw_circle_event_shape(
+            canvas,
+            x,
+            y,
+            radius,
+            top_text=top_text,
+            bottom_text=bottom_text,
+            fill=fill,
+            outline_color=outline_color,
+            line_width=line_width,
+            font_obj=font_obj,
+            obj_id=obj_id,
+        )
+        outline_color = self._resolve_outline(outline_color)
+        canvas.create_line(
+            x - radius / 2,
+            y + radius,
+            x + radius / 2,
+            y + radius,
+            fill=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
                            
     def draw_triangle_clone_shape(
         self,
@@ -838,10 +898,17 @@ class FTADrawingHelper:
             font_obj=font_obj,
             obj_id=obj_id,
         )
-        # Add a shared marker to indicate the node is a clone.
-        marker_x = x + scale / 2
-        marker_y = y - scale * 0.3
-        self.draw_shared_marker(canvas, marker_x, marker_y, 1)
+        # Draw a horizontal line below the triangle to indicate a clone.
+        line_y = y + scale * 0.5
+        canvas.create_line(
+            x - scale * 0.4,
+            line_y,
+            x + scale * 0.4,
+            line_y,
+            fill=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
                            
 # Create a single FTADrawingHelper object that can be used by other classes
 fta_drawing_helper = FTADrawingHelper()
