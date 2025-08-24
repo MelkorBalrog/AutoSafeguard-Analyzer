@@ -285,6 +285,7 @@ except Exception:  # openpyxl may not be installed
     load_workbook = None
 from gui.drawing_helper import FTADrawingHelper, fta_drawing_helper
 from mainappsrc.page_diagram import PageDiagram
+from mainappsrc.fmeda_manager import FMEDAManager
 from analysis.user_config import (
     load_user_config,
     save_user_config,
@@ -556,6 +557,14 @@ class AutoMLApp:
     #: titles are truncated with an ellipsis to avoid giant tabs that overflow
     #: the working area.
     MAX_TAB_TEXT_LENGTH = 20
+
+    @property
+    def fmedas(self):
+        return self.fmeda_manager.fmedas
+
+    @fmedas.setter
+    def fmedas(self, value):
+        self.fmeda_manager.fmedas = value
 
     #: Maximum characters shown for tool notebook tab titles. Tool tabs use
     #: a fixed width so they remain readable but long names are capped at this
@@ -916,15 +925,14 @@ class AutoMLApp:
         self.user_manager = UserManager(self)
         self.project_manager = ProjectManager(self)
         self.diagram_controller = DiagramController(self)
+        self.fmeda_manager = FMEDAManager(self)
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
-        self.fmedas = []  # list of FMEDA documents
         self.load_default_mechanisms()
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
-        self.fmedas = []  # list of FMEDA documents
         self.load_default_mechanisms()
 
         self.mechanism_libraries = []
@@ -8463,9 +8471,8 @@ class AutoMLApp:
             self.fmeas[idx]["name"] = new
             self.safety_mgmt_toolbox.rename_document("FMEA", old, new)
         elif kind == "fmeda":
-            old = self.fmedas[idx]["name"]
-            self.fmedas[idx]["name"] = new
-            self.safety_mgmt_toolbox.rename_document("FMEDA", old, new)
+            doc = self.fmedas[idx]
+            self.fmeda_manager.rename_fmeda(doc, new)
         elif kind == "hazop":
             old = self.hazop_docs[idx].name
             self.hazop_docs[idx].name = new
@@ -11981,105 +11988,7 @@ class AutoMLApp:
         ttk.Button(btn_frame, text="Delete", command=delete_fmea).pack(fill=tk.X)
 
     def show_fmeda_list(self):
-        if getattr(self, "_fmeda_tab", None) is not None and self._fmeda_tab.winfo_exists():
-            self.doc_nb.select(self._fmeda_tab)
-            return
-        self._fmeda_tab = self._new_tab("FMEDA List")
-        win = self._fmeda_tab
-        columns = ("Name", "Created", "Author", "Modified", "ModifiedBy")
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for c in columns:
-            tree.heading(c, text=c)
-            width = 150 if c == "Name" else 120
-            tree.column(c, width=width)
-        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        item_map = {}
-        for doc in self.fmedas:
-            iid = tree.insert(
-                "",
-                "end",
-                values=(
-                    doc.get("name", ""),
-                    doc.get("created", ""),
-                    doc.get("author", ""),
-                    doc.get("modified", ""),
-                    doc.get("modified_by", ""),
-                ),
-            )
-            item_map[iid] = doc
-
-        def open_selected(event=None):
-            iid = tree.focus()
-            d = item_map.get(iid)
-            if not d:
-                return
-            win.destroy()
-            self._fmeda_tab = None
-            self.show_fmea_table(d, fmeda=True)
-
-        def add_fmeda():
-            name = simpledialog.askstring("New FMEDA", "Enter FMEDA name:")
-            if name:
-                file_name = f"fmeda_{name}.csv"
-                now = datetime.datetime.now().isoformat()
-                doc = {
-                    "name": name,
-                    "entries": [],
-                    "file": file_name,
-                    "bom": "",
-                    "created": now,
-                    "author": CURRENT_USER_NAME,
-                    "modified": now,
-                    "modified_by": CURRENT_USER_NAME,
-                }
-                self.fmedas.append(doc)
-                if hasattr(self, "safety_mgmt_toolbox"):
-                    self.safety_mgmt_toolbox.register_created_work_product("FMEDA", doc["name"])
-                iid = tree.insert(
-                    "",
-                    "end",
-                    values=(name, now, CURRENT_USER_NAME, now, CURRENT_USER_NAME),
-                )
-                item_map[iid] = doc
-                self.update_views()
-
-        def delete_fmeda():
-            iid = tree.focus()
-            d = item_map.get(iid)
-            if not d:
-                return
-            self.fmedas.remove(d)
-            if hasattr(self, "safety_mgmt_toolbox"):
-                self.safety_mgmt_toolbox.register_deleted_work_product("FMEDA", d["name"])
-            tree.delete(iid)
-            item_map.pop(iid, None)
-            self.update_views()
-
-        def rename_fmeda():
-            iid = tree.focus()
-            d = item_map.get(iid)
-            if not d:
-                return
-            current = d.get("name", "")
-            name = simpledialog.askstring("Rename FMEDA", "Enter new name:", initialvalue=current)
-            if not name:
-                return
-            old = d["name"]
-            d["name"] = name
-            if hasattr(self, "safety_mgmt_toolbox"):
-                self.safety_mgmt_toolbox.rename_document("FMEDA", old, name)
-            self.touch_doc(d)
-            tree.item(iid, values=(name, d["created"], d["author"], d["modified"], d["modified_by"]))
-            self.update_views()
-
-        tree.bind("<Double-1>", open_selected)
-        btn_frame = ttk.Frame(win)
-        btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
-        ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
-        ttk.Button(btn_frame, text="Add", command=add_fmeda).pack(fill=tk.X)
-        ttk.Button(btn_frame, text="Rename", command=rename_fmeda).pack(fill=tk.X)
-        ttk.Button(btn_frame, text="Delete", command=delete_fmeda).pack(fill=tk.X)
+        self.fmeda_manager.show_fmeda_list()
         
     def show_triggering_condition_list(self):
         if hasattr(self, "_tc_tab") and self._tc_tab.winfo_exists():
