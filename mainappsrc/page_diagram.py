@@ -51,9 +51,12 @@ class PageDiagram:
         self.canvas.scan_dragto(event.x, event.y, gain=1)
 
     def on_right_mouse_release(self, event):
-        # If there was no significant drag, show the context menu.
-        if not self.rc_dragged:
+        # If there was no significant drag, show the context menu. Guard with
+        # ``getattr`` so missing attributes (e.g. if the press event was
+        # swallowed) do not raise errors, and always reset the flag.
+        if not getattr(self, "rc_dragged", False):
             self.show_context_menu(event)
+        self.rc_dragged = False
 
     def find_node_at_position(self, x, y):
         # Adjust the radius (here using 45 as an example)
