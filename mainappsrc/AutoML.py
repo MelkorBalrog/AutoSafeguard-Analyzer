@@ -226,6 +226,7 @@ import re
 import math
 import sys
 import json
+from concurrent.futures import ThreadPoolExecutor
 import tkinter as tk
 import os, sys
 base = os.path.dirname(__file__)
@@ -20442,7 +20443,15 @@ class AutoMLApp:
                     targets.append(slabel)
 
         return targets, target_map
-        
+
+def load_user_data() -> tuple[dict, tuple[str, str]]:
+    """Load cached users and last user config concurrently."""
+    with ThreadPoolExecutor() as executor:
+        users_future = executor.submit(load_all_users)
+        config_future = executor.submit(load_user_config)
+        return users_future.result(), config_future.result()
+
+
 def main():
     root = tk.Tk()
     # Prevent the main window from being resized so small that
@@ -20459,8 +20468,7 @@ def main():
         email=AUTHOR_EMAIL,
         linkedin=AUTHOR_LINKEDIN,
     ).wait_window()
-    users = load_all_users()
-    last_name, last_email = load_user_config()
+    users, (last_name, last_email) = load_user_data()
     if users:
         dlg = UserSelectDialog(root, users, last_name)
         if dlg.result:
