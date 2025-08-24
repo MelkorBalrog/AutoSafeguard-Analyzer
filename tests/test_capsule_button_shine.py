@@ -5,7 +5,7 @@ import tkinter as tk
 import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from gui.capsule_button import CapsuleButton
+from gui.controls.capsule_button import CapsuleButton
 
 
 def test_capsule_button_has_diffused_circles_and_shade():
