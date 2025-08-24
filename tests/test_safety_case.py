@@ -14,7 +14,8 @@ sys.modules.setdefault("PIL.ImageDraw", types.ModuleType("PIL.ImageDraw"))
 sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 
 from gsn import GSNNode, GSNDiagram
-from AutoML import AutoMLApp, PMHF_TARGETS
+from AutoML import AutoMLApp
+from config.automl_constants import PMHF_TARGETS
 from analysis.constants import CHECK_MARK
 
 

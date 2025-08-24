@@ -10,12 +10,7 @@ from analysis.safety_case import SafetyCase
 from gui import messagebox
 from gui.toolboxes import _wrap_val
 from gui.table_controller import TableController
-
-
-try:  # pragma: no cover - fallback if AutoML isn't fully imported yet
-    from AutoML import PMHF_TARGETS  # type: ignore
-except Exception:  # pragma: no cover - default targets
-    PMHF_TARGETS = {"D": 1e-8, "C": 1e-7, "B": 1e-7, "A": 1e-6, "QM": 1.0}
+from config.automl_constants import PMHF_TARGETS
 
 
 class SafetyCaseTable(tk.Frame):

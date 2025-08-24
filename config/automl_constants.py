@@ -1,5 +1,30 @@
 """Configuration constants for AutoML."""
 
+# Target PMHF limits per ASIL level (events per hour)
+PMHF_TARGETS = {
+    "D": 1e-8,
+    "C": 1e-7,
+    "B": 1e-7,
+    "A": 1e-6,
+    "QM": 1.0,
+}
+
+##########################################
+# VALID_SUBTYPES dictionary
+##########################################
+VALID_SUBTYPES = {
+    "Confidence": ["Function", "Human Task"],
+    "Robustness": ["Function", "Human Task"],
+    "Maturity": ["Functionality"],
+    "Rigor": ["Failure", "AI Error", "Functional Insufficiency"],
+    "Prototype Assurance Level (PAL)": ["Vehicle Level Function"],
+}
+
+# Contact information for splash screen
+AUTHOR = "Miguel Marina"
+AUTHOR_EMAIL = "karel.capek.robotics@gmail.com"
+AUTHOR_LINKEDIN = "https://www.linkedin.com/in/progman32/"
+
 dynamic_recommendations = {
     1: {
         "Testing Requirements": (
