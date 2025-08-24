@@ -284,6 +284,7 @@ try:
 except Exception:  # openpyxl may not be installed
     load_workbook = None
 from gui.drawing_helper import FTADrawingHelper, fta_drawing_helper
+from .event_dispatcher import EventDispatcher
 from mainappsrc.page_diagram import PageDiagram
 from analysis.user_config import (
     load_user_config,
@@ -1311,33 +1312,6 @@ class AutoMLApp:
         menubar.add_cascade(label="Help", menu=help_menu)
 
         root.config(menu=menubar)
-        root.bind('<<StyleChanged>>', self.refresh_styles)
-        root.bind("<Control-n>", lambda event: self.project_manager.new_model())
-        root.bind("<Control-s>", lambda event: self.project_manager.save_model())
-        root.bind("<Control-o>", lambda event: self.project_manager.load_model())
-        root.bind("<Control-f>", lambda event: self.open_search_toolbox())
-        root.bind("<Control-r>", lambda event: self.calculate_overall())
-        root.bind("<Control-m>", lambda event: self.calculate_pmfh())
-        root.bind("<Control-=>", lambda event: self.zoom_in())
-        root.bind("<Control-minus>", lambda event: self.zoom_out())
-        root.bind("<Control-u>", lambda event: self.user_manager.edit_user_name())
-        root.bind("<Control-d>", lambda event: self.edit_description())
-        root.bind("<Control-l>", lambda event: self.edit_rationale())
-        root.bind("<Control-g>", lambda event: self.edit_gate_type())
-        root.bind("<Control-e>", lambda event: self.edit_severity())
-        root.bind("<Control-Shift-c>", lambda event: self.add_node_of_type("Confidence Level"))
-        root.bind("<Control-Shift-r>", lambda event: self.add_node_of_type("Robustness Score"))
-        root.bind("<Control-Shift-g>", lambda event: self.add_node_of_type("GATE"))
-        root.bind("<Control-Shift-b>", lambda event: self.add_node_of_type("Basic Event"))
-        root.bind("<Control-Shift-t>", lambda event: self.add_node_of_type("Triggering Condition"))
-        root.bind("<Control-Shift-f>", lambda event: self.add_node_of_type("Functional Insufficiency"))
-        root.bind_all("<Control-c>", lambda event: self.copy_node(), add="+")
-        root.bind_all("<Control-x>", lambda event: self.cut_node(), add="+")
-        root.bind_all("<Control-v>", lambda event: self.paste_node(), add="+")
-        root.bind("<Control-p>", lambda event: self.diagram_controller.save_diagram_png())
-        root.bind_all("<Control-z>", self._undo_hotkey, add="+")
-        root.bind_all("<Control-y>", self._redo_hotkey, add="+")
-        root.bind("<F1>", lambda event: self.show_about())
 
         # Container to hold the auto-hiding explorer tab and main pane
         self.top_frame = tk.Frame(root)
@@ -1395,10 +1369,6 @@ class AutoMLApp:
             cursor="hand2",
         )
         self._explorer_tab.pack(side=tk.LEFT, fill=tk.Y)
-        self._explorer_tab.bind("<Enter>", lambda _e: self.show_explorer(animate=True))
-        self.explorer_pane.bind("<Enter>", lambda _e: self._cancel_explorer_hide())
-        self.explorer_pane.bind("<Leave>", lambda _e: self._schedule_explorer_hide())
-        self.explorer_pane.bind("<Configure>", lambda _e: self._limit_explorer_size())
 
         self.analysis_tab = ttk.Frame(self.explorer_nb)
         self.explorer_nb.add(self.analysis_tab, text="File Explorer")
@@ -1420,9 +1390,6 @@ class AutoMLApp:
         hsb.grid(row=1, column=0, sticky="ew")
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
-        self.analysis_tree.bind("<Double-1>", self.on_analysis_tree_double_click)
-        self.analysis_tree.bind("<Button-3>", self.on_analysis_tree_right_click)
-        self.analysis_tree.bind("<<TreeviewSelect>>", self.on_analysis_tree_select)
         # Maintain backwards compatibility with older code referencing
         # ``self.treeview`` for the main explorer tree.
         self.treeview = self.analysis_tree
@@ -1440,7 +1407,6 @@ class AutoMLApp:
             top, textvariable=self.lifecycle_var, state="readonly"
         )
         self.lifecycle_cb.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        self.lifecycle_cb.bind("<<ComboboxSelected>>", self.on_lifecycle_selected)
 
         # Container holding navigation buttons and the tools notebook
         nb_container = ttk.Frame(self.tools_group)
@@ -1493,9 +1459,9 @@ class AutoMLApp:
         self._tool_tab_offset = 0
 
         # Properties tab for displaying metadata
-        prop_frame = ttk.Frame(self.tools_nb)
+        self.prop_frame = ttk.Frame(self.tools_nb)
         self.prop_view = ttk.Treeview(
-            prop_frame, columns=("field", "value"), show="headings"
+            self.prop_frame, columns=("field", "value"), show="headings"
         )
         self.prop_view.heading("field", text="Field")
         self.prop_view.heading("value", text="Value")
@@ -1506,15 +1472,12 @@ class AutoMLApp:
         # ------------------------------------------------------------------
         self.prop_view.column("field", width=120, anchor="w", stretch=False)
         self.prop_view.column("value", width=200, anchor="w", stretch=True)
-        add_treeview_scrollbars(self.prop_view, prop_frame)
+        add_treeview_scrollbars(self.prop_view, self.prop_frame)
         # Bind resize handlers on the treeview, its container, and the notebook
-        # itself so the value column always fills the tab width even before any
-        # manual resize. DO NOT REMOVE.
-        self.prop_view.bind("<Configure>", self._resize_prop_columns)
-        self.prop_view.bind("<Map>", self._resize_prop_columns)
-        prop_frame.bind("<Configure>", self._resize_prop_columns)
+        # via :class:`EventDispatcher` so the value column always fills the tab
+        # width even before any manual resize. DO NOT REMOVE.
         self.root.after(0, self._resize_prop_columns)
-        self.tools_nb.add(prop_frame, text="Properties")
+        self.tools_nb.add(self.prop_frame, text="Properties")
         tab_id = self.tools_nb.tabs()[-1]
         self._tool_all_tabs.append(tab_id)
         self._update_tool_tab_visibility()
@@ -1522,8 +1485,6 @@ class AutoMLApp:
 
         # Tooltip helper for tabs (text may be clipped)
         self._tools_tip = ToolTip(self.tools_nb, "", automatic=False)
-        self.tools_nb.bind("<Motion>", self._on_tool_tab_motion)
-        self.tools_nb.bind("<Leave>", lambda _e: self._tools_tip.hide())
 
         self.tool_actions = {
             "Safety & Security Management": self.open_safety_management_toolbox,
@@ -1575,8 +1536,6 @@ class AutoMLApp:
         # Notebook for diagrams and analyses with navigation buttons
         self.doc_frame = ttk.Frame(self.main_pane)
         self.doc_nb = ClosableNotebook(self.doc_frame)
-        self.doc_nb.bind("<<NotebookTabClosed>>", self._on_tab_close)
-        self.doc_nb.bind("<<NotebookTabChanged>>", self._on_tab_change)
         # Mapping of tab identifiers to their full, untruncated titles.  The
         # displayed text may be shortened to keep tabs a reasonable size but we
         # keep the originals here for features like duplicate detection.
@@ -1612,8 +1571,11 @@ class AutoMLApp:
         self.main_pane.add(self.doc_frame, stretch="always")
         # Tooltip helper for document tabs
         self._doc_tip = ToolTip(self.doc_nb, "", automatic=False)
-        self.doc_nb.bind("<Motion>", self._on_doc_tab_motion)
-        self.doc_nb.bind("<Leave>", lambda _e: self._doc_tip.hide())
+
+        # Centralised event binding
+        self.event_dispatcher = EventDispatcher(self)
+        self.event_dispatcher.register_keyboard_shortcuts()
+        self.event_dispatcher.register_tab_events()
 
         # Do not open the FTA tab by default so the application starts with no
         # documents visible. The tab and the initial top event will be created
