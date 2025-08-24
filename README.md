@@ -1,4 +1,4 @@
-version: 0.2.4
+version: 0.2.5
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1636,6 +1636,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.5 - Added PDF report generation placeholder and fixed missing menu action.
 - 0.2.4 - Centralized diff capture and review tools into ReviewManager.
 - 0.2.3 - Moved capsule button into dedicated controls module.
 - 0.2.2 - Moved risk assessment helpers into dedicated sub-app.
