@@ -247,6 +247,8 @@ from gui.review_toolbox import (
     VersionCompareDialog,
 )
 from functools import partial
+# Governance helper class
+from mainappsrc.governance_manager import GovernanceManager
 from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_case_explorer import SafetyCaseExplorer
@@ -903,8 +905,9 @@ class AutoMLApp:
         self.reviews = []
         self.review_data = None
         self.review_window = None
+        self.governance_manager = GovernanceManager(self)
         self.safety_mgmt_toolbox = SafetyManagementToolbox()
-        self.safety_mgmt_toolbox.on_change = self._on_toolbox_change
+        self.governance_manager.attach_toolbox(self.safety_mgmt_toolbox)
         self.current_user = ""
         self.comment_target = None
         self._undo_stack: list[dict] = []
@@ -3355,7 +3358,7 @@ class AutoMLApp:
             self.project_properties["severity_probabilities"],
         )
         if smt:
-            smt.set_all_diagrams_frozen(freeze)
+            self.governance_manager.freeze_governance_diagrams(freeze)
 
     def edit_project_properties(self):
         prop_win = tk.Toplevel(self.root)
@@ -3446,7 +3449,7 @@ class AutoMLApp:
                 self.project_properties["severity_probabilities"],
             )
             if smt:
-                smt.set_all_diagrams_frozen(var_freeze.get())
+                self.governance_manager.freeze_governance_diagrams(var_freeze.get())
             messagebox.showinfo(
                 "Project Properties", "Project properties updated."
             )
@@ -8592,91 +8595,25 @@ class AutoMLApp:
             action()
 
     def _on_toolbox_change(self) -> None:
-        self.refresh_tool_enablement()
-        self._refresh_phase_requirements_menu()
-        try:
-            self.update_views()
-        except Exception:
-            pass
+        self.governance_manager._on_toolbox_change()
 
     def apply_governance_rules(self) -> None:
         """Apply governance rules and refresh related UI elements."""
-        try:
-            self._on_toolbox_change()
-        except Exception:
-            pass
+        self.governance_manager.apply_governance_rules()
 
     def refresh_tool_enablement(self) -> None:
-        if not hasattr(self, "tool_listboxes"):
-            return
-        toolbox = getattr(self, "safety_mgmt_toolbox", None)
-        if toolbox:
-            declared = set(toolbox.enabled_products())
-            # Parent menu categories must also be considered declared when
-            # any of their children are enabled so the cascade can be
-            # activated.
-            for name in list(declared):
-                parent = self.WORK_PRODUCT_PARENTS.get(name)
-                while parent:
-                    declared.add(parent)
-                    parent = self.WORK_PRODUCT_PARENTS.get(parent)
+        self.governance_manager.refresh_tool_enablement()
 
-            current = set(getattr(self, "enabled_work_products", set()))
-            for name in declared - current:
-                try:
-                    self.enable_work_product(name)
-                except Exception:
-                    self.enabled_work_products.add(name)
-            if getattr(toolbox, "work_products", None) or toolbox.active_module:
-                for name in current - declared:
-                    try:
-                        # Always hide work products that are not declared in
-                        # the active phase. ``force`` ensures the menu and
-                        # toolbox entries are disabled even when documents of
-                        # that type already exist.
-                        self.disable_work_product(name, force=True)
-                    except Exception:
-                        pass
-        global_enabled = getattr(self, "enabled_work_products", set())
-        if toolbox and (getattr(toolbox, "work_products", None) or toolbox.active_module):
-            phase_enabled = toolbox.enabled_products()
-            # Parent menu categories also need to remain active when any of
-            # their children are enabled.  ``phase_enabled`` only contains the
-            # direct work products declared in the governance diagram so we
-            # ascend the hierarchy here to ensure parent menus are treated as
-            # enabled as well.
-            for name in list(phase_enabled):
-                parent = self.WORK_PRODUCT_PARENTS.get(name)
-                while parent:
-                    phase_enabled.add(parent)
-                    parent = self.WORK_PRODUCT_PARENTS.get(parent)
-        else:
-            phase_enabled = global_enabled
-        enabled = global_enabled & phase_enabled
-        for lb in self.tool_listboxes.values():
-            for i, tool_name in enumerate(lb.get(0, tk.END)):
-                analysis_names = getattr(self, "tool_to_work_product", {}).get(tool_name, set())
-                if isinstance(analysis_names, str):
-                    analysis_names = {analysis_names}
-                if not analysis_names:
-                    in_enabled = tool_name in enabled
-                else:
-                    in_enabled = any(n in enabled for n in analysis_names)
-                if not in_enabled:
-                    lb.itemconfig(i, foreground="gray")
-                else:
-                    lb.itemconfig(i, foreground="black")
-        entry_state: dict[tuple[tk.Menu, int], bool] = {}
-        for wp, menus in getattr(self, "work_product_menus", {}).items():
-            is_enabled = wp in enabled
-            for menu, idx in menus:
-                key = (menu, idx)
-                entry_state[key] = entry_state.get(key, False) or is_enabled
-        for (menu, idx), is_enabled in entry_state.items():
-            try:
-                menu.entryconfig(idx, state=tk.NORMAL if is_enabled else tk.DISABLED)
-            except tk.TclError:
-                pass
+    def update_lifecycle_cb(self) -> None:
+        self.governance_manager.update_lifecycle_cb()
+
+    def _export_toolbox_dict(self) -> dict:
+        toolbox = getattr(self, "safety_mgmt_toolbox", None)
+        if toolbox is None:
+            toolbox = SafetyManagementToolbox()
+            self.governance_manager.attach_toolbox(toolbox)
+            self.safety_mgmt_toolbox = toolbox
+        return toolbox.to_dict()
 
     def on_lifecycle_selected(self, _event=None) -> None:
         phase = self.lifecycle_var.get()
@@ -8685,9 +8622,9 @@ class AutoMLApp:
                 text=f"Active phase: {phase or 'None'}"
             )
         if not phase:
-            self.safety_mgmt_toolbox.set_active_module(None)
+            self.governance_manager.set_active_module(None)
         else:
-            self.safety_mgmt_toolbox.set_active_module(phase)
+            self.governance_manager.set_active_module(phase)
         self.update_views()
         if hasattr(self, "refresh_tool_enablement"):
             try:
@@ -8714,23 +8651,6 @@ class AutoMLApp:
 
         for tab in getattr(self, "diagram_tabs", {}).values():
             _refresh_children(tab)
-
-
-    def update_lifecycle_cb(self) -> None:
-        if not hasattr(self, "lifecycle_cb"):
-            return
-        smt = getattr(self, "safety_mgmt_toolbox", None)
-        list_modules = getattr(smt, "list_modules", None)
-        names = (
-            list_modules()
-            if callable(list_modules)
-            else [m.name for m in getattr(smt, "modules", [])]
-        )
-        self.lifecycle_cb.configure(values=names)
-        if getattr(smt, "active_module", None) in names:
-            self.lifecycle_var.set(smt.active_module)
-        else:
-            self.lifecycle_var.set("")
 
     def _add_tool_category(self, cat: str, names: list[str]) -> None:
         frame = ttk.Frame(self.tools_nb)
@@ -9952,6 +9872,7 @@ class AutoMLApp:
                 self, "safety_mgmt_toolbox", SafetyManagementToolbox()
             )
             toolbox = self.safety_mgmt_toolbox
+            self.governance_manager.attach_toolbox(toolbox)
             toolbox.list_diagrams()
             self.update_lifecycle_cb()
             self.refresh_tool_enablement()
@@ -16638,6 +16559,7 @@ class AutoMLApp:
 
         if not hasattr(self, "safety_mgmt_toolbox"):
             self.safety_mgmt_toolbox = SafetyManagementToolbox()
+            self.governance_manager.attach_toolbox(self.safety_mgmt_toolbox)
 
         self.safety_mgmt_window = SafetyManagementWindow(
             self._safety_mgmt_tab, self, self.safety_mgmt_toolbox, show_diagrams=show_diagrams
@@ -17061,9 +16983,7 @@ class AutoMLApp:
                         )
                         module = toolbox.module_for_diagram(name)
                         if module != getattr(toolbox, "active_module", None):
-                            toolbox.set_active_module(module)
-                            if hasattr(self, "lifecycle_var") and hasattr(self.lifecycle_var, "set"):
-                                self.lifecycle_var.set(module or "")
+                            self.governance_manager.set_active_module(module)
                     break
 
     def _init_nav_button_style(self) -> None:
@@ -18777,9 +18697,7 @@ class AutoMLApp:
             "sysml_repository": repo.to_dict(),
             "gsn_modules": [m.to_dict() for m in getattr(self, "gsn_modules", [])],
             "gsn_diagrams": [d.to_dict() for d in getattr(self, "gsn_diagrams", [])],
-            "safety_mgmt_toolbox": getattr(
-                self, "safety_mgmt_toolbox", SafetyManagementToolbox()
-            ).to_dict(),
+            "safety_mgmt_toolbox": self._export_toolbox_dict(),
             "enabled_work_products": sorted(
                 getattr(self, "enabled_work_products", set())
             ),
@@ -18875,12 +18793,12 @@ class AutoMLApp:
             data.get("safety_mgmt_toolbox", {})
         )
         toolbox = self.safety_mgmt_toolbox
-        toolbox.on_change = self._on_toolbox_change
+        self.governance_manager.attach_toolbox(toolbox)
         # Refresh menus to expose phases from the loaded toolbox
         self._refresh_phase_requirements_menu()
         # Ensure the SysML repository knows about the active phase from the
         # loaded toolbox so diagrams and work products filter correctly.
-        toolbox.set_active_module(toolbox.active_module)
+        self.governance_manager.set_active_module(toolbox.active_module)
         for te in self.top_events:
             toolbox.register_loaded_work_product("FTA", te.user_name)
         for te in getattr(self, "cta_events", []):
