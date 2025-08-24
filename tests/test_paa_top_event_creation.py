@@ -4,7 +4,7 @@ import types
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from mainappsrc.AutoML import AutoMLApp
+from mainappsrc.automl_core import AutoMLApp
 
 
 def test_paa_diagram_has_top_event(monkeypatch):

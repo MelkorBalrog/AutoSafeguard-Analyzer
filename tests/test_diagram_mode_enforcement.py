@@ -12,7 +12,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 import importlib.util
 
-module_path = pathlib.Path(__file__).resolve().parents[1] / "mainappsrc" / "AutoML.py"
+module_path = pathlib.Path(__file__).resolve().parents[1] / "mainappsrc" / "automl_core.py"
 spec = importlib.util.spec_from_file_location("AutoML", module_path)
 AutoML = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(AutoML)

@@ -1,4 +1,4 @@
-from mainappsrc.AutoML import PageDiagram
+from mainappsrc.automl_core import PageDiagram
 
 class DummyApp:
     def __init__(self):

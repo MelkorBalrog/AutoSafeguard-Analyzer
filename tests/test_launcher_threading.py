@@ -1,5 +1,5 @@
 import time
-import AutoML_Launcher as launcher
+import automl as launcher
 
 
 def test_ensure_packages_runs_in_parallel(monkeypatch):

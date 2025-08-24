@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from mainappsrc.AutoML import AutoMLApp
+from mainappsrc.automl_core import AutoMLApp
 
 
 class DummyTree:
