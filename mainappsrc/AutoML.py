@@ -2341,6 +2341,7 @@ class AutoMLApp:
         name = (name or "").strip()
         if not name or name in self.triggering_conditions:
             return
+
         node = FaultTreeNode(name, "Triggering Condition")
         self.triggering_condition_nodes.append(node)
         if name not in self.triggering_conditions:
@@ -4096,6 +4097,7 @@ class AutoMLApp:
                 if self.fta_drawing_helper:
                     self.fta_drawing_helper.draw_90_connection(canvas, parent_conn, child_top, outline_color=color, line_width=1)
                 draw_connections(ch)
+
         def draw_node(n):
             if n.unique_id not in allow_ids:
                 for ch in n.children:
@@ -5094,11 +5096,13 @@ class AutoMLApp:
         img = Image.new("RGB", (width, height), "white")
         draw = ImageDraw.Draw(img)
         font = ImageFont.load_default()
+
         # Draw reversed edges (child -> parent)
         for src, tgt in G.edges():
             start = px_pos[tgt]
             end = px_pos[src]
             draw.line([start, end], fill="gray", width=2)
+
             dx = end[0] - start[0]
             dy = end[1] - start[1]
             length = math.hypot(dx, dy)
@@ -5110,6 +5114,7 @@ class AutoMLApp:
                 right = (end[0] - ux * arrow + uy * arrow / 2,
                          end[1] - uy * arrow - ux * arrow / 2)
                 draw.polygon([end, left, right], fill="gray")
+
         # Draw nodes
         for n, (x, y) in px_pos.items():
             left = x - node_w / 2
@@ -5127,6 +5132,7 @@ class AutoMLApp:
             th = bbox[3] - bbox[1]
             draw.multiline_text((x - tw/2, y - th/2), lbl, font=font, fill="black", align="center")
         img.save(output_path)
+                  
     def build_dynamic_recommendations_table(events, app):
         """
         (Optional) If you still want to have a compact table of per-event recommendations,
@@ -5215,12 +5221,13 @@ class AutoMLApp:
                 for req in node.safety_requirements:
                     req_set.add(f"[{req['id']}] [{req['req_type']}] {req['text']}")
         return req_set
+                  
     def get_combined_safety_requirements(self, node):
         """Return all safety requirements associated with *node*.
         The returned list contains the requirements defined directly on the
         node.  If the node is a clone, the requirements from its original node
         are also included so callers always receive the complete set of
-        applicable safety requirements.
+        applicable safety requirements."""
         req_list = []
         # Always take the node's own requirements if they exist.
         if hasattr(node, "safety_requirements") and node.safety_requirements:
@@ -5229,10 +5236,11 @@ class AutoMLApp:
         if not node.is_primary_instance and hasattr(node, "original") and node.original.safety_requirements:
             req_list.extend(node.original.safety_requirements)
         return req_list
+        
     def get_top_event(self, node):
         """
         Walk up the parent chain until a node whose node_type is 'TOP EVENT' is found.
-        If none is found, return the node itself.
+        If none is found, return the node itself."""
         current = node
         while current.parents:
             for parent in current.parents:
@@ -5242,6 +5250,7 @@ class AutoMLApp:
             current = current.parents[0]
         print(f"DEBUG: No TOP EVENT found for node {node.unique_id}; returning self")
         return node
+                  
     def aggregate_safety_requirements(self, node, all_nodes):
         aggregated = set()
         # Always add the node’s own safety requirements.
