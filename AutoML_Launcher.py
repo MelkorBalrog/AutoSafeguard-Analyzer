@@ -10,6 +10,7 @@ import importlib
 import os
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from tools.crash_report_logger import install_best
 from tools.memory_manager import manager as memory_manager
@@ -111,20 +112,36 @@ def ensure_packages() -> None:
     """
     if getattr(sys, "frozen", False):
         return
+
+    missing = []
     for pkg in REQUIRED_PACKAGES:
         try:
             importlib.import_module(pkg)
         except ImportError:
-            proc = subprocess.Popen([sys.executable, "-m", "pip", "install", pkg])
-            memory_manager.register_process(pkg, proc)
-            proc.wait()
+            missing.append(pkg)
+
+    if not missing:
+        return
+
+    def install(pkg: str) -> None:
+        proc = subprocess.Popen([sys.executable, "-m", "pip", "install", pkg])
+        memory_manager.register_process(pkg, proc)
+        proc.wait()
+
+    with ThreadPoolExecutor() as executor:
+        executor.map(install, missing)
     memory_manager.cleanup()
 
 def main() -> None:
     """Entry point used by both source and bundled executions."""
     install_best()
-    ensure_packages()
-    ensure_ghostscript()
+    with ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(ensure_packages),
+            executor.submit(ensure_ghostscript),
+        ]
+        for f in futures:
+            f.result()
     base_path = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))
     # Insert both the launcher directory and the 'mainappsrc' module location to ensure
     # the project-specific AutoML module is discovered rather than any similarly
