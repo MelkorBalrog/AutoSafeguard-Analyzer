@@ -53,6 +53,7 @@ class ProjectManager:
         app.diagram_font.config(size=int(8 * app.zoom))
         app.top_events = []
         app.cta_events = []
+        app.paa_events = []
         app.root_node = None
         app.selected_node = None
         app.page_history = []
@@ -112,6 +113,7 @@ class ProjectManager:
         SysMLRepository.reset_instance()
         app.top_events = []
         app.cta_events = []
+        app.paa_events = []
         app.root_node = None
         app.selected_node = None
         app.page_history = []
