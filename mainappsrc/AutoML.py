@@ -477,6 +477,9 @@ try:  # pragma: no cover - support direct module import
     from .block_diagram_subapp import BlockDiagramSubApp
     from .internal_block_diagram_subapp import InternalBlockDiagramSubApp
     from .control_flow_diagram_subapp import ControlFlowDiagramSubApp
+    from .fta_subapp import FTASubApp
+    from .risk_assessment_subapp import RiskAssessmentSubApp
+    from .reliability_subapp import ReliabilitySubApp
     from .version import VERSION
 except Exception:  # pragma: no cover
     from style_subapp import StyleSubApp
@@ -488,6 +491,9 @@ except Exception:  # pragma: no cover
     from block_diagram_subapp import BlockDiagramSubApp
     from internal_block_diagram_subapp import InternalBlockDiagramSubApp
     from control_flow_diagram_subapp import ControlFlowDiagramSubApp
+    from fta_subapp import FTASubApp
+    from risk_assessment_subapp import RiskAssessmentSubApp
+    from reliability_subapp import ReliabilitySubApp
     from version import VERSION
 try:  # pragma: no cover
     from .models.fault_tree_node import FaultTreeNode
@@ -499,18 +505,10 @@ except Exception:  # pragma: no cover
     from models.fault_tree_node import FaultTreeNode
 
 from gui.toolboxes import (
-    ReliabilityWindow,
-    FI2TCWindow,
-    HazopWindow,
-    RiskAssessmentWindow,
-    TC2FIWindow,
-    HazardExplorerWindow,
     RequirementsExplorerWindow,
     DiagramElementDialog,
     _RequirementRelationDialog,
 )
-from gui.stpa_window import StpaWindow
-from gui.threat_window import ThreatWindow
 
 
 def format_requirement(req, include_id=True):
@@ -643,6 +641,10 @@ class AutoMLApp:
         self._btn_imgs = self.style_app.btn_images
         self._init_nav_button_style()
         self.tree_app = TreeSubApp()
+        self.fta_app = FTASubApp()
+        self.risk_app = RiskAssessmentSubApp()
+        self.reliability_app = ReliabilitySubApp()
+        self.helper = AutoML_Helper
         # style-aware icons used across tree views
         style_mgr = StyleManager.get_instance()
 
@@ -1496,74 +1498,19 @@ class AutoMLApp:
         return self.requirements_manager.build_requirement_diff_html(review)
 
     def generate_recommendations_for_top_event(self, node):
-        # Determine the Prototype Assurance Level (PAL) based on the node’s quantitative score.
-        level = AutoML_Helper.discretize_level(node.quant_value) if node.quant_value is not None else 1
-        rec = dynamic_recommendations.get(level, {})
-        rec_text = f"<b>Recommendations for Prototype Assurance Level (PAL) {level}:</b><br/>"
-        for category in ["Testing Requirements", "IFTD Responsibilities", "Preventive Maintenance Actions", "Relevant AVSC Guidelines"]:
-            if category in rec:
-                rec_text += f"<b>{category}:</b><br/><ul><li>{rec[category]}</li></ul><br/>"
-        return rec_text
+        return self.fta_app.generate_recommendations_for_top_event(self, node)
 
     def back_all_pages(self):
-        if self.page_history:
-            # Jump to the very first page saved in history:
-            first_page = self.page_history[0]
-            # Clear the history so that subsequent back presses do not try to go further.
-            self.page_history = []
-            for widget in self.canvas_frame.winfo_children():
-                widget.destroy()
-            self.open_page_diagram(first_page)
-        else:
-            # No history: you could simply reinitialize the main diagram
-            self.close_page_diagram()
+        return self.fta_app.back_all_pages(self)
 
     def move_top_event_up(self):
-        sel = self.analysis_tree.selection()
-        if not sel:
-            messagebox.showwarning("Move Up", "Select a top-level event to move.")
-            return
-        try:
-            node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
-        except Exception:
-            return
-        # Find the index in the top_events list.
-        index = next((i for i, event in enumerate(self.top_events) if event.unique_id == node_id), None)
-        if index is None:
-            messagebox.showwarning("Move Up", "The selected node is not a top-level event.")
-            return
-        if index == 0:
-            messagebox.showinfo("Move Up", "This event is already at the top.")
-            return
-        # Swap with the one above it.
-        self.top_events[index], self.top_events[index - 1] = self.top_events[index - 1], self.top_events[index]
-        self.update_views()
+        return self.fta_app.move_top_event_up(self)
 
     def move_top_event_down(self):
-        sel = self.analysis_tree.selection()
-        if not sel:
-            messagebox.showwarning("Move Down", "Select a top-level event to move.")
-            return
-        try:
-            node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
-        except Exception:
-            return
-        index = next((i for i, event in enumerate(self.top_events) if event.unique_id == node_id), None)
-        if index is None:
-            messagebox.showwarning("Move Down", "The selected node is not a top-level event.")
-            return
-        if index == len(self.top_events) - 1:
-            messagebox.showinfo("Move Down", "This event is already at the bottom.")
-            return
-        # Swap with the one below it.
-        self.top_events[index], self.top_events[index + 1] = self.top_events[index + 1], self.top_events[index]
-        self.update_views()
+        return self.fta_app.move_top_event_down(self)
 
     def get_top_level_nodes(self):
-        """Return a list of all nodes that have no parent."""
-        all_nodes = self.get_all_nodes()
-        top_level = [node for node in all_nodes if not node.parents]
-        return top_level
+        return self.fta_app.get_top_level_nodes(self)
         
     def find_node_by_id_all(self, unique_id):
         for top in self.top_events:
@@ -2051,208 +1998,16 @@ class AutoMLApp:
         self.update_views()
 
     def calculate_fmeda_metrics(self, events):
-        """Return ASIL and FMEDA metrics for the given events."""
-        total = 0.0
-        unc_spf = 0.0
-        unc_lpf = 0.0
-        asil = "QM"
-        for be in events:
-            src = self.get_failure_mode_node(be)
-            fit_mode = getattr(be, "fmeda_fit", 0.0)
-            total += fit_mode
-            if src.fmeda_fault_type == "permanent":
-                unc_spf += fit_mode * (1 - src.fmeda_diag_cov)
-            else:
-                unc_lpf += fit_mode * (1 - src.fmeda_diag_cov)
-            sg = getattr(src, "fmeda_safety_goal", "")
-            sgs = self.get_top_event_safety_goals(src)
-            if sgs:
-                sg = ", ".join(sgs)
-            a = self.get_safety_goal_asil(sg)
-            if ASIL_ORDER.get(a, 0) > ASIL_ORDER.get(asil, 0):
-                asil = a
-        dc = (total - (unc_spf + unc_lpf)) / total if total else 0.0
-        self.reliability_total_fit = total
-        self.reliability_dc = dc
-        self.spfm = unc_spf
-        self.lpfm = unc_lpf
-        spfm_metric = 1 - unc_spf / total if total else 0.0
-        lpfm_metric = 1 - unc_lpf / total if total else 0.0
-        return asil, dc, spfm_metric, lpfm_metric
+        return self.risk_app.calculate_fmeda_metrics(self, events)
 
     def compute_fmeda_metrics(self, events):
-        """Return aggregate and per-goal FMEDA metrics."""
-        comp_fit = component_fit_map(self.reliability_components)
-        goal_metrics = {}
-        total = 0.0
-        spf_total = 0.0
-        lpf_total = 0.0
-        asil = "QM"
-        for be in events:
-            src = self.get_failure_mode_node(be)
-            goals = self.get_top_event_safety_goals(src) or [getattr(src, "fmeda_safety_goal", "")]
-            comp_name = self.get_component_name_for_node(src)
-            fit = comp_fit.get(comp_name)
-            frac = getattr(src, "fmeda_fault_fraction", 0.0)
-            if frac > 1.0:
-                frac /= 100.0
-            value = fit * frac if fit is not None else getattr(src, "fmeda_fit", 0.0)
-            fault_spf = value * (1 - src.fmeda_diag_cov) if src.fmeda_fault_type == "permanent" else 0.0
-            fault_lpf = value * (1 - src.fmeda_diag_cov) if src.fmeda_fault_type != "permanent" else 0.0
-            for sg in goals:
-                gm = goal_metrics.setdefault(
-                    sg,
-                    {
-                        "total": 0.0,
-                        "spfm_raw": 0.0,
-                        "lpfm_raw": 0.0,
-                        "asil": self.get_safety_goal_asil(sg),
-                    },
-                )
-                gm["total"] += value
-                gm["spfm_raw"] += fault_spf
-                gm["lpfm_raw"] += fault_lpf
-            total += value
-            spf_total += fault_spf
-            lpf_total += fault_lpf
-            for sg in goals:
-                a = self.get_safety_goal_asil(sg)
-                if ASIL_ORDER.get(a, 0) > ASIL_ORDER.get(asil, 0):
-                    asil = a
-
-        for sg, vals in goal_metrics.items():
-            t = vals["total"]
-            spf = vals["spfm_raw"]
-            lpf = vals["lpfm_raw"]
-            dc = (t - (spf + lpf)) / t if t else 0.0
-            spfm_metric = 1 - spf / t if t else 0.0
-            lpfm_metric = 1 - lpf / t if t else 0.0
-            thresh = ASIL_TARGETS.get(vals["asil"], ASIL_TARGETS["QM"])
-            vals.update(
-                {
-                    "dc": dc,
-                    "spfm_metric": spfm_metric,
-                    "lpfm_metric": lpfm_metric,
-                    "ok_dc": dc >= thresh["dc"],
-                    "ok_spfm": spfm_metric >= thresh["spfm"],
-                    "ok_lpfm": lpfm_metric >= thresh["lpfm"],
-                }
-            )
-
-        dc_total = (total - (spf_total + lpf_total)) / total if total else 0.0
-        spfm_metric_total = 1 - spf_total / total if total else 0.0
-        lpfm_metric_total = 1 - lpf_total / total if total else 0.0
-        thresh_total = ASIL_TARGETS.get(asil, ASIL_TARGETS["QM"])
-
-        self.reliability_total_fit = total
-        self.reliability_dc = dc_total
-        self.spfm = spf_total
-        self.lpfm = lpf_total
-
-        return {
-            "total": total,
-            "spfm_raw": spf_total,
-            "lpfm_raw": lpf_total,
-            "dc": dc_total,
-            "spfm_metric": spfm_metric_total,
-            "lpfm_metric": lpfm_metric_total,
-            "asil": asil,
-            "ok_dc": dc_total >= thresh_total["dc"],
-            "ok_spfm": spfm_metric_total >= thresh_total["spfm"],
-            "ok_lpfm": lpfm_metric_total >= thresh_total["lpfm"],
-            "goal_metrics": goal_metrics,
-        }
+        return self.risk_app.compute_fmeda_metrics(self, events)
 
     def sync_hara_to_safety_goals(self):
-        """Propagate risk assessment values to top events, inheriting ASILs from assessment rows."""
-        sg_data = {}
-        sg_asil = {}
-        toolbox = getattr(self, "safety_toolbox", None)
-        for doc in getattr(self, "hara_docs", []):
-            approved = getattr(doc, "approved", False) or getattr(doc, "status", "") == "closed"
-            for e in doc.entries:
-                mal = getattr(e, "malfunction", "")
-                if not mal:
-                    continue
-                data = sg_data.setdefault(
-                    mal,
-                    {"asil": "QM", "severity": 1, "cont": 1, "exp": 1, "sg": "", "approved": False},
-                )
-                if ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(data["asil"], 0):
-                    data["asil"] = e.asil
-                    data["sg"] = e.safety_goal
-                if e.severity > data["severity"]:
-                    data["severity"] = e.severity
-                if e.controllability > data["cont"]:
-                    data["cont"] = e.controllability
-                if e.exposure > data["exp"]:
-                    data["exp"] = e.exposure
-                if approved:
-                    data["approved"] = True
-                if e.safety_goal and (
-                    not toolbox
-                    or toolbox.can_propagate(
-                        "Risk Assessment",
-                        "Product Goal Specification",
-                        reviewed=approved,
-                        joint_review=approved,
-                    )
-                ):
-                    best = sg_asil.get(e.safety_goal, "QM")
-                    if ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(best, 0):
-                        sg_asil[e.safety_goal] = e.asil
-
-        for te in self.top_events:
-            mal = getattr(te, "malfunction", "")
-            data = sg_data.get(mal)
-            if data:
-                propagate = False
-                if (
-                    not toolbox
-                    or toolbox.can_propagate(
-                        "Risk Assessment",
-                        "FTA",
-                        reviewed=data.get("approved", False),
-                        joint_review=data.get("approved", False),
-                    )
-                ):
-                    if getattr(te, "status", "draft") != "closed":
-                        propagate = True
-                    elif data.get("approved"):
-                        propagate = True
-                        te.status = "draft"
-                        self.invalidate_reviews_for_fta(te.unique_id)
-                if propagate:
-                    te.safety_goal_description = data["sg"]
-                    te.severity = data["severity"]
-                    te.controllability = data["cont"]
-                    te.exposure = data["exp"]
-                    te.update_validation_target()
-            sg_name = te.safety_goal_description
-            asil = sg_asil.get(sg_name)
-            flag = data.get("approved", False) if data else False
-            if toolbox and not toolbox.can_propagate(
-                "FTA", "Product Goal Specification", reviewed=flag, joint_review=flag
-            ):
-                asil = None
-            if asil and ASIL_ORDER.get(asil, 0) > ASIL_ORDER.get(te.safety_goal_asil or "QM", 0):
-                te.safety_goal_asil = asil
+        return self.risk_app.sync_hara_to_safety_goals(self)
 
     def sync_cyber_risk_to_goals(self):
-        """Aggregate CAL values from risk assessments into cybersecurity goals."""
-        goal_map = {g.goal_id: g for g in getattr(self, "cybersecurity_goals", [])}
-        for g in goal_map.values():
-            g.risk_assessments = []
-        for doc in getattr(self, "hara_docs", []):
-            for e in getattr(doc, "entries", []):
-                cyber = getattr(e, "cyber", None)
-                if not cyber or not cyber.cybersecurity_goal:
-                    continue
-                cg = goal_map.get(cyber.cybersecurity_goal)
-                if cg is not None:
-                    cg.risk_assessments.append({"name": doc.name, "cal": cyber.cal})
-        for g in goal_map.values():
-            g.compute_cal()
+        return self.risk_app.sync_cyber_risk_to_goals(self)
 
     def edit_selected(self):
         sel = self.analysis_tree.selection()
@@ -10655,99 +10410,7 @@ class AutoMLApp:
         refresh()
 
     def show_hazard_list(self):
-        """Open a tab to manage the list of hazards."""
-        if hasattr(self, "_haz_tab") and self._haz_tab.winfo_exists():
-            self.doc_nb.select(self._haz_tab)
-            return
-        self._haz_tab = self._new_tab("Hazards")
-        win = self._haz_tab
-
-        # Load hazards from existing documents once when the tab is opened.
-        self.update_hazard_list()
-
-        tree = ttk.Treeview(win, columns=("Hazard", "Severity"), show="headings")
-        tree.heading("Hazard", text="Hazard")
-        tree.heading("Severity", text="Severity")
-        tree.column("Hazard", width=200)
-        tree.column("Severity", width=80)
-        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        class _HazardDialog(simpledialog.Dialog):
-            """Prompt for a hazard name and severity."""
-
-            def __init__(self, parent, title: str, name: str = "", severity: str = "1"):
-                self._name = name
-                self._severity = severity
-                super().__init__(parent, title=title)
-
-            def body(self, master):
-                self.resizable(False, False)
-                ttk.Label(master, text="Name:").grid(row=0, column=0, sticky="e")
-                self.name_var = tk.StringVar(value=self._name)
-                name_entry = ttk.Entry(master, textvariable=self.name_var)
-                name_entry.grid(row=0, column=1, padx=5, pady=5)
-                ttk.Label(master, text="Severity:").grid(row=1, column=0, sticky="e")
-                self.sev_var = tk.StringVar(value=self._severity)
-                ttk.Combobox(
-                    master,
-                    textvariable=self.sev_var,
-                    values=["1", "2", "3"],
-                    state="readonly",
-                ).grid(row=1, column=1, padx=5, pady=5)
-                return name_entry
-
-            def apply(self):
-                self.result = (
-                    self.name_var.get().strip(),
-                    self.sev_var.get().strip(),
-                )
-
-        def refresh():
-            tree.delete(*tree.get_children())
-            for h in self.hazards:
-                tree.insert("", "end", values=(h, self.hazard_severity.get(h, "")))
-
-        def add():
-            dlg = _HazardDialog(win, "Add Hazard")
-            if not dlg.result:
-                return
-            name, sev = dlg.result
-            if name:
-                self.add_hazard(name, sev)
-                refresh()
-
-        def rename():
-            sel = tree.focus()
-            if not sel:
-                return
-            current, sev = tree.item(sel, "values")[:2]
-            dlg = _HazardDialog(win, "Edit Hazard", current, str(sev))
-            if not dlg.result:
-                return
-            name, sev_val = dlg.result
-            if name:
-                if name != current:
-                    self.rename_hazard(current, name)
-                self.update_hazard_severity(name, sev_val)
-                refresh()
-
-        def delete():
-            sel = tree.focus()
-            if not sel:
-                return
-            current = tree.item(sel, "values")[0]
-            if messagebox.askyesno("Delete", f"Delete '{current}'?"):
-                self.hazards.remove(current)
-                self.hazard_severity.pop(current, None)
-                refresh()
-
-        btn = ttk.Frame(win)
-        btn.pack(side=tk.RIGHT, fill=tk.Y)
-        ttk.Button(btn, text="Add", command=add).pack(fill=tk.X)
-        ttk.Button(btn, text="Edit", command=rename).pack(fill=tk.X)
-        ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
-
-        refresh()
+        self.risk_app.show_hazard_list(self)
 
     def show_malfunction_editor(self):
         """Open a tab to manage global malfunctions."""
@@ -10910,8 +10573,7 @@ class AutoMLApp:
     # ------------------------------------------------------------------
 
     def show_hazard_editor(self):
-        """Backward compatible alias for :meth:`show_hazard_list`."""
-        self.show_hazard_list()
+        self.risk_app.show_hazard_editor(self)
 
     def show_fault_editor(self):
         """Backward compatible alias for :meth:`show_fault_list`."""
@@ -15070,87 +14732,34 @@ class AutoMLApp:
         refresh_libs()
 
     def open_reliability_window(self):
-        if hasattr(self, "_rel_tab") and self._rel_tab.winfo_exists():
-            self.doc_nb.select(self._rel_tab)
-        else:
-            self._rel_tab = self._new_tab("Reliability")
-            self._rel_window = ReliabilityWindow(self._rel_tab, self)
-            self._rel_window.pack(fill=tk.BOTH, expand=True)
-        self.refresh_all()
+        self.reliability_app.open_reliability_window(self)
 
     def open_fmeda_window(self):
-        self.show_fmeda_list()
-        self.refresh_all()
+        self.reliability_app.open_fmeda_window(self)
 
     def open_hazop_window(self):
-        if hasattr(self, "_hazop_tab") and self._hazop_tab.winfo_exists():
-            self.doc_nb.select(self._hazop_tab)
-        else:
-            self._hazop_tab = self._new_tab("HAZOP")
-            self._hazop_window = HazopWindow(self._hazop_tab, self)
-        self.refresh_all()
+        self.risk_app.open_hazop_window(self)
 
     def open_risk_assessment_window(self):
-        if hasattr(self, "_risk_tab") and self._risk_tab.winfo_exists():
-            self.doc_nb.select(self._risk_tab)
-        else:
-            self._risk_tab = self._new_tab("Risk Assessment")
-            self._risk_window = RiskAssessmentWindow(self._risk_tab, self)
-        self.refresh_all()
+        self.risk_app.open_risk_assessment_window(self)
 
     def open_stpa_window(self):
-        if hasattr(self, "_stpa_tab") and self._stpa_tab.winfo_exists():
-            self.doc_nb.select(self._stpa_tab)
-        else:
-            self._stpa_tab = self._new_tab("STPA")
-            self._stpa_window = StpaWindow(self._stpa_tab, self)
-        self.refresh_all()
+        self.risk_app.open_stpa_window(self)
 
     def open_threat_window(self):
-        if hasattr(self, "_threat_tab") and self._threat_tab.winfo_exists():
-            self.doc_nb.select(self._threat_tab)
-        else:
-            self._threat_tab = self._new_tab("Threat")
-            self._threat_window = ThreatWindow(self._threat_tab, self)
-        self.refresh_all()
+        self.risk_app.open_threat_window(self)
 
     def open_causal_bayesian_network_window(self):
-        """Open the Causal Bayesian Network analysis window."""
-        if hasattr(self, "_cbn_tab") and self._cbn_tab.winfo_exists():
-            self.doc_nb.select(self._cbn_tab)
-        else:
-            self._cbn_tab = self._new_tab("Causal Bayesian Network")
-            from gui.causal_bayesian_network_window import (
-                CausalBayesianNetworkWindow,
-            )
-
-            self._cbn_window = CausalBayesianNetworkWindow(self._cbn_tab, self)
-        self.refresh_all()
+        self.risk_app.open_causal_bayesian_network_window(self)
 
     def open_fi2tc_window(self):
-        if hasattr(self, "_fi2tc_tab") and self._fi2tc_tab.winfo_exists():
-            self.doc_nb.select(self._fi2tc_tab)
-        else:
-            self._fi2tc_tab = self._new_tab("FI2TC")
-            self._fi2tc_window = FI2TCWindow(self._fi2tc_tab, self)
-        self.refresh_all()
+        self.risk_app.open_fi2tc_window(self)
 
     def open_tc2fi_window(self):
-        if hasattr(self, "_tc2fi_tab") and self._tc2fi_tab.winfo_exists():
-            self.doc_nb.select(self._tc2fi_tab)
-        else:
-            self._tc2fi_tab = self._new_tab("TC2FI")
-            self._tc2fi_window = TC2FIWindow(self._tc2fi_tab, self)
-        self.refresh_all()
+        self.risk_app.open_tc2fi_window(self)
 
     def open_fault_prioritization_window(self):
-        if hasattr(self, "_fault_prio_tab") and self._fault_prio_tab.winfo_exists():
-            self.doc_nb.select(self._fault_prio_tab)
-        else:
-            self._fault_prio_tab = self._new_tab("Fault Prioritization")
-            from gui.fault_prioritization import FaultPrioritizationWindow
-            self._fault_prio_window = FaultPrioritizationWindow(self._fault_prio_tab, self)
-        self.refresh_all()
+        self.reliability_app.open_fault_prioritization_window(self)
 
     def open_safety_management_toolbox(self, show_diagrams: bool = True):
         """Open the Safety & Security Management editor and browser."""
@@ -15342,12 +14951,7 @@ class AutoMLApp:
                     child.redraw()
 
     def show_hazard_explorer(self):
-        if hasattr(self, "_haz_exp_tab") and self._haz_exp_tab.winfo_exists():
-            self.doc_nb.select(self._haz_exp_tab)
-        else:
-            self._haz_exp_tab = self._new_tab("Hazard Explorer")
-            self._haz_exp_window = HazardExplorerWindow(self._haz_exp_tab, self)
-            self._haz_exp_window.pack(fill=tk.BOTH, expand=True)
+        self.risk_app.show_hazard_explorer(self)
 
     def show_requirements_explorer(self):
         if hasattr(self, "_req_exp_tab") and self._req_exp_tab.winfo_exists():
