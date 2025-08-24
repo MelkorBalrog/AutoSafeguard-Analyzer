@@ -143,8 +143,16 @@ def ensure_packages() -> None:
         executor.map(install, missing)
     memory_manager.cleanup()
 
-def main() -> None:
-    """Entry point used by both source and bundled executions."""
+
+def _bootstrap() -> object:
+    """Run startup checks while the splash screen is displayed.
+
+    Returns
+    -------
+    Module
+        The main application module which provides a ``main`` entry point.
+    """
+
     parse_args()
     install_best()
     with ThreadPoolExecutor() as executor:
@@ -162,7 +170,12 @@ def main() -> None:
     for path in (str(mainappsrc_path), str(base_path)):
         if path not in sys.path:
             sys.path.insert(0, path)
-    SplashLauncher().launch()
+    return importlib.import_module("mainappsrc.automl_core")
+
+
+def main() -> None:
+    """Entry point used by both source and bundled executions."""
+    SplashLauncher(loader=_bootstrap, post_delay=5000).launch()
     memory_manager.cleanup()
 
 if __name__ == "__main__":
