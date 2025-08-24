@@ -1,6 +1,7 @@
-import sys, pathlib
+import sys, pathlib, importlib
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 import AutoML as automl
+from gui.dialogs.user_info_dialog import UserInfoDialog
 
 
 def _collect_button_styles(dialog_cls, monkeypatch):
@@ -30,11 +31,14 @@ def _collect_button_styles(dialog_cls, monkeypatch):
 
     import gui.mac_button_style as mbs
 
-    monkeypatch.setattr(automl.ttk, "Button", DummyButton)
-    monkeypatch.setattr(automl.ttk, "Frame", DummyFrame)
+    module = importlib.import_module(dialog_cls.__module__)
+    if hasattr(module, "ttk"):
+        monkeypatch.setattr(module.ttk, "Button", DummyButton)
+        monkeypatch.setattr(module.ttk, "Frame", DummyFrame)
     monkeypatch.setattr(mbs.ttk, "Button", DummyButton)
     monkeypatch.setattr(mbs.ttk, "Frame", DummyFrame)
-    monkeypatch.setattr(automl, "apply_purplish_button_style", fake_apply)
+    if hasattr(module, "apply_purplish_button_style"):
+        monkeypatch.setattr(module, "apply_purplish_button_style", fake_apply)
     monkeypatch.setattr(mbs, "apply_purplish_button_style", fake_apply)
 
     dlg = DummyDialog()
@@ -43,7 +47,7 @@ def _collect_button_styles(dialog_cls, monkeypatch):
 
 
 def test_user_info_dialog_purplish_buttons(monkeypatch):
-    styles, called = _collect_button_styles(automl.UserInfoDialog, monkeypatch)
+    styles, called = _collect_button_styles(UserInfoDialog, monkeypatch)
     assert styles == ["Purple.TButton", "Purple.TButton"]
     assert called == 1
 
