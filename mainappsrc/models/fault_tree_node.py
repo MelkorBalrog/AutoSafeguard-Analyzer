@@ -276,20 +276,3 @@ class FaultTreeNode:
         else:
             node._original_id = None
         return node
-
-    # ------------------------------------------------------------------
-    def clone(self, parent=None):
-        """Return a copy of this node referencing the same original."""
-        import copy
-        from AutoML import AutoML_Helper
-
-        clone = copy.deepcopy(self)
-        clone.unique_id = AutoML_Helper.get_next_unique_id()
-        clone.children = []
-        clone.parents = []
-        clone.is_primary_instance = False
-        clone.original = self.original if getattr(self, "original", None) else self
-        if parent is not None:
-            clone.parents.append(parent)
-            parent.children.append(clone)
-        return clone

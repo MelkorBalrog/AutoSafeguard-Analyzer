@@ -17416,19 +17416,6 @@ class AutoMLApp:
         messagebox.showwarning("Clone", "Cannot clone this node type.")
         return None
 
-    def _prepare_node_for_paste(self, target):
-        """Return appropriate node instance when pasting."""
-        if (
-            isinstance(self.clipboard_node, GSNNode)
-            and target in getattr(self.clipboard_node, "parents", [])
-        ):
-            return self._clone_for_paste(self.clipboard_node)
-        from .models.fault_tree_node import FaultTreeNode
-
-        if isinstance(self.clipboard_node, FaultTreeNode):
-            return self._clone_for_paste(self.clipboard_node)
-        return self.clipboard_node
-
     def paste_node(self):
         if self.clipboard_node:
             # NOTE: Paste logic and target resolution chain (selection → focused diagram root → app root)
@@ -17514,7 +17501,13 @@ class AutoMLApp:
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
                 target_diag = self._find_gsn_diagram(target)
-                node_for_pos = self._prepare_node_for_paste(target)
+                if (
+                    isinstance(self.clipboard_node, GSNNode)
+                    and target in getattr(self.clipboard_node, "parents", [])
+                ):
+                    node_for_pos = self._clone_for_paste(self.clipboard_node)
+                else:
+                    node_for_pos = self.clipboard_node
                 target.children.append(node_for_pos)
                 node_for_pos.parents.append(target)
                 if isinstance(node_for_pos, GSNNode):
