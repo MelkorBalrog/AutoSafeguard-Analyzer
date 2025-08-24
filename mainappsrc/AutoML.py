@@ -262,7 +262,6 @@ except ImportError:  # pragma: no cover
 from mainappsrc.models.gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
-from gui.splash_screen import SplashScreen
 from gui.mac_button_style import (
     apply_translucid_button_style,
     apply_purplish_button_style,
@@ -397,9 +396,6 @@ from config.automl_constants import (
     WORK_PRODUCT_INFO as BASE_WORK_PRODUCT_INFO,
     WORK_PRODUCT_PARENTS as BASE_WORK_PRODUCT_PARENTS,
     PMHF_TARGETS,
-    AUTHOR,
-    AUTHOR_EMAIL,
-    AUTHOR_LINKEDIN,
 )
 
 builtins.REQUIREMENT_WORK_PRODUCTS = REQUIREMENT_WORK_PRODUCTS
@@ -13226,14 +13222,6 @@ def main():
     enable_listbox_hover_highlight(root)
     # Hide the main window while prompting for user info
     root.withdraw()
-    # Show initialization splash screen
-    SplashScreen(
-        root,
-        version=VERSION,
-        author=AUTHOR,
-        email=AUTHOR_EMAIL,
-        linkedin=AUTHOR_LINKEDIN,
-    ).wait_window()
     users, (last_name, last_email) = load_user_data()
     if users:
         dlg = UserSelectDialog(root, users, last_name)
