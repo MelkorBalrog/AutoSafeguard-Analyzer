@@ -713,7 +713,7 @@ class ReviewManager:
     def capture_diff_diagram(self, top_event):
         """Return an image of the FTA with diff colouring versus last version."""
         if not self.app.versions:
-            return self.app.capture_page_diagram(top_event)
+            return self.app.diagram_renderer.capture_page_diagram(top_event)
         from io import BytesIO
         from PIL import Image
         import difflib

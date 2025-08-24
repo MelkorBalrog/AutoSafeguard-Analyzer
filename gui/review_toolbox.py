@@ -553,7 +553,7 @@ class ReviewToolbox(tk.Frame):
         self.start_participant_timer()
         try:
             if hasattr(self.app, "canvas") and self.app.canvas.winfo_exists():
-                self.app.redraw_canvas()
+                self.app.diagram_renderer.redraw_canvas()
         except tk.TclError:
             pass
 
@@ -1426,7 +1426,7 @@ class ReviewDocumentDialog(tk.Frame):
             c.bind("<ButtonPress-1>", lambda e, cv=c: cv.scan_mark(e.x, e.y))
             c.bind("<B1-Motion>", lambda e, cv=c: cv.scan_dragto(e.x, e.y, gain=1))
 
-            img = self.app.capture_diff_diagram(node)
+            img = self.app.diagram_renderer.capture_diff_diagram(node)
             if img and Image and ImageTk:
                 img = img.resize((img.width // 2, img.height // 2), Image.LANCZOS)
                 photo = ImageTk.PhotoImage(img)
@@ -2887,7 +2887,7 @@ class VersionCompareDialog(tk.Frame):
         self.app.diff_nodes = []
         try:
             if hasattr(self.app, "canvas") and self.app.canvas.winfo_exists():
-                self.app.redraw_canvas()
+                self.app.diagram_renderer.redraw_canvas()
         except tk.TclError:
             pass
         self.destroy()

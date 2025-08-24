@@ -300,6 +300,7 @@ from mainappsrc.page_diagram import PageDiagram
 from mainappsrc.fmeda_manager import FMEDAManager
 from mainappsrc.fmea_service import FMEAService
 from mainappsrc.review_manager import ReviewManager
+from mainappsrc.diagram_renderer import DiagramRenderer
 from analysis.user_config import (
     load_user_config,
     save_user_config,
@@ -768,6 +769,7 @@ class AutoMLApp:
         self.cta_manager = ControlTreeManager(self)
         self.requirements_manager = RequirementsManagerSubApp(self)
         self.review_manager = ReviewManager(self)
+        self.diagram_renderer = DiagramRenderer(self)
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
