@@ -256,6 +256,7 @@ from gui.review_toolbox import (
 from functools import partial
 # Governance helper class
 from mainappsrc.governance_manager import GovernanceManager
+from mainappsrc.paa_manager import PrototypeAssuranceManager
 from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_case_explorer import SafetyCaseExplorer
