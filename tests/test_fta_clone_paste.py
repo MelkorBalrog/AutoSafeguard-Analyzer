@@ -33,10 +33,12 @@ def _make_app_with_nodes():
     app._diagram_copy_strategy1 = app._diagram_copy_strategy2 = lambda: False
     app._diagram_copy_strategy3 = app._diagram_copy_strategy4 = lambda: False
     app._find_gsn_diagram = lambda node: None
-    app._focused_gsn_window = lambda: None
-    app._focused_cbn_window = lambda: None
     app._find_cbn_diagram = lambda node: None
-    app._focused_arch_window = lambda t=None: None
+    app.window_controllers = types.SimpleNamespace(
+        _focused_gsn_window=lambda: None,
+        _focused_cbn_window=lambda: None,
+        _focused_arch_window=lambda t=None: None,
+    )
     messagebox.showinfo = lambda *a, **k: None
     messagebox.showwarning = lambda *a, **k: None
     return app

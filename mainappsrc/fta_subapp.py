@@ -36,7 +36,7 @@ class FTASubApp:
             app.page_history = []
             for widget in app.canvas_frame.winfo_children():
                 widget.destroy()
-            app.open_page_diagram(first_page)
+            app.window_controllers.open_page_diagram(first_page)
         else:
             app.close_page_diagram()
 

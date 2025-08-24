@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import types
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -21,7 +22,7 @@ def test_paa_diagram_has_top_event(monkeypatch):
     app.cta_events = []
     app.paa_events = []
     app.update_views = lambda: None
-    app.open_page_diagram = lambda *a, **k: None
+    app.window_controllers = types.SimpleNamespace(open_page_diagram=lambda *a, **k: None)
     app.create_paa_diagram()
     assert app.canvas.diagram_mode == "PAA"
     assert app.diagram_mode == "PAA"

@@ -248,7 +248,7 @@ class SafetyCaseExplorer(tk.Frame):
         elif typ == "solution" and self.app:
             for case in self.library.cases:
                 if obj in case.solutions:
-                    opener = getattr(self.app, "open_gsn_diagram", None)
+                    opener = getattr(getattr(self.app, "window_controllers", None), "open_gsn_diagram", None)
                     if opener:
                         opener(case.diagram)
                     break

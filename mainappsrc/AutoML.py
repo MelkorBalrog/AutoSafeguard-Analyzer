@@ -297,6 +297,7 @@ except Exception:  # pragma: no cover
     from page_diagram import PageDiagram
 from mainappsrc.event_dispatcher import EventDispatcher
 from mainappsrc.page_diagram import PageDiagram
+from mainappsrc.window_controllers import WindowControllers
 from mainappsrc.fmeda_manager import FMEDAManager
 from mainappsrc.fmea_service import FMEAService
 from mainappsrc.review_manager import ReviewManager
@@ -606,6 +607,12 @@ class AutoMLApp:
     for _wp in REQUIREMENT_WORK_PRODUCTS:
         WORK_PRODUCT_PARENTS.setdefault(_wp, "Requirements")
 
+    @property
+    def window_controllers(self) -> WindowControllers:
+        if not hasattr(self, "_window_controllers"):
+            self._window_controllers = WindowControllers(self)
+        return self._window_controllers
+
     def __init__(self, root):
         AutoMLApp._instance = self
         self.root = root
@@ -888,11 +895,11 @@ class AutoMLApp:
         review_menu.add_command(label="Merge Review Comments", command=self.merge_review_comments)
         review_menu.add_command(label="Compare Versions", command=self.compare_versions)
         architecture_menu = tk.Menu(menubar, tearoff=0)
-        architecture_menu.add_command(label="Use Case Diagram", command=self.open_use_case_diagram)
-        architecture_menu.add_command(label="Activity Diagram", command=self.open_activity_diagram)
-        architecture_menu.add_command(label="Block Diagram", command=self.open_block_diagram)
-        architecture_menu.add_command(label="Internal Block Diagram", command=self.open_internal_block_diagram)
-        architecture_menu.add_command(label="Control Flow Diagram", command=self.open_control_flow_diagram)
+        architecture_menu.add_command(label="Use Case Diagram", command=self.window_controllers.open_use_case_diagram)
+        architecture_menu.add_command(label="Activity Diagram", command=self.window_controllers.open_activity_diagram)
+        architecture_menu.add_command(label="Block Diagram", command=self.window_controllers.open_block_diagram)
+        architecture_menu.add_command(label="Internal Block Diagram", command=self.window_controllers.open_internal_block_diagram)
+        architecture_menu.add_command(label="Control Flow Diagram", command=self.window_controllers.open_control_flow_diagram)
         architecture_menu.add_separator()
         architecture_menu.add_command(
             label="AutoML Explorer",
@@ -1044,7 +1051,7 @@ class AutoMLApp:
         )
         quantitative_menu.add_command(
             label="Causal Bayesian Network",
-            command=self.open_causal_bayesian_network_window,
+            command=self.window_controllers.open_causal_bayesian_network_window,
             state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("Causal Bayesian Network Analysis", []).append(
@@ -2628,7 +2635,7 @@ class AutoMLApp:
 
         for diag in self.arch_diagrams:
             if getattr(diag, "name", "") == name or getattr(diag, "diag_id", "") == name:
-                self.open_arch_window(diag.diag_id)
+                self.window_controllers.open_arch_window(diag.diag_id)
                 return
 
         for idx, diag in enumerate(self.management_diagrams):
@@ -2638,7 +2645,7 @@ class AutoMLApp:
 
         for diag in getattr(self, "all_gsn_diagrams", []):
             if getattr(diag.root, "user_name", "") == name or getattr(diag, "diag_id", "") == name:
-                self.open_gsn_diagram(diag)
+                self.window_controllers.open_gsn_diagram(diag)
                 return
 
     def _on_tool_tab_motion(self, event):
@@ -2841,10 +2848,10 @@ class AutoMLApp:
                 break
         if clicked_node:
             if not clicked_node.is_primary_instance:
-                self.open_page_diagram(getattr(clicked_node, "original", clicked_node))
+                self.window_controllers.open_page_diagram(getattr(clicked_node, "original", clicked_node))
             else:
                 if clicked_node.is_page:
-                    self.open_page_diagram(clicked_node)
+                    self.window_controllers.open_page_diagram(clicked_node)
                 else:
                     EditNodeDialog(self.root, clicked_node, self)
             self.update_views()
@@ -10010,9 +10017,6 @@ class AutoMLApp:
     def open_threat_window(self):
         self.risk_app.open_threat_window(self)
 
-    def open_causal_bayesian_network_window(self):
-        self.risk_app.open_causal_bayesian_network_window(self)
-
     def open_fi2tc_window(self):
         self.risk_app.open_fi2tc_window(self)
 
@@ -10292,7 +10296,7 @@ class AutoMLApp:
         self._create_fta_tab("FTA")
         self.add_top_level_event()
         if getattr(self, "fta_root_node", None):
-            self.open_page_diagram(self.fta_root_node)
+            self.window_controllers.open_page_diagram(self.fta_root_node)
 
     def create_cta_diagram(self):
         """Initialize a CTA diagram and its top-level event."""
@@ -10683,19 +10687,31 @@ class AutoMLApp:
         return create_icon(shape, color)
 
     def open_use_case_diagram(self):
-        self.use_case_diagram_app.open()
+        self.window_controllers.open_use_case_diagram()
 
     def open_activity_diagram(self):
-        self.activity_diagram_app.open()
+        self.window_controllers.open_activity_diagram()
 
     def open_block_diagram(self):
-        self.block_diagram_app.open()
+        self.window_controllers.open_block_diagram()
 
     def open_internal_block_diagram(self):
-        self.internal_block_diagram_app.open()
+        self.window_controllers.open_internal_block_diagram()
 
     def open_control_flow_diagram(self):
-        self.control_flow_diagram_app.open()
+        self.window_controllers.open_control_flow_diagram()
+
+    def open_causal_bayesian_network_window(self):
+        self.window_controllers.open_causal_bayesian_network_window()
+
+    def open_gsn_diagram(self, diagram):
+        self.window_controllers.open_gsn_diagram(diagram)
+
+    def open_arch_window(self, diag_id: str) -> None:
+        self.window_controllers.open_arch_window(diag_id)
+
+    def open_page_diagram(self, node, push_history=True):
+        self.window_controllers.open_page_diagram(node, push_history)
 
     def manage_architecture(self):
         if hasattr(self, "_arch_tab") and self._arch_tab.winfo_exists():
@@ -10739,41 +10755,6 @@ class AutoMLApp:
             self._safety_case_window.pack(fill=tk.BOTH, expand=True)
         self.refresh_all()
 
-    def open_gsn_diagram(self, diagram):
-        self.gsn_manager.open_diagram(diagram)
-
-    def open_arch_window(self, diag_id: str) -> None:
-        """Open an existing architecture diagram from the repository."""
-        repo = SysMLRepository.get_instance()
-        diag = repo.diagrams.get(diag_id)
-        if not diag:
-            return
-        existing = self.diagram_tabs.get(diag.diag_id)
-        # Ensure the existing tab is still managed by the notebook
-        if existing and str(existing) in self.doc_nb.tabs():
-            if existing.winfo_exists():
-                self.doc_nb.select(existing)
-                self.refresh_all()
-                return
-        else:
-            # Remove stale reference if the tab was closed
-            self.diagram_tabs.pop(diag.diag_id, None)
-        tab = self._new_tab(self._format_diag_title(diag))
-        self.diagram_tabs[diag.diag_id] = tab
-        if diag.diag_type == "Use Case Diagram":
-            UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Activity Diagram":
-            ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Governance Diagram":
-            GovernanceDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Block Diagram":
-            BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Internal Block Diagram":
-            InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "Control Flow Diagram":
-            ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.refresh_all()
-
     def open_management_window(self, idx: int) -> None:
         """Open a safety management diagram from the repository."""
         if idx < 0 or idx >= len(self.management_diagrams):
@@ -10804,7 +10785,7 @@ class AutoMLApp:
         self.refresh_all()
 
     def _diagram_copy_strategy1(self):
-        win = self._focused_cbn_window()
+        win = self.window_controllers._focused_cbn_window()
         if win and getattr(win, "selected_node", None) and getattr(win, "copy_selected", None):
             self.selected_node = None
             self.clipboard_node = None
@@ -10814,7 +10795,7 @@ class AutoMLApp:
         return False
 
     def _diagram_copy_strategy2(self):
-        win = self._focused_gsn_window()
+        win = self.window_controllers._focused_gsn_window()
         if win and getattr(win, "selected_node", None) and getattr(win, "copy_selected", None):
             self.selected_node = None
             self.clipboard_node = None
@@ -10845,7 +10826,7 @@ class AutoMLApp:
         return False
 
     def _diagram_cut_strategy1(self):
-        win = self._focused_cbn_window()
+        win = self.window_controllers._focused_cbn_window()
         if win and getattr(win, "selected_node", None) and getattr(win, "cut_selected", None):
             self.selected_node = None
             self.clipboard_node = None
@@ -10855,7 +10836,7 @@ class AutoMLApp:
         return False
 
     def _diagram_cut_strategy2(self):
-        win = self._focused_gsn_window()
+        win = self.window_controllers._focused_gsn_window()
         if win and getattr(win, "selected_node", None) and getattr(win, "cut_selected", None):
             self.selected_node = None
             self.clipboard_node = None
@@ -11048,21 +11029,21 @@ class AutoMLApp:
             if not target:
                 target = self.selected_node or self.root_node
             if not target:
-                win = self._focused_gsn_window()
+                win = self.window_controllers._focused_gsn_window()
                 if win and getattr(win, "diagram", None):
                     target = win.diagram.root
             if not target:
-                win = self._focused_cbn_window()
+                win = self.window_controllers._focused_cbn_window()
                 if win and getattr(win, "diagram", None):
                     target = win.diagram.root
             if not target:
                 target = self.root_node
             if not target:
-                win = self._focused_gsn_window()
+                win = self.window_controllers._focused_gsn_window()
                 if win and getattr(win, "diagram", None):
                     target = win.diagram.root
             if not target:
-                win = self._focused_cbn_window()
+                win = self.window_controllers._focused_cbn_window()
                 if win and getattr(win, "diagram", None):
                     target = win.diagram.root
             if not target:
@@ -11141,19 +11122,19 @@ class AutoMLApp:
             self.update_views()
             return
         clip_type = getattr(self, "diagram_clipboard_type", None)
-        win = self._focused_cbn_window()
+        win = self.window_controllers._focused_cbn_window()
         if win and getattr(self, "diagram_clipboard", None):
             if not clip_type or clip_type == "Causal Bayesian Network":
                 if getattr(win, "paste_selected", None):
                     win.paste_selected()
                     return
-        win = self._focused_gsn_window()
+        win = self.window_controllers._focused_gsn_window()
         if win and getattr(self, "diagram_clipboard", None):
             if not clip_type or clip_type == "GSN":
                 if getattr(win, "paste_selected", None):
                     win.paste_selected()
                     return
-        win = self._focused_arch_window(clip_type)
+        win = self.window_controllers._focused_arch_window(clip_type)
         if win and getattr(self, "diagram_clipboard", None):
             if getattr(win, "paste_selected", None):
                 win.paste_selected()
@@ -11195,124 +11176,6 @@ class AutoMLApp:
             pass
         return False
 
-    def _gsn_window_strategy1(self):
-        win = getattr(self, "active_gsn_window", None)
-        if win and (self._window_has_focus(win) or self._window_in_selected_tab(win)):
-            return win
-        return None
-
-    def _gsn_window_strategy2(self):
-        for ref in list(GSN_WINDOWS):
-            win = ref()
-            if win and (self._window_has_focus(win) or self._window_in_selected_tab(win)):
-                return win
-        return None
-
-    def _gsn_window_strategy3(self):
-        win = getattr(self, "active_gsn_window", None)
-        if win and self._window_in_selected_tab(win):
-            return win
-        return None
-
-    def _gsn_window_strategy4(self):
-        for ref in list(GSN_WINDOWS):
-            win = ref()
-            if win and self._window_in_selected_tab(win):
-                return win
-        return None
-
-    def _focused_gsn_window(self):
-        for strat in (
-            self._gsn_window_strategy3,
-            self._gsn_window_strategy4,
-            self._gsn_window_strategy1,
-            self._gsn_window_strategy2,
-        ):
-            win = strat()
-            if win:
-                return win
-        return None
-
-    def _cbn_window_strategy1(self):
-        win = getattr(self, "_cbn_window", None)
-        if win and self._window_has_focus(win):
-            return win
-        return None
-
-    def _cbn_window_strategy2(self):
-        for ref in list(CBN_WINDOWS):
-            win = ref()
-            if win and self._window_has_focus(win):
-                return win
-        return None
-
-    def _cbn_window_strategy3(self):
-        win = getattr(self, "_cbn_window", None)
-        if win:
-            return win
-        return None
-
-    def _cbn_window_strategy4(self):
-        for ref in list(CBN_WINDOWS):
-            win = ref()
-            if win:
-                return win
-        return None
-
-    def _focused_cbn_window(self):
-        for strat in (
-            self._cbn_window_strategy1,
-            self._cbn_window_strategy2,
-            self._cbn_window_strategy3,
-            self._cbn_window_strategy4,
-        ):
-            win = strat()
-            if win:
-                return win
-        return None
-
-    def _arch_window_strategy1(self, clip_type=None):
-        win = getattr(self, "active_arch_window", None)
-        if win and (not clip_type or self._get_diag_type(win) == clip_type):
-            if self._window_has_focus(win) or self._window_in_selected_tab(win):
-                return win
-        return None
-
-    def _arch_window_strategy2(self, clip_type=None):
-        for ref in list(ARCH_WINDOWS):
-            win = ref()
-            if win and (not clip_type or self._get_diag_type(win) == clip_type):
-                if self._window_has_focus(win) or self._window_in_selected_tab(win):
-                    return win
-        return None
-
-    def _arch_window_strategy3(self, clip_type=None):
-        win = getattr(self, "active_arch_window", None)
-        if win and (not clip_type or self._get_diag_type(win) == clip_type):
-            if self._window_in_selected_tab(win):
-                return win
-        return None
-
-    def _arch_window_strategy4(self, clip_type=None):
-        for ref in list(ARCH_WINDOWS):
-            win = ref()
-            if win and (not clip_type or self._get_diag_type(win) == clip_type):
-                if self._window_in_selected_tab(win):
-                    return win
-        return None
-
-    def _focused_arch_window(self, clip_type=None):
-        for strat in (
-            self._arch_window_strategy1,
-            self._arch_window_strategy2,
-            self._arch_window_strategy3,
-            self._arch_window_strategy4,
-        ):
-            win = strat(clip_type)
-            if win:
-                return win
-        return None
- 
     def clone_node_preserving_id(self, node, parent=None):
         """Return a clone of *node* with a new unique ID.
 
@@ -12959,50 +12822,11 @@ class AutoMLApp:
             node = node.original
         return node
 
-    def open_page_diagram(self, node, push_history=True):
-        self.ensure_fta_tab()
-        # Resolve the node to its original.
-        resolved_node = self.resolve_original(node)
-        if push_history and hasattr(self, "page_diagram") and self.page_diagram is not None:
-            self.page_history.append(self.page_diagram.root_node)
-        for widget in self.canvas_frame.winfo_children():
-            widget.destroy()
-
-        # Create header frame with the original node’s name.
-        header_frame = ttk.Frame(self.canvas_frame)
-        header_frame.grid(row=0, column=0, sticky="ew")
-        header_frame.columnconfigure(0, weight=1)
-
-        header = tk.Label(header_frame, text=f"Page Diagram: {resolved_node.name}",
-                          font=("Arial", 14, "bold"))
-        header.grid(row=0, column=0, sticky="w", padx=(5, 0))
-        back_button = ttk.Button(header_frame, text="Go Back", command=self.go_back)
-        back_button.grid(row=0, column=1, sticky="e", padx=5)
-
-        page_canvas = tk.Canvas(self.canvas_frame, bg=StyleManager.get_instance().canvas_bg)
-        page_canvas.grid(row=1, column=0, sticky="nsew")
-        page_canvas.diagram_mode = getattr(self, "diagram_mode", "FTA")
-        vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=page_canvas.yview)
-        vbar.grid(row=1, column=1, sticky="ns")
-        hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=page_canvas.xview)
-        hbar.grid(row=2, column=0, sticky="ew")
-        page_canvas.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
-        self.page_canvas = page_canvas
-        self.canvas_frame.rowconfigure(0, weight=0)
-        self.canvas_frame.rowconfigure(1, weight=1)
-        self.canvas_frame.rowconfigure(2, weight=0)
-        self.canvas_frame.columnconfigure(0, weight=1)
-
-        # Use the resolved (original) node for the page diagram.
-        self.page_diagram = PageDiagram(self, resolved_node, page_canvas)
-        self.page_diagram.redraw_canvas()
-        self.refresh_all()
-
     def go_back(self):
         if self.page_history:
             # Pop one page off the history and open it without pushing the current page again.
             previous_page = self.page_history.pop()
-            self.open_page_diagram(previous_page, push_history=False)
+            self.window_controllers.open_page_diagram(previous_page, push_history=False)
         #else:
             # If history is empty, remain on the current (root) page.
             #messagebox.showinfo("Back", "You are already at the root page.")
@@ -13187,7 +13011,7 @@ class AutoMLApp:
                 self.update_views()
                 self.page_diagram = None
             else:
-                self.open_page_diagram(prev)
+                self.window_controllers.open_page_diagram(prev)
         else:
             for widget in self.canvas_frame.winfo_children():
                 widget.destroy()
