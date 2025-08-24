@@ -65,75 +65,6 @@ class AutoMLHelper:
     def __init__(self):
         self.unique_node_id_counter = 1
 
-    def aggregate_clone_requirements(self, clone_node):
-        """
-        If the given node is a clone, then:
-          - For each child in the original node, collect its safety requirements.
-          - Gather safety goals from the clone's own parents and the original node's parents.
-          - Link (i.e. add) these safety goals to each of the collected requirements.
-        
-        Returns a dictionary keyed by requirement key (its "id" if available, else its text)
-        with each value containing:
-             "req": the requirement dictionary,
-             "linked_sgs": a set of safety goal strings.
-        """
-        # Only process if node is a clone
-        if not clone_node.is_primary_instance and hasattr(clone_node, "original") and clone_node.original:
-            aggregated = {}
-
-            # 1. Collect requirements from each child of the original node.
-            # (Assume that the safety requirements live on the base events.)
-            children_reqs = []
-            for child in clone_node.original.children:
-                # You might want to further traverse children if needed; here we assume direct children.
-                if hasattr(child, "safety_requirements") and child.safety_requirements:
-                    children_reqs.extend(child.safety_requirements)
-                else:
-                    # Optionally, if child has its own children, traverse downward.
-                    def collect_reqs(n):
-                        reqs = []
-                        if hasattr(n, "safety_requirements") and n.safety_requirements:
-                            reqs.extend(n.safety_requirements)
-                        for c in n.children:
-                            reqs.extend(collect_reqs(c))
-                        return reqs
-                    children_reqs.extend(collect_reqs(child))
-            
-            # 2. Gather safety goals from the clone's immediate parents.
-            clone_parent_goals = set()
-            for parent in clone_node.parents:
-                if parent.safety_goal_description and parent.safety_goal_description.strip():
-                    clone_parent_goals.add(f"- {parent.safety_goal_description.strip()}")
-                else:
-                    clone_parent_goals.add(f"- {parent.name}")
-            
-            # 3. Also gather safety goals from the original node's immediate parents.
-            original_parent_goals = set()
-            for parent in clone_node.original.parents:
-                if parent.safety_goal_description and parent.safety_goal_description.strip():
-                    original_parent_goals.add(f"- {parent.safety_goal_description.strip()}")
-                else:
-                    original_parent_goals.add(f"- {parent.name}")
-            
-            # Union both sets.
-            safety_goals = clone_parent_goals.union(original_parent_goals)
-            print(f"DEBUG: For clone node {clone_node.unique_id}, clone_parent_goals={clone_parent_goals}, original_parent_goals={original_parent_goals}")
-
-            # 4. For each collected requirement, add the safety goals.
-            for req in children_reqs:
-                key = req.get("id") if req.get("id") else req.get("text", "Unnamed Requirement")
-                if key not in aggregated:
-                    aggregated[key] = {
-                        "req": req,
-                        "linked_sgs": set()
-                    }
-                aggregated[key]["linked_sgs"].update(safety_goals)
-                print(f"DEBUG: Linking safety goals {safety_goals} to requirement {key} from original child")
-            return aggregated
-        else:
-            # If not a clone, return an empty dict (or handle as needed)
-            return {}
-
     def fix_clone_references(self, root_nodes):
         # First pass: collect all primary nodes from every top event.
         primary_by_id = {}
@@ -185,16 +116,7 @@ class AutoMLHelper:
             # No nodes yet. Start numbering from 1.
             self.unique_node_id_counter = 1
 
-    def round_to_half(self, val):
-        try:
-            val = float(val)
-        except Exception as e:
-            print(f"Error converting {val} to float: {e}")
-            val = 0.0
-        return round(val * 2) / 2
-
     def discretize_level(self, val):
-        #r = self.round_to_half(val)
         r = val
         if r < 1.5:
             return 1
@@ -224,39 +146,6 @@ class AutoMLHelper:
             cont = 3
         cont = max(1.0, min(3.0, cont))
         return (cont - 1) * 2 + 1
-
-    def combine_values(self, values, gate_type):
-        if not values:
-            return 1.0
-        if gate_type.upper() == "AND":
-            prod = 1.0
-            for v in values:
-                prod *= (1 - v/5)
-            return (1 - prod) * 5
-        else:
-            return sum(values) / len(values)
-
-    def combine_rigor_or(self,values):
-        # Using the reliability (complement-product) formula.
-        prod = 1.0
-        for v in values:
-            prod *= (1 - v/5)
-        return round((1 - prod) * 5, 2)
-        
-    def combine_rigor_and(self,values):
-        return sum(values) / len(values)            
-            
-    def combine_generic_values(self, values, gate_type):
-        if not values:
-            return None
-        gate_type = gate_type.upper()
-        if gate_type == "AND":
-            prod = 1.0
-            for v in values:
-                prod *= (1 - round(v/5, 2))
-            return round((1 - prod) * 5, 2)
-        else:
-            return round(sum(values) / len(values), 2)
 
     def is_effectively_confidence(self,node):
         """
@@ -296,12 +185,6 @@ class AutoMLHelper:
             current = ASSURANCE_AGGREGATION_AND.get(pair, max(pair))
         return current
 
-    def aggregate_assurance_or(self,child_levels):
-        if not child_levels:
-            return 1
-        avg = sum(child_levels) // len(child_levels)
-        return max(1, min(5, avg))
-
     def derive_assurance_from_base(self,conf_values, rob_values):
         """
         Given lists of confidence and robustness integers (each 1..5),
@@ -325,55 +208,6 @@ class AutoMLHelper:
         c_idx = max(1, min(5, avg_conf)) - 1
         r_idx = max(1, min(5, avg_rob)) - 1
         return assurance_matrix[c_idx][r_idx]
-
-    def get_highest_parent_severity_for_node(self, node, all_top_events):
-        """
-        Return the highest severity found among all ancestors of all instances
-        (primary or clone) of 'node' across every top event in 'all_top_events'.
-        If no ancestor has a valid severity, return 3 by default.
-        """
-        # 1) Identify the primary ID for the node
-        primary_id = node.unique_id if node.is_primary_instance else node.original.unique_id
-
-        # 2) Collect all instances (primary or clones) with that primary ID from all top events.
-        instances = []
-        def collect_instances(root):
-            def walk(n):
-                if n.is_primary_instance and n.unique_id == primary_id:
-                    instances.append(n)
-                elif (not n.is_primary_instance and n.original and 
-                      n.original.unique_id == primary_id):
-                    instances.append(n)
-                for c in n.children:
-                    walk(c)
-            walk(root)
-        for te in all_top_events:
-            collect_instances(te)
-
-        # 3) Traverse upward (using DFS) from each instance to find the maximum severity.
-        visited = set()
-        max_sev = 0
-        def dfs_up(n):
-            nonlocal max_sev
-            if n in visited:
-                return
-            visited.add(n)
-            if n.severity is not None:
-                try:
-                    s = int(n.severity)
-                    if s > max_sev:
-                        max_sev = s
-                except:
-                    pass
-            for p in n.parents:
-                dfs_up(p)
-            # For clones, also check the original's parents.
-            if (not n.is_primary_instance) and n.original and (n.original != n):
-                for p2 in n.original.parents:
-                    dfs_up(p2)
-        for inst in instances:
-            dfs_up(inst)
-        return max_sev if max_sev > 0 else 3
 
     def aggregate_assurance_or_adjusted(self, child_levels):
         """

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, TYPE_CHECKING
 
 # forward import of GSNDiagram for type checking only
-if True:  # pragma: no cover - forward references
+if TYPE_CHECKING:  # pragma: no cover - forward references
     from .diagram import GSNDiagram
 
 

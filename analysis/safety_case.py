@@ -78,8 +78,5 @@ class SafetyCaseLibrary:
         if case in self.cases:
             self.cases.remove(case)
 
-    def rename_case(self, case: SafetyCase, new_name: str) -> None:
-        case.name = new_name
-
     def list_cases(self) -> List[SafetyCase]:
         return list(self.cases)
