@@ -2858,20 +2858,32 @@ class AutoMLApp:
             state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("FI2TC", []).append(
-            (qualitative_menu, qualitative_menu.index("end"))
+            (risk_menu, risk_menu.index("end"))
         )
-        qualitative_menu.add_command(
+        risk_menu.add_command(
             label="TC2FI Analysis",
             command=self.open_tc2fi_window,
             state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("TC2FI", []).append(
+            (risk_menu, risk_menu.index("end"))
+        )
+
+        # --- Qualitative Analysis Menu ---
+        self.qualitative_menu = tk.Menu(menubar, tearoff=0)
+        qualitative_menu = self.qualitative_menu
+        qualitative_menu.add_command(
+            label="Threat Analysis",
+            command=self.open_threat_window,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus.setdefault("Threat Analysis", []).append(
             (qualitative_menu, qualitative_menu.index("end"))
         )
-        qualitative_menu.add_separator()
-        qualitative_menu.add_command(
-            label="FMEA Manager",
-            command=self.show_fmea_list,
+
+        quantitative_menu.add_command(
+            label="FMEDA Manager",
+            command=self.show_fmeda_list,
             state=tk.DISABLED,
         )
         
@@ -2880,96 +2892,6 @@ class AutoMLApp:
             (quantitative_menu, quantitative_menu.index("end"))
         )
         
-        self.work_product_menus.setdefault("FMEA", []).append(
-            (qualitative_menu, qualitative_menu.index("end"))
-        )
-
-        cta_menu = tk.Menu(qualitative_menu, tearoff=0)
-        cta_menu.add_command(label="Add Top Level Event", command=self.create_cta_diagram)
-        cta_menu.add_separator()
-        cta_menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"), accelerator="Ctrl+Shift+C")
-        cta_menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"), accelerator="Ctrl+Shift+R")
-        cta_menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
-        self._cta_menu_indices = {"add_trigger": cta_menu.index("end")}
-        cta_menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
-        self._cta_menu_indices["add_functional_insufficiency"] = cta_menu.index("end")
-        qualitative_menu.add_cascade(label="CTA", menu=cta_menu, state=tk.DISABLED)
-        self.work_product_menus.setdefault("CTA", []).append(
-            (qualitative_menu, qualitative_menu.index("end"))
-        )
-        self.cta_menu = cta_menu
-        qualitative_menu.add_command(
-            label="Fault Prioritization",
-            command=self.open_fault_prioritization_window,
-        )
-
-        paa_menu = tk.Menu(qualitative_menu, tearoff=0)
-        paa_menu.add_command(label="Add Top Level Event", command=self.create_paa_diagram)
-        paa_menu.add_separator()
-        paa_menu.add_command(
-            label="Add Confidence",
-            command=lambda: self.add_node_of_type("Confidence Level"),
-            accelerator="Ctrl+Shift+C",
-        )
-        self._paa_menu_indices = {"add_confidence": paa_menu.index("end")}
-        paa_menu.add_command(
-            label="Add Robustness",
-            command=lambda: self.add_node_of_type("Robustness Score"),
-            accelerator="Ctrl+Shift+R",
-        )
-        self._paa_menu_indices["add_robustness"] = paa_menu.index("end")
-        qualitative_menu.add_cascade(
-            label="Prototype Assurance Analysis",
-            menu=paa_menu,
-            state=tk.DISABLED,
-        )
-        self.work_product_menus.setdefault("Prototype Assurance Analysis", []).append(
-            (qualitative_menu, qualitative_menu.index("end"))
-        )
-        self.paa_menu = paa_menu
-        # --- Quantitative Analysis Menu ---
-        quantitative_menu = tk.Menu(menubar, tearoff=0)
-        quantitative_menu.add_command(
-            label="Mission Profiles",
-            command=self.manage_mission_profiles,
-            state=tk.DISABLED,
-        )
-        self.work_product_menus.setdefault("Mission Profile", []).append(
-            (quantitative_menu, quantitative_menu.index("end"))
-        )
-        quantitative_menu.add_command(
-            label="Mechanism Libraries", command=self.manage_mechanism_libraries
-        )
-        quantitative_menu.add_command(
-            label="Reliability Analysis",
-            command=self.open_reliability_window,
-            state=tk.DISABLED,
-        )
-        self.work_product_menus.setdefault("Reliability Analysis", []).append(
-            (quantitative_menu, quantitative_menu.index("end"))
-        )
-        quantitative_menu.add_command(
-            label="Causal Bayesian Network",
-            command=self.open_causal_bayesian_network_window,
-            state=tk.DISABLED,
-        )
-        self.work_product_menus.setdefault("Causal Bayesian Network Analysis", []).append(
-            (quantitative_menu, quantitative_menu.index("end"))
-        )
-        quantitative_menu.add_command(
-            label="FMEDA Analysis",
-            command=self.open_fmeda_window,
-            state=tk.DISABLED,
-        )
-        self.work_product_menus.setdefault("FMEDA", []).append(
-            (quantitative_menu, quantitative_menu.index("end"))
-        )
-        quantitative_menu.add_command(
-            label="FMEDA Manager",
-            command=self.show_fmeda_list,
-            state=tk.DISABLED,
-        )
-
         libs_menu = tk.Menu(menubar, tearoff=0)
         libs_menu.add_command(
             label="Scenario Libraries",
