@@ -1,4 +1,4 @@
-version: 0.2.6
+version: 0.2.7
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1636,6 +1636,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.7 - Launcher now shows the splash screen during application load.
 - 0.2.6 - Introduced WindowControllers class for centralized window management.
 - 0.2.5 - Added PDF report generation placeholder and fixed missing menu action.
 - 0.2.4 - Centralized diff capture and review tools into ReviewManager.

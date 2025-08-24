@@ -15,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from tools.crash_report_logger import install_best
 from tools.memory_manager import manager as memory_manager
+from tools.splash_launcher import SplashLauncher
 from mainappsrc.version import VERSION
 
 # Hint PyInstaller to bundle AutoML and its dependencies (e.g. gui package)
@@ -161,8 +162,7 @@ def main() -> None:
     for path in (str(mainappsrc_path), str(base_path)):
         if path not in sys.path:
             sys.path.insert(0, path)
-    automl = importlib.import_module("AutoML")
-    automl.main()
+    SplashLauncher().launch()
     memory_manager.cleanup()
 
 if __name__ == "__main__":
