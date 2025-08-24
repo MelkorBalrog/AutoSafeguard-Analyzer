@@ -240,7 +240,6 @@ from gui.dialog_utils import askstring_fixed
 from gui import messagebox, logger, add_treeview_scrollbars
 from gui.button_utils import enable_listbox_hover_highlight
 from gui.tooltip import ToolTip
-from analysis.risk_assessment import AutoMLHelper
 from gui.style_manager import StyleManager
 from gui.review_toolbox import (
     ReviewToolbox,
@@ -408,11 +407,163 @@ from config.automl_constants import (
     WORK_PRODUCT_INFO as BASE_WORK_PRODUCT_INFO,
     WORK_PRODUCT_PARENTS as BASE_WORK_PRODUCT_PARENTS,
 )
-try:
-    from .repository_manager import RepositoryManager
-except Exception:  # pragma: no cover
-    from repository_manager import RepositoryManager
 
+builtins.REQUIREMENT_WORK_PRODUCTS = REQUIREMENT_WORK_PRODUCTS
+builtins.SafetyCaseTable = SafetyCaseTable
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except ModuleNotFoundError:
+    Image = ImageDraw = ImageFont = None
+import os
+import types
+os.environ["GS_EXECUTABLE"] = r"C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe"
+import networkx as nx
+# Import ReportLab for PDF export.
+from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, PageBreak
+from gui.style_editor import StyleEditor
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.platypus import Paragraph, Spacer, Table, TableStyle, PageBreak, SimpleDocTemplate, Image as RLImage
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from io import BytesIO, StringIO
+from email.utils import make_msgid
+import html
+import datetime
+try:
+    import PIL.Image as PILImage
+except ModuleNotFoundError:
+    PILImage = None
+try:
+    from reportlab.platypus import LongTable
+except Exception:  # pragma: no cover - fallback when reportlab missing
+    LongTable = None
+from email.message import EmailMessage
+import smtplib
+import socket
+
+styles = getSampleStyleSheet()  # Create the stylesheet.
+preformatted_style = ParagraphStyle(name="Preformatted", fontName="Courier", fontSize=10)
+if hasattr(styles, "add"):
+    styles.add(preformatted_style)
+else:  # pragma: no cover - fallback for minimal stubs
+    styles["Preformatted"] = preformatted_style
+
+# Characters used to display pass/fail status in metrics labels.
+from analysis.constants import CHECK_MARK, CROSS_MARK
+from analysis.utils import (
+    append_unique_insensitive,
+    update_probability_tables,
+    EXPOSURE_PROBABILITIES,
+    CONTROLLABILITY_PROBABILITIES,
+    SEVERITY_PROBABILITIES,
+    normalize_probability_mapping,
+)
+from analysis.safety_management import SafetyManagementToolbox, ACTIVE_TOOLBOX
+from analysis.causal_bayesian_network import CausalBayesianNetwork, CausalBayesianNetworkDoc
+try:  # pragma: no cover
+    from .models.fault_tree_node import FaultTreeNode
+except Exception:  # pragma: no cover
+    import os, sys
+    base = os.path.dirname(__file__)
+    sys.path.append(base)
+    sys.path.append(os.path.dirname(base))
+    from models.fault_tree_node import FaultTreeNode
+
+from gui.toolboxes import (
+    ReliabilityWindow,
+    FI2TCWindow,
+    HazopWindow,
+    RiskAssessmentWindow,
+    TC2FIWindow,
+    HazardExplorerWindow,
+    RequirementsExplorerWindow,
+    DiagramElementDialog,
+    _RequirementRelationDialog,
+)
+from gui.stpa_window import StpaWindow
+from gui.threat_window import ThreatWindow
+
+
+def format_requirement(req, include_id=True):
+    """Return a formatted requirement string without empty ASIL/CAL fields."""
+    parts = []
+    if include_id and req.get("id"):
+        parts.append(f"[{req['id']}]")
+    if req.get("req_type"):
+        parts.append(f"[{req['req_type']}]")
+    asil = req.get("asil")
+    if asil:
+        parts.append(f"[{asil}]")
+    cal = req.get("cal")
+    if cal:
+        parts.append(f"[{cal}]")
+    parts.append(req.get("text", ""))
+    return " ".join(parts)
+
+
+from pathlib import Path
+
+
+def get_version() -> str:
+    """Read the tool version from the first line of README.md.
+
+    The README is located alongside this file so we resolve the path relative
+    to ``__file__``.  This avoids returning ``"Unknown"`` when the current
+    working directory is different (e.g. when launching from another folder or
+    from an installed package).
+    """
+    try:
+        readme = Path(__file__).resolve().parent / "README.md"
+        with readme.open("r", encoding="utf-8") as f:
+            first_line = f.readline().strip()
+            if first_line.lower().startswith("version:"):
+                return first_line.split(":", 1)[1].strip()
+    except Exception:
+        pass
+    return "Unknown"
+
+
+VERSION = get_version()
+
+# Contact information for splash screen
+AUTHOR = "Miguel Marina"
+AUTHOR_EMAIL = "karel.capek.robotics@gmail.com"
+AUTHOR_LINKEDIN = "https://www.linkedin.com/in/progman32/"
+
+from gui.dialogs.user_info_dialog import UserInfoDialog
+
+# Target PMHF limits per ASIL level (events per hour)
+PMHF_TARGETS = {
+    "D": 1e-8,
+    "C": 1e-7,
+    "B": 1e-7,
+    "A": 1e-6,
+    "QM": 1.0,
+}
+
+##########################################
+# VALID_SUBTYPES dictionary
+##########################################
+VALID_SUBTYPES = {
+    "Confidence": ["Function", "Human Task"],
+    "Robustness": ["Function", "Human Task"],
+    "Maturity": ["Functionality"],
+    "Rigor": ["Failure", "AI Error", "Functional Insufficiency"],
+    "Prototype Assurance Level (PAL)": ["Vehicle Level Function"]
+}
+
+# Node types treated as gates when rendering and editing
+_CONFIG_PATH = Path(__file__).resolve().parent / "config/diagram_rules.json"
+_CONFIG = load_diagram_rules(_CONFIG_PATH)
+GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
+_PATTERN_PATH = Path(__file__).resolve().parent / "config/requirement_patterns.json"
+_REPORT_TEMPLATE_PATH = (
+    Path(__file__).resolve().parent / "config/product_report_template.json"
+)
 
 
 def _reload_local_config() -> None:
@@ -782,14 +933,12 @@ class AutoMLApp:
         self.gsn_modules = []  # top-level GSN modules
         self.gsn_diagrams = []  # diagrams not assigned to a module
         self.gsn_manager = GSNManager(self)
-        self.repository_manager = RepositoryManager(self)
         # Track open diagram tabs to avoid duplicates
         self.diagram_tabs: dict[str, ttk.Frame] = {}
         self.top_events = []
         self.reviews = []
         self.review_data = None
         self.review_window = None
-        self.review_manager = ReviewManager(self)
         self.governance_manager = GovernanceManager(self)
         self.safety_mgmt_toolbox = SafetyManagementToolbox()
         self.governance_manager.attach_toolbox(self.safety_mgmt_toolbox)
@@ -822,6 +971,7 @@ class AutoMLApp:
         self.diagram_controller = DiagramController(self)
         self.sotif_manager = SOTIFManager(self)
         self.fmeda_manager = FMEDAManager(self)
+        self.fmea_service = FMEAService(self)
         self.cta_manager = ControlTreeManager(self)
 
         self.mechanism_libraries = []
@@ -2457,7 +2607,17 @@ class AutoMLApp:
             doc.approved = status == "closed"
 
     def update_fta_statuses(self):
-        self.repository_manager.update_fta_statuses()
+        """Update status for each top level event based on linked reviews."""
+        for te in self.top_events:
+            status = "draft"
+            for review in self.reviews:
+                if te.unique_id in getattr(review, "fta_ids", []):
+                    if review.mode == "joint" and review.approved and self.review_is_closed_for(review):
+                        status = "closed"
+                        break
+                    else:
+                        status = "in review"
+            te.status = status
 
     def get_safety_goal_asil(self, sg_name):
         """Return the highest ASIL level for a safety goal name across approved risk assessments."""
@@ -3406,7 +3566,49 @@ class AutoMLApp:
         return img.convert("RGB") if img else None
 
     def capture_sysml_diagram(self, diagram):
-        return self.repository_manager.capture_sysml_diagram(diagram)
+        """Return a PIL Image of the given SysML diagram."""
+        from io import BytesIO
+        from PIL import Image
+        from gui.causal_bayesian_network_window import (
+            CausalBayesianNetworkWindow,
+        )
+
+        temp = tk.Toplevel(self.root)
+        temp.withdraw()
+        if diagram.diag_type == "Use Case Diagram":
+            win = UseCaseDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Activity Diagram":
+            win = ActivityDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Block Diagram":
+            win = BlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Internal Block Diagram":
+            win = InternalBlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Control Flow Diagram":
+            win = ControlFlowDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Governance Diagram":
+            win = GovernanceDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        else:
+            temp.destroy()
+            return None
+
+        win.redraw()
+        win.canvas.update()
+        bbox = win.canvas.bbox("all")
+        if not bbox:
+            temp.destroy()
+            return None
+
+        x, y, x2, y2 = bbox
+        width, height = x2 - x, y2 - y
+        ps = win.canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
+        ps_bytes = BytesIO(ps.encode("utf-8"))
+        try:
+            img = Image.open(ps_bytes)
+            img.load(scale=3)
+        except Exception:
+            img = None
+        temp.destroy()
+        return img.convert("RGB") if img else None
 
     def capture_cbn_diagram(self, doc):
         """Return a PIL Image of the given Causal Bayesian Network diagram."""
@@ -8417,11 +8619,10 @@ class AutoMLApp:
             self.active_phase_lbl.config(
                 text=f"Active phase: {phase or 'None'}"
             )
-        if hasattr(self, "governance_manager"):
-            if not phase:
-                self.governance_manager.set_active_module(None)
-            else:
-                self.governance_manager.set_active_module(phase)
+        if not phase:
+            self.governance_manager.set_active_module(None)
+        else:
+            self.governance_manager.set_active_module(phase)
         self.update_views()
         if hasattr(self, "refresh_tool_enablement"):
             try:
@@ -16426,17 +16627,86 @@ class AutoMLApp:
         return _close
 
     def _create_fta_tab(self, diagram_mode: str = "FTA"):
-        self.repository_manager._create_fta_tab(diagram_mode)
+        """Create the main FTA tab with canvas and bindings.
+
+        Parameters
+        ----------
+        diagram_mode: str
+            The operational mode of the diagram (``"FTA"`` or ``"CTA"``).
+        """
+        tabs = getattr(self, "analysis_tabs", {})
+        existing = tabs.get(diagram_mode)
+        
+        if existing and existing["tab"].winfo_exists():
+            self.canvas_tab = existing["tab"]
+            self.canvas_frame = existing["tab"]
+            self.canvas = existing["canvas"]
+            self.hbar = existing["hbar"]
+            self.vbar = existing["vbar"]
+            self.diagram_mode = diagram_mode
+            self.doc_nb.select(self.canvas_tab)
+            self._update_analysis_menus(diagram_mode)
+            return
+
+        canvas_tab = ttk.Frame(self.doc_nb)
+        self.doc_nb.add(canvas_tab, text="FTA" if diagram_mode == "FTA" else diagram_mode)
+
+        canvas = tk.Canvas(canvas_tab, bg=StyleManager.get_instance().canvas_bg)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        hbar = ttk.Scrollbar(canvas_tab, orient=tk.HORIZONTAL, command=canvas.xview)
+        hbar.pack(side=tk.BOTTOM, fill=tk.X)
+        vbar = ttk.Scrollbar(canvas_tab, orient=tk.VERTICAL, command=canvas.yview)
+        vbar.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set,
+                      scrollregion=(0, 0, 2000, 2000))
+        canvas.bind("<ButtonPress-3>", self.on_right_mouse_press)
+        canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
+        canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
+        canvas.bind("<Button-1>", self.on_canvas_click)
+        canvas.bind("<B1-Motion>", self.on_canvas_drag)
+        canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
+        canvas.bind("<Double-1>", self.on_canvas_double_click)
+        canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
+
+        canvas.diagram_mode = diagram_mode
+        self.analysis_tabs[diagram_mode] = {
+            "tab": canvas_tab,
+            "canvas": canvas,
+            "hbar": hbar,
+            "vbar": vbar,
+        }
+        self.canvas_tab = canvas_tab
+        self.canvas_frame = canvas_tab
+        self.canvas = canvas
+        self.hbar = hbar
+        self.vbar = vbar
+        self.diagram_mode = diagram_mode
+        self.doc_nb.select(canvas_tab)
+        self._update_analysis_menus(diagram_mode)
 
     def create_fta_diagram(self):
-        self.repository_manager.create_fta_diagram()
+        """Initialize an FTA diagram and its top-level event."""
+        self._create_fta_tab("FTA")
+        self.add_top_level_event()
+        if getattr(self, "fta_root_node", None):
+            self.open_page_diagram(self.fta_root_node)
 
     def create_cta_diagram(self):
         """Initialize a CTA diagram and its top-level event."""
         self.cta_manager.create_diagram()
 
     def enable_fta_actions(self, enabled: bool) -> None:
-        self.repository_manager.enable_fta_actions(enabled)
+        """Enable or disable FTA-related menu actions."""
+        mode = getattr(self, "diagram_mode", "FTA")
+        if hasattr(self, "fta_menu"):
+            state = tk.NORMAL if enabled else tk.DISABLED
+            for key in (
+                "add_gate",
+                "add_basic_event",
+                "add_gate_from_failure_mode",
+                "add_fault_event",
+            ):
+                self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
                 
     def enable_paa_actions(self, enabled: bool) -> None:
         """Enable or disable PAA-related menu actions."""
@@ -16469,10 +16739,25 @@ class AutoMLApp:
         return self._paa_manager
 
     def _reset_fta_state(self):
-        self.repository_manager._reset_fta_state()
+        """Clear references to the FTA tab and its canvas."""
+        self.canvas_tab = None
+        self.canvas_frame = None
+        self.canvas = None
+        self.hbar = None
+        self.vbar = None
+        self.page_diagram = None
 
     def ensure_fta_tab(self):
-        self.repository_manager.ensure_fta_tab()
+        """Recreate the FTA tab if it was closed."""
+        mode = getattr(self, "diagram_mode", "FTA")
+        tab_info = self.analysis_tabs.get(mode)
+        if not tab_info or not tab_info["tab"].winfo_exists():
+            self._create_fta_tab(mode)
+        else:
+            self.canvas_tab = tab_info["tab"]
+            self.canvas = tab_info["canvas"]
+            self.hbar = tab_info["hbar"]
+            self.vbar = tab_info["vbar"]
 
     def _on_tab_close(self, event):
         tab_id = self.doc_nb._closing_tab
@@ -16855,10 +17140,65 @@ class AutoMLApp:
         self.gsn_manager.open_diagram(diagram)
 
     def open_arch_window(self, diag_id: str) -> None:
-        self.repository_manager.open_arch_window(diag_id)
+        """Open an existing architecture diagram from the repository."""
+        repo = SysMLRepository.get_instance()
+        diag = repo.diagrams.get(diag_id)
+        if not diag:
+            return
+        existing = self.diagram_tabs.get(diag.diag_id)
+        # Ensure the existing tab is still managed by the notebook
+        if existing and str(existing) in self.doc_nb.tabs():
+            if existing.winfo_exists():
+                self.doc_nb.select(existing)
+                self.refresh_all()
+                return
+        else:
+            # Remove stale reference if the tab was closed
+            self.diagram_tabs.pop(diag.diag_id, None)
+        tab = self._new_tab(self._format_diag_title(diag))
+        self.diagram_tabs[diag.diag_id] = tab
+        if diag.diag_type == "Use Case Diagram":
+            UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Activity Diagram":
+            ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Governance Diagram":
+            GovernanceDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Block Diagram":
+            BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Internal Block Diagram":
+            InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Control Flow Diagram":
+            ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        self.refresh_all()
 
     def open_management_window(self, idx: int) -> None:
-        self.repository_manager.open_management_window(idx)
+        """Open a safety management diagram from the repository."""
+        if idx < 0 or idx >= len(self.management_diagrams):
+            return
+        diag = self.management_diagrams[idx]
+        existing = self.diagram_tabs.get(diag.diag_id)
+        if existing and str(existing) in self.doc_nb.tabs():
+            if existing.winfo_exists():
+                self.doc_nb.select(existing)
+                self.refresh_all()
+                return
+        else:
+            self.diagram_tabs.pop(diag.diag_id, None)
+        tab = self._new_tab(self._format_diag_title(diag))
+        self.diagram_tabs[diag.diag_id] = tab
+        if diag.diag_type == "Use Case Diagram":
+            UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Activity Diagram":
+            ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Governance Diagram":
+            GovernanceDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Block Diagram":
+            BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Internal Block Diagram":
+            InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Control Flow Diagram":
+            ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        self.refresh_all()
 
     def _diagram_copy_strategy1(self):
         win = self._focused_cbn_window()
@@ -19222,31 +19562,538 @@ class AutoMLApp:
 
     # --- Review Toolbox Methods ---
     def start_peer_review(self):
-        return self.review_manager.start_peer_review()
+        dialog = ParticipantDialog(self.root, joint=False)
 
+        if dialog.result:
+            moderators, parts = dialog.result
+            name = simpledialog.askstring("Review Name", "Enter unique review name:")
+            if not name:
+                return
+            description = askstring_fixed(
+                simpledialog,
+                "Description",
+                "Enter a short description:",
+            )
+            if description is None:
+                description = ""
+            if not moderators:
+                messagebox.showerror("Review", "Please specify a moderator")
+                return
+            if not parts:
+                messagebox.showerror("Review", "At least one reviewer required")
+                return
+            due_date = simpledialog.askstring("Due Date", "Enter due date (YYYY-MM-DD):")
+            if any(r.name == name for r in self.reviews):
+                messagebox.showerror("Review", "Name already exists")
+                return
+            scope = ReviewScopeDialog(self.root, self)
+            (
+                fta_ids,
+                fmea_names,
+                fmeda_names,
+                hazop_names,
+                hara_names,
+                stpa_names,
+                fi2tc_names,
+                tc2fi_names,
+            ) = scope.result if scope.result else ([], [], [], [], [], [], [], [])
+            review = ReviewData(
+                name=name,
+                description=description,
+                mode='peer',
+                moderators=moderators,
+                participants=parts,
+                comments=[],
+                fta_ids=fta_ids,
+                fmea_names=fmea_names,
+                fmeda_names=fmeda_names,
+                hazop_names=hazop_names,
+                hara_names=hara_names,
+                stpa_names=stpa_names,
+                fi2tc_names=fi2tc_names,
+                tc2fi_names=tc2fi_names,
+                due_date=due_date,
+            )
+            self.reviews.append(review)
+            self.review_data = review
+            self.current_user = moderators[0].name if moderators else parts[0].name
+            self.open_review_document(review)
+            self.send_review_email(review)
+            self.open_review_toolbox()
 
     def start_joint_review(self):
-        return self.review_manager.start_joint_review()
+        dialog = ParticipantDialog(self.root, joint=True)
+        if dialog.result:
+            moderators, participants = dialog.result
+            name = simpledialog.askstring("Review Name", "Enter unique review name:")
+            if not name:
+                return
+            description = askstring_fixed(
+                simpledialog,
+                "Description",
+                "Enter a short description:",
+            )
+            if description is None:
+                description = ""
+            if not moderators:
+                messagebox.showerror("Review", "Please specify a moderator")
+                return
+            if not any(p.role == 'reviewer' for p in participants):
+                messagebox.showerror("Review", "At least one reviewer required")
+                return
+            if not any(p.role == 'approver' for p in participants):
+                messagebox.showerror("Review", "At least one approver required")
+                return
+            due_date = simpledialog.askstring("Due Date", "Enter due date (YYYY-MM-DD):")
+            if any(r.name == name for r in self.reviews):
+                messagebox.showerror("Review", "Name already exists")
+                return
+            scope = ReviewScopeDialog(self.root, self)
+            (
+                fta_ids,
+                fmea_names,
+                fmeda_names,
+                hazop_names,
+                hara_names,
+                stpa_names,
+                fi2tc_names,
+                tc2fi_names,
+            ) = scope.result if scope.result else ([], [], [], [], [], [], [], [])
 
+            # Ensure each selected element has a completed peer review
+            def peer_completed(pred):
+                return any(
+                    r.mode == 'peer'
+                    and getattr(r, 'reviewed', False)
+                    and pred(r)
+                    for r in self.reviews
+                )
+
+            for tid in fta_ids:
+                if not peer_completed(lambda r: tid in r.fta_ids):
+                    messagebox.showerror(
+                        "Review",
+                        "Peer review must be reviewed before starting joint review",
+                    )
+                    return
+            for name_fta in fmea_names:
+                if not peer_completed(lambda r: name_fta in r.fmea_names):
+                    messagebox.showerror(
+                        "Review",
+                        "Peer review must be reviewed before starting joint review",
+                    )
+                    return
+            for name_fd in fmeda_names:
+                if not peer_completed(lambda r: name_fd in r.fmeda_names):
+                    messagebox.showerror(
+                        "Review",
+                        "Peer review must be reviewed before starting joint review",
+                    )
+                    return
+            for name_hz in hazop_names:
+                if not peer_completed(lambda r: name_hz in getattr(r, 'hazop_names', [])):
+                    messagebox.showerror(
+                        "Review",
+                        "Peer review must be reviewed before starting joint review",
+                    )
+                    return
+            for name_hara in hara_names:
+                if not peer_completed(lambda r: name_hara in getattr(r, 'hara_names', [])):
+                    messagebox.showerror(
+                        "Review",
+                        "Peer review must be reviewed before starting joint review",
+                    )
+                    return
+            for name_stpa in stpa_names:
+                if not peer_completed(lambda r: name_stpa in getattr(r, 'stpa_names', [])):
+                    messagebox.showerror(
+                        "Review",
+                        "Peer review must be reviewed before starting joint review",
+                    )
+                    return
+            for name_fi in fi2tc_names:
+                if not peer_completed(lambda r: name_fi in getattr(r, 'fi2tc_names', [])):
+                    messagebox.showerror(
+                        "Review",
+                        "Peer review must be reviewed before starting joint review",
+                    )
+                    return
+            for name_tc in tc2fi_names:
+                if not peer_completed(lambda r: name_tc in getattr(r, 'tc2fi_names', [])):
+                    messagebox.showerror(
+                        "Review",
+                        "Peer review must be reviewed before starting joint review",
+                    )
+                    return
+            review = ReviewData(
+                name=name,
+                description=description,
+                mode='joint',
+                moderators=moderators,
+                participants=participants,
+                comments=[],
+                fta_ids=fta_ids,
+                fmea_names=fmea_names,
+                fmeda_names=fmeda_names,
+                hazop_names=hazop_names,
+                hara_names=hara_names,
+                stpa_names=stpa_names,
+                fi2tc_names=fi2tc_names,
+                tc2fi_names=tc2fi_names,
+                due_date=due_date,
+            )
+            self.reviews.append(review)
+            self.review_data = review
+            self.current_user = moderators[0].name if moderators else participants[0].name
+            self.open_review_document(review)
+            self.send_review_email(review)
+            self.open_review_toolbox()
 
     def open_review_document(self, review):
-        return self.review_manager.open_review_document(review)
+        if hasattr(self, "_review_doc_tab") and self._review_doc_tab.winfo_exists():
+            self.doc_nb.select(self._review_doc_tab)
+        else:
+            title = f"Review {review.name}"
+            self._review_doc_tab = self._new_tab(title)
+            self._review_doc_window = ReviewDocumentDialog(self._review_doc_tab, self, review)
+            self._review_doc_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
 
     def open_review_toolbox(self):
-        return self.review_manager.open_review_toolbox()
+        if not self.reviews:
+            messagebox.showwarning("Review", "No reviews defined")
+            return
+        if not self.review_data and self.reviews:
+            self.review_data = self.reviews[0]
+        self.update_hara_statuses()
+        self.update_fta_statuses()
+        self.update_requirement_statuses()
+        if hasattr(self, "_review_tab") and self._review_tab.winfo_exists():
+            self.doc_nb.select(self._review_tab)
+        else:
+            self._review_tab = self._new_tab("Review")
+            self.review_window = ReviewToolbox(self._review_tab, self)
+            self.review_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
+        self.user_manager.set_current_user()
 
     def send_review_email(self, review):
-        return self.review_manager.send_review_email(review)
+        """Send the review summary to all reviewers via configured SMTP."""
+        recipients = [p.email for p in review.participants if p.role == 'reviewer' and p.email]
+        if not recipients:
+            return
+
+        # Determine the current user's email if available
+        current_email = next((p.email for p in review.participants
+                              if p.name == self.current_user), "")
+
+        if not getattr(self, "email_config", None):
+            cfg = EmailConfigDialog(self.root, default_email=current_email).result
+            self.email_config = cfg
+
+        cfg = getattr(self, "email_config", None)
+        if not cfg:
+            return
+
+        subject = f"Review: {review.name}"
+        lines = [f"Review Name: {review.name}", f"Description: {review.description}", ""]
+        if review.fta_ids:
+            lines.append("FTAs:")
+            for tid in review.fta_ids:
+                te = next((t for t in self.top_events if t.unique_id == tid), None)
+                if te:
+                    lines.append(f" - {te.name}")
+            lines.append("")
+        if review.fmea_names:
+            lines.append("FMEAs:")
+            for name in review.fmea_names:
+                lines.append(f" - {name}")
+            lines.append("")
+        if getattr(review, 'hazop_names', []):
+            lines.append("HAZOPs:")
+            for name in review.hazop_names:
+                lines.append(f" - {name}")
+            lines.append("")
+        if getattr(review, 'hara_names', []):
+            lines.append("Risk Assessments:")
+            for name in review.hara_names:
+                lines.append(f" - {name}")
+            lines.append("")
+        content = "\n".join(lines)
+        msg = EmailMessage()
+        msg['Subject'] = subject
+        msg['From'] = cfg['email']
+        msg['To'] = ', '.join(recipients)
+        msg.set_content(content)
+
+        html_lines = ["<html><body>", "<pre>", html.escape(content), "</pre>"]
+        image_cids = []
+        images = []
+        for tid in review.fta_ids:
+            node = self.find_node_by_id_all(tid)
+            if not node:
+                continue
+            img = self.capture_diff_diagram(node)
+            if img is None:
+                continue
+            buf = BytesIO()
+            img.save(buf, format="PNG")
+            buf.seek(0)
+            cid = make_msgid()
+            label = node.user_name or node.name or f"id{tid}"
+            html_lines.append(f"<p><b>FTA: {html.escape(label)}</b><br>" +
+                             f"<img src=\"cid:{cid[1:-1]}\" alt=\"{html.escape(label)}\"></p>")
+            image_cids.append(cid)
+            images.append(buf.getvalue())
+        diff_html = self.build_requirement_diff_html(review)
+        if diff_html:
+            html_lines.append("<b>Requirements:</b><br>" + diff_html)
+        html_lines.append("</body></html>")
+        html_body = "\n".join(html_lines)
+        msg.add_alternative(html_body, subtype="html")
+        html_part = msg.get_payload()[1]
+        for cid, data in zip(image_cids, images):
+            html_part.add_related(data, "image", "png", cid=cid)
+
+        # Attach FMEA tables as CSV files (can be opened with Excel)
+        for name in review.fmea_names:
+            fmea = next((f for f in self.fmeas if f["name"] == name), None)
+            if not fmea:
+                continue
+            out = StringIO()
+            writer = csv.writer(out)
+            columns = [
+                "Component",
+                "Parent",
+                "Failure Mode",
+                "Failure Effect",
+                "Cause",
+                "S",
+                "O",
+                "D",
+                "RPN",
+                "Requirements",
+            ]
+            writer.writerow(columns)
+            for be in fmea["entries"]:
+                src = self.get_failure_mode_node(be)
+                comp = self.get_component_name_for_node(src) or "N/A"
+                parent = src.parents[0] if src.parents else None
+                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
+                req_ids = "; ".join(
+                    [f"{req['req_type']}:{req['text']}" for req in getattr(be, 'safety_requirements', [])]
+                )
+                rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
+                failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
+                row = [
+                    comp,
+                    parent_name,
+                    failure_mode,
+                    be.fmea_effect,
+                    getattr(be, "fmea_cause", ""),
+                    be.fmea_severity,
+                    be.fmea_occurrence,
+                    be.fmea_detection,
+                    rpn,
+                    req_ids,
+                ]
+                writer.writerow(row)
+            csv_bytes = out.getvalue().encode('utf-8')
+            out.close()
+            msg.add_attachment(
+                csv_bytes,
+                maintype="text",
+                subtype="csv",
+                filename=f"fmea_{name}.csv",
+            )
+        for name in getattr(review, 'fmeda_names', []):
+            fmeda = next((f for f in self.fmedas if f["name"] == name), None)
+            if not fmeda:
+                continue
+            out = StringIO()
+            writer = csv.writer(out)
+            columns = [
+                "Component","Parent","Failure Mode","Malfunction","Safety Goal","FaultType","Fraction","FIT","DiagCov","Mechanism"
+            ]
+            writer.writerow(columns)
+            for be in fmeda["entries"]:
+                src = self.get_failure_mode_node(be)
+                comp = self.get_component_name_for_node(src) or "N/A"
+                parent = src.parents[0] if src.parents else None
+                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
+                row = [
+                    comp,
+                    parent_name,
+                    be.description or (be.user_name or f"BE {be.unique_id}"),
+                    be.fmeda_malfunction,
+                    be.fmeda_safety_goal,
+                    be.fmeda_fault_type,
+                    f"{be.fmeda_fault_fraction:.2f}",
+                    f"{be.fmeda_fit:.2f}",
+                    f"{be.fmeda_diag_cov:.2f}",
+                    getattr(be, "fmeda_mechanism", ""),
+                ]
+                writer.writerow(row)
+            csv_bytes = out.getvalue().encode('utf-8')
+            out.close()
+            msg.add_attachment(
+                csv_bytes,
+                maintype="text",
+                subtype="csv",
+                filename=f"fmeda_{name}.csv",
+            )
+        for name in getattr(review, 'hazop_names', []):
+            doc = next((d for d in self.hazop_docs if d.name == name), None)
+            if not doc:
+                continue
+            out = StringIO()
+            writer = csv.writer(out)
+            columns = [
+                "Function",
+                "Malfunction",
+                "Type",
+                "Scenario",
+                "Conditions",
+                "Hazard",
+                "Safety",
+                "Rationale",
+                "Covered",
+                "Covered By",
+            ]
+            writer.writerow(columns)
+            for e in doc.entries:
+                writer.writerow([
+                    self.get_entry_field(e, "function"),
+                    self.get_entry_field(e, "malfunction"),
+                    self.get_entry_field(e, "mtype"),
+                    self.get_entry_field(e, "scenario"),
+                    self.get_entry_field(e, "conditions"),
+                    self.get_entry_field(e, "hazard"),
+                    "Yes" if self.get_entry_field(e, "safety", False) else "No",
+                    self.get_entry_field(e, "rationale"),
+                    "Yes" if self.get_entry_field(e, "covered", False) else "No",
+                    self.get_entry_field(e, "covered_by"),
+                ])
+            csv_bytes = out.getvalue().encode("utf-8")
+            out.close()
+            msg.add_attachment(
+                csv_bytes,
+                maintype="text",
+                subtype="csv",
+                filename=f"hazop_{name}.csv",
+            )
+        for name in getattr(review, 'hara_names', []):
+            doc = next((d for d in self.hara_docs if d.name == name), None)
+            if not doc:
+                continue
+            out = StringIO()
+            writer = csv.writer(out)
+            columns = [
+                "Malfunction",
+                "Severity",
+                "Severity Rationale",
+                "Controllability",
+                "Cont. Rationale",
+                "Exposure",
+                "Exp. Rationale",
+                "ASIL",
+                "Safety Goal",
+            ]
+            writer.writerow(columns)
+            for e in doc.entries:
+                writer.writerow([
+                    self.get_entry_field(e, "malfunction"),
+                    self.get_entry_field(e, "severity"),
+                    self.get_entry_field(e, "sev_rationale"),
+                    self.get_entry_field(e, "controllability"),
+                    self.get_entry_field(e, "cont_rationale"),
+                    self.get_entry_field(e, "exposure"),
+                    self.get_entry_field(e, "exp_rationale"),
+                    self.get_entry_field(e, "asil"),
+                    self.get_entry_field(e, "safety_goal"),
+                ])
+            csv_bytes = out.getvalue().encode("utf-8")
+            out.close()
+            msg.add_attachment(
+                csv_bytes,
+                maintype="text",
+                subtype="csv",
+                filename=f"hara_{name}.csv",
+            )
+        try:
+            port = cfg.get('port', 465)
+            if port == 465:
+                with smtplib.SMTP_SSL(cfg['server'], port) as server:
+                    server.login(cfg['email'], cfg['password'])
+                    server.send_message(msg)
+            else:
+                with smtplib.SMTP(cfg['server'], port) as server:
+                    server.starttls()
+                    server.login(cfg['email'], cfg['password'])
+                    server.send_message(msg)
+        except smtplib.SMTPAuthenticationError:
+            messagebox.showerror(
+                "Email",
+                "Login failed. If your account uses two-factor authentication, "
+                "create an app password and use that instead of your normal password."
+            )
+            self.email_config = None
+        except (socket.gaierror, ConnectionRefusedError, smtplib.SMTPConnectError) as e:
+            messagebox.showerror(
+                "Email",
+                "Failed to connect to the SMTP server. Check the address, port and internet connection."
+            )
+            self.email_config = None
+        except Exception as e:
+            messagebox.showerror("Email", f"Failed to send review email: {e}")
 
 
     def review_is_closed(self):
-        return self.review_manager.review_is_closed()
+        if not self.review_data:
+            return False
+        if getattr(self.review_data, "closed", False):
+            return True
+        if self.review_data.due_date:
+            try:
+                due = datetime.datetime.strptime(self.review_data.due_date, "%Y-%m-%d").date()
+                if datetime.date.today() > due:
+                    return True
+            except ValueError:
+                pass
+        return False
 
     def review_is_closed_for(self, review):
-        return self.review_manager.review_is_closed_for(review)
+        if not review:
+            return False
+        if getattr(review, "closed", False):
+            return True
+        if review.due_date:
+            try:
+                due = datetime.datetime.strptime(review.due_date, "%Y-%m-%d").date()
+                if datetime.date.today() > due:
+                    return True
+            except ValueError:
+                pass
+        return False
 
     def get_requirements_for_review(self, review):
-        return self.review_manager.get_requirements_for_review(review)
+        """Return a set of requirement IDs included in the given review."""
+        req_ids = set()
+        for tid in getattr(review, "fta_ids", []):
+            node = self.find_node_by_id_all(tid)
+            if not node:
+                continue
+            for n in self.get_all_nodes(node):
+                for r in getattr(n, "safety_requirements", []):
+                    req_ids.add(r.get("id"))
+        for name in getattr(review, "fmea_names", []):
+            fmea = next((f for f in self.fmeas if f["name"] == name), None)
+            if not fmea:
+                continue
+            for e in fmea.get("entries", []):
+                for r in e.get("safety_requirements", []):
+                    req_ids.add(r.get("id"))
+        return req_ids
 
     def update_requirement_statuses(self):
         status_order = {
@@ -19364,19 +20211,106 @@ class AutoMLApp:
         self.update_all_validation_criteria()
 
     def invalidate_reviews_for_hara(self, name):
-        return self.review_manager.invalidate_reviews_for_hara(name)
+        """Reopen reviews associated with the given risk assessment."""
+        for r in self.reviews:
+            if name in getattr(r, "hara_names", []):
+                r.closed = False
+                r.approved = False
+                r.reviewed = False
+                for p in r.participants:
+                    p.done = False
+                    p.approved = False
+        self.update_hara_statuses()
+        self.update_fta_statuses()
 
     def invalidate_reviews_for_requirement(self, req_id):
-        return self.review_manager.invalidate_reviews_for_requirement(req_id)
+        """Reopen reviews that include the given requirement."""
+        for r in self.reviews:
+            if req_id in self.get_requirements_for_review(r):
+                r.closed = False
+                r.approved = False
+                r.reviewed = False
+                for p in r.participants:
+                    p.done = False
+                    p.approved = False
+        self.update_requirement_statuses()
 
     def add_version(self):
-        return self.review_manager.add_version()
+        version_num = len(self.versions) + 1
+        name = f"v{version_num}"
+        baseline = simpledialog.askstring(
+            "Baseline Name", "Enter baseline name (optional):"
+        )
+        if baseline:
+            name += f" - {baseline}"
+        # Exclude the versions list when capturing a snapshot to avoid
+        # recursively embedding previous versions within each saved state.
+        data = self.export_model_data(include_versions=False)
+        self.versions.append({"name": name, "data": data})
 
     def compare_versions(self):
-        return self.review_manager.compare_versions()
+        if not self.versions:
+            messagebox.showinfo("Versions", "No previous versions")
+            return
+        if hasattr(self, "_compare_tab") and self._compare_tab.winfo_exists():
+            self.doc_nb.select(self._compare_tab)
+            return
+        self._compare_tab = self._new_tab("Compare")
+        dlg = VersionCompareDialog(self._compare_tab, self)
+        dlg.pack(fill=tk.BOTH, expand=True)
 
     def merge_review_comments(self):
-        return self.review_manager.merge_review_comments()
+        path = filedialog.askopenfilename(defaultextension=".json", filetypes=[("JSON", "*.json")])
+        if not path:
+            return
+        with open(path, "r") as f:
+            data = json.load(f)
+
+        for rd in data.get("reviews", []):
+            participants = [ReviewParticipant(**p) for p in rd.get("participants", [])]
+            comments = [ReviewComment(**c) for c in rd.get("comments", [])]
+            moderators = [ReviewParticipant(**m) for m in rd.get("moderators", [])]
+            if not moderators and rd.get("moderator"):
+                moderators = [ReviewParticipant(rd.get("moderator"), "", "moderator")]
+            review = next((r for r in self.reviews if r.name == rd.get("name", "")), None)
+            if review is None:
+                review = ReviewData(
+                    name=rd.get("name", ""),
+                    description=rd.get("description", ""),
+                    mode=rd.get("mode", "peer"),
+                    moderators=moderators,
+                    participants=participants,
+                    comments=comments,
+                    approved=rd.get("approved", False),
+                    fta_ids=rd.get("fta_ids", []),
+                    fmea_names=rd.get("fmea_names", []),
+                    fmeda_names=rd.get("fmeda_names", []),
+                    hazop_names=rd.get("hazop_names", []),
+                    hara_names=rd.get("hara_names", []),
+                    stpa_names=rd.get("stpa_names", []),
+                    fi2tc_names=rd.get("fi2tc_names", []),
+                    tc2fi_names=rd.get("tc2fi_names", []),
+                    due_date=rd.get("due_date", ""),
+                    closed=rd.get("closed", False),
+                )
+                self.reviews.append(review)
+                continue
+            for p in participants:
+                if all(p.name != ep.name for ep in review.participants):
+                    review.participants.append(p)
+            for m in moderators:
+                if all(m.name != em.name for em in review.moderators):
+                    review.moderators.append(m)
+            review.due_date = rd.get("due_date", review.due_date)
+            review.closed = rd.get("closed", review.closed)
+            next_id = len(review.comments) + 1
+            for c in comments:
+                review.comments.append(ReviewComment(next_id, c.node_id, c.text, c.reviewer,
+                                                     target_type=c.target_type, req_id=c.req_id,
+                                                     field=c.field, resolved=c.resolved,
+                                                     resolution=c.resolution))
+                next_id += 1
+        messagebox.showinfo("Merge", "Comments merged")
 
     def calculate_diff_nodes(self, old_data):
         old_map = self.node_map_from_data(old_data["top_events"])
@@ -19427,8 +20361,62 @@ class AutoMLApp:
             pass
 
     def get_review_targets(self):
-        return self.review_manager.get_review_targets()
+        targets = []
+        target_map = {}
 
+        # Determine which FTAs and FMEAs are part of the current review.
+        if self.review_data:
+            allowed_ftas = set(self.review_data.fta_ids)
+            allowed_fmeas = set(self.review_data.fmea_names)
+            allowed_fmedas = set(getattr(self.review_data, 'fmeda_names', []))
+        else:
+            allowed_ftas = set()
+            allowed_fmeas = set()
+            allowed_fmedas = set()
+
+        # Collect nodes from the selected FTAs (or all if none selected).
+        nodes = []
+        if allowed_ftas:
+            for te in self.top_events:
+                if te.unique_id in allowed_ftas:
+                    nodes.extend(self.get_all_nodes(te))
+        else:
+            nodes = self.get_all_nodes_in_model()
+
+        # Determine which nodes have FMEA entries in the selected FMEAs.
+        fmea_node_ids = set()
+        if allowed_fmeas or allowed_fmedas:
+            for fmea in self.fmeas:
+                if fmea["name"] in allowed_fmeas:
+                    fmea_node_ids.update(be.unique_id for be in fmea["entries"])
+            for d in self.fmedas:
+                if d["name"] in allowed_fmedas:
+                    fmea_node_ids.update(be.unique_id for be in d["entries"])
+        else:
+            # When no FMEA was selected, do not offer FMEA-related targets
+            fmea_node_ids = set()
+
+        for node in nodes:
+            label = node.user_name or node.description or f"Node {node.unique_id}"
+            targets.append(label)
+            target_map[label] = ("node", node.unique_id)
+            if hasattr(node, "safety_requirements"):
+                for req in node.safety_requirements:
+                    rlabel = f"{label} [Req {req.get('id')}]"
+                    targets.append(rlabel)
+                    target_map[rlabel] = ("requirement", node.unique_id, req.get("id"))
+
+            if node.node_type.upper() == "BASIC EVENT" and node.unique_id in fmea_node_ids:
+                flabel = f"{label} [FMEA]"
+                targets.append(flabel)
+                target_map[flabel] = ("fmea", node.unique_id)
+                for field in ["Failure Mode", "Effect", "Cause", "Severity", "Occurrence", "Detection", "RPN"]:
+                    slabel = f"{label} [FMEA {field}]"
+                    key = field.lower().replace(' ', '_')
+                    target_map[slabel] = ("fmea_field", node.unique_id, key)
+                    targets.append(slabel)
+
+        return targets, target_map
         
 def main():
     root = tk.Tk()
