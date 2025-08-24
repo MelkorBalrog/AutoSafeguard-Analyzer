@@ -529,7 +529,6 @@ def format_requirement(req, include_id=True):
 
 
 from pathlib import Path
-
 from gui.dialogs.user_info_dialog import UserInfoDialog
 
 # Node types treated as gates when rendering and editing

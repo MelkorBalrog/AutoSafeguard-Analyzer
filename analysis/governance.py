@@ -122,6 +122,43 @@ def _apply_pattern(
     return result, variables
 
 
+def _select_pattern(
+    patterns: list[dict[str, str]],
+    cond: str | None,
+    constraint: str | None,
+) -> dict[str, str] | None:
+    """Choose the most suitable requirement pattern for the given context.
+
+    The selection prioritizes templates that explicitly reference both
+    conditions and constraints, followed by more specific single-attribute
+    patterns. If no specialised pattern is available, a generic one is
+    returned. This logic is factored out of :meth:`generate_requirements` to
+    keep that method focused on building requirement objects and to reduce its
+    cyclomatic complexity.
+    """
+
+    base = cond_pat = cond_const_pat = const_pat = None
+    for pat in patterns:
+        tmpl = pat.get("Template", "")
+        has_cond = "<condition>" in tmpl or "<acceptance_criteria>" in tmpl
+        has_const = "<constraint>" in tmpl
+        if has_cond and has_const and not cond_const_pat:
+            cond_const_pat = pat
+        elif has_const and not has_cond and not const_pat:
+            const_pat = pat
+        elif has_cond and not has_const and not cond_pat:
+            cond_pat = pat
+        elif not has_cond and not has_const and not base:
+            base = pat
+    if cond and constraint and cond_const_pat:
+        return cond_const_pat
+    if constraint and const_pat:
+        return const_pat
+    if cond and cond_pat and not base:
+        return cond_pat
+    return base or cond_pat or const_pat or cond_const_pat
+
+
 def reload_config() -> None:
     """Reload governance-related configuration."""
     global _CONFIG, _AI_NODES, _AI_RELATIONS, _REQUIREMENT_RULES, _NODE_ROLES, _PATTERN_DEFS, _PATTERN_MAP
@@ -523,28 +560,7 @@ class GovernanceDiagram:
                     ),
                     [],
                 )
-                base = cond_pat = cond_const_pat = const_pat = None
-                for pat in patterns:
-                    tmpl = pat.get("Template", "")
-                    has_cond = "<condition>" in tmpl or "<acceptance_criteria>" in tmpl
-                    has_const = "<constraint>" in tmpl
-                    if has_cond and has_const and not cond_const_pat:
-                        cond_const_pat = pat
-                    elif has_const and not has_cond and not const_pat:
-                        const_pat = pat
-                    elif has_cond and not has_const and not cond_pat:
-                        cond_pat = pat
-                    elif not has_cond and not has_const and not base:
-                        base = pat
-                pattern = None
-                if cond and constraint and cond_const_pat:
-                    pattern = cond_const_pat
-                elif constraint and const_pat:
-                    pattern = const_pat
-                elif cond and cond_pat and not base:
-                    pattern = cond_pat
-                else:
-                    pattern = base or cond_pat or const_pat or cond_const_pat
+                pattern = _select_pattern(patterns, cond, constraint)
                 if pattern:
                     text_override, pattern_vars = _apply_pattern(
                         pattern, src, dst, src_type, dst_type, cond, constraint
