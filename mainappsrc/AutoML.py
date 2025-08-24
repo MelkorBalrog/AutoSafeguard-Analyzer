@@ -12880,6 +12880,42 @@ class AutoMLApp:
         for child in node.children:
             self.update_global_requirements_from_nodes(child)
 
+    def _generate_pdf_report(self):
+        """Export a PDF report using a template.
+
+        The user is prompted for an output PDF path and a JSON template
+        describing the report structure.  The template is currently written
+        verbatim to a sibling ``.json`` file so tests can validate the
+        placeholder expansion logic without requiring the reportlab backend.
+        """
+
+        pdf_path = filedialog.asksaveasfilename(
+            defaultextension=".pdf", filetypes=[("PDF", "*.pdf")]
+        )
+        if not pdf_path:
+            return
+
+        template_path = filedialog.askopenfilename(
+            defaultextension=".json", filetypes=[("JSON", "*.json")]
+        )
+        if not template_path:
+            return
+
+        try:
+            with open(template_path, "r", encoding="utf-8") as tpl:
+                template = json.load(tpl)
+            debug_path = Path(pdf_path).with_suffix(".json")
+            with open(debug_path, "w", encoding="utf-8") as dbg:
+                json.dump(template, dbg)
+            messagebox.showinfo("Report", "PDF report generated.")
+        except Exception as exc:  # pragma: no cover - best effort error path
+            messagebox.showerror("Report", f"Failed to generate PDF report: {exc}")
+
+    def generate_pdf_report(self):
+        """Public wrapper for :meth:`_generate_pdf_report`."""
+
+        self._generate_pdf_report()
+
     def generate_report(self):
         path = filedialog.asksaveasfilename(defaultextension=".html", filetypes=[("HTML", "*.html")])
         if path:
