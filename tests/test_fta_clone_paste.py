@@ -23,7 +23,6 @@ page_spec.loader.exec_module(page_module)
 PageDiagram = page_module.PageDiagram
 fta_drawing_helper = page_module.fta_drawing_helper
 
-
 def _make_app_with_nodes():
     app = AutoMLApp.__new__(AutoMLApp)
     app.top_events = []
