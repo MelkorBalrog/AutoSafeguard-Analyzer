@@ -51,9 +51,12 @@ class PageDiagram:
         self.canvas.scan_dragto(event.x, event.y, gain=1)
 
     def on_right_mouse_release(self, event):
-        # If there was no significant drag, show the context menu.
-        if not self.rc_dragged:
+        # If there was no significant drag, show the context menu. Guard with
+        # ``getattr`` so missing attributes (e.g. if the press event was
+        # swallowed) do not raise errors, and always reset the flag.
+        if not getattr(self, "rc_dragged", False):
             self.show_context_menu(event)
+        self.rc_dragged = False
 
     def find_node_at_position(self, x, y):
         # Adjust the radius (here using 45 as an example)
@@ -379,8 +382,35 @@ class PageDiagram:
         node_type_upper = source.node_type.upper()
 
         if not node.is_primary_instance:
-            # For clones, draw them in a “clone” style.
-            if source.is_page:
+            # For clones, draw them in the shape of the original with a bottom line marker.
+            if node_type_upper in GATE_NODE_TYPES:
+                if source.gate_type.upper() == "OR":
+                    fta_drawing_helper.draw_rotated_or_gate_clone_shape(
+                        self.canvas,
+                        eff_x,
+                        eff_y,
+                        scale=40 * self.zoom,
+                        top_text=top_text,
+                        bottom_text=bottom_text,
+                        fill=fill_color,
+                        outline_color=outline_color,
+                        line_width=line_width,
+                        font_obj=font_obj,
+                    )
+                else:
+                    fta_drawing_helper.draw_rotated_and_gate_clone_shape(
+                        self.canvas,
+                        eff_x,
+                        eff_y,
+                        scale=40 * self.zoom,
+                        top_text=top_text,
+                        bottom_text=bottom_text,
+                        fill=fill_color,
+                        outline_color=outline_color,
+                        line_width=line_width,
+                        font_obj=font_obj,
+                    )
+            elif source.is_page and source != self.root_node:
                 fta_drawing_helper.draw_triangle_clone_shape(
                     self.canvas,
                     eff_x,
@@ -394,7 +424,7 @@ class PageDiagram:
                     font_obj=font_obj,
                 )
             else:
-                fta_drawing_helper.draw_circle_event_shape(
+                fta_drawing_helper.draw_circle_event_clone_shape(
                     self.canvas,
                     eff_x,
                     eff_y,

@@ -8166,13 +8166,18 @@ class AutoMLApp:
                                                    line_width=1,
                                                    font_obj=self.diagram_font)
         elif node_type_upper in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-            fta_drawing_helper.draw_circle_event_shape(canvas, eff_x, eff_y, 45 * self.zoom,
-                                                       top_text=top_text,
-                                                       bottom_text=bottom_text,
-                                                       fill=fill_color,
-                                                       outline_color="dimgray",
-                                                       line_width=1,
-                                                       font_obj=self.diagram_font)
+            fta_drawing_helper.draw_circle_event_clone_shape(
+                canvas,
+                eff_x,
+                eff_y,
+                45 * self.zoom,
+                top_text=top_text,
+                bottom_text=bottom_text,
+                fill=fill_color,
+                outline_color="dimgray",
+                line_width=1,
+                font_obj=self.diagram_font,
+            )
         elif node_type_upper in GATE_NODE_TYPES:
             if node.gate_type.upper() == "OR":
                 fta_drawing_helper.draw_rotated_or_gate_clone_shape(canvas, eff_x, eff_y,
@@ -8193,13 +8198,18 @@ class AutoMLApp:
                                                                      line_width=1,
                                                                      font_obj=self.diagram_font)
         else:
-            fta_drawing_helper.draw_circle_event_shape(canvas, eff_x, eff_y, 45 * self.zoom,
-                                                       top_text=top_text,
-                                                       bottom_text=bottom_text,
-                                                       fill=fill_color,
-                                                       outline_color="dimgray",
-                                                       line_width=1,
-                                                       font_obj=self.diagram_font)
+            fta_drawing_helper.draw_circle_event_clone_shape(
+                canvas,
+                eff_x,
+                eff_y,
+                45 * self.zoom,
+                top_text=top_text,
+                bottom_text=bottom_text,
+                fill=fill_color,
+                outline_color="dimgray",
+                line_width=1,
+                font_obj=self.diagram_font,
+            )
 
         # In detailed mode, also draw the equations.
         if self.project_properties.get("pdf_detailed_formulas", True):
@@ -8975,8 +8985,13 @@ class AutoMLApp:
         self.canvas.scan_dragto(event.x, event.y, gain=1)
 
     def on_right_mouse_release(self, event):
-        if not self.rc_dragged:
+        # Use getattr to avoid attribute errors if the press event was not
+        # processed (e.g. when the canvas loses focus).  Also reset the flag so
+        # a stale ``True`` value from a previous drag does not suppress future
+        # context menus.
+        if not getattr(self, "rc_dragged", False):
             self.show_context_menu(event)
+        self.rc_dragged = False
 
     def show_context_menu(self, event):
         x = self.canvas.canvasx(event.x) / self.zoom
@@ -10550,7 +10565,7 @@ class AutoMLApp:
                         obj_id=node.unique_id,
                     )
             elif node_type_upper in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-                fta_drawing_helper.draw_circle_event_shape(
+                fta_drawing_helper.draw_circle_event_clone_shape(
                     self.canvas,
                     eff_x,
                     eff_y,
@@ -10564,7 +10579,7 @@ class AutoMLApp:
                     obj_id=node.unique_id,
                 )
             else:
-                fta_drawing_helper.draw_circle_event_shape(
+                fta_drawing_helper.draw_circle_event_clone_shape(
                     self.canvas,
                     eff_x,
                     eff_y,
@@ -17416,6 +17431,22 @@ class AutoMLApp:
         messagebox.showwarning("Clone", "Cannot clone this node type.")
         return None
 
+    def _prepare_node_for_paste(self, target):
+        """Return appropriate node instance when pasting."""
+        if (
+            isinstance(self.clipboard_node, GSNNode)
+            and target in getattr(self.clipboard_node, "parents", [])
+        ):
+            return self._clone_for_paste(self.clipboard_node)
+        from .models.fault_tree_node import FaultTreeNode
+
+        if (
+            isinstance(self.clipboard_node, FaultTreeNode)
+            or type(self.clipboard_node).__name__ == "FaultTreeNode"
+        ):
+            return self._clone_for_paste(self.clipboard_node)
+        return self.clipboard_node
+
     def paste_node(self):
         if self.clipboard_node:
             # NOTE: Paste logic and target resolution chain (selection → focused diagram root → app root)
@@ -17501,13 +17532,7 @@ class AutoMLApp:
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
                 target_diag = self._find_gsn_diagram(target)
-                if (
-                    isinstance(self.clipboard_node, GSNNode)
-                    and target in getattr(self.clipboard_node, "parents", [])
-                ):
-                    node_for_pos = self._clone_for_paste(self.clipboard_node)
-                else:
-                    node_for_pos = self.clipboard_node
+                node_for_pos = self._prepare_node_for_paste(target)
                 target.children.append(node_for_pos)
                 node_for_pos.parents.append(target)
                 if isinstance(node_for_pos, GSNNode):
