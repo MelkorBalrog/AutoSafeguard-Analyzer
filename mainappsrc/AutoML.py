@@ -17439,7 +17439,7 @@ class AutoMLApp:
             and target in getattr(self.clipboard_node, "parents", [])
         ):
             return self._clone_for_paste(self.clipboard_node)
-        from .models.fault_tree_node import FaultTreeNode
+        from mainappsrc.models.fault_tree_node import FaultTreeNode
 
         if (
             isinstance(self.clipboard_node, FaultTreeNode)
