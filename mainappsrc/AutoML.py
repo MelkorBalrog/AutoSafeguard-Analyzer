@@ -265,6 +265,7 @@ from gui.mac_button_style import (
     apply_purplish_button_style,
 )
 from gui.dialogs.user_select_dialog import UserSelectDialog
+from gui.dialogs.decomposition_dialog import DecompositionDialog
 from dataclasses import asdict
 from pathlib import Path
 from analysis.mechanisms import (
