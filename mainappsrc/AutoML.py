@@ -363,6 +363,7 @@ import builtins
 from user_manager import UserManager
 from project_manager import ProjectManager
 from diagram_controller import DiagramController
+from paa_manager import PrototypeAssuranceManager
 from config.automl_constants import (
     dynamic_recommendations,
     WORK_PRODUCT_INFO as BASE_WORK_PRODUCT_INFO,
@@ -916,6 +917,7 @@ class AutoMLApp:
         self.user_manager = UserManager(self)
         self.project_manager = ProjectManager(self)
         self.diagram_controller = DiagramController(self)
+        self._paa_manager = PrototypeAssuranceManager(self)
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
@@ -1138,7 +1140,10 @@ class AutoMLApp:
         )
 
         paa_menu = tk.Menu(qualitative_menu, tearoff=0)
-        paa_menu.add_command(label="Add Top Level Event", command=self.create_paa_diagram)
+        paa_menu.add_command(
+            label="Add Top Level Event",
+            command=self.paa_manager.create_paa_diagram,
+        )
         paa_menu.add_separator()
         paa_menu.add_command(
             label="Add Confidence",
@@ -17089,32 +17094,34 @@ class AutoMLApp:
             state = tk.NORMAL if enabled else tk.DISABLED
             for key in ("add_trigger", "add_functional_insufficiency"):
                 self.cta_menu.entryconfig(self._cta_menu_indices[key], state=state)
-                
-    def enable_paa_actions(self, enabled: bool) -> None:
-        """Enable or disable PAA-related menu actions."""
-        if hasattr(self, "paa_menu"):
-            state = tk.NORMAL if enabled else tk.DISABLED
-            for key in ("add_confidence", "add_robustness"):
-                self.paa_menu.entryconfig(self._paa_menu_indices[key], state=state)
-                
+
     def _update_analysis_menus(self,mode=None):
         """Enable or disable node-adding menu items based on diagram mode."""
         if mode is None:
             mode = getattr(self, "diagram_mode", "FTA")
         self.enable_fta_actions(mode == "FTA")
         self.enable_cta_actions(mode == "CTA")
-        self.enable_paa_actions(mode == "PAA")
+        self.paa_manager.enable_paa_actions(mode == "PAA")
 
-    def _create_paa_tab(self):
-        """Convenience wrapper for creating a PAA diagram."""
-        self._create_fta_tab("PAA")
+    # ------------------------------------------------------------------
+    def enable_paa_actions(self, enabled: bool) -> None:
+        """Delegate to :class:`PrototypeAssuranceManager` to toggle PAA menu."""
+        self.paa_manager.enable_paa_actions(enabled)
 
-    def create_paa_diagram(self):
-        """Initialize a Prototype Assurance Analysis diagram and its top-level event."""
-        self._create_paa_tab()
-        self.add_top_level_event()
-        if getattr(self, "paa_root_node", None):
-            self.open_page_diagram(self.paa_root_node)
+    def _create_paa_tab(self) -> None:
+        """Delegate to :class:`PrototypeAssuranceManager` to create a PAA tab."""
+        self.paa_manager._create_paa_tab()
+
+    def create_paa_diagram(self) -> None:
+        """Delegate to :class:`PrototypeAssuranceManager` for diagram setup."""
+        self.paa_manager.create_paa_diagram()
+
+    @property
+    def paa_manager(self) -> PrototypeAssuranceManager:
+        """Lazily create and return the PAA manager."""
+        if not hasattr(self, "_paa_manager"):
+            self._paa_manager = PrototypeAssuranceManager(self)
+        return self._paa_manager
 
     def _reset_fta_state(self):
         """Clear references to the FTA tab and its canvas."""
@@ -17212,7 +17219,7 @@ class AutoMLApp:
         else:
             self.enable_fta_actions(False)
             self.enable_cta_actions(False)
-            self.enable_paa_actions(False)
+            self.paa_manager.enable_paa_actions(False)
         gsn_win = getattr(tab, "gsn_window", None)
         if gsn_win:
             self.selected_node = gsn_win.diagram.root
