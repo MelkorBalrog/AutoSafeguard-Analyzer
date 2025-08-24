@@ -18847,6 +18847,14 @@ class AutoMLApp:
         """
         tabs = getattr(self, "analysis_tabs", {})
         existing = tabs.get(diagram_mode)
+        
+        if diagram_mode == "CTA":
+            mode = getattr(self, "diagram_mode", "CTA")
+        elif diagram_mode == "PAA":
+            mode = getattr(self, "diagram_mode", "PAA")
+        elif diagram_mode == "FTA":
+            mode = getattr(self, "diagram_mode", "FTA")
+        
         if existing and existing["tab"].winfo_exists():
             self.canvas_tab = existing["tab"]
             self.canvas_frame = existing["tab"]
@@ -18855,7 +18863,7 @@ class AutoMLApp:
             self.vbar = existing["vbar"]
             self.diagram_mode = diagram_mode
             self.doc_nb.select(self.canvas_tab)
-            self._update_analysis_menus()
+            self._update_analysis_menus(mode)
             return
 
         canvas_tab = ttk.Frame(self.doc_nb)
@@ -18892,7 +18900,7 @@ class AutoMLApp:
         self.vbar = vbar
         self.diagram_mode = diagram_mode
         self.doc_nb.select(canvas_tab)
-        self._update_analysis_menus()
+        self._update_analysis_menus(mode)
 
     def create_fta_diagram(self):
         """Initialize an FTA diagram and its top-level event."""
@@ -18912,21 +18920,42 @@ class AutoMLApp:
         if getattr(self, "cta_root_node", None):
             self.open_page_diagram(self.cta_root_node)
 
-    def _update_analysis_menus(self):
-        """Enable or disable node-adding menu items based on diagram mode."""
+    def enable_fta_actions(self, enabled: bool) -> None:
+        """Enable or disable FTA-related menu actions."""
         mode = getattr(self, "diagram_mode", "FTA")
         if hasattr(self, "fta_menu"):
-            for key in ("add_gate", "add_basic_event", "add_gate_from_failure_mode", "add_fault_event"):
-                state = tk.NORMAL if mode == "FTA" else tk.DISABLED
+            state = tk.NORMAL if enabled else tk.DISABLED
+            for key in (
+                "add_gate",
+                "add_basic_event",
+                "add_gate_from_failure_mode",
+                "add_fault_event",
+            ):
                 self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
+                
+    def enable_cta_actions(self, enabled: bool) -> None:
+        """Enable or disable CTA-related menu actions."""
+        mode = getattr(self, "diagram_mode", "CTA")
         if hasattr(self, "cta_menu"):
+            state = tk.NORMAL if enabled else tk.DISABLED
             for key in ("add_trigger", "add_functional_insufficiency"):
                 state = tk.NORMAL if mode == "CTA" else tk.DISABLED
                 self.cta_menu.entryconfig(self._cta_menu_indices[key], state=state)
+                
+    def enable_paa_actions(self, enabled: bool) -> None:
+        """Enable or disable PAA-related menu actions."""
+        mode = getattr(self, "diagram_mode", "PAA")
         if hasattr(self, "paa_menu"):
+            state = tk.NORMAL if enabled else tk.DISABLED
             for key in ("add_confidence", "add_robustness"):
                 state = tk.NORMAL if mode == "PAA" else tk.DISABLED
                 self.paa_menu.entryconfig(self._paa_menu_indices[key], state=state)
+                
+    def _update_analysis_menus(self,mode):
+        """Enable or disable node-adding menu items based on diagram mode."""
+        self.enable_fta_actions(mode == "FTA")
+        self.enable_cta_actions(mode == "CTA")
+        self.enable_paa_actions(mode == "PAA")
 
     def _create_paa_tab(self):
         """Convenience wrapper for creating a PAA diagram."""
@@ -19008,28 +19037,41 @@ class AutoMLApp:
             if hasattr(event.widget, "nametowidget")
             else tab_id
         )
+        canvas = None
+        widgets = [tab, *getattr(tab, "winfo_children", lambda: [])()]
+        for child in widgets:
+            if child.__class__.__name__ == "FaultTreeCanvas":
+                canvas = child
+                break
+        if canvas is not None:
+            self.canvas_tab = tab
+            self.canvas = canvas
+            self.diagram_mode = getattr(canvas, "diagram_mode", "FTA")
+            info = getattr(self, "analysis_tabs", {}).get(self.diagram_mode)
+            if info and info["tab"] is tab:
+                self.hbar = info["hbar"]
+                self.vbar = info["vbar"]
+            if self.diagram_mode == "CTA" and self.cta_root_node:
+                self.root_node = self.cta_root_node
+                mode = getattr(self, "diagram_mode", "CTA")
+            elif self.diagram_mode == "PAA" and self.paa_root_node:
+                self.root_node = self.paa_root_node
+                mode = getattr(self, "diagram_mode", "PAA")
+            elif self.fta_root_node:
+                mode = getattr(self, "diagram_mode", "FTA")
+                self.root_node = self.fta_root_node
+            self._update_analysis_menus(mode)
+        else:
+            self.enable_fta_actions(False)
+            self.enable_cta_actions(False)
+            self.enable_paa_actions(False)
         gsn_win = getattr(tab, "gsn_window", None)
         if gsn_win:
             self.selected_node = gsn_win.diagram.root
-        for mode, info in getattr(self, "analysis_tabs", {}).items():
-            if info["tab"] is tab:
-                self.canvas_tab = info["tab"]
-                self.canvas = info["canvas"]
-                self.hbar = info["hbar"]
-                self.vbar = info["vbar"]
-                self.diagram_mode = mode
-                if mode == "CTA" and self.cta_root_node:
-                    self.root_node = self.cta_root_node
-                elif mode == "PAA" and self.paa_root_node:
-                    self.root_node = self.paa_root_node
-                elif self.fta_root_node:
-                    self.root_node = self.fta_root_node
-                break
         # Propagate recent changes and ensure the active tab reflects them
         self.refresh_all()
         if tab is getattr(self, "_safety_case_tab", None):
             self.refresh_safety_case_table()
-        widgets = [tab, *tab.winfo_children()]
         for child in widgets:
             if hasattr(child, "refresh_from_repository"):
                 child.refresh_from_repository()
