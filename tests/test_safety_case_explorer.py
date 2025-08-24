@@ -1,7 +1,7 @@
 import types
 from tkinter import simpledialog
 
-from gsn import GSNNode, GSNDiagram, GSNModule
+from mainappsrc.models.gsn import GSNNode, GSNDiagram, GSNModule
 from analysis.safety_case import SafetyCaseLibrary
 import gui.safety_case_explorer as safety_case_explorer
 from gui import messagebox

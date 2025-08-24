@@ -54,7 +54,7 @@ except ModuleNotFoundError:
     sys.modules.setdefault("PIL.ImageTk", PIL_stub.ImageTk)
     from AutoML import AutoMLApp
 
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 def test_undo_does_not_unload_project_when_stack_empty():

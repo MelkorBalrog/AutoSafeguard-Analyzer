@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import ttk, simpledialog, messagebox
 
 from analysis.user_config import CURRENT_USER_NAME
-from .models.fault_tree_node import FaultTreeNode
+from .models.fta.fault_tree_node import FaultTreeNode
 
 
 class FMEAService:

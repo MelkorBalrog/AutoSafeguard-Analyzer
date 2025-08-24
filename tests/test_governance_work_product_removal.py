@@ -2,7 +2,7 @@ from gui import messagebox
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from analysis import SafetyManagementToolbox
 from analysis.safety_management import GovernanceModule
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 import pytest
 
 

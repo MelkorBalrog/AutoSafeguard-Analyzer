@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gui.safety_management_toolbox import SafetyManagementWindow, SafetyManagementToolbox
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from gui import safety_management_toolbox as smt
 
 def _raise_error(self):

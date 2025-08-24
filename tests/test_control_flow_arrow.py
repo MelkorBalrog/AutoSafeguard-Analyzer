@@ -1,7 +1,7 @@
 import unittest
 import tkinter as tk
 from gui.architecture import SysMLDiagramWindow, SysMLObject, DiagramConnection
-from sysml.sysml_repository import SysMLRepository, SysMLDiagram
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository, SysMLDiagram
 
 
 class DummyCanvas:

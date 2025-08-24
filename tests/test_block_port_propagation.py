@@ -3,7 +3,7 @@ from gui.architecture import (
     add_composite_aggregation_part,
     propagate_block_port_changes,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class BlockPortPropagationTests(unittest.TestCase):
     def setUp(self):

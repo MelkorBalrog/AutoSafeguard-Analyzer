@@ -1,4 +1,4 @@
-from gsn import GSNNode
+from mainappsrc.models.gsn import GSNNode
 
 
 def test_legacy_context_entries_load_as_context():

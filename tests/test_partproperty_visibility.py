@@ -1,6 +1,6 @@
 import unittest
 from gui.architecture import _sync_ibd_partproperty_parts
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class PartPropertyVisibilityTests(unittest.TestCase):
     def setUp(self):

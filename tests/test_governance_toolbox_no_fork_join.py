@@ -6,7 +6,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import gui.architecture as arch
 from gui.architecture import GovernanceDiagramWindow
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 def test_governance_toolbox_excludes_fork_and_join(monkeypatch):

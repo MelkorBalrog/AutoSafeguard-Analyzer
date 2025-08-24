@@ -5,7 +5,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from gui.architecture import SysMLDiagramWindow, SysMLObject, set_ibd_father
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class DummyCanvas:
     def canvasx(self, val):

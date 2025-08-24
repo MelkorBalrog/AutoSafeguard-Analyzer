@@ -1,6 +1,6 @@
 import unittest
 from gui.architecture import SysMLDiagramWindow, SysMLObject, set_ibd_father
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class BoundaryPortSelectionTests(unittest.TestCase):
     def setUp(self):

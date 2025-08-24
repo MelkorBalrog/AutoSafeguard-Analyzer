@@ -3,7 +3,7 @@ import os
 import sys
 import subprocess
 
-from gsn import GSNNode, GSNDiagram
+from mainappsrc.models.gsn import GSNNode, GSNDiagram
 from gui.gsn_config_window import GSNElementConfig
 from gui.gsn_diagram_window import GSNDiagramWindow
 

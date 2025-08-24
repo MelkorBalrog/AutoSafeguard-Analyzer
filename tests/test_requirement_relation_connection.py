@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from analysis.models import REQUIREMENT_WORK_PRODUCTS
 from gui.architecture import SysMLDiagramWindow, SysMLObject
 import gui.architecture as arch
-from sysml.sysml_repository import SysMLRepository, SysMLDiagram
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository, SysMLDiagram
 
 
 class DummyCanvas:

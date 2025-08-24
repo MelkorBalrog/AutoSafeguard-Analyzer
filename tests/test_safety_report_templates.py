@@ -2,7 +2,7 @@ from pathlib import Path
 import json
 
 from config import load_report_template
-from gsn import GSNDiagram, GSNNode
+from mainappsrc.models.gsn import GSNDiagram, GSNNode
 from analysis.safety_case import SafetyCase
 
 

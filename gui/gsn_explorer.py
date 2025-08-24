@@ -4,7 +4,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, simpledialog
 
-from gsn import GSNNode, GSNDiagram, GSNModule
+from mainappsrc.models.gsn import GSNNode, GSNDiagram, GSNModule
 from gui import format_name_with_phase, messagebox
 from gui.style_manager import StyleManager
 from gui.icon_factory import create_icon

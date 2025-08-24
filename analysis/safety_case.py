@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List
 
-from gsn import GSNDiagram, GSNNode
+from mainappsrc.models.gsn import GSNDiagram, GSNNode
 from config import load_report_template
 
 

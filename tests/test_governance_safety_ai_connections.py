@@ -2,7 +2,7 @@ import unittest
 import types
 
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class GovernanceSafetyAIConnectionTests(unittest.TestCase):

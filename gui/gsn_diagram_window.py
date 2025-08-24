@@ -14,7 +14,7 @@ import weakref
 from pathlib import Path
 from typing import Optional
 
-from gsn import GSNNode, GSNDiagram
+from mainappsrc.models.gsn import GSNNode, GSNDiagram
 from .gsn_config_window import GSNElementConfig
 from .gsn_connection_config import GSNConnectionConfig
 from . import messagebox

@@ -1,5 +1,5 @@
 from gui.architecture import GovernanceDiagramWindow, SysMLObject, DiagramConnection
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 def test_delete_connection_refreshes_enablement(monkeypatch):

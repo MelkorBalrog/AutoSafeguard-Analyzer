@@ -1,5 +1,5 @@
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 def test_diagram_and_elements_hidden_without_phase():
     repo = SysMLRepository.reset_instance()

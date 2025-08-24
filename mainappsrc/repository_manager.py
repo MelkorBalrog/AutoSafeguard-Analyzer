@@ -6,7 +6,7 @@ from tkinter import ttk
 from typing import Optional
 
 from gui.style_manager import StyleManager
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from gui.architecture import (
     UseCaseDiagramWindow,
     ActivityDiagramWindow,

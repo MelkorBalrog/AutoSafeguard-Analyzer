@@ -2,7 +2,7 @@ import unittest
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.user_config import set_current_user
 from gui.architecture import rename_block, add_aggregation_part
 

@@ -1,9 +1,9 @@
 import types
 import math
-from gsn import GSNNode, GSNDiagram
+from mainappsrc.models.gsn import GSNNode, GSNDiagram
 from gui.gsn_config_window import GSNElementConfig, _collect_work_products
 from analysis import SafetyManagementToolbox
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class DummyVar:

@@ -12,7 +12,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from AutoML import AutoMLApp
-from gsn import GSNNode, GSNDiagram, GSNModule
+from mainappsrc.models.gsn import GSNNode, GSNDiagram, GSNModule
 
 
 def _minimal_app():

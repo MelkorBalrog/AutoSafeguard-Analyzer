@@ -1,6 +1,6 @@
 import unittest
 from gui.architecture import SysMLObject, SysMLDiagramWindow
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class DummyFont:

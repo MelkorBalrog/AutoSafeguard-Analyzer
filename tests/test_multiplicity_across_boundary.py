@@ -1,7 +1,7 @@
 import unittest
 from gui import architecture
 from gui.architecture import SysMLObject
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class MultiplicityAcrossBoundaryTests(unittest.TestCase):

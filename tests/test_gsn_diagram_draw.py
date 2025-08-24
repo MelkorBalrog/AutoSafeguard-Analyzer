@@ -1,5 +1,5 @@
 
-from gsn import GSNNode, GSNDiagram
+from mainappsrc.models.gsn import GSNNode, GSNDiagram
 
 
 class StubCanvas:

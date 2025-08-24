@@ -5,7 +5,7 @@ from gui.architecture import (
     propagate_block_part_changes,
     remove_aggregation_part,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class AggregationPartCreationTests(unittest.TestCase):

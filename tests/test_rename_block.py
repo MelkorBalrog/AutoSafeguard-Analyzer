@@ -6,7 +6,7 @@ from gui.architecture import (
     rename_block,
     inherit_block_properties,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class RenameBlockTests(unittest.TestCase):

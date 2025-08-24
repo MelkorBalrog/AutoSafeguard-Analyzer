@@ -1,4 +1,4 @@
-from gsn import GSNNode
+from mainappsrc.models.gsn import GSNNode
 
 
 def test_invalid_solved_relationship_ignored_on_load():

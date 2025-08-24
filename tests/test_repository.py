@@ -3,7 +3,7 @@ import unittest
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.user_config import set_current_user
 
 class RepositoryTests(unittest.TestCase):
@@ -54,13 +54,13 @@ class RepositoryTests(unittest.TestCase):
         self.assertIn(blk.elem_id, js)
 
     def test_sysml_properties_port(self):
-        from sysml.sysml_spec import SYSML_PROPERTIES
+        from mainappsrc.models.sysml.sysml_spec import SYSML_PROPERTIES
         self.assertIn("PortUsage", SYSML_PROPERTIES)
         self.assertIn("direction", SYSML_PROPERTIES["PortUsage"])
 
     def test_action_usage_property_removed(self):
         """Ensure derived ActionUsage attributes are excluded."""
-        from sysml.sysml_spec import SYSML_PROPERTIES
+        from mainappsrc.models.sysml.sysml_spec import SYSML_PROPERTIES
         self.assertNotIn(
             "actionDefinition",
             SYSML_PROPERTIES.get("ActionUsage", []),

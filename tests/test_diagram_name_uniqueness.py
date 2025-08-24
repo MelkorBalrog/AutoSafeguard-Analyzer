@@ -5,7 +5,7 @@ from tkinter import simpledialog
 from gui.gsn_explorer import GSNExplorer
 from gui.causal_bayesian_network_window import CausalBayesianNetworkWindow
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
-from gsn import GSNNode, GSNDiagram
+from mainappsrc.models.gsn import GSNNode, GSNDiagram
 
 
 def test_unique_gsn_diagram_names(monkeypatch):

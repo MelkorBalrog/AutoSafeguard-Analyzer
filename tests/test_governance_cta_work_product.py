@@ -5,7 +5,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gui.architecture import GovernanceDiagramWindow
 from analysis import SafetyManagementToolbox
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 def test_governance_cta_work_product_enabled(monkeypatch):

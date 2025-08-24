@@ -3,7 +3,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import pytest
-from gsn.nodes import GSNNode
+from mainappsrc.models.gsn.nodes import GSNNode
 
 
 @pytest.mark.parametrize("typ", ["Context", "Assumption", "Justification"])

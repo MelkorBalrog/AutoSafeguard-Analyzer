@@ -4,7 +4,7 @@ from gui.architecture import (
     propagate_block_changes,
     remove_partproperty_entry,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class RemovePartPropertyTests(unittest.TestCase):
     def setUp(self):

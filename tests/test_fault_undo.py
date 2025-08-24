@@ -12,7 +12,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from AutoML import AutoMLApp
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class FaultUndoRedoTests(unittest.TestCase):
     def setUp(self):

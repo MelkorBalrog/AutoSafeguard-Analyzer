@@ -1,6 +1,6 @@
 import unittest
 from gui.architecture import link_block_to_ibd, _ensure_ibd_boundary
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class PartPropertyNewIBDTests(unittest.TestCase):
     def setUp(self):

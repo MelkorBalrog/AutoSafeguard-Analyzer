@@ -3,7 +3,7 @@ from gui.architecture import (
     SysMLObjectDialog,
     SysMLObject,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 import types
 
 

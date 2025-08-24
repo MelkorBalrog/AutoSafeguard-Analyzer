@@ -10,7 +10,7 @@ purposes.
 
 from typing import Iterable, Set, Any
 
-from gsn import GSNModule
+from mainappsrc.models.gsn import GSNModule
 
 
 def _collect_gsn_diagrams(module: GSNModule, ignore: Any) -> Set[str]:

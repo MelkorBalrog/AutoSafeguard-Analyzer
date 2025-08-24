@@ -21,7 +21,7 @@ of enabled work products changes so menu items can be enabled/disabled.
 from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Callable, Optional
 
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from .requirement_rule_generator import regenerate_requirement_patterns
 
 

@@ -1,6 +1,6 @@
 import types
 import pytest
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis import safety_management as sm
 
 

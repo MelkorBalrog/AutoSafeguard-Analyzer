@@ -8,7 +8,7 @@ from gui import messagebox
 from gui.toolboxes import ToolTip
 from gui.table_controller import TableController
 from analysis.models import ThreatDoc, ThreatEntry
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from gui.architecture import format_diagram_name
 from analysis.safety_management import SAFETY_ANALYSIS_WORK_PRODUCTS
 from .threat_dialog import ThreatDialog

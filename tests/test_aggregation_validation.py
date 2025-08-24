@@ -6,7 +6,7 @@ from gui.architecture import (
     add_aggregation_part,
     extend_block_parts_with_parents,
 )
-from sysml.sysml_repository import SysMLRepository, SysMLDiagram
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository, SysMLDiagram
 
 class AggregationExistsTests(unittest.TestCase):
     def setUp(self):

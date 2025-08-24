@@ -7,7 +7,7 @@ from gui.architecture import (
     operations_to_json,
     parse_operations,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.models import global_requirements
 
 

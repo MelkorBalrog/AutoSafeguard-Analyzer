@@ -9,7 +9,7 @@ from analysis.utils import (
     SEVERITY_PROBABILITIES,
     update_probability_tables,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.risk_assessment import AutoMLHelper
 
 

@@ -1,6 +1,6 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import unittest
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from gui.architecture import (
     extend_block_parts_with_parents,
     inherit_father_parts,

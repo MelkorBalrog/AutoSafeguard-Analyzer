@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 from gui import architecture
 from gui.architecture import InternalBlockDiagramWindow, SysMLObject
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class DummyWindow:
     _get_part_name = InternalBlockDiagramWindow._get_part_name

@@ -2,7 +2,7 @@ import types
 
 from analysis.models import REQUIREMENT_TYPE_OPTIONS
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from AutoML import AutoMLApp
 
 

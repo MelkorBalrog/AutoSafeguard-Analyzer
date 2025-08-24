@@ -6,7 +6,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from analysis.models import StpaDoc

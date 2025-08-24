@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from analysis.safety_management import SafetyManagementToolbox
 from analysis.models import global_requirements
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from gui.architecture import link_requirement_to_object
 
 

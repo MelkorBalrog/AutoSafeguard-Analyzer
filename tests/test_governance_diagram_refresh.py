@@ -1,7 +1,7 @@
 import types
 from dataclasses import asdict
 
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 from gui.architecture import GovernanceDiagramWindow, SysMLDiagramWindow, SysMLObject
 import gui.architecture as arch

@@ -6,7 +6,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gui.architecture import DiagramConnection, SysMLObject, format_control_flow_label
 from analysis.governance import GovernanceDiagram
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class GovernanceFlowGuardTests(unittest.TestCase):
     def setUp(self):

@@ -13,7 +13,7 @@ from analysis.models import (
     ThreatScenario,
     ThreatEntry,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class ThreatDialog(simpledialog.Dialog):

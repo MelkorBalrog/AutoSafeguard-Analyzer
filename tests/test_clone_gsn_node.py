@@ -12,7 +12,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from AutoML import AutoMLApp
-from gsn.nodes import GSNNode
+from mainappsrc.models.gsn.nodes import GSNNode
 
 
 class CloneGSNNodeTests(unittest.TestCase):

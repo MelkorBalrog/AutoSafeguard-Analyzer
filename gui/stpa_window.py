@@ -14,7 +14,7 @@ from analysis.models import (
     StpaDoc,
     global_requirements,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from gui.architecture import (
     DiagramConnection,
     format_control_flow_label,

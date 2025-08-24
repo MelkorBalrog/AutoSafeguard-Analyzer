@@ -1,4 +1,4 @@
-version: 0.1.9
+version: 0.2.0
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -147,7 +147,7 @@ is treated as a task regardless of its type. Custom elements such as ANN or
 AI Database nodes therefore participate in requirement generation:
 
 ```python
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.governance import GovernanceDiagram
 
 repo = SysMLRepository()
@@ -196,7 +196,7 @@ is treated as a task regardless of its type. Custom elements such as ANN or
 AI Database nodes therefore participate in requirement generation:
 
 ```python
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.governance import GovernanceDiagram
 
 repo = SysMLRepository()

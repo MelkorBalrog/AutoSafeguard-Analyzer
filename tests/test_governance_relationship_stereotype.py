@@ -11,7 +11,7 @@ from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from gui.toolboxes import allowed_action_labels
 from gui.stpa_window import StpaWindow
 from analysis.models import StpaDoc
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.safety_management import (
     SafetyManagementToolbox,
     SafetyWorkProduct,

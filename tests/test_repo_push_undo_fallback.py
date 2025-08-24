@@ -1,5 +1,5 @@
 import pytest
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 def test_push_undo_state_falls_back_when_strategy_missing():

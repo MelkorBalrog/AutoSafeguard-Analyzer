@@ -1,5 +1,5 @@
 import pytest
-from gsn import GSNNode
+from mainappsrc.models.gsn import GSNNode
 
 
 def test_context_between_goals_disallowed():

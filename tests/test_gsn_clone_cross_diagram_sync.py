@@ -1,7 +1,7 @@
 
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gui.gsn_config_window import GSNElementConfig
-from gsn import GSNDiagram, GSNNode
+from mainappsrc.models.gsn import GSNDiagram, GSNNode
 
 class DummyVar:
     def __init__(self, value=""):

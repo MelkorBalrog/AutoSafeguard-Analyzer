@@ -1,6 +1,6 @@
 import unittest
 from gui.architecture import _sync_ibd_partproperty_parts, _propagate_boundary_parts
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class BoundaryPartPropagationTests(unittest.TestCase):
     def setUp(self):

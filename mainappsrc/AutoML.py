@@ -265,12 +265,12 @@ from gui.gsn_diagram_window import GSN_WINDOWS
 from gui.causal_bayesian_network_window import CBN_WINDOWS
 from gui.gsn_config_window import GSNElementConfig
 from gui.search_toolbox import SearchToolbox
-from gsn import GSNDiagram, GSNModule
+from mainappsrc.models.gsn import GSNDiagram, GSNModule
 try:
     from .gsn_manager import GSNManager
 except ImportError:  # pragma: no cover
     from gsn_manager import GSNManager
-from gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
+from mainappsrc.models.gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
 from gui.splash_screen import SplashScreen
@@ -378,7 +378,7 @@ from gui.architecture import (
     unlink_requirements,
     ARCH_WINDOWS,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.scenario_description import template_phrases
 import copy
@@ -490,13 +490,13 @@ except Exception:  # pragma: no cover
     from control_flow_diagram_subapp import ControlFlowDiagramSubApp
     from version import VERSION
 try:  # pragma: no cover
-    from .models.fault_tree_node import FaultTreeNode
+    from .models.fta.fault_tree_node import FaultTreeNode
 except Exception:  # pragma: no cover
     import os, sys
     base = os.path.dirname(__file__)
     sys.path.append(base)
     sys.path.append(os.path.dirname(base))
-    from models.fault_tree_node import FaultTreeNode
+    from models.fta.fault_tree_node import FaultTreeNode
 
 from gui.toolboxes import (
     ReliabilityWindow,
@@ -6499,7 +6499,7 @@ class AutoMLApp:
 
         def _element_sysml_diagrams():
             items: list = []
-            from sysml.sysml_repository import SysMLRepository
+            from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
             repo = SysMLRepository.get_instance()
             diagrams = list(repo.diagrams.values())
@@ -16161,7 +16161,7 @@ class AutoMLApp:
             and target in getattr(self.clipboard_node, "parents", [])
         ):
             return self._clone_for_paste(self.clipboard_node)
-        from mainappsrc.models.fault_tree_node import FaultTreeNode
+        from mainappsrc.models.fta.fault_tree_node import FaultTreeNode
 
         if (
             isinstance(self.clipboard_node, FaultTreeNode)

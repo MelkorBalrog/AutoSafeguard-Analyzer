@@ -3,7 +3,7 @@ from gui.architecture import (
     _sync_ibd_aggregation_parts,
     add_composite_aggregation_part,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class AggregationPortTests(unittest.TestCase):

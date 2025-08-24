@@ -1,7 +1,7 @@
 import unittest
 
 from gui.architecture import rename_block
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class BlockImportSharedTests(unittest.TestCase):

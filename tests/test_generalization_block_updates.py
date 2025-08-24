@@ -5,7 +5,7 @@ from gui.architecture import (
     propagate_block_changes,
     parse_operations,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class BlockChangePropagationTests(unittest.TestCase):

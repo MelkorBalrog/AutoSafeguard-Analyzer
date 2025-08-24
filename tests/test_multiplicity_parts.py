@@ -1,6 +1,6 @@
 import unittest
 from gui.architecture import add_composite_aggregation_part, add_multiplicity_parts
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class MultiplicityPartTests(unittest.TestCase):
     def setUp(self):

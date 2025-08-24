@@ -5,7 +5,7 @@ from gui.architecture import (
     rename_block,
     propagate_block_port_changes,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class BlockBoundaryTests(unittest.TestCase):
     def setUp(self):

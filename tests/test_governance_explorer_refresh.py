@@ -5,7 +5,7 @@ from tkinter import simpledialog
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.safety_management import SafetyManagementToolbox
 from gui.safety_management_explorer import SafetyManagementExplorer
 
