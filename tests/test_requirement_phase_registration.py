@@ -11,7 +11,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("ImageTk"))
 sys.modules.setdefault("PIL.ImageDraw", types.ModuleType("ImageDraw"))
 sys.modules.setdefault("PIL.ImageFont", types.ModuleType("ImageFont"))
 
-from gui.dialogs.edit_node_dialog import EditNodeDialog
+from AutoML import EditNodeDialog
 from analysis.models import global_requirements
 
 
