@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-"""Utility for displaying the splash screen while loading the main app."""
+"""Utility for displaying a splash screen during application start-up."""
 
 import importlib
 import threading
 import tkinter as tk
-from typing import Optional
+from types import ModuleType
+from typing import Callable, Optional
 
 from config.automl_constants import AUTHOR, AUTHOR_EMAIL, AUTHOR_LINKEDIN
 from gui.splash_screen import SplashScreen
@@ -13,15 +14,34 @@ from mainappsrc.version import VERSION
 
 
 class SplashLauncher:
-    """Show the splash screen until the application is ready."""
+    """Show the splash screen until the application is ready.
 
-    def __init__(self, module_name: str = "AutoML") -> None:
+    Parameters
+    ----------
+    loader:
+        Optional callable responsible for initialising the application.  If
+        provided it should return the module object whose ``main`` function
+        will be invoked once the splash screen closes.  When omitted the
+        launcher simply imports :mod:`module_name`.
+    module_name:
+        Name of the module to import when ``loader`` is not supplied.
+    """
+
+    def __init__(
+        self,
+        loader: Optional[Callable[[], ModuleType]] = None,
+        module_name: str = "AutoML",
+    ) -> None:
+        self.loader = loader
         self.module_name = module_name
-        self._module: Optional[object] = None
+        self._module: Optional[ModuleType] = None
 
     def _load_module(self) -> None:
-        """Import the target module in a background thread."""
-        self._module = importlib.import_module(self.module_name)
+        """Initialise the application in a background thread."""
+        if self.loader:
+            self._module = self.loader()
+        else:
+            self._module = importlib.import_module(self.module_name)
         # Once loading is complete, close the splash screen on the main thread
         self._root.after(0, self._root.destroy)
 
@@ -39,5 +59,5 @@ class SplashLauncher:
         )
         threading.Thread(target=self._load_module, daemon=True).start()
         self._root.mainloop()
-        if self._module:
+        if self._module and hasattr(self._module, "main"):
             self._module.main()
