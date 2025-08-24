@@ -17,6 +17,8 @@ from gui.stpa_window import StpaWindow
 from gui.threat_window import ThreatWindow
 
 from analysis.models import ASIL_ORDER, ASIL_TARGETS, CAL_LEVEL_OPTIONS, component_fit_map
+from analysis.utils import append_unique_insensitive
+from mainappsrc.models.fta.fault_tree_node import FaultTreeNode
 
 
 class RiskAssessmentSubApp:
@@ -118,6 +120,294 @@ class RiskAssessmentSubApp:
                 if sg:
                     result.append(sg)
         return result
+
+    # ------------------------------------------------------------------
+    # Basic list management helpers
+    # ------------------------------------------------------------------
+
+    def _replace_in_mal_list(self, obj, old, new):
+        val = getattr(obj, "fmeda_malfunction", "")
+        if not val:
+            return
+        parts = []
+        changed = False
+        for m in val.split(";"):
+            m = m.strip()
+            if not m:
+                continue
+            if m == old:
+                parts.append(new)
+                changed = True
+            else:
+                parts.append(m)
+        if changed:
+            obj.fmeda_malfunction = ";".join(parts)
+
+    def _replace_entry_mal(self, entry, old, new):
+        val = getattr(entry, "fmeda_malfunction", "")
+        if val:
+            parts = [new if m.strip() == old else m.strip() for m in val.split(";") if m.strip()]
+            if ";".join(parts) != val:
+                entry.fmeda_malfunction = ";".join(parts)
+
+    def _replace_name_in_list(self, value: str, old: str, new: str) -> str:
+        parts = []
+        changed = False
+        for p in value.split(";"):
+            p = p.strip()
+            if not p:
+                continue
+            if p == old:
+                parts.append(new)
+                changed = True
+            else:
+                parts.append(p)
+        return ";".join(parts) if changed else value
+
+    def _remove_name_from_list(self, value: str, name: str) -> str:
+        parts = []
+        for p in value.split(";"):
+            p = p.strip()
+            if p and p != name:
+                parts.append(p)
+        return ";".join(parts)
+
+    def add_malfunction(self, app, name: str) -> None:
+        """Add a malfunction to the list if it does not already exist."""
+        app.push_undo_state()
+        if not name:
+            return
+        name = name.strip()
+        if not name:
+            return
+        exists = any(m.lower() == name.lower() for m in app.malfunctions)
+        append_unique_insensitive(app.malfunctions, name)
+        if not exists and not any(getattr(te, "malfunction", "") == name for te in app.top_events):
+            if len(app.top_events) == 1 and not getattr(app.top_events[0], "malfunction", ""):
+                app.top_events[0].malfunction = name
+                app.root_node = app.top_events[0]
+                app.update_views()
+            else:
+                app.create_top_event_for_malfunction(name)
+
+    def add_fault(self, app, name: str) -> None:
+        """Add a fault to the list if not already present."""
+        app.push_undo_state()
+        append_unique_insensitive(app.faults, name)
+
+    def add_failure(self, app, name: str) -> None:
+        """Add a failure to the list if not already present."""
+        app.push_undo_state()
+        append_unique_insensitive(app.failures, name)
+
+    def add_hazard(self, app, name: str, severity: int | str = 1) -> None:
+        """Add a hazard to the list if not already present."""
+        app.push_undo_state()
+        append_unique_insensitive(app.hazards, name)
+        if isinstance(severity, str):
+            try:
+                severity = int(severity)
+            except Exception:
+                severity = 1
+        if name not in app.hazard_severity:
+            app.hazard_severity[name] = int(severity)
+
+    def add_triggering_condition(self, app, name: str) -> None:
+        app.push_undo_state()
+        name = (name or "").strip()
+        if not name or name in app.triggering_conditions:
+            return
+        node = FaultTreeNode(name, "Triggering Condition")
+        app.triggering_condition_nodes.append(node)
+        if name not in app.triggering_conditions:
+            app.triggering_conditions.append(name)
+        app.update_triggering_condition_list()
+        app.update_views()
+
+    def delete_triggering_condition(self, app, name: str) -> None:
+        app.push_undo_state()
+        app.triggering_condition_nodes = [
+            n for n in app.triggering_condition_nodes if n.user_name != name
+        ]
+        for doc in app.fi2tc_docs + app.tc2fi_docs:
+            for e in doc.entries:
+                val = e.get("triggering_conditions", "")
+                new_val = self._remove_name_from_list(val, name)
+                if new_val != val:
+                    e["triggering_conditions"] = new_val
+        if name in app.triggering_conditions:
+            app.triggering_conditions.remove(name)
+        app.update_triggering_condition_list()
+        app.update_views()
+
+    def rename_triggering_condition(self, app, old: str, new: str) -> None:
+        app.push_undo_state()
+        if not old or old == new:
+            return
+        for n in app.get_all_triggering_conditions():
+            if n.user_name == old:
+                n.user_name = new
+        for doc in app.fi2tc_docs + app.tc2fi_docs:
+            for e in doc.entries:
+                val = e.get("triggering_conditions", "")
+                new_val = self._replace_name_in_list(val, old, new)
+                if new_val != val:
+                    e["triggering_conditions"] = new_val
+        if old in app.triggering_conditions:
+            idx = app.triggering_conditions.index(old)
+            app.triggering_conditions[idx] = new
+        app.update_triggering_condition_list()
+        app.update_views()
+
+    def add_functional_insufficiency(self, app, name: str) -> None:
+        app.push_undo_state()
+        name = (name or "").strip()
+        if not name or name in app.functional_insufficiencies:
+            return
+        node = FaultTreeNode(name, "Functional Insufficiency")
+        node.gate_type = "AND"
+        app.functional_insufficiency_nodes.append(node)
+        if name not in app.functional_insufficiencies:
+            app.functional_insufficiencies.append(name)
+        app.update_functional_insufficiency_list()
+        app.update_views()
+
+    def delete_functional_insufficiency(self, app, name: str) -> None:
+        app.push_undo_state()
+        app.functional_insufficiency_nodes = [
+            n for n in app.functional_insufficiency_nodes if n.user_name != name
+        ]
+        for doc in app.fi2tc_docs + app.tc2fi_docs:
+            for e in doc.entries:
+                val = e.get("functional_insufficiencies", "")
+                new_val = self._remove_name_from_list(val, name)
+                if new_val != val:
+                    e["functional_insufficiencies"] = new_val
+        if name in app.functional_insufficiencies:
+            app.functional_insufficiencies.remove(name)
+        app.update_functional_insufficiency_list()
+        app.update_views()
+
+    def rename_functional_insufficiency(self, app, old: str, new: str) -> None:
+        app.push_undo_state()
+        if not old or old == new:
+            return
+        for n in app.get_all_functional_insufficiencies():
+            if n.user_name == old:
+                n.user_name = new
+        for doc in app.fi2tc_docs + app.tc2fi_docs:
+            for e in doc.entries:
+                val = e.get("functional_insufficiencies", "")
+                new_val = self._replace_name_in_list(val, old, new)
+                if new_val != val:
+                    e["functional_insufficiencies"] = new_val
+        if old in app.functional_insufficiencies:
+            idx = app.functional_insufficiencies.index(old)
+            app.functional_insufficiencies[idx] = new
+        app.update_functional_insufficiency_list()
+        app.update_views()
+
+    def rename_malfunction(self, app, old: str, new: str) -> None:
+        """Rename a malfunction and update all references."""
+        app.push_undo_state()
+        if not old or old == new:
+            return
+        for i, m in enumerate(app.malfunctions):
+            if m == old:
+                app.malfunctions[i] = new
+        for te in app.top_events + getattr(app, "cta_events", []) + getattr(app, "paa_events", []):
+            if getattr(te, "malfunction", "") == old:
+                te.malfunction = new
+        for n in app.get_all_nodes_in_model():
+            self._replace_in_mal_list(n, old, new)
+        for doc in app.hazop_docs:
+            for e in doc.entries:
+                if getattr(e, "malfunction", "") == old:
+                    e.malfunction = new
+        for d in app.fmeas:
+            for e in d.get("entries", []):
+                self._replace_entry_mal(e, old, new)
+        for d in app.fmedas:
+            for e in d.get("entries", []):
+                self._replace_entry_mal(e, old, new)
+        app.update_views()
+        app._update_shared_product_goals()
+
+    def rename_hazard(self, app, old: str, new: str) -> None:
+        app.push_undo_state()
+        if not old or old == new:
+            return
+        for i, h in enumerate(app.hazards):
+            if h == old:
+                app.hazards[i] = new
+        if old in app.hazard_severity:
+            app.hazard_severity[new] = app.hazard_severity.pop(old)
+        for doc in app.hazop_docs:
+            for e in doc.entries:
+                if getattr(e, "hazard", "") == old:
+                    e.hazard = new
+        for doc in app.hara_docs:
+            for e in doc.entries:
+                if getattr(e, "hazard", "") == old:
+                    e.hazard = new
+        for doc in app.fi2tc_docs + app.tc2fi_docs:
+            for e in doc.entries:
+                if e.get("vehicle_effect", "") == old:
+                    e["vehicle_effect"] = new
+        app.update_views()
+
+    def update_hazard_severity(self, app, hazard: str, severity: int | str) -> None:
+        app.push_undo_state()
+        try:
+            severity = int(severity)
+        except Exception:
+            severity = 1
+        app.hazard_severity[hazard] = severity
+        for doc in app.hara_docs:
+            for e in doc.entries:
+                if getattr(e, "hazard", "") == hazard:
+                    e.severity = severity
+        for doc in app.fi2tc_docs + app.tc2fi_docs:
+            for e in doc.entries:
+                if e.get("vehicle_effect", "") == hazard:
+                    e["severity"] = str(severity)
+        app.update_views()
+
+    def rename_fault(self, app, old: str, new: str) -> None:
+        app.push_undo_state()
+        if not old or old == new:
+            return
+        for i, f in enumerate(app.faults):
+            if f == old:
+                app.faults[i] = new
+        for n in app.get_all_nodes_in_model():
+            if getattr(n, "fault_ref", "") == old:
+                n.fault_ref = new
+        for be in app.get_all_fmea_entries():
+            causes = [c.strip() for c in getattr(be, "fmea_cause", "").split(";")]
+            changed = False
+            for idx, c in enumerate(causes):
+                if c == old:
+                    causes[idx] = new
+                    changed = True
+            if changed:
+                be.fmea_cause = ";".join([c for c in causes if c])
+        app.update_views()
+
+    def rename_failure(self, app, old: str, new: str) -> None:
+        app.push_undo_state()
+        if not old or old == new:
+            return
+        for i, fl in enumerate(app.failures):
+            if fl == old:
+                app.failures[i] = new
+        for be in app.get_all_fmea_entries():
+            if getattr(be, "fmea_effect", "") == old:
+                be.fmea_effect = new
+        for n in app.get_all_nodes_in_model():
+            if getattr(n, "fmea_effect", "") == old:
+                n.fmea_effect = new
+        app.update_views()
 
     def calculate_fmeda_metrics(self, app, events):
         total = 0.0
