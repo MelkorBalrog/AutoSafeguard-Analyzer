@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from tkinter import filedialog, simpledialog
+from gui.dialog_utils import askstring_fixed
 from analysis.utils import (
     EXPOSURE_PROBABILITIES,
     CONTROLLABILITY_PROBABILITIES,
