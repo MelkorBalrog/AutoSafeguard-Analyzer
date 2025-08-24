@@ -17501,10 +17501,12 @@ class AutoMLApp:
                 messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
             else:
                 target_diag = self._find_gsn_diagram(target)
-                if (
-                    isinstance(self.clipboard_node, GSNNode)
-                    and target in getattr(self.clipboard_node, "parents", [])
-                ):
+                if isinstance(self.clipboard_node, GSNNode):
+                    if target in getattr(self.clipboard_node, "parents", []):
+                        node_for_pos = self._clone_for_paste(self.clipboard_node, target)
+                    else:
+                        node_for_pos = self._clone_for_paste(self.clipboard_node)
+                elif isinstance(self.clipboard_node, FaultTreeNode):
                     node_for_pos = self._clone_for_paste(self.clipboard_node)
                 else:
                     node_for_pos = self.clipboard_node
