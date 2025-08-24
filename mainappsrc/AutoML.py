@@ -285,6 +285,7 @@ except Exception:  # openpyxl may not be installed
     load_workbook = None
 from gui.drawing_helper import FTADrawingHelper, fta_drawing_helper
 from mainappsrc.page_diagram import PageDiagram
+from mainappsrc.fmea_service import FMEAService
 from analysis.user_config import (
     load_user_config,
     save_user_config,
@@ -1115,7 +1116,7 @@ class AutoMLApp:
         qualitative_menu = tk.Menu(menubar, tearoff=0)
         qualitative_menu.add_command(
             label="FMEA Manager",
-            command=self.show_fmea_list,
+            command=self.fmea_service.show_fmea_list,
             state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("FMEA", []).append(
@@ -1140,7 +1141,10 @@ class AutoMLApp:
         )
 
         paa_menu = tk.Menu(qualitative_menu, tearoff=0)
-        paa_menu.add_command(label="Add Top Level Event", command=self.create_paa_diagram)
+        paa_menu.add_command(
+            label="Add Top Level Event",
+            command=self.paa_manager.create_paa_diagram,
+        )
         paa_menu.add_separator()
         paa_menu.add_command(
             label="Add Confidence",
@@ -1633,7 +1637,7 @@ class AutoMLApp:
         self.root_node = None
         self.top_events = []
         self.fmea_entries = []
-        self.fmeas = []  # list of FMEA documents
+        self.fmea_service = FMEAService(self)
         self.selected_node = None
         self.dragging_node = None
         self.drag_offset_x = 0
@@ -1647,6 +1651,26 @@ class AutoMLApp:
         self.activity_windows = []
         self.block_windows = []
         self.ibd_windows = []
+
+    @property
+    def fmeas(self):
+        service = getattr(self, "fmea_service", None)
+        if service is None:
+            service = FMEAService(self)
+            self.fmea_service = service
+        return service.fmeas
+
+    @fmeas.setter
+    def fmeas(self, value):
+        service = getattr(self, "fmea_service", None)
+        if service is None:
+            service = FMEAService(self)
+            self.fmea_service = service
+        service.fmeas = value
+
+    def show_fmea_list(self):
+        """Delegate to the FMEA service to display the FMEA manager."""
+        self.fmea_service.show_fmea_list()
 
     # --- Requirement Traceability Helpers used by reviews and matrix view ---
     def get_requirement_allocation_names(self, req_id):
@@ -11872,116 +11896,6 @@ class AutoMLApp:
         refresh_tree()
 
 
-    def show_fmea_list(self):
-        if getattr(self, "_fmea_tab", None) is not None and self._fmea_tab.winfo_exists():
-            self.doc_nb.select(self._fmea_tab)
-            return
-        self._fmea_tab = self._new_tab("FMEA List")
-        win = self._fmea_tab
-        columns = ("Name", "Created", "Author", "Modified", "ModifiedBy")
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for c in columns:
-            tree.heading(c, text=c)
-            width = 150 if c == "Name" else 120
-            tree.column(c, width=width)
-        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        item_map = {}
-        toolbox = getattr(self, "safety_mgmt_toolbox", None)
-        for fmea in self.fmeas:
-            name = fmea.get("name", "")
-            if toolbox and not toolbox.document_visible("FMEA", name):
-                continue
-            iid = tree.insert(
-                "",
-                "end",
-                values=(
-                    name,
-                    fmea.get("created", ""),
-                    fmea.get("author", ""),
-                    fmea.get("modified", ""),
-                    fmea.get("modified_by", ""),
-                ),
-            )
-            item_map[iid] = fmea
-
-        def open_selected(event=None):
-            iid = tree.focus()
-            doc = item_map.get(iid)
-            if not doc:
-                return
-            win.destroy()
-            self._fmea_tab = None
-            self.show_fmea_table(doc)
-
-        def add_fmea():
-            name = simpledialog.askstring("New FMEA", "Enter FMEA name:")
-            if name:
-                file_name = f"fmea_{name}.csv"
-                now = datetime.datetime.now().isoformat()
-                doc = {
-                    "name": name,
-                    "entries": [],
-                    "file": file_name,
-                    "created": now,
-                    "author": CURRENT_USER_NAME,
-                    "modified": now,
-                    "modified_by": CURRENT_USER_NAME,
-                }
-                self.fmeas.append(doc)
-                if hasattr(self, "safety_mgmt_toolbox"):
-                    self.safety_mgmt_toolbox.register_created_work_product("FMEA", doc["name"])
-                iid = tree.insert(
-                    "",
-                    "end",
-                    values=(name, now, CURRENT_USER_NAME, now, CURRENT_USER_NAME),
-                )
-                item_map[iid] = doc
-                self.update_views()
-
-        def delete_fmea():
-            iid = tree.focus()
-            doc = item_map.get(iid)
-            if not doc:
-                return
-            if toolbox and toolbox.document_read_only("FMEA", doc["name"]):
-                messagebox.showinfo("Read-only", "Re-used FMEAs cannot be deleted")
-                return
-            self.fmeas.remove(doc)
-            if toolbox:
-                toolbox.register_deleted_work_product("FMEA", doc["name"])
-            tree.delete(iid)
-            item_map.pop(iid, None)
-            self.update_views()
-
-        def rename_fmea():
-            iid = tree.focus()
-            doc = item_map.get(iid)
-            if not doc:
-                return
-            if toolbox and toolbox.document_read_only("FMEA", doc["name"]):
-                messagebox.showinfo("Read-only", "Re-used FMEAs cannot be renamed")
-                return
-            current = doc.get("name", "")
-            name = simpledialog.askstring("Rename FMEA", "Enter new name:", initialvalue=current)
-            if not name:
-                return
-            old = doc["name"]
-            doc["name"] = name
-            if toolbox:
-                toolbox.rename_document("FMEA", old, name)
-            self.touch_doc(doc)
-            tree.item(iid, values=(name, doc["created"], doc["author"], doc["modified"], doc["modified_by"]))
-            self.update_views()
-
-        tree.bind("<Double-1>", open_selected)
-        btn_frame = ttk.Frame(win)
-        btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
-        ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
-        ttk.Button(btn_frame, text="Add", command=add_fmea).pack(fill=tk.X)
-        ttk.Button(btn_frame, text="Rename", command=rename_fmea).pack(fill=tk.X)
-        ttk.Button(btn_frame, text="Delete", command=delete_fmea).pack(fill=tk.X)
-
     def show_fmeda_list(self):
         if getattr(self, "_fmeda_tab", None) is not None and self._fmeda_tab.winfo_exists():
             self.doc_nb.select(self._fmeda_tab)
@@ -17093,16 +17007,20 @@ class AutoMLApp:
         self.cta_manager.enable_actions(mode == "CTA")
         self.enable_paa_actions(mode == "PAA")
 
-    def _create_paa_tab(self):
-        """Convenience wrapper for creating a PAA diagram."""
-        self._create_fta_tab("PAA")
+    def _create_paa_tab(self) -> None:
+        """Delegate to :class:`PrototypeAssuranceManager` to create a PAA tab."""
+        self.paa_manager._create_paa_tab()
 
-    def create_paa_diagram(self):
-        """Initialize a Prototype Assurance Analysis diagram and its top-level event."""
-        self._create_paa_tab()
-        self.add_top_level_event()
-        if getattr(self, "paa_root_node", None):
-            self.open_page_diagram(self.paa_root_node)
+    def create_paa_diagram(self) -> None:
+        """Delegate to :class:`PrototypeAssuranceManager` for diagram setup."""
+        self.paa_manager.create_paa_diagram()
+
+    @property
+    def paa_manager(self) -> PrototypeAssuranceManager:
+        """Lazily create and return the PAA manager."""
+        if not hasattr(self, "_paa_manager"):
+            self._paa_manager = PrototypeAssuranceManager(self)
+        return self._paa_manager
 
     def _reset_fta_state(self):
         """Clear references to the FTA tab and its canvas."""
@@ -19079,21 +18997,7 @@ class AutoMLApp:
             except Exception:
                 self.enabled_work_products.add(name)
 
-        self.fmeas = []
-        for fmea_data in data.get("fmeas", []):
-            entries = [FaultTreeNode.from_dict(e) for e in fmea_data.get("entries", [])]
-            self.fmeas.append({
-                "name": fmea_data.get("name", "FMEA"),
-                "file": fmea_data.get("file", f"fmea_{len(self.fmeas)}.csv"),
-                "entries": entries,
-                "created": fmea_data.get("created", datetime.datetime.now().isoformat()),
-                "author": fmea_data.get("author", CURRENT_USER_NAME),
-                "modified": fmea_data.get("modified", datetime.datetime.now().isoformat()),
-                "modified_by": fmea_data.get("modified_by", CURRENT_USER_NAME),
-            })
-        if not self.fmeas and "fmea_entries" in data:
-            entries = [FaultTreeNode.from_dict(e) for e in data.get("fmea_entries", [])]
-            self.fmeas.append({"name": "Default FMEA", "file": "fmea_default.csv", "entries": entries})
+        self.fmea_service.load_fmeas(data)
 
         self.fmedas = []
         for doc in data.get("fmedas", []):
