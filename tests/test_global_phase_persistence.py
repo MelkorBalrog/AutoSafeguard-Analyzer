@@ -1,4 +1,4 @@
-from sysml.sysml_repository import SysMLRepository, GLOBAL_PHASE
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository, GLOBAL_PHASE
 
 
 def test_global_phase_assigned_to_new_items():

@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from analysis.models import StpaDoc
 from gui.stpa_window import StpaWindow
 from gui.architecture import SysMLObject, DiagramConnection
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 def test_get_control_actions_returns_only_control_action_connections():

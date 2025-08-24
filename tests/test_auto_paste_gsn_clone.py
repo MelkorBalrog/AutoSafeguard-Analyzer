@@ -1,6 +1,6 @@
 import types
 
-from gsn import GSNNode, GSNDiagram
+from mainappsrc.models.gsn import GSNNode, GSNDiagram
 from AutoML import AutoMLApp, AutoML_Helper
 from gui import messagebox
 

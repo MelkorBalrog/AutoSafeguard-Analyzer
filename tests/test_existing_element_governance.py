@@ -4,7 +4,7 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from gui.architecture import SysMLDiagramWindow, SysMLObjectDialog
 from analysis.safety_management import SafetyManagementToolbox
 

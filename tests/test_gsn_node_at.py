@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from gsn import GSNNode
+from mainappsrc.models.gsn import GSNNode
 from gui.gsn_diagram_window import GSNDiagramWindow
 
 

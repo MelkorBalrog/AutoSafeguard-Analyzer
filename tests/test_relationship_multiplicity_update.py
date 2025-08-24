@@ -1,6 +1,6 @@
 import unittest
 from gui import architecture
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class RelationMultiplicityUpdateTests(unittest.TestCase):
     def setUp(self):

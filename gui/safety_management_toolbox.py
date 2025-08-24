@@ -17,7 +17,7 @@ from gui.architecture import GovernanceDiagramWindow
 from gui import messagebox, add_treeview_scrollbars
 from gui.mac_button_style import apply_translucid_button_style
 from gui.icon_factory import create_icon
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from gui.toolboxes import configure_table_style, _wrap_val, enable_treeview_reorder
 
 

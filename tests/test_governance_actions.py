@@ -2,7 +2,7 @@ import types
 import unittest
 from unittest import mock
 
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from gui.architecture import ArchitectureManagerDialog, GovernanceDiagramWindow
 
 

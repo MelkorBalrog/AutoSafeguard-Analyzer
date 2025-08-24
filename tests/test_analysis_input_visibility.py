@@ -1,7 +1,7 @@
 import types
 import pytest
 
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from analysis.safety_management import (
     SafetyManagementToolbox,

@@ -6,7 +6,7 @@ from unittest import mock
 
 import gui.gsn_diagram_window as gdw
 from gui.gsn_diagram_window import GSNDiagramWindow
-from gsn import GSNNode, GSNDiagram, GSNModule
+from mainappsrc.models.gsn import GSNNode, GSNDiagram, GSNModule
 import pytest
 
 

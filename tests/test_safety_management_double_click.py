@@ -2,7 +2,7 @@ import types
 
 from gui.safety_management_explorer import SafetyManagementExplorer
 from analysis.safety_management import SafetyManagementToolbox
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from AutoML import AutoMLApp
 
 

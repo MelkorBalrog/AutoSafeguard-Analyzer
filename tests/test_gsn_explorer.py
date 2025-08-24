@@ -3,7 +3,7 @@ import types
 import types
 
 from tkinter import simpledialog
-from gsn import GSNNode, GSNDiagram, GSNModule
+from mainappsrc.models.gsn import GSNNode, GSNDiagram, GSNModule
 from gui import messagebox
 from gui.gsn_explorer import GSNExplorer
 

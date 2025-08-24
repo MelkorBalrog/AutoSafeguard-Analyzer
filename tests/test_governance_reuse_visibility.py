@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gui.architecture import SysMLObject, DiagramConnection
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 def _setup_repo():

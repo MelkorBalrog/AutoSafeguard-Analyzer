@@ -2,7 +2,7 @@ import unittest
 
 from gui import format_name_with_phase
 from gui.architecture import SysMLDiagramWindow, SysMLObject
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class DummyFont:

@@ -32,7 +32,7 @@ class AppUndoMoveCoalesceTests(unittest.TestCase):
                 self.assertEqual(len(app._undo_stack), base_len + 2)
 
     def test_undo_redo_restore_endpoints(self):
-        from sysml.sysml_repository import SysMLRepository, SysMLDiagram
+        from mainappsrc.models.sysml.sysml_repository import SysMLRepository, SysMLDiagram
 
         for strat in ("v1", "v2", "v3", "v4"):
             with self.subTest(strategy=strat):

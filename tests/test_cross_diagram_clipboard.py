@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from AutoML import AutoMLApp
 from gui.architecture import SysMLDiagramWindow, _get_next_id, SysMLObject, ARCH_WINDOWS
 from gui.gsn_diagram_window import GSNDiagramWindow, GSN_WINDOWS
-from gsn import GSNNode, GSNDiagram
+from mainappsrc.models.gsn import GSNNode, GSNDiagram
 import weakref
 
 

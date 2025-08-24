@@ -1,6 +1,6 @@
 import unittest
 from gui.architecture import set_ibd_father, update_block_parts_from_ibd
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class IBDPartSyncTests(unittest.TestCase):
     def setUp(self):

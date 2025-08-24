@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from gsn import GSNNode, GSNDiagram
+from mainappsrc.models.gsn import GSNNode, GSNDiagram
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui.name_utils import (
     collect_work_product_names,

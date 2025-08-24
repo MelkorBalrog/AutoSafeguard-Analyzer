@@ -1,6 +1,6 @@
 import unittest
 
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from gui.architecture import SysMLObject
 from gui.toolboxes import find_requirement_traces
 from analysis.models import global_requirements

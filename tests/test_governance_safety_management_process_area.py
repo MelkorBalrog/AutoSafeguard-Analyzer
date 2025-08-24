@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gui.architecture import GovernanceDiagramWindow
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 def test_safety_management_process_area_available(monkeypatch):

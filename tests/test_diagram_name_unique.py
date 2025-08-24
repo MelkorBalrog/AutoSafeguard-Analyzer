@@ -1,5 +1,5 @@
 import unittest
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class DiagramNameUniqueTests(unittest.TestCase):

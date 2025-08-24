@@ -1,10 +1,10 @@
 import types
 
-from gsn import GSNNode, GSNDiagram
+from mainappsrc.models.gsn import GSNNode, GSNDiagram
 from gui.safety_case_explorer import SafetyCaseExplorer
 from gui.architecture import SysMLObject
 from analysis.safety_management import SafetyManagementToolbox, SafetyWorkProduct
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 def _setup(rel=None):

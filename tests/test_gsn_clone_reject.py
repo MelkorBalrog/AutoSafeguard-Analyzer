@@ -4,8 +4,8 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from gsn.nodes import GSNNode
-from gsn.diagram import GSNDiagram
+from mainappsrc.models.gsn.nodes import GSNNode
+from mainappsrc.models.gsn.diagram import GSNDiagram
 from AutoML import AutoMLApp, AutoML_Helper
 from gui import messagebox
 

@@ -8,8 +8,8 @@ import pytest
 from gui.architecture import GovernanceDiagramWindow, BlockDiagramWindow
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gui.causal_bayesian_network_window import CausalBayesianNetworkWindow
-from gsn import GSNDiagram
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.gsn import GSNDiagram
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 def _button_data(widget):

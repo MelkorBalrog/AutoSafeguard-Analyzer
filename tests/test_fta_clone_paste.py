@@ -68,7 +68,7 @@ def test_fta_copy_paste_clone_across_module():
     app = _make_app_with_nodes()
 
     alt_spec = importlib.util.spec_from_file_location(
-        "alt_fault_tree_node", repo_root / "mainappsrc/models/fault_tree_node.py"
+        "alt_fault_tree_node", repo_root / "mainappsrc/models/fta/fault_tree_node.py"
     )
     alt_module = importlib.util.module_from_spec(alt_spec)
     alt_spec.loader.exec_module(alt_module)

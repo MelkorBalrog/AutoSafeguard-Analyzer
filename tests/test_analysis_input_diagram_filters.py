@@ -5,7 +5,7 @@ import os
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from gui.stpa_window import StpaWindow
 from gui.threat_window import ThreatWindow
 

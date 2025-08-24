@@ -9,7 +9,7 @@ from gui.architecture import (
     _get_next_id,
     set_ibd_father,
 )
-from sysml.sysml_repository import SysMLRepository, SysMLDiagram
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository, SysMLDiagram
 
 class PortParentTests(unittest.TestCase):
     def test_remove_orphan_ports(self):

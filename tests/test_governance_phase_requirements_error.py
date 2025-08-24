@@ -6,7 +6,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gui.safety_management_toolbox import SafetyManagementWindow, SafetyManagementToolbox
 from gui import safety_management_toolbox as smt
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.models import global_requirements
 
 

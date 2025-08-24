@@ -2,7 +2,7 @@ import unittest
 from types import SimpleNamespace
 
 from AutoML import AutoMLApp, AutoML_Helper, messagebox
-from gsn import GSNNode, GSNDiagram
+from mainappsrc.models.gsn import GSNNode, GSNDiagram
 
 
 class CopyPasteActiveDiagramTests(unittest.TestCase):

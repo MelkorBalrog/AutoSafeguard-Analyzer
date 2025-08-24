@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox, simpledialog
 
 try:  # pragma: no cover - support relative imports
-    from sysml.sysml_repository import SysMLRepository
+    from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 except Exception:  # pragma: no cover
     SysMLRepository = None  # type: ignore
 

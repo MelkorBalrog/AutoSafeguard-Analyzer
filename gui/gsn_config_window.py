@@ -4,7 +4,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from gsn import GSNNode, GSNDiagram
+from mainappsrc.models.gsn import GSNNode, GSNDiagram
 
 
 def _collect_work_products(diagram: GSNDiagram, app=None) -> list[str]:

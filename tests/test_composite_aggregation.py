@@ -4,7 +4,7 @@ from gui.architecture import (
     remove_aggregation_part,
     set_ibd_father,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class CompositeAggregationTests(unittest.TestCase):

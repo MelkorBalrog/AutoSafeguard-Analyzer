@@ -4,7 +4,7 @@ from gui.architecture import (
     add_composite_aggregation_part,
     remove_aggregation_part,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class GeneralizationPartUpdateTests(unittest.TestCase):

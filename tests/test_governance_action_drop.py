@@ -1,6 +1,6 @@
 from gui import messagebox
 from gui.architecture import ArchitectureManagerDialog
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 def test_drop_governance_diagram_creates_action(monkeypatch):

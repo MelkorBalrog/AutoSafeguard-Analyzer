@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Dict
 
-from gsn import GSNDiagram, GSNNode
+from mainappsrc.models.gsn import GSNDiagram, GSNNode
 
 
 class GSNConnectionConfig(tk.Toplevel):

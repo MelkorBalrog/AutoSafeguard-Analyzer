@@ -1,5 +1,5 @@
 import unittest
-from sysml.sysml_repository import SysMLRepository, SysMLDiagram
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository, SysMLDiagram
 
 
 class UndoMoveIgnoreModifiedTests(unittest.TestCase):

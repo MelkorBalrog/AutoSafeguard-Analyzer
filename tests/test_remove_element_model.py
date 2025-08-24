@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from gui.architecture import SysMLObject, SysMLDiagramWindow
-from sysml.sysml_repository import SysMLRepository, SysMLDiagram
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository, SysMLDiagram
 
 
 class DummyWindow:

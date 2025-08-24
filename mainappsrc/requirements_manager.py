@@ -6,7 +6,7 @@ import json
 from typing import Dict, Any, Set
 
 try:  # pragma: no cover - optional dependency
-    from sysml.sysml_repository import SysMLRepository
+    from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 except Exception:  # pragma: no cover
     SysMLRepository = None  # type: ignore
 

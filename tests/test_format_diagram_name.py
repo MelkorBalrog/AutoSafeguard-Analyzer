@@ -1,5 +1,5 @@
 from gui.architecture import format_diagram_name
-from sysml.sysml_repository import SysMLDiagram
+from mainappsrc.models.sysml.sysml_repository import SysMLDiagram
 
 
 def test_format_diagram_name_adds_abbreviation():

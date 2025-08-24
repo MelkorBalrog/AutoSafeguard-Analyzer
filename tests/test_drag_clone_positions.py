@@ -5,7 +5,7 @@ import types
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from AutoML import AutoMLApp
-from gsn import GSNNode, GSNDiagram
+from mainappsrc.models.gsn import GSNNode, GSNDiagram
 
 
 class DummyEvent:

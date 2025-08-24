@@ -1,5 +1,5 @@
-from gsn.nodes import GSNNode
-from gsn.diagram import GSNDiagram
+from mainappsrc.models.gsn.nodes import GSNNode
+from mainappsrc.models.gsn.diagram import GSNDiagram
 
 def test_gsn_unique_node_names():
     root = GSNNode("Goal", "Goal")

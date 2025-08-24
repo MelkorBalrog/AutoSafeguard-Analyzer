@@ -1,6 +1,6 @@
 import unittest
 from gui.architecture import DiagramConnection, _arrow_forward_types, format_control_flow_label
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class FlowConnectionDisplayTests(unittest.TestCase):

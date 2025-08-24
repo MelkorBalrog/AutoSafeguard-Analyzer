@@ -6,7 +6,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from gui.architecture import SysMLObjectDialog, SysMLObject
 from analysis.safety_management import SafetyWorkProduct, SafetyManagementToolbox
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.models import REQUIREMENT_WORK_PRODUCTS
 
 

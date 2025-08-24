@@ -5,7 +5,7 @@ import pytest
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from analysis.safety_management import SafetyManagementToolbox
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.models import global_requirements
 from gui.architecture import link_requirements
 

@@ -1,4 +1,4 @@
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 from dataclasses import asdict
 import types

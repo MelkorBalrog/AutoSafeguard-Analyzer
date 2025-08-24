@@ -1,6 +1,6 @@
 import types
 
-from gsn import GSNNode, GSNDiagram
+from mainappsrc.models.gsn import GSNNode, GSNDiagram
 from gui.gsn_diagram_window import GSNDiagramWindow
 
 

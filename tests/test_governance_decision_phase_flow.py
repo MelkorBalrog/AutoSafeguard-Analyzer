@@ -6,7 +6,7 @@ from dataclasses import asdict
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gui.architecture import GovernanceDiagramWindow, SysMLObject, SysMLDiagramWindow
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class GovernanceDecisionPhaseFlowTests(unittest.TestCase):

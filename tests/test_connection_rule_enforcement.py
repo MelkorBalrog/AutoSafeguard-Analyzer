@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gui import architecture
-from sysml.sysml_repository import SysMLRepository, SysMLRelationship
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository, SysMLRelationship
 
 
 def test_connection_rules_enforced_on_reload(tmp_path, monkeypatch):

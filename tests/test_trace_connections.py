@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from gui.architecture import link_trace_between_objects, DiagramConnection
 
 def test_link_trace_between_objects_creates_connection():

@@ -1,7 +1,7 @@
 import types
 
 from gui.architecture import ArchitectureManagerDialog
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 def test_open_diagram_uses_diag_id():

@@ -10,7 +10,7 @@ from typing import Callable
 
 from gui.tooltip import ToolTip
 from gui.button_utils import add_hover_highlight
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.models import (
     ReliabilityComponent,
     ReliabilityAnalysis,

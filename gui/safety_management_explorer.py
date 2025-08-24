@@ -4,7 +4,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, simpledialog
 from gui import messagebox, format_name_with_phase
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from dataclasses import dataclass, field
 from typing import List, Dict
 import re

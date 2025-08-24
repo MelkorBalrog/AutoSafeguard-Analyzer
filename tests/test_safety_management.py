@@ -34,7 +34,7 @@ from gui.architecture import (
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_management_toolbox import SafetyManagementWindow
 from gui.review_toolbox import ReviewData
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from tkinter import simpledialog
 from analysis.models import HazopDoc, StpaDoc
 
@@ -452,7 +452,7 @@ def test_gsn_diagrams_visible_in_analysis_tree():
             self.items[iid] = {"parent": parent, "text": text}
             return iid
 
-    from gsn import GSNNode, GSNDiagram
+    from mainappsrc.models.gsn import GSNNode, GSNDiagram
 
     root = GSNNode("Goal1", "Goal")
     diag = GSNDiagram(root)

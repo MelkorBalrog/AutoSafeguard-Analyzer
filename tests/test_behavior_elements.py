@@ -4,7 +4,7 @@ from gui.architecture import (
     BehaviorAssignment,
     behaviors_to_json,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class BehaviorElementsTests(unittest.TestCase):

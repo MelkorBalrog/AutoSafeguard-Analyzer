@@ -1,6 +1,6 @@
 import unittest
 from gui.architecture import BlockDiagramWindow, SysMLObject, _get_next_id
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class DummyWindow:
     _add_block_relationships = BlockDiagramWindow._add_block_relationships

@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.governance import GovernanceDiagram
 
 

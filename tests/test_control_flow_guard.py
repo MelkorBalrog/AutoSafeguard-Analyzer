@@ -4,7 +4,7 @@ from gui.architecture import (
     DiagramConnection,
     format_control_flow_label,
 )
-from sysml.sysml_repository import SysMLRepository
+from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 class ControlFlowGuardTests(unittest.TestCase):
     def setUp(self):

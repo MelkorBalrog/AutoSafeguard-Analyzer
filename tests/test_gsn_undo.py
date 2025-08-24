@@ -9,7 +9,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 sys.modules.setdefault("PIL.ImageDraw", types.ModuleType("PIL.ImageDraw"))
 sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 
-from gsn import GSNNode, GSNDiagram
+from mainappsrc.models.gsn import GSNNode, GSNDiagram
 from gui.gsn_explorer import GSNExplorer
 from AutoML import AutoMLApp
 
