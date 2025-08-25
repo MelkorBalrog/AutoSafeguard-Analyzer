@@ -10,6 +10,7 @@ from analysis.utils import (
     update_probability_tables,
 )
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
+from mainappsrc.core import config_utils
 
 
 class ProjectManager:
@@ -48,8 +49,10 @@ class ProjectManager:
         automl_mod = importlib.import_module("AutoML")
         helper_cls = getattr(automl_mod, "AutoMLHelper", _AutoMLHelper)
         global AutoML_Helper, unique_node_id_counter
-        AutoML_Helper = automl_mod.AutoML_Helper = helper_cls()
-        unique_node_id_counter = automl_mod.unique_node_id_counter = 1
+        AutoML_Helper = config_utils.AutoML_Helper = automl_mod.AutoML_Helper = helper_cls()
+        unique_node_id_counter = (
+            config_utils.unique_node_id_counter
+        ) = automl_mod.unique_node_id_counter = 1
         SysMLRepository.reset_instance()
         app.zoom = 1.0
         app.diagram_font.config(size=int(8 * app.zoom))
@@ -113,8 +116,10 @@ class ProjectManager:
         automl_mod = importlib.import_module("AutoML")
         helper_cls = getattr(automl_mod, "AutoMLHelper", _AutoMLHelper)
         global AutoML_Helper, unique_node_id_counter
-        AutoML_Helper = automl_mod.AutoML_Helper = helper_cls()
-        unique_node_id_counter = automl_mod.unique_node_id_counter = 1
+        AutoML_Helper = config_utils.AutoML_Helper = automl_mod.AutoML_Helper = helper_cls()
+        unique_node_id_counter = (
+            config_utils.unique_node_id_counter
+        ) = automl_mod.unique_node_id_counter = 1
         SysMLRepository.reset_instance()
         app.top_events = []
         app.cta_events = []

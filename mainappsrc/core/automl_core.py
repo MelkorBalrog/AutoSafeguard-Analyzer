@@ -287,8 +287,7 @@ from analysis.mechanisms import (
     ANNEX_D_MECHANISMS,
     PAS_8800_MECHANISMS,
 )
-from config import load_diagram_rules, load_report_template
-from analysis.requirement_rule_generator import regenerate_requirement_patterns
+from config import load_report_template
 from pathlib import Path
 from collections.abc import Mapping
 import csv
@@ -493,30 +492,17 @@ def format_requirement(req, include_id=True):
 from pathlib import Path
 from gui.dialogs.user_info_dialog import UserInfoDialog
 
-# Node types treated as gates when rendering and editing
-_CONFIG_PATH = Path(__file__).resolve().parent / "config/diagram_rules.json"
-_CONFIG = load_diagram_rules(_CONFIG_PATH)
-GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
-_PATTERN_PATH = Path(__file__).resolve().parent / "config/requirement_patterns.json"
-_REPORT_TEMPLATE_PATH = (
-    Path(__file__).resolve().parent / "config/product_report_template.json"
-)
+from . import config_utils
 
-
-def _reload_local_config() -> None:
-    """Reload gate node types from the external configuration file."""
-    global _CONFIG, GATE_NODE_TYPES
-    _CONFIG = load_diagram_rules(_CONFIG_PATH)
-    GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
-    # Regenerate requirement patterns whenever diagram rules change
-    regenerate_requirement_patterns()
-
-##########################################
-# Global Unique ID Counter for Nodes
-##########################################
-unique_node_id_counter = 1
+# Expose configuration helpers and global state
+_CONFIG_PATH = config_utils._CONFIG_PATH
+GATE_NODE_TYPES = config_utils.GATE_NODE_TYPES
+_PATTERN_PATH = config_utils._PATTERN_PATH
+_REPORT_TEMPLATE_PATH = config_utils._REPORT_TEMPLATE_PATH
+_reload_local_config = config_utils._reload_local_config
+unique_node_id_counter = config_utils.unique_node_id_counter
+AutoML_Helper = config_utils.AutoML_Helper
 import uuid
-AutoML_Helper = AutoMLHelper()
 
 ##########################################
 # Edit Dialog 
@@ -3292,7 +3278,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         # Update the main explorer and propagate model changes
         self.update_views()
         # Regenerate requirement patterns for any model change
-        regenerate_requirement_patterns()
+        config_utils.regenerate_requirement_patterns()
         # Refresh GSN views separately via the manager
         self.gsn_manager.refresh()
         # Refresh any secondary windows that may be open
@@ -9334,8 +9320,8 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
         global AutoML_Helper, unique_node_id_counter
         SysMLRepository.reset_instance()
-        AutoML_Helper = AutoMLHelper()
-        unique_node_id_counter = 1
+        AutoML_Helper = config_utils.AutoML_Helper = AutoMLHelper()
+        unique_node_id_counter = config_utils.unique_node_id_counter = 1
 
         self.top_events = []
         self.cta_events = []
@@ -9636,7 +9622,7 @@ def main():
     set_current_user(name, email)
     # Create a fresh helper each session:
     global AutoML_Helper
-    AutoML_Helper = AutoMLHelper()
+    AutoML_Helper = config_utils.AutoML_Helper = AutoMLHelper()
 
     # Show and maximize the main window after login
     root.deiconify()
