@@ -287,7 +287,7 @@ from analysis.mechanisms import (
     ANNEX_D_MECHANISMS,
     PAS_8800_MECHANISMS,
 )
-from config import load_report_template
+from config import load_report_template, load_diagram_rules
 from pathlib import Path
 from collections.abc import Mapping
 import csv
@@ -301,6 +301,7 @@ from mainappsrc.core.window_controllers import WindowControllers
 from mainappsrc.core.navigation_selection_input import Navigation_Selection_Input
 from mainappsrc.core.top_event_workflows import Top_Event_Workflows
 from mainappsrc.managers.review_manager import ReviewManager
+from mainappsrc.managers.drawing_manager import DrawingManager
 from .versioning_review import Versioning_Review
 from mainappsrc.core.diagram_renderer import DiagramRenderer
 from .validation_consistency import Validation_Consistency
@@ -827,6 +828,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         self.cta_manager = ControlTreeManager(self)
         self.requirements_manager = RequirementsManagerSubApp(self)
         self.review_manager = ReviewManager(self)
+        self.drawing_manager = DrawingManager(self)
         self.versioning_review = Versioning_Review(self)
 
         # Centralise data lookups in a dedicated helper
@@ -2084,269 +2086,44 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         prop_win.grab_set()
         self.root.wait_window(prop_win)
 
-    def create_diagram_image(self):
-        return self.reporting_export.create_diagram_image()
+    def create_diagram_image(self):  # pragma: no cover - delegation
+        return self.diagram_renderer.create_diagram_image()
 
     def get_page_nodes(self, node):
         return self.data_access_queries.get_page_nodes(node)
 
-    def capture_page_diagram(self, page_node):
-        return self.pages_and_paa.capture_page_diagram(page_node)
+    def capture_page_diagram(self, page_node):  # pragma: no cover - delegation
+        return self.diagram_renderer.capture_page_diagram(page_node)
+
+    def capture_event_diagram(self, *args, **kwargs):  # pragma: no cover - delegation
+        return self.diagram_renderer.capture_event_diagram(*args, **kwargs)
 
     def capture_gsn_diagram(self, diagram):
-        """Return a PIL Image of the given GSN diagram."""
-        from io import BytesIO
-        from PIL import Image
-        from gui.causal_bayesian_network_window import (
-            CausalBayesianNetworkWindow,
-        )
-
-        temp = tk.Toplevel(self.root)
-        temp.withdraw()
-        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
-        canvas.pack()
-
-        try:
-            diagram.draw(canvas)
-        except Exception:
-            temp.destroy()
-            return None
-
-        canvas.update()
-        bbox = canvas.bbox("all")
-        if not bbox:
-            temp.destroy()
-            return None
-        x, y, x2, y2 = bbox
-        width, height = x2 - x, y2 - y
-        ps = canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
-        ps_bytes = BytesIO(ps.encode("utf-8"))
-        try:
-            img = Image.open(ps_bytes)
-            img.load(scale=3)
-        except Exception:
-            img = None
-        temp.destroy()
-        return img.convert("RGB") if img else None
+        return self.diagram_renderer.capture_gsn_diagram(diagram)
 
     def capture_sysml_diagram(self, diagram):
-        """Return a PIL Image of the given SysML diagram."""
-        from io import BytesIO
-        from PIL import Image
-        from gui.causal_bayesian_network_window import (
-            CausalBayesianNetworkWindow,
-        )
-
-        temp = tk.Toplevel(self.root)
-        temp.withdraw()
-        if diagram.diag_type == "Use Case Diagram":
-            win = UseCaseDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Activity Diagram":
-            win = ActivityDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Block Diagram":
-            win = BlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Internal Block Diagram":
-            win = InternalBlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Control Flow Diagram":
-            win = ControlFlowDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Governance Diagram":
-            win = GovernanceDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        else:
-            temp.destroy()
-            return None
-
-        win.redraw()
-        win.canvas.update()
-        bbox = win.canvas.bbox("all")
-        if not bbox:
-            temp.destroy()
-            return None
-
-        x, y, x2, y2 = bbox
-        width, height = x2 - x, y2 - y
-        ps = win.canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
-        ps_bytes = BytesIO(ps.encode("utf-8"))
-        try:
-            img = Image.open(ps_bytes)
-            img.load(scale=3)
-        except Exception:
-            img = None
-        temp.destroy()
-        return img.convert("RGB") if img else None
+        return self.diagram_renderer.capture_sysml_diagram(diagram)
 
     def capture_cbn_diagram(self, doc):
-        """Return a PIL Image of the given Causal Bayesian Network diagram."""
-        from io import BytesIO
-        from PIL import Image
-        from gui.causal_bayesian_network_window import (
-            CausalBayesianNetworkWindow,
-        )
-
-        temp = tk.Toplevel(self.root)
-        temp.withdraw()
-        try:
-            win = CausalBayesianNetworkWindow(temp, self)
-            win.doc_var.set(doc.name)
-            win.select_doc()
-            win.canvas.update()
-            bbox = win.canvas.bbox("all")
-            if not bbox:
-                temp.destroy()
-                return None
-            x, y, x2, y2 = bbox
-            width, height = x2 - x, y2 - y
-            ps = win.canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
-            ps_bytes = BytesIO(ps.encode("utf-8"))
-            try:
-                img = Image.open(ps_bytes)
-                img.load(scale=3)
-            except Exception:
-                img = None
-        finally:
-            temp.destroy()
-        return img.convert("RGB") if img else None    
+        return self.diagram_renderer.capture_cbn_diagram(doc)
     
     def draw_subtree_with_filter(self, canvas, root_event, visible_nodes):
-        self.draw_connections_subtree(canvas, root_event, set())
-        for n in visible_nodes:
-            self.draw_node_on_canvas_pdf(canvas, n)
+        return self.diagram_renderer.draw_subtree_with_filter(canvas, root_event, visible_nodes)
 
     def draw_subtree(self, canvas, root_event):
-        canvas.delete("all")
-        self.draw_connections_subtree(canvas, root_event, set())
-        for n in self.get_all_nodes(root_event):
-            self.draw_node_on_canvas(canvas, n)
-        canvas.config(scrollregion=canvas.bbox("all"))
+        return self.diagram_renderer.draw_subtree(canvas, root_event)
 
     def draw_connections_subtree(self, canvas, node, drawn_ids):
-        if id(node) in drawn_ids:
-            return
-        drawn_ids.add(id(node))
-        if node.is_page and node.node_type.upper() != "TOP EVENT":
-            return
-        region_width = 100 * self.zoom
-        parent_bottom = (node.x * self.zoom, node.y * self.zoom + 40 * self.zoom)
-        N = len(node.children)
-        for i, child in enumerate(node.children):
-            parent_conn = (node.x * self.zoom - region_width/2 + (i+0.5)*(region_width/N), parent_bottom[1])
-            child_top = (child.x * self.zoom, child.y * self.zoom - 45 * self.zoom)
-            # Call the helper’s method instead of a global function.
-            fta_drawing_helper.draw_90_connection(canvas, parent_conn, child_top,
-                                                  outline_color="dimgray", line_width=1)
-        for child in node.children:
-            self.draw_connections_subtree(canvas, child, drawn_ids)
-            
+        return self.diagram_renderer.draw_connections_subtree(canvas, node, drawn_ids)
+
     def draw_node_on_canvas_pdf(self, canvas, node):
-        # For cloned nodes, use the original's values.
-        if not node.is_primary_instance and hasattr(node, "original") and node.original:
-            base_label = node.original.display_label
-            subtype = node.original.input_subtype or "N/A"
-            equation_text = node.original.equation
-            detailed_eq = node.original.detailed_equation
-        else:
-            base_label = node.display_label
-            subtype = node.input_subtype or "N/A"
-            equation_text = node.equation
-            detailed_eq = node.detailed_equation
-
-        # Extract the score type from the base label.
-        # For example, if the base label is "Required Rigor [4]", score_type becomes "Required Rigor".
-        score_type = base_label.split('[')[0].strip()
-
-        fill_color = self.get_node_fill_color(node, getattr(canvas, "diagram_mode", None))
-        eff_x = node.x * self.zoom
-        eff_y = node.y * self.zoom
-
-        # Decide what to show in the top text based on the configuration.
-        if self.project_properties.get("pdf_detailed_formulas", True):
-            # Detailed mode: show the score type and the node description.
-            top_text = (f"Type: {node.node_type}\n"
-                        f"Score: {score_type}\n"
-                        f"Subtype: {subtype}\n"
-                        f"Desc: {node.description}")
-        else:
-            # Score-only mode: show the discretized metric (as an integer, without decimals).
-            if node.quant_value is not None:
-                # Convert quant_value to float and discretize
-                score_value = float(node.quant_value)
-                discrete = AutoML_Helper.discretize_level(score_value)
-            else:
-                discrete = "N/A"
-            top_text = (f"Type: {node.node_type}\n"
-                        f"{score_type} = {discrete}\n"
-                        f"Subtype: {subtype}")
-
-        bottom_text = node.name
-        node_type_upper = node.node_type.upper()
-
-        if node.is_page:
-            fta_drawing_helper.draw_triangle_shape(canvas, eff_x, eff_y, scale=40 * self.zoom,
-                                                   top_text=top_text,
-                                                   bottom_text=bottom_text,
-                                                   fill=fill_color,
-                                                   outline_color="dimgray",
-                                                   line_width=1,
-                                                   font_obj=self.diagram_font)
-        elif node_type_upper in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-            fta_drawing_helper.draw_circle_event_clone_shape(
-                canvas,
-                eff_x,
-                eff_y,
-                45 * self.zoom,
-                top_text=top_text,
-                bottom_text=bottom_text,
-                fill=fill_color,
-                outline_color="dimgray",
-                line_width=1,
-                font_obj=self.diagram_font,
-            )
-        elif node_type_upper in GATE_NODE_TYPES:
-            if node.gate_type.upper() == "OR":
-                fta_drawing_helper.draw_rotated_or_gate_clone_shape(canvas, eff_x, eff_y,
-                                                                    scale=40 * self.zoom,
-                                                                    top_text=top_text,
-                                                                    bottom_text=bottom_text,
-                                                                    fill=fill_color,
-                                                                    outline_color="dimgray",
-                                                                    line_width=1,
-                                                                    font_obj=self.diagram_font)
-            else:
-                fta_drawing_helper.draw_rotated_and_gate_clone_shape(canvas, eff_x, eff_y,
-                                                                     scale=40 * self.zoom,
-                                                                     top_text=top_text,
-                                                                     bottom_text=bottom_text,
-                                                                     fill=fill_color,
-                                                                     outline_color="dimgray",
-                                                                     line_width=1,
-                                                                     font_obj=self.diagram_font)
-        else:
-            fta_drawing_helper.draw_circle_event_clone_shape(
-                canvas,
-                eff_x,
-                eff_y,
-                45 * self.zoom,
-                top_text=top_text,
-                bottom_text=bottom_text,
-                fill=fill_color,
-                outline_color="dimgray",
-                line_width=1,
-                font_obj=self.diagram_font,
-            )
-
-        # In detailed mode, also draw the equations.
-        if self.project_properties.get("pdf_detailed_formulas", True):
-            canvas.create_text(eff_x - 80 * self.zoom, eff_y - 15 * self.zoom,
-                               text=equation_text, anchor="e", fill="gray",
-                               font=self.diagram_font)
-            canvas.create_text(eff_x - 80 * self.zoom, eff_y + 15 * self.zoom,
-                               text=detailed_eq, anchor="e", fill="gray",
-                               font=self.diagram_font)
+        return self.diagram_renderer.draw_node_on_canvas_pdf(canvas, node)
 
     def rename_selected_tree_item(self):
         self.tree_app.rename_selected_tree_item(self)
 
-    def save_diagram_png(self):
-        self.diagram_export_app.save_diagram_png()
+    def save_diagram_png(self):  # pragma: no cover - delegation
+        return self.diagram_renderer.save_diagram_png()
 
     def on_treeview_click(self, event):
         return self.nav_input.on_treeview_click(event)
@@ -2546,15 +2323,11 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
     def move_subtree(self, node, dx, dy):
         return self.structure_tree_operations.move_subtree(node, dx, dy)
 
-    def zoom_in(self):
-        self.zoom *= 1.2
-        self.diagram_font.config(size=int(8 * self.zoom))
-        self.redraw_canvas()
+    def zoom_in(self):  # pragma: no cover - delegation
+        return self.diagram_renderer.zoom_in()
 
-    def zoom_out(self):
-        self.zoom /= 1.2
-        self.diagram_font.config(size=int(8 * self.zoom))
-        self.redraw_canvas()
+    def zoom_out(self):  # pragma: no cover - delegation
+        return self.diagram_renderer.zoom_out()
 
 
     # ------------------------------------------------------------------
@@ -3184,307 +2957,16 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.structure_tree_operations.insert_node_in_tree(parent_item, node)
 
     def redraw_canvas(self):
-        if not hasattr(self, "canvas") or self.canvas is None or not self.canvas.winfo_exists():
-            return
-        self.canvas.delete("all")
-        if hasattr(self, "fta_drawing_helper"):
-            self.fta_drawing_helper.clear_cache()
-        drawn_ids = set()
-        for top_event in self.top_events:
-            self.draw_connections(top_event, drawn_ids)
-        all_nodes = []
-        for top_event in self.top_events:
-            all_nodes.extend(self.get_all_nodes(top_event))
-        for node in all_nodes:
-            self.draw_node(node)
-        self.canvas.config(scrollregion=self.canvas.bbox("all"))
-
+        return self.diagram_renderer.redraw_canvas()
 
     def create_diagram_image_without_grid(self):
-        return self.reporting_export.create_diagram_image_without_grid()
+        return self.diagram_renderer.create_diagram_image_without_grid()
 
     def draw_connections(self, node, drawn_ids=set()):
-        if id(node) in drawn_ids:
-            return
-        drawn_ids.add(id(node))
-        if node.is_page and node.is_primary_instance:
-            return
-        if node.children:
-            region_width = 100 * self.zoom
-            parent_bottom = (node.x * self.zoom, node.y * self.zoom + 40 * self.zoom)
-            N = len(node.children)
-            for i, child in enumerate(node.children):
-                parent_conn = (node.x * self.zoom - region_width/2 + (i+0.5)*(region_width/N), parent_bottom[1])
-                child_top = (child.x * self.zoom, child.y * self.zoom - 45 * self.zoom)
-                fta_drawing_helper.draw_90_connection(self.canvas, parent_conn, child_top, outline_color="dimgray", line_width=1)
-            for child in node.children:
-                self.draw_connections(child, drawn_ids)
+        return self.diagram_renderer.draw_connections(node, drawn_ids)
 
     def draw_node(self, node):
-        """
-        Draws the given node on the main canvas.
-        For clones, it always uses the original’s non-positional attributes (like display_label,
-        description, etc.) so that any changes to the original are reflected on all clones.
-        """
-        # If the node is a clone, use its original for configuration (non-positional attributes)
-        source = node if node.is_primary_instance else node.original
-
-        # For display purposes, show the clone marker on the clone's display_label.
-        if node.is_primary_instance:
-            display_label = source.display_label
-        else:
-            display_label = source.display_label + " (clone)"
-
-        # Build a short top_text string from the source's attributes.
-        subtype_text = source.input_subtype if source.input_subtype else "N/A"
-        top_text = (
-            f"Type: {source.node_type}\n"
-            f"Subtype: {subtype_text}\n"
-            f"{display_label}\n"
-            f"Desc: {source.description}\n\n"
-            f"Rationale: {source.rationale}"
-        )
-        # For the bottom text, you may choose to display the node's name (which for a clone is
-        # usually the same as the original’s name)
-        bottom_text = source.name
-
-        # Compute the effective position using the clone’s own (positional) values
-        eff_x = node.x * self.zoom
-        eff_y = node.y * self.zoom
-
-        # Highlight if selected or in diff list
-        if node == self.selected_node:
-            outline_color = "red"
-            line_width = 2
-        elif node.unique_id in self.diff_nodes:
-            outline_color = "blue"
-            line_width = 2
-        else:
-            outline_color = "dimgray"
-            line_width = 1
-
-        # Determine the fill color (this function already uses the original's display_label)
-        fill_color = self.get_node_fill_color(node, getattr(canvas, "diagram_mode", None))
-        font_obj = self.diagram_font
-
-        # For shape selection, use the source’s node type and gate type.
-        node_type_upper = source.node_type.upper()
-
-        if not node.is_primary_instance:
-            # For clones, draw them in a “clone” style.
-            if source.is_page:
-                fta_drawing_helper.draw_triangle_shape(
-                    self.canvas,
-                    eff_x,
-                    eff_y,
-                    scale=40 * self.zoom,
-                    top_text=top_text,
-                    bottom_text=bottom_text,
-                    fill=fill_color,
-                    outline_color=outline_color,
-                    line_width=line_width,
-                    font_obj=font_obj,
-                    obj_id=node.unique_id,
-                )
-            elif node_type_upper in GATE_NODE_TYPES:
-                if source.gate_type.upper() == "OR":
-                    fta_drawing_helper.draw_rotated_or_gate_clone_shape(
-                        self.canvas,
-                        eff_x,
-                        eff_y,
-                        scale=40 * self.zoom,
-                        top_text=top_text,
-                        bottom_text=bottom_text,
-                        fill=fill_color,
-                        outline_color=outline_color,
-                        line_width=line_width,
-                        font_obj=font_obj,
-                        obj_id=node.unique_id,
-                    )
-                else:
-                    fta_drawing_helper.draw_rotated_and_gate_clone_shape(
-                        self.canvas,
-                        eff_x,
-                        eff_y,
-                        scale=40 * self.zoom,
-                        top_text=top_text,
-                        bottom_text=bottom_text,
-                        fill=fill_color,
-                        outline_color=outline_color,
-                        line_width=line_width,
-                        font_obj=font_obj,
-                        obj_id=node.unique_id,
-                    )
-            elif node_type_upper in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-                fta_drawing_helper.draw_circle_event_clone_shape(
-                    self.canvas,
-                    eff_x,
-                    eff_y,
-                    45 * self.zoom,
-                    top_text=top_text,
-                    bottom_text=bottom_text,
-                    fill=fill_color,
-                    outline_color=outline_color,
-                    line_width=line_width,
-                    font_obj=font_obj,
-                    obj_id=node.unique_id,
-                )
-            else:
-                fta_drawing_helper.draw_circle_event_clone_shape(
-                    self.canvas,
-                    eff_x,
-                    eff_y,
-                    45 * self.zoom,
-                    top_text=top_text,
-                    bottom_text=bottom_text,
-                    fill=fill_color,
-                    outline_color=outline_color,
-                    line_width=line_width,
-                    font_obj=font_obj,
-                    obj_id=node.unique_id,
-                )
-        else:
-            # Primary node: use normal drawing routines.
-            if node_type_upper in GATE_NODE_TYPES:
-                if source.is_page and source != self.root_node:
-                    fta_drawing_helper.draw_triangle_shape(
-                        self.canvas,
-                        eff_x,
-                        eff_y,
-                        scale=40 * self.zoom,
-                        top_text=top_text,
-                        bottom_text=bottom_text,
-                        fill=fill_color,
-                        outline_color=outline_color,
-                        line_width=line_width,
-                        font_obj=font_obj,
-                        obj_id=node.unique_id,
-                    )
-                else:
-                    if source.gate_type.upper() == "OR":
-                        fta_drawing_helper.draw_rotated_or_gate_shape(
-                            self.canvas,
-                            eff_x,
-                            eff_y,
-                            scale=40 * self.zoom,
-                            top_text=top_text,
-                            bottom_text=bottom_text,
-                            fill=fill_color,
-                            outline_color=outline_color,
-                            line_width=line_width,
-                            font_obj=font_obj,
-                            obj_id=node.unique_id,
-                        )
-                    else:
-                        fta_drawing_helper.draw_rotated_and_gate_shape(
-                            self.canvas,
-                            eff_x,
-                            eff_y,
-                            scale=40 * self.zoom,
-                            top_text=top_text,
-                            bottom_text=bottom_text,
-                            fill=fill_color,
-                            outline_color=outline_color,
-                            line_width=line_width,
-                            font_obj=font_obj,
-                            obj_id=node.unique_id,
-                        )
-            elif node_type_upper in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-                fta_drawing_helper.draw_circle_event_shape(
-                    self.canvas,
-                    eff_x,
-                    eff_y,
-                    45 * self.zoom,
-                    top_text=top_text,
-                    bottom_text=bottom_text,
-                    fill=fill_color,
-                    outline_color=outline_color,
-                    line_width=line_width,
-                    font_obj=font_obj,
-                    obj_id=node.unique_id,
-                )
-            else:
-                fta_drawing_helper.draw_circle_event_shape(
-                    self.canvas,
-                    eff_x,
-                    eff_y,
-                    45 * self.zoom,
-                    top_text=top_text,
-                    bottom_text=bottom_text,
-                    fill=fill_color,
-                    outline_color=outline_color,
-                    line_width=line_width,
-                    font_obj=font_obj,
-                    obj_id=node.unique_id,
-                )
-
-        # Draw any additional text (such as equations) from the source.
-        if source.equation:
-            self.canvas.create_text(
-                eff_x - 80 * self.zoom, eff_y - 15 * self.zoom,
-                text=source.equation, anchor="e", fill="gray",
-                font=self.diagram_font
-            )
-        if source.detailed_equation:
-            self.canvas.create_text(
-                eff_x - 80 * self.zoom, eff_y + 15 * self.zoom,
-                text=source.detailed_equation, anchor="e", fill="gray",
-                font=self.diagram_font
-            )
-
-        # Finally, if the node appears multiple times, draw a shared marker.
-        if self.occurrence_counts.get(node.unique_id, 0) > 1:
-            marker_x = eff_x + 30 * self.zoom
-            marker_y = eff_y - 30 * self.zoom
-            fta_drawing_helper.draw_shared_marker(self.canvas, marker_x, marker_y, self.zoom)
-
-        if self.review_data:
-            unresolved = any(c.node_id == node.unique_id and not c.resolved for c in self.review_data.comments)
-            if unresolved:
-                self.canvas.create_oval(
-                    eff_x + 35 * self.zoom,
-                    eff_y + 35 * self.zoom,
-                    eff_x + 45 * self.zoom,
-                    eff_y + 45 * self.zoom,
-                    fill='yellow',
-                    outline=StyleManager.get_instance().outline_color,
-                )
-
-        if self.review_data:
-            unresolved = any(c.node_id == node.unique_id and not c.resolved for c in self.review_data.comments)
-            if unresolved:
-                self.canvas.create_oval(
-                    eff_x + 35 * self.zoom,
-                    eff_y + 35 * self.zoom,
-                    eff_x + 45 * self.zoom,
-                    eff_y + 45 * self.zoom,
-                    fill='yellow',
-                    outline=StyleManager.get_instance().outline_color,
-                )
-
-        if self.review_data:
-            unresolved = any(c.node_id == node.unique_id and not c.resolved for c in self.review_data.comments)
-            if unresolved:
-                self.canvas.create_oval(
-                    eff_x + 35 * self.zoom,
-                    eff_y + 35 * self.zoom,
-                    eff_x + 45 * self.zoom,
-                    eff_y + 45 * self.zoom,
-                    fill='yellow',
-                    outline=StyleManager.get_instance().outline_color,
-                )
-
-        if self.review_data:
-            unresolved = any(c.node_id == node.unique_id and not c.resolved for c in self.review_data.comments)
-            if unresolved:
-                self.canvas.create_oval(
-                    eff_x + 35 * self.zoom,
-                    eff_y + 35 * self.zoom,
-                    eff_x + 45 * self.zoom,
-                    eff_y + 45 * self.zoom,
-                    fill='yellow',
-                    outline=StyleManager.get_instance().outline_color,
-                )
+        return self.diagram_renderer.draw_node(node)
 
     def find_node_by_id(self, node, unique_id, visited=None):
         return self.structure_tree_operations.find_node_by_id(node, unique_id, visited)
@@ -6863,7 +6345,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         self.window_controllers.open_arch_window(diag_id)
 
     def open_page_diagram(self, node, push_history=True):
-        return self.pages_and_paa.open_page_diagram(node, push_history)
+        self.window_controllers.open_page_diagram(node, push_history)
 
     def manage_architecture(self):
         return self.open_windows_features.manage_architecture()
@@ -8374,68 +7856,25 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.nav_input.go_back()
 
     def draw_page_subtree(self, page_root):
-        return self.pages_and_paa.draw_page_subtree(page_root)
+        return self.diagram_renderer.draw_page_subtree(page_root)
 
     def draw_page_grid(self):
-        return self.pages_and_paa.draw_page_grid()
+        return self.diagram_renderer.draw_page_grid()
 
     def draw_page_connections_subtree(self, node, visited_ids):
-        return self.pages_and_paa.draw_page_connections_subtree(node, visited_ids)
+        return self.diagram_renderer.draw_page_connections_subtree(node, visited_ids)
 
     def draw_page_nodes_subtree(self, node):
-        return self.pages_and_paa.draw_page_nodes_subtree(node)
+        return self.diagram_renderer.draw_page_nodes_subtree(node)
 
     def draw_node_on_page_canvas(self, *args, **kwargs):
-        return self.pages_and_paa.draw_node_on_page_canvas(*args, **kwargs)
+        return self.diagram_renderer.draw_node_on_page_canvas(*args, **kwargs)
 
     def on_ctrl_mousewheel_page(self, event):
         return self.nav_input.on_ctrl_mousewheel_page(event)
 
     def close_page_diagram(self):
-        if self.page_history:
-            prev = self.page_history.pop()
-            for widget in self.canvas_frame.winfo_children():
-                widget.destroy()
-            if prev is None:
-                self.canvas = tk.Canvas(self.canvas_frame, bg=StyleManager.get_instance().canvas_bg)
-                self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-                self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
-                self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
-                self.vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
-                self.vbar.pack(side=tk.RIGHT, fill=tk.Y)
-                self.canvas.config(xscrollcommand=self.hbar.set, yscrollcommand=self.vbar.set,
-                                   scrollregion=(0, 0, 2000, 2000))
-                self.canvas.bind("<ButtonPress-3>", self.on_right_mouse_press)
-                self.canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
-                self.canvas.bind("<Button-1>", self.on_canvas_click)
-                self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
-                self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-                self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
-                self.canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
-                self.update_views()
-                self.page_diagram = None
-            else:
-                self.window_controllers.open_page_diagram(prev)
-        else:
-            for widget in self.canvas_frame.winfo_children():
-                widget.destroy()
-            self.canvas = tk.Canvas(self.canvas_frame, bg=StyleManager.get_instance().canvas_bg)
-            self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-            self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
-            self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
-            self.vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
-            self.vbar.pack(side=tk.RIGHT, fill=tk.Y)
-            self.canvas.config(xscrollcommand=self.hbar.set, yscrollcommand=self.vbar.set,
-                               scrollregion=(0, 0, 2000, 2000))
-            self.canvas.bind("<ButtonPress-3>", self.on_right_mouse_press)
-            self.canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
-            self.canvas.bind("<Button-1>", self.on_canvas_click)
-            self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
-            self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-            self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
-            self.canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
-            self.update_views()
-            self.page_diagram = None
+        return self.diagram_renderer.close_page_diagram()
 
     # --- Review Toolbox Methods ---
     def start_peer_review(self):
@@ -8459,8 +7898,8 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
     def review_is_closed_for(self, review):
         return self.versioning_review.review_is_closed_for(review)
 
-    def capture_diff_diagram(self, top_event):
-        return self.review_manager.capture_diff_diagram(top_event)
+    def capture_diff_diagram(self, top_event):  # pragma: no cover - delegation
+        return self.diagram_renderer.capture_diff_diagram(top_event)
 
     # --- End Review Toolbox Methods ---
 
