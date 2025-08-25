@@ -6,14 +6,12 @@ from __future__ import annotations
 import sys
 import tkinter as tk
 from tkinter import ttk, simpledialog
+from .utils import DIALOG_BG_COLOR, logger, drawing_helper
 
-from .utils import logger
-
-# Re-export logger for ``from gui import logger`` compatibility
+# Re-export selected utilities for backward-compatible import paths such as
+# ``from gui import logger`` or ``from gui import drawing_helper``.
 sys.modules[f"{__name__}.logger"] = logger
-
-# Default background color for all dialog windows
-DIALOG_BG_COLOR = "#A9BCE2"
+sys.modules[f"{__name__}.drawing_helper"] = drawing_helper
 
 
 _orig_dialog_init = simpledialog.Dialog.__init__
