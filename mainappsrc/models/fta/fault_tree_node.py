@@ -578,6 +578,8 @@ def add_node_of_type(app, event_type):
         return
 
     new_node = FaultTreeNode("", event_type, parent_node)
+    new_node.x = parent_node.x
+    new_node.y = parent_node.y + 100
     parent_node.children.append(new_node)
     new_node.parents.append(parent_node)
     app.update_views()

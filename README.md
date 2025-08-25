@@ -1644,7 +1644,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.60 - Correct node-type validation in FTA and CTA diagrams to avoid Prototype Assurance Analysis warning.
+- 0.2.60 - Place added FTA, CTA and PAA nodes below their selected parents.
 - 0.2.59 - Reactivate lifecycle phase when focusing governance diagrams to allow editing after opening other analyses.
 - 0.2.58 - Fix empty Safety tab when editing nodes in FTA, CTA and PAA diagrams.
 - 0.2.57 - Map Task toolbox selection to Action elements so governance diagrams support adding tasks.
