@@ -93,7 +93,8 @@ class SplashScreen(tk.Toplevel):
 
     def _fade_in(self):
         if not getattr(self, "_alpha_supported", False):
-            self.after(self.duration, self._close)
+            if self.duration > 0:
+                self.after(self.duration, self._close)
             return
         alpha = min(self.attributes("-alpha") + 0.05, 1.0)
         self.attributes("-alpha", alpha)
@@ -105,7 +106,8 @@ class SplashScreen(tk.Toplevel):
         if alpha < 1.0:
             self.after(50, self._fade_in)
         else:
-            self.after(self.duration, self._fade_out)
+            if self.duration > 0:
+                self.after(self.duration, self._fade_out)
 
     def _fade_out(self):
         if not getattr(self, "_alpha_supported", False):
