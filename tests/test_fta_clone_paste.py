@@ -35,7 +35,7 @@ messagebox = automl.messagebox
 from mainappsrc.core.diagram_clipboard_manager import DiagramClipboardManager
 
 page_spec = importlib.util.spec_from_file_location(
-    "page_diagram", repo_root / "mainappsrc" / "core" / "page_diagram.py"
+    "page_diagram", repo_root / "mainappsrc/page_diagram.py"
 )
 page_module = importlib.util.module_from_spec(page_spec)
 page_spec.loader.exec_module(page_module)
