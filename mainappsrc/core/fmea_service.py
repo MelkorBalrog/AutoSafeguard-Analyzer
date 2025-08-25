@@ -182,3 +182,16 @@ class FMEAService:
         ttk.Button(btn_frame, text="Rename", command=rename_fmea).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Delete", command=delete_fmea).pack(fill=tk.X)
 
+
+    # ------------------------------------------------------------------
+    def get_settings_dict(self) -> dict:
+        """Return a serialisable representation of FMEA settings.
+
+        The FMEA subsystem currently does not expose configurable options,
+        but project export expects a settings dictionary.  Providing this
+        method avoids :class:`AttributeError` during export and offers a
+        future extension point for persisting user configuration.
+        """
+
+        return {}
+
