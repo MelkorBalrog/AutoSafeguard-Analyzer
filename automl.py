@@ -15,9 +15,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""Lowercase alias for :mod:`AutoML`.
 
-"""Project version information."""
+Ensures the module is importable as ``automl`` on case-sensitive
+file systems for tests and scripts that expect this naming.
+"""
 
-VERSION = "0.2.56"
-
-__all__ = ["VERSION"]
+from AutoML import *  # re-export everything

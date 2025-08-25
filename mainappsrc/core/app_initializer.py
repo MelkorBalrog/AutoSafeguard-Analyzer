@@ -41,6 +41,7 @@ from mainappsrc.managers.gsn_manager import GSNManager
 from mainappsrc.core.structure_tree_operations import Structure_Tree_Operations
 from mainappsrc.core.probability_reliability import Probability_Reliability
 from gui.utils.drawing_helper import fta_drawing_helper
+from .project_properties_manager import ProjectPropertiesManager
 
 if TYPE_CHECKING:  # pragma: no cover - for type checkers only
     from .automl_core import AutoMLApp
@@ -91,6 +92,7 @@ class AppInitializer:
             app.project_properties["controllability_probabilities"],
             app.project_properties["severity_probabilities"],
         )
+        app.project_properties_manager = ProjectPropertiesManager(app.project_properties)
         app.item_definition = {"description": "", "assumptions": ""}
         app.safety_concept = {
             "functional": "",
