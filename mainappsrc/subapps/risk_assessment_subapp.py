@@ -13,8 +13,8 @@ from gui.toolboxes import (
     TC2FIWindow,
     HazardExplorerWindow,
 )
-from gui.stpa_window import StpaWindow
-from gui.threat_window import ThreatWindow
+from gui.windows.stpa_window import StpaWindow
+from gui.windows.threat_window import ThreatWindow
 
 from analysis.models import ASIL_ORDER, ASIL_TARGETS, CAL_LEVEL_OPTIONS, component_fit_map
 from analysis.utils import append_unique_insensitive
