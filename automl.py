@@ -16,8 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Project version information."""
+"""Launcher compatibility wrapper.
 
-VERSION = "0.2.51"
+Allows importing the main launcher as ``automl`` for tools and tests that
+expect a lowercase module name.
+"""
 
-__all__ = ["VERSION"]
+from AutoML import *  # noqa: F401,F403
