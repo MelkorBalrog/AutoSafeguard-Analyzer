@@ -41,16 +41,13 @@ from gui.styles.style_manager import StyleManager
 from gui.toolboxes.review_toolbox import ReviewData, ReviewParticipant, ReviewComment
 from functools import partial
 # Governance helper class
-from mainappsrc.managers.governance_manager import GovernanceManager
 from mainappsrc.managers.paa_manager import PrototypeAssuranceManager
-from mainappsrc.managers.product_goal_manager import ProductGoalManager
 from gui.toolboxes.safety_management_toolbox import SafetyManagementToolbox
 from gui.explorers.safety_case_explorer import SafetyCaseExplorer
 from gui.windows.gsn_diagram_window import GSN_WINDOWS
 from gui.windows.causal_bayesian_network_window import CBN_WINDOWS
 from gui.windows.gsn_config_window import GSNElementConfig
 from mainappsrc.models.gsn import GSNDiagram, GSNModule
-from mainappsrc.managers.gsn_manager import GSNManager
 from mainappsrc.models.gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from gui.utils.closable_notebook import ClosableNotebook
 from gui.controls.mac_button_style import (
@@ -74,6 +71,7 @@ from .editors import (
     SafetyConceptEditorMixin,
     RequirementsEditorMixin,
 )
+from .app_initializer import AppInitializer
 from analysis.mechanisms import (
     DiagnosticMechanism,
     MechanismLibrary,
@@ -389,18 +387,6 @@ class AutoMLApp(
         self.setup_style(root)
         self.lifecycle_ui = AppLifecycleUI(self, root)
         self.labels_styling = Editing_Labels_Styling(self)
-        self.top_events = []
-        self.cta_events = []
-        self.paa_events = []
-        self.fta_root_node = None
-        self.cta_root_node = None
-        self.paa_root_node = None
-        self.analysis_tabs = {}
-        self.shared_product_goals = {}
-        self.product_goal_manager = ProductGoalManager()
-        self.selected_node = None
-        self.clone_offset_counter = {}
-        self._loaded_model_paths = []
         self.root.title("AutoML-Analyzer")
         self.messagebox = messagebox
         self.version = VERSION
@@ -410,113 +396,7 @@ class AutoMLApp(
         self.lifecycle_ui._init_nav_button_style()
         self.setup_services()
         self.setup_icons()
-        self.clipboard_node = None
-        self.diagram_clipboard = None
-        self.diagram_clipboard_type = None
-        self.active_arch_window = None
-        self.cut_mode = False
-        self.page_history = []
-        self.project_properties = {
-            "pdf_report_name": "AutoML-Analyzer PDF Report",
-            "pdf_detailed_formulas": True,
-            "exposure_probabilities": EXPOSURE_PROBABILITIES.copy(),
-            "controllability_probabilities": CONTROLLABILITY_PROBABILITIES.copy(),
-            "severity_probabilities": SEVERITY_PROBABILITIES.copy(),
-        }
-        self.probability_reliability.update_probability_tables(
-            self.project_properties["exposure_probabilities"],
-            self.project_properties["controllability_probabilities"],
-            self.project_properties["severity_probabilities"],
-        )
-        self.item_definition = {"description": "", "assumptions": ""}
-        self.safety_concept = {"functional": "", "technical": "", "cybersecurity": ""}
-        self.mission_profiles = []
-        self.fmeda_components = []
-        self.reliability_analyses = []
-        self.reliability_components = []
-        self.reliability_total_fit = 0.0
-        self.spfm = 0.0
-        self.lpfm = 0.0
-        self.reliability_dc = 0.0
-        # Lists of user-defined faults and malfunctions
-        self.faults: list[str] = []
-        self.malfunctions: list[str] = []
-        self.hazards: list[str] = []
-        self.hazard_severity: dict[str, int] = {}
-        self.failures: list[str] = []
-        self.triggering_conditions: list[str] = []
-        self.functional_insufficiencies: list[str] = []
-        self.triggering_condition_nodes = []
-        self.functional_insufficiency_nodes = []
-        self.hazop_docs = []  # list of HazopDoc
-        self.hara_docs = []   # list of HaraDoc
-        self.stpa_docs = []   # list of StpaDoc
-        self.threat_docs = []  # list of ThreatDoc
-        self.active_hazop = None
-        self.active_hara = None
-        self.active_stpa = None
-        self.active_threat = None
-        self.hazop_entries = []  # backwards compatibility for active doc
-        self.hara_entries = []
-        self.stpa_entries = []
-        self.threat_entries = []
-        self.fi2tc_docs = []  # list of FI2TCDoc
-        self.tc2fi_docs = []  # list of TC2FIDoc
-        self.active_fi2tc = None
-        self.active_tc2fi = None
-        self.cbn_docs = []  # list of CausalBayesianNetworkDoc
-        self.active_cbn = None
-        self.cybersecurity_goals: list[CybersecurityGoal] = []
-        self.arch_diagrams = []
-        self.management_diagrams = []
-        self.gsn_modules = []  # top-level GSN modules
-        self.gsn_diagrams = []  # diagrams not assigned to a module
-        self.gsn_manager = GSNManager(self)
-        # Track open diagram tabs to avoid duplicates
-        self.diagram_tabs: dict[str, ttk.Frame] = {}
-        self.top_events = []
-        self.reviews = []
-        self.review_data = None
-        self.review_window = None
-        self.governance_manager = GovernanceManager(self)
-        self.safety_mgmt_toolbox = SafetyManagementToolbox()
-        self.governance_manager.attach_toolbox(self.safety_mgmt_toolbox)
-        self.probability_reliability = Probability_Reliability(self)
-        self.current_user = ""
-        self.comment_target = None
-        self._undo_stack: list[dict] = []
-        self._redo_stack: list[dict] = []
-        # Track which work products are currently enabled. Menu entries for
-        # these products remain disabled until the corresponding governance
-        # diagram adds the work product. The mapping stores references to the
-        # menu and entry index for each work product so they can be toggled at
-        # runtime.
-        self.enabled_work_products: set[str] = set()
-        self.work_product_menus: dict[str, list[tuple[tk.Menu, int]]] = {}
-        self.versions = []
-        self.diff_nodes = []
-        self.fi2tc_entries = []
-        self.tc2fi_entries = []
-        self.scenario_libraries = []
-        self.odd_libraries = []
-        self.odd_elements = []
-        self.update_odd_elements()
-        # Provide the drawing helper to dialogs that may be opened later
-        self.fta_drawing_helper = fta_drawing_helper
-
-        # Tree structure helpers
-        self.structure_tree_operations = Structure_Tree_Operations(self)
-
-        self.mechanism_libraries = []
-        self.selected_mechanism_libraries = []
-        self.load_default_mechanisms()
-
-        self.mechanism_libraries = []
-        self.selected_mechanism_libraries = []
-        self.load_default_mechanisms()
-
-        self.mechanism_libraries = []
-        self.load_default_mechanisms()
+        AppInitializer(self).initialize()
 
         menubar = tk.Menu(root)
         file_menu = tk.Menu(menubar, tearoff=0)
