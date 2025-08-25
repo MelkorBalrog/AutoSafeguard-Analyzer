@@ -33,6 +33,8 @@ from gui.controls import messagebox
 from mainappsrc.models.gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from mainappsrc.models.fta.fault_tree_node import FaultTreeNode
 from gui.windows.architecture import ARCH_WINDOWS
+from gui.windows.gsn_diagram_window import GSN_WINDOWS
+from gui.windows.causal_bayesian_network_window import CBN_WINDOWS
 from . import config_utils
 
 AutoML_Helper = config_utils.AutoML_Helper
@@ -52,8 +54,67 @@ class DiagramClipboardManager:
 
     # ------------------------------------------------------------------
     # Strategies for delegating to focused diagram windows
+    def _focused_cbn_window(self):
+        wc = getattr(self.app, "window_controllers", None)
+        if wc and getattr(self.app, "lifecycle_ui", None):
+            try:
+                win = wc._focused_cbn_window()
+                if win:
+                    return win
+            except Exception:
+                pass
+        for ref in list(CBN_WINDOWS):
+            win = ref()
+            if win and getattr(win, "_focus", False):
+                return win
+        return None
+
+    def _focused_gsn_window(self):
+        wc = getattr(self.app, "window_controllers", None)
+        if wc and getattr(self.app, "lifecycle_ui", None):
+            try:
+                win = wc._focused_gsn_window()
+                if win:
+                    return win
+            except Exception:
+                pass
+        nb = getattr(self.app, "doc_nb", None)
+        if nb and hasattr(nb, "tabs"):
+            sel = nb.select()
+            tab = nb.tabs.get(sel)
+            win = getattr(tab, "gsn_window", None)
+            if win:
+                return win
+        for ref in list(GSN_WINDOWS):
+            win = ref()
+            if win and getattr(win, "_focus", False):
+                return win
+        return None
+
+    def _focused_arch_window(self, clip_type: str | None = None):
+        wc = getattr(self.app, "window_controllers", None)
+        if wc and getattr(self.app, "lifecycle_ui", None):
+            try:
+                win = wc._focused_arch_window(clip_type)
+                if win:
+                    return win
+            except Exception:
+                pass
+        win = getattr(self.app, "active_arch_window", None)
+        if win and (clip_type is None or self._get_diag_type(win) == clip_type):
+            return win
+        for ref in list(ARCH_WINDOWS):
+            w = ref()
+            if not w:
+                continue
+            if clip_type and self._get_diag_type(w) != clip_type:
+                continue
+            if getattr(w, "selected_obj", None) or getattr(w, "_focus", False):
+                return w
+        return None
+
     def _diagram_copy_strategy1(self) -> bool:
-        win = self.app.window_controllers._focused_cbn_window()
+        win = self._focused_cbn_window()
         if win and getattr(win, "selected_node", None) and getattr(win, "copy_selected", None):
             self.app.selected_node = None
             self.clipboard_node = None
@@ -63,7 +124,7 @@ class DiagramClipboardManager:
         return False
 
     def _diagram_copy_strategy2(self) -> bool:
-        win = self.app.window_controllers._focused_gsn_window()
+        win = self._focused_gsn_window()
         if win and getattr(win, "selected_node", None) and getattr(win, "copy_selected", None):
             self.app.selected_node = None
             self.clipboard_node = None
@@ -94,7 +155,7 @@ class DiagramClipboardManager:
         return False
 
     def _diagram_cut_strategy1(self) -> bool:
-        win = self.app.window_controllers._focused_cbn_window()
+        win = self._focused_cbn_window()
         if win and getattr(win, "selected_node", None) and getattr(win, "cut_selected", None):
             self.app.selected_node = None
             self.clipboard_node = None
@@ -104,7 +165,7 @@ class DiagramClipboardManager:
         return False
 
     def _diagram_cut_strategy2(self) -> bool:
-        win = self.app.window_controllers._focused_gsn_window()
+        win = self._focused_gsn_window()
         if win and getattr(win, "selected_node", None) and getattr(win, "cut_selected", None):
             self.app.selected_node = None
             self.clipboard_node = None
@@ -379,19 +440,19 @@ class DiagramClipboardManager:
             self.app.update_views()
             return
         clip_type = getattr(self, "diagram_clipboard_type", None)
-        win = self.app.window_controllers._focused_cbn_window()
+        win = self._focused_cbn_window()
         if win and getattr(self, "diagram_clipboard", None):
             if not clip_type or clip_type == "Causal Bayesian Network":
                 if getattr(win, "paste_selected", None):
                     win.paste_selected()
                     return
-        win = self.app.window_controllers._focused_gsn_window()
+        win = self._focused_gsn_window()
         if win and getattr(self, "diagram_clipboard", None):
             if not clip_type or clip_type == "GSN":
                 if getattr(win, "paste_selected", None):
                     win.paste_selected()
                     return
-        win = self.app.window_controllers._focused_arch_window(clip_type)
+        win = self._focused_arch_window(clip_type)
         if win and getattr(self, "diagram_clipboard", None):
             if getattr(win, "paste_selected", None):
                 win.paste_selected()
