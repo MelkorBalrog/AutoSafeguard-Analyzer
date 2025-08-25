@@ -371,7 +371,10 @@ from gui.architecture import (
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.scenario_description import template_phrases
-from .app_lifecycle_ui import AppLifecycleUI
+try:  # pragma: no cover - support direct module import
+    from .app_lifecycle_ui import AppLifecycleUI
+except Exception:  # pragma: no cover
+    from mainappsrc.app_lifecycle_ui import AppLifecycleUI
 import copy
 import tkinter.font as tkFont
 import builtins
@@ -470,20 +473,20 @@ try:  # pragma: no cover - support direct module import
     from .reliability_subapp import ReliabilitySubApp
     from .version import VERSION
 except Exception:  # pragma: no cover
-    from style_subapp import StyleSubApp
-    from tree_subapp import TreeSubApp
-    from diagram_export_subapp import DiagramExportSubApp
-    from requirements_manager import RequirementsManagerSubApp
-    from use_case_diagram_subapp import UseCaseDiagramSubApp
-    from activity_diagram_subapp import ActivityDiagramSubApp
-    from block_diagram_subapp import BlockDiagramSubApp
-    from internal_block_diagram_subapp import InternalBlockDiagramSubApp
-    from control_flow_diagram_subapp import ControlFlowDiagramSubApp
-    from safety_analysis import SafetyAnalysis_FTA_FMEA
-    from project_editor_subapp import ProjectEditorSubApp
-    from risk_assessment_subapp import RiskAssessmentSubApp
-    from reliability_subapp import ReliabilitySubApp
-    from version import VERSION
+    from mainappsrc.style_subapp import StyleSubApp
+    from mainappsrc.tree_subapp import TreeSubApp
+    from mainappsrc.diagram_export_subapp import DiagramExportSubApp
+    from mainappsrc.requirements_manager import RequirementsManagerSubApp
+    from mainappsrc.use_case_diagram_subapp import UseCaseDiagramSubApp
+    from mainappsrc.activity_diagram_subapp import ActivityDiagramSubApp
+    from mainappsrc.block_diagram_subapp import BlockDiagramSubApp
+    from mainappsrc.internal_block_diagram_subapp import InternalBlockDiagramSubApp
+    from mainappsrc.control_flow_diagram_subapp import ControlFlowDiagramSubApp
+    from mainappsrc.safety_analysis import SafetyAnalysis_FTA_FMEA
+    from mainappsrc.project_editor_subapp import ProjectEditorSubApp
+    from mainappsrc.risk_assessment_subapp import RiskAssessmentSubApp
+    from mainappsrc.reliability_subapp import ReliabilitySubApp
+    from mainappsrc.version import VERSION
 try:  # pragma: no cover
     from .models.fta.fault_tree_node import FaultTreeNode
 except Exception:  # pragma: no cover
