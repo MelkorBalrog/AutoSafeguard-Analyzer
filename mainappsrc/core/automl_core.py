@@ -253,6 +253,7 @@ from mainappsrc.subapps.project_editor_subapp import ProjectEditorSubApp
 from mainappsrc.subapps.risk_assessment_subapp import RiskAssessmentSubApp
 from mainappsrc.subapps.reliability_subapp import ReliabilitySubApp
 from .safety_analysis import SafetyAnalysis_FTA_FMEA
+from .syncing_and_ids import Syncing_And_IDs
 from gui.toolboxes.safety_management_toolbox import SafetyManagementToolbox
 from gui.explorers.safety_management_explorer import SafetyManagementExplorer
 from gui.explorers.safety_case_explorer import SafetyCaseExplorer
