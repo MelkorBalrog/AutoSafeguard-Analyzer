@@ -96,6 +96,7 @@ from mainappsrc.managers.drawing_manager import DrawingManager
 from .versioning_review import Versioning_Review
 from .validation_consistency import Validation_Consistency
 from .reporting_export import Reporting_Export
+from .node_clone_service import NodeCloneService
 from analysis.user_config import (
     load_user_config,
     save_user_config,
@@ -400,6 +401,7 @@ class AutoMLApp(
         self.product_goal_manager = ProductGoalManager()
         self.selected_node = None
         self.clone_offset_counter = {}
+        self.node_clone_service = NodeCloneService()
         self._loaded_model_paths = []
         self.root.title("AutoML-Analyzer")
         self.messagebox = messagebox
@@ -6391,56 +6393,8 @@ class AutoMLApp(
 
 
     def clone_node_preserving_id(self, node, parent=None):
-        """Return a clone of *node* with a new unique ID.
-
-        The function handles both FaultTreeNode and GSNNode instances.  For
-        FaultTreeNode objects, a new :class:`FaultTreeNode` is created and the
-        relevant attributes are copied across.  For :class:`GSNNode` instances
-        the built-in ``clone`` method is used to ensure GSN-specific fields are
-        preserved.  When *parent* is provided and the node represents a
-        ``Context``, ``Assumption`` or ``Justification`` element the clone is
-        automatically linked to *parent* using an ``in-context-of`` relation.
-        """
-
-        if isinstance(node, GSNNode):
-            if node.node_type not in ALLOWED_AWAY_TYPES:
-                raise ValueError(
-                    "Only Goal, Solution, Context, Assumption, and Justification nodes can be cloned."
-                )
-            # GSN nodes provide their own clone method.  Offset the position of
-            # the cloned node so that it does not overlap the original.
-            clone_parent = (
-                parent
-                if parent and node.node_type in {"Context", "Assumption", "Justification"}
-                else None
-            )
-            new_node = node.clone(clone_parent)
-            new_node.x = node.x + 100
-            new_node.y = node.y + 100
-            return new_node
-
-        # Default behaviour is to treat the node as a FaultTreeNode.  Create a
-        # fresh instance and copy over attributes that exist on the source
-        # object.  ``getattr`` is used to avoid AttributeError if a field is
-        # missing on the source node.
-        new_node = FaultTreeNode(node.user_name, node.node_type)
-        new_node.unique_id = AutoML_Helper.get_next_unique_id()
-        new_node.quant_value = getattr(node, "quant_value", None)
-        new_node.gate_type = getattr(node, "gate_type", None)
-        new_node.description = getattr(node, "description", "")
-        new_node.rationale = getattr(node, "rationale", "")
-        new_node.x = node.x + 100
-        new_node.y = node.y + 100
-        new_node.severity = getattr(node, "severity", None)
-        new_node.input_subtype = getattr(node, "input_subtype", None)
-        new_node.display_label = getattr(node, "display_label", "")
-        new_node.equation = getattr(node, "equation", "")
-        new_node.detailed_equation = getattr(node, "detailed_equation", "")
-        new_node.is_page = getattr(node, "is_page", False)
-        new_node.is_primary_instance = False
-        new_node.original = node if node.is_primary_instance else node.original
-        new_node.children = []
-        return new_node
+        """Delegate cloning to :class:`NodeCloneService`."""
+        return self.node_clone_service.clone_node_preserving_id(node, parent)
 
     def _find_gsn_diagram(self, node):
         """Return the GSN diagram containing ``node`` if known.

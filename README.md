@@ -1655,6 +1655,7 @@ and run the build again if you hit this issue.
 - 0.2.40 - Import Syncing_And_IDs during core initialization to prevent startup NameError.
 - 0.2.39 - Import SafetyAnalysis_FTA_FMEA during core initialization to prevent startup NameError.
 - 0.2.38 - Import ProjectEditorSubApp, RiskAssessmentSubApp and ReliabilitySubApp to prevent startup NameError.
+- 0.2.38 - Extract node cloning into dedicated service and delegate from core.
 - 0.2.37 - Import TreeSubApp in core to prevent startup NameError.
 - 0.2.36 - Delegate add/get/show/link/refresh/collect routines to safety analysis facade.
 - 0.2.35 - Wrap update routines within safety analysis facade.
