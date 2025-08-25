@@ -1,4 +1,4 @@
-version: 0.2.58
+version: 0.2.59
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1644,6 +1644,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.59 - Add thread manager and monitor for resilient background tasks.
 - 0.2.58 - Initialize diagram clipboard manager by default and guard clipboard actions.
 - 0.2.57 - Map Task toolbox selection to Action elements so governance diagrams support adding tasks.
 - 0.2.56 - Synchronize README version header with source.
