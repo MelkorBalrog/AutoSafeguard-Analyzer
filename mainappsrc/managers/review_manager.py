@@ -22,7 +22,7 @@ from gui.toolboxes.review_toolbox import (
     ReviewDocumentDialog,
     VersionCompareDialog,
 )
-from gui.utils.dialog_utils import askstring_fixed
+from gui.dialogs.dialog_utils import askstring_fixed
 from gui.managers.style_manager import StyleManager
 from analysis.fmeda_utils import GATE_NODE_TYPES
 
