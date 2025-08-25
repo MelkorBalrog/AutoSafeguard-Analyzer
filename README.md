@@ -1642,8 +1642,8 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.11 - Introduced Hazard_ODD_Management facade for hazard and ODD helpers.
-- 0.2.10 - Extracted lifecycle UI helpers into dedicated AppLifecycleUI class.
+- 0.2.11 - Keep splash screen visible through startup and five-second post-load delay.
+- 0.2.10 - Hold splash screen for five seconds after initialisation completes.
 - 0.2.9 - Display splash screen during dependency checks and startup.
 - 0.2.8 - Renamed core module to `automl_core.py` and launcher to `automl.py`.
 - 0.2.7 - Launcher now shows the splash screen during application load.

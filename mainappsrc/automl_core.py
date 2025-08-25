@@ -370,10 +370,7 @@ from gui.architecture import (
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.scenario_description import template_phrases
-try:  # pragma: no cover - support direct module import
-    from .app_lifecycle_ui import AppLifecycleUI
-except Exception:  # pragma: no cover
-    from app_lifecycle_ui import AppLifecycleUI
+from .app_lifecycle_ui import AppLifecycleUI
 import copy
 import tkinter.font as tkFont
 import builtins
@@ -469,7 +466,6 @@ try:  # pragma: no cover - support direct module import
     from .safety_analysis import SafetyAnalysis_FTA_FMEA
     from .project_editor_subapp import ProjectEditorSubApp
     from .risk_assessment_subapp import RiskAssessmentSubApp
-    from .hazard_odd_management import Hazard_ODD_Management
     from .reliability_subapp import ReliabilitySubApp
     from .version import VERSION
 except Exception:  # pragma: no cover
@@ -485,7 +481,6 @@ except Exception:  # pragma: no cover
     from safety_analysis import SafetyAnalysis_FTA_FMEA
     from project_editor_subapp import ProjectEditorSubApp
     from risk_assessment_subapp import RiskAssessmentSubApp
-    from hazard_odd_management import Hazard_ODD_Management
     from reliability_subapp import ReliabilitySubApp
     from version import VERSION
 try:  # pragma: no cover
@@ -643,10 +638,6 @@ class AutoMLApp:
         self.tree_app = TreeSubApp()
         self.project_editor_app = ProjectEditorSubApp()
         self.risk_app = RiskAssessmentSubApp()
-        self.hazard_odd_manager = Hazard_ODD_Management()
-        # Risk assessment helpers also provide FMEDA metric calculations
-        # so expose them through a dedicated ``fmeda`` attribute for clarity.
-        self.fmeda = self.risk_app
         self.reliability_app = ReliabilitySubApp()
         # Unified FTA/FMEA/FMEMA helper
         self.safety_analysis = SafetyAnalysis_FTA_FMEA(self)
@@ -1630,10 +1621,10 @@ class AutoMLApp:
         return None
 
     def get_hazop_by_name(self, name):
-        return self.hazard_odd_manager.get_hazop_by_name(self, name)
+        return self.risk_app.get_hazop_by_name(self, name)
 
     def get_hara_by_name(self, name):
-        return self.hazard_odd_manager.get_hara_by_name(self, name)
+        return self.risk_app.get_hara_by_name(self, name)
 
     def update_hara_statuses(self):
         return self.risk_app.update_hara_statuses(self)
@@ -1642,10 +1633,10 @@ class AutoMLApp:
         return self.risk_app.update_fta_statuses(self)
 
     def get_safety_goal_asil(self, sg_name):
-        return self.hazard_odd_manager.get_safety_goal_asil(self, sg_name)
+        return self.risk_app.get_safety_goal_asil(self, sg_name)
 
     def get_hara_goal_asil(self, sg_name):
-        return self.hazard_odd_manager.get_hara_goal_asil(self, sg_name)
+        return self.risk_app.get_hara_goal_asil(self, sg_name)
 
     def get_cyber_goal_cal(self, goal_id):
         return self.risk_app.get_cyber_goal_cal(self, goal_id)
@@ -1664,7 +1655,7 @@ class AutoMLApp:
                     goals.append(sg)
         return goals
 
-    def _is_malfunction_used(self, name: str) -> bool:
+    def is_malfunction_used(self, name: str) -> bool:
         """Return True if the malfunction is used in any FTA or analysis."""
         if not name:
             return False
@@ -1677,11 +1668,8 @@ class AutoMLApp:
                 return True
         return False
 
-    def is_malfunction_used(self, name: str) -> bool:
-        return self.hazard_odd_manager.is_malfunction_used(self, name)
-
     def add_malfunction(self, name: str) -> None:
-        return self.hazard_odd_manager.add_malfunction(self, name)
+        return self.risk_app.add_malfunction(self, name)
 
     def add_fault(self, name: str) -> None:
         return self.risk_app.add_fault(self, name)
@@ -1690,22 +1678,22 @@ class AutoMLApp:
         return self.risk_app.add_failure(self, name)
 
     def add_hazard(self, name: str, severity: int | str = 1) -> None:
-        return self.hazard_odd_manager.add_hazard(self, name, severity)
+        return self.risk_app.add_hazard(self, name, severity)
 
     def add_triggering_condition(self, name: str) -> None:
-        return self.hazard_odd_manager.add_triggering_condition(self, name)
+        return self.risk_app.add_triggering_condition(self, name)
 
     def delete_triggering_condition(self, name: str) -> None:
-        return self.hazard_odd_manager.delete_triggering_condition(self, name)
+        return self.risk_app.delete_triggering_condition(self, name)
 
     def rename_triggering_condition(self, old: str, new: str) -> None:
         return self.risk_app.rename_triggering_condition(self, old, new)
 
     def add_functional_insufficiency(self, name: str) -> None:
-        return self.hazard_odd_manager.add_functional_insufficiency(self, name)
+        return self.risk_app.add_functional_insufficiency(self, name)
 
     def delete_functional_insufficiency(self, name: str) -> None:
-        return self.hazard_odd_manager.delete_functional_insufficiency(self, name)
+        return self.risk_app.delete_functional_insufficiency(self, name)
 
     def rename_functional_insufficiency(self, old: str, new: str) -> None:
         return self.risk_app.rename_functional_insufficiency(self, old, new)
@@ -1740,7 +1728,7 @@ class AutoMLApp:
         return self.risk_app.rename_hazard(self, old, new)
 
     def update_hazard_severity(self, hazard: str, severity: int | str) -> None:
-        return self.hazard_odd_manager.update_hazard_severity(self, hazard, severity)
+        return self.risk_app.update_hazard_severity(self, hazard, severity)
 
     def rename_fault(self, old: str, new: str) -> None:
         return self.risk_app.rename_fault(self, old, new)
@@ -1757,8 +1745,8 @@ class AutoMLApp:
         return self.fmeda.compute_fmeda_metrics(self, events)
 
     def sync_hara_to_safety_goals(self):
-        """Synchronise HARA results with safety goals."""
-        return self.hazard_odd_manager.sync_hara_to_safety_goals(self)
+        """Synchronise HARA results with safety goals via the risk sub-app."""
+        return self.risk_app.sync_hara_to_safety_goals(self)
 
     def sync_cyber_risk_to_goals(self):
         """Synchronise cyber risk results with cybersecurity goals."""
@@ -2362,7 +2350,7 @@ class AutoMLApp:
             self.safety_mgmt_toolbox = toolbox
         return toolbox.to_dict()
 
-    def _on_lifecycle_selected(self, _event=None) -> None:
+    def on_lifecycle_selected(self, _event=None) -> None:
         phase = self.lifecycle_var.get()
         if hasattr(self, "active_phase_lbl"):
             self.active_phase_lbl.config(
@@ -2398,9 +2386,6 @@ class AutoMLApp:
 
         for tab in getattr(self, "diagram_tabs", {}).values():
             _refresh_children(tab)
-
-    def on_lifecycle_selected(self, _event=None) -> None:
-        return self.hazard_odd_manager.on_lifecycle_selected(self, _event)
 
 
     def enable_process_area(self, area: str) -> None:
@@ -2910,7 +2895,7 @@ class AutoMLApp:
                     names.append(name)
         return names
 
-    def _get_validation_targets_for_odd(self, element_name):
+    def get_validation_targets_for_odd(self, element_name):
         """Return product goals linked to scenarios using ``element_name``.
 
         The search traverses scenario libraries, HAZOP documents and risk
@@ -2961,9 +2946,6 @@ class AutoMLApp:
                             goals.append(te)
                             seen.add(sg_name)
         return goals
-
-    def get_validation_targets_for_odd(self, element_name):
-        return self.hazard_odd_manager.get_validation_targets_for_odd(self, element_name)
 
     def classify_scenarios(self):
         """Return two lists of scenario names grouped by category."""
@@ -3158,7 +3140,7 @@ class AutoMLApp:
             names.update(e.malfunction for e in doc.entries if getattr(e, "malfunction", ""))
         return sorted(names)
 
-    def _get_hazards_for_malfunction(self, malfunction: str, hazop_names=None) -> list[str]:
+    def get_hazards_for_malfunction(self, malfunction: str, hazop_names=None) -> list[str]:
         """Return hazards linked to the malfunction in the given HAZOPs."""
         hazards: list[str] = []
         names = hazop_names or [d.name for d in self.hazop_docs]
@@ -3173,19 +3155,13 @@ class AutoMLApp:
                         hazards.append(h)
         return hazards
 
-    def get_hazards_for_malfunction(self, malfunction: str, hazop_names=None) -> list[str]:
-        return self.hazard_odd_manager.get_hazards_for_malfunction(self, malfunction, hazop_names)
-
-    def _update_odd_elements(self):
+    def update_odd_elements(self):
         """Aggregate elements from all ODD libraries into odd_elements list."""
         self.odd_elements = []
         for lib in getattr(self, "odd_libraries", []):
             self.odd_elements.extend(lib.get("elements", []))
 
-    def update_odd_elements(self):
-        return self.hazard_odd_manager.update_odd_elements(self)
-
-    def _update_hazard_list(self):
+    def update_hazard_list(self):
         """Aggregate hazards from risk assessment and HAZOP documents."""
         hazards: list[str] = []
         # Track severities found in analysis documents so the hazard editor
@@ -3233,9 +3209,6 @@ class AutoMLApp:
                 self.hazard_severity[h] = 1
 
         self.hazards = hazards
-
-    def update_hazard_list(self):
-        return self.hazard_odd_manager.update_hazard_list(self)
 
     def update_failure_list(self):
         """Aggregate failure effects from FMEA and FMEDA entries."""
@@ -4590,7 +4563,7 @@ class AutoMLApp:
     # ------------------------------------------------------------------
     # Helpers for malfunctions and failure modes
     # ------------------------------------------------------------------
-    def _create_top_event_for_malfunction(self, name: str) -> None:
+    def create_top_event_for_malfunction(self, name: str) -> None:
         """Create a new top level event linked to the given malfunction."""
         self.push_undo_state()
         new_event = FaultTreeNode("", "TOP EVENT")
@@ -4607,9 +4580,6 @@ class AutoMLApp:
             )
             self.safety_mgmt_toolbox.register_created_work_product(analysis, new_event.name)
         self.update_views()
-
-    def create_top_event_for_malfunction(self, name: str) -> None:
-        return self.hazard_odd_manager.create_top_event_for_malfunction(self, name)
 
     def delete_top_events_for_malfunction(self, name: str) -> None:
         """Remove all FTAs tied to the malfunction ``name``."""
@@ -5507,9 +5477,9 @@ class AutoMLApp:
         refresh()
 
     def show_hazard_list(self):
-        self.hazard_odd_manager.show_hazard_list(self)
+        self.risk_app.show_hazard_list(self)
 
-    def _show_malfunction_editor(self):
+    def show_malfunction_editor(self):
         """Open a tab to manage global malfunctions."""
         if hasattr(self, "_mal_tab") and self._mal_tab.winfo_exists():
             self.doc_nb.select(self._mal_tab)
@@ -5563,9 +5533,6 @@ class AutoMLApp:
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
 
         refresh()
-
-    def show_malfunction_editor(self):
-        return self.hazard_odd_manager.show_malfunction_editor(self)
 
     def show_fault_list(self):
         """Open a tab to manage the list of faults."""
@@ -5673,7 +5640,7 @@ class AutoMLApp:
     # ------------------------------------------------------------------
 
     def show_hazard_editor(self):
-        self.hazard_odd_manager.show_hazard_editor(self)
+        self.risk_app.show_hazard_editor(self)
 
     def show_fault_editor(self):
         """Backward compatible alias for :meth:`show_fault_list`."""
@@ -5683,7 +5650,7 @@ class AutoMLApp:
         """Backward compatible alias for :meth:`show_failure_list`."""
         self.show_failure_list()
 
-    def _show_functional_insufficiency_list(self):
+    def show_functional_insufficiency_list(self):
         if hasattr(self, "_fi_tab") and self._fi_tab.winfo_exists():
             self.doc_nb.select(self._fi_tab)
             return
@@ -5742,10 +5709,7 @@ class AutoMLApp:
         ttk.Button(btn, text="Export CSV", command=export_csv).pack(fill=tk.X)
         refresh()
 
-    def show_functional_insufficiency_list(self):
-        return self.hazard_odd_manager.show_functional_insufficiency_list(self)
-
-    def _show_malfunctions_editor(self):
+    def show_malfunctions_editor(self):
         """Manage the global list of malfunctions."""
         if hasattr(self, "_mal_tab") and self._mal_tab.winfo_exists():
             self.doc_nb.select(self._mal_tab)
@@ -5810,9 +5774,6 @@ class AutoMLApp:
         ttk.Button(btn, text="Add", command=add_mal).pack(fill=tk.X)
         ttk.Button(btn, text="Edit", command=edit_mal).pack(fill=tk.X)
         ttk.Button(btn, text="Delete", command=del_mal).pack(fill=tk.X)
-
-    def show_malfunctions_editor(self):
-        return self.hazard_odd_manager.show_malfunctions_editor(self)
 
     class FMEARowDialog(simpledialog.Dialog):
         def __init__(self, parent, node, app, fmea_entries, mechanisms=None, hide_diagnostics=False, is_fmeda=False):
@@ -7365,17 +7326,14 @@ class AutoMLApp:
         """Return the display name for a product goal."""
         return getattr(sg, "user_name", "") or f"SG {getattr(sg, 'unique_id', '')}"
 
-    def _parse_spi_target_impl(self, target: str) -> tuple[str, str]:
+    def _parse_spi_target(self, target: str) -> tuple[str, str]:
         """Split ``target`` into product goal name and SPI type."""
         if target.endswith(")") and "(" in target:
             name, typ = target.rsplit(" (", 1)
             return name, typ[:-1]
         return target, ""
 
-    def _parse_spi_target(self, target: str) -> tuple[str, str]:
-        return self.hazard_odd_manager._parse_spi_target(self, target)
-
-    def _get_spi_targets(self) -> list[str]:
+    def get_spi_targets(self) -> list[str]:
         """Return sorted list of SPI options formatted as 'Product Goal (Type)'."""
         targets: set[str] = set()
         for sg in getattr(self, "top_events", []):
@@ -7386,10 +7344,7 @@ class AutoMLApp:
                 targets.add(f"{pg_name} (FUSA)")
         return sorted(targets)
 
-    def get_spi_targets(self) -> list[str]:
-        return self.hazard_odd_manager.get_spi_targets(self)
-
-    def _show_safety_performance_indicators(self):
+    def show_safety_performance_indicators(self):
         """Display Safety Performance Indicators."""
         if hasattr(self, "_spi_tab") and self._spi_tab.winfo_exists():
             self.doc_nb.select(self._spi_tab)
@@ -7446,10 +7401,7 @@ class AutoMLApp:
 
         self.refresh_safety_performance_indicators()
 
-    def show_safety_performance_indicators(self):
-        return self.hazard_odd_manager.show_safety_performance_indicators(self)
-
-    def _refresh_safety_performance_indicators(self):
+    def refresh_safety_performance_indicators(self):
         """Populate the SPI explorer table."""
         tree = getattr(self, "_spi_tree", None)
         if not tree or not getattr(tree, "winfo_exists", lambda: True)():
@@ -8694,7 +8646,7 @@ class AutoMLApp:
         ttk.Button(btn_frame, text="Refresh", command=refresh).pack(side=tk.LEFT, padx=5, pady=5)
         ttk.Button(btn_frame, text="Export CSV", command=export_csv).pack(side=tk.LEFT, padx=5, pady=5)
 
-    def _manage_mission_profiles(self):
+    def manage_mission_profiles(self):
         if hasattr(self, "_mp_tab") and self._mp_tab.winfo_exists():
             self.doc_nb.select(self._mp_tab)
             return
@@ -8834,9 +8786,6 @@ class AutoMLApp:
         ttk.Button(btn_frame, text="Delete", command=delete_profile).pack(fill=tk.X)
 
         refresh()
-
-    def manage_mission_profiles(self):
-        return self.hazard_odd_manager.manage_mission_profiles(self)
 
     def load_default_mechanisms(self):
         """Ensure the built-in diagnostic mechanism libraries are present.
@@ -9123,7 +9072,7 @@ class AutoMLApp:
         mech_tree.bind("<Leave>", lambda e: hide_tip())
         refresh_libs()
 
-    def _manage_scenario_libraries(self):
+    def manage_scenario_libraries(self):
         if hasattr(self, "_scen_tab") and self._scen_tab.winfo_exists():
             self.doc_nb.select(self._scen_tab)
             return
@@ -9486,10 +9435,7 @@ class AutoMLApp:
         lib_lb.bind("<<ListboxSelect>>", refresh_scenarios)
         refresh_libs()
 
-    def manage_scenario_libraries(self):
-        return self.hazard_odd_manager.manage_scenario_libraries(self)
-
-    def _manage_odd_libraries(self):
+    def manage_odd_libraries(self):
         if hasattr(self, "_odd_tab") and self._odd_tab.winfo_exists():
             self.doc_nb.select(self._odd_tab)
             return
@@ -9846,9 +9792,6 @@ class AutoMLApp:
         lib_lb.bind("<<ListboxSelect>>", refresh_elems)
         refresh_libs()
 
-    def manage_odd_libraries(self):
-        return self.hazard_odd_manager.manage_odd_libraries(self)
-
     def open_reliability_window(self):
         self.reliability_app.open_reliability_window(self)
 
@@ -10060,7 +10003,7 @@ class AutoMLApp:
                     child.redraw()
 
     def show_hazard_explorer(self):
-        self.hazard_odd_manager.show_hazard_explorer(self)
+        self.risk_app.show_hazard_explorer(self)
 
     def show_requirements_explorer(self):
         if hasattr(self, "_req_exp_tab") and self._req_exp_tab.winfo_exists():
@@ -11016,14 +10959,11 @@ class AutoMLApp:
         else:
             messagebox.showwarning("Edit Gate Type", "Select a gate-type node.")
 
-    def _edit_severity(self):
+    def edit_severity(self):
         messagebox.showinfo(
             "Severity",
             "Severity is determined from the risk assessment and cannot be edited here.",
         )
-
-    def edit_severity(self):
-        return self.hazard_odd_manager.edit_severity(self)
 
     def edit_controllability(self):
         messagebox.showinfo(
@@ -11049,9 +10989,6 @@ class AutoMLApp:
         # Sync the changes to all clones.
         self.sync_nodes_by_id(target)
         self.update_views()
-
-    def refresh_safety_performance_indicators(self):
-        return self.hazard_odd_manager.refresh_safety_performance_indicators(self)
 
     def set_last_saved_state(self):
         """Record the current model state for change detection."""
