@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import tkinter as tk
 from gui.toolboxes import ReliabilityWindow
-from gui.fault_prioritization import FaultPrioritizationWindow
+from gui.windows.fault_prioritization import FaultPrioritizationWindow
 
 
 class ReliabilitySubApp:
