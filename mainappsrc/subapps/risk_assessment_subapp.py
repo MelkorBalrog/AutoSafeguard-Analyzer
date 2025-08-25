@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk, simpledialog
+import re
 
 from gui.controls import messagebox
 from gui.toolboxes import (
@@ -139,6 +140,67 @@ class RiskAssessmentSubApp:
                 if sg:
                     result.append(sg)
         return result
+
+    def get_hazards_for_malfunction(self, app, malfunction: str, hazop_names=None) -> list[str]:
+        """Return hazards linked to the malfunction in the given HAZOPs."""
+        hazards: list[str] = []
+        names = hazop_names or [d.name for d in getattr(app, "hazop_docs", [])]
+        for hz_name in names:
+            doc = self.get_hazop_by_name(app, hz_name)
+            if not doc:
+                continue
+            for entry in doc.entries:
+                if entry.malfunction == malfunction:
+                    h = getattr(entry, "hazard", "").strip()
+                    if h and h not in hazards:
+                        hazards.append(h)
+        return hazards
+
+    def get_validation_targets_for_odd(self, app, element_name):
+        """Return product goals linked to scenarios using ``element_name``."""
+        scenarios = set()
+        for lib in getattr(app, "scenario_libraries", []):
+            for sc in lib.get("scenarios", []):
+                if isinstance(sc, dict):
+                    name = sc.get("name", "")
+                    scenery = sc.get("scenery", "")
+                    desc = sc.get("description", "")
+                else:
+                    name = sc
+                    scenery = ""
+                    desc = ""
+                elems = {e.strip() for e in str(scenery).split(",") if e}
+                if desc:
+                    elems.update(re.findall(r"\[\[(.+?)\]\]", str(desc)))
+                if element_name and name and element_name in elems:
+                    scenarios.add(name)
+
+        if not scenarios:
+            return []
+
+        hazop_scenarios = set()
+        for doc in getattr(app, "hazop_docs", []):
+            for entry in doc.entries:
+                if getattr(entry, "scenario", "") in scenarios:
+                    hazop_scenarios.add(entry.scenario)
+
+        if not hazop_scenarios:
+            return []
+
+        goals = []
+        seen = set()
+        for doc in getattr(app, "hara_docs", []):
+            for entry in doc.entries:
+                if getattr(entry, "scenario", "") in hazop_scenarios:
+                    sg_name = getattr(entry, "safety_goal", "")
+                    for te in getattr(app, "top_events", []):
+                        name = te.safety_goal_description or (
+                            te.user_name or f"SG {te.unique_id}"
+                        )
+                        if name == sg_name and sg_name not in seen:
+                            goals.append(te)
+                            seen.add(sg_name)
+        return goals
 
     # ------------------------------------------------------------------
     # Basic list management helpers

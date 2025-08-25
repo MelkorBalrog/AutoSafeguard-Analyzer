@@ -17,14 +17,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
+import sys, pathlib
 
-from AutoML import AutoMLApp, FaultTreeNode
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
+from mainappsrc.automl_core import AutoMLApp, FaultTreeNode
 from analysis.models import HazopDoc, HazopEntry, HaraDoc, HaraEntry
+from mainappsrc.subapps.risk_assessment_subapp import RiskAssessmentSubApp
 
 
 class OddValidationTargetTests(unittest.TestCase):
     def test_traces_validation_targets_from_scenario_description(self):
         app = AutoMLApp.__new__(AutoMLApp)
+        app.risk_app = RiskAssessmentSubApp()
         app.scenario_libraries = [
             {
                 "name": "Default",
