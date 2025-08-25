@@ -122,7 +122,7 @@ class SafetyAnalysis_FTA_FMEA(FTASubApp, FMEAService, FMEDAManager):
         return self.app.risk_app.update_fta_statuses(self.app)
 
     def update_basic_event_probabilities(self):
-        return self.app.risk_app.update_basic_event_probabilities(self.app)
+        return self.app.probability_reliability.update_basic_event_probabilities()
 
     def update_base_event_requirement_asil(self):
         return self.app.risk_app.update_base_event_requirement_asil(self.app)
@@ -271,8 +271,9 @@ class SafetyAnalysis_FTA_FMEA(FTASubApp, FMEAService, FMEDAManager):
     def build_simplified_fta_model(self, top_event):
         return FTASubApp.build_simplified_fta_model(self, self.app, top_event)
 
-    def get_all_basic_events(self):
-        return self.app.data_access_queries.get_all_basic_events()
+    def get_all_basic_events(self, app=None):
+        """Return all basic events in the current fault tree model."""
+        return FTASubApp.get_all_basic_events(self, app or self.app)
 
     def all_children_are_base_events(self, node):
         return FTASubApp.all_children_are_base_events(self, self.app, node)

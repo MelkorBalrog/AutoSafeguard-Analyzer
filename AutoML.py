@@ -25,6 +25,9 @@ from mainappsrc.core.automl_core import (
     GATE_NODE_TYPES,
 )
 from mainappsrc.core.safety_analysis import SafetyAnalysis_FTA_FMEA
+from mainappsrc.page_diagram import PageDiagram
+import tkinter.font as tkFont
+from gui.utils.drawing_helper import fta_drawing_helper
 from config.automl_constants import PMHF_TARGETS
 from analysis.models import HazopDoc
 from gui.dialogs.edit_node_dialog import EditNodeDialog
@@ -41,6 +44,9 @@ __all__ = [
     "EditNodeDialog",
     "SafetyAnalysis_FTA_FMEA",
     "AutoMLHelper",
+    "PageDiagram",
+    "tkFont",
+    "fta_drawing_helper",
 ]
 
 # Hint PyInstaller to bundle AutoML and its dependencies (e.g. gui package)

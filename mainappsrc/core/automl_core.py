@@ -271,6 +271,8 @@ from .persistence_wrappers import PersistenceWrappersMixin
 from .analysis_utils import AnalysisUtilsMixin
 from .service_init_mixin import ServiceInitMixin
 from .icon_setup_mixin import IconSetupMixin
+from .style_setup_mixin import StyleSetupMixin
+from .page_diagram import PageDiagram
 from .editors import (
     ItemDefinitionEditorMixin,
     SafetyConceptEditorMixin,
