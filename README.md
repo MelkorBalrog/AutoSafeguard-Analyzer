@@ -1644,7 +1644,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.59 - Allow copy and cut between governance diagrams without lifecycle UI.
+- 0.2.59 - Add Gate creation option to PAA context and menu.
 - 0.2.58 - Fix empty Safety tab when editing nodes in FTA, CTA and PAA diagrams.
 - 0.2.57 - Map Task toolbox selection to Action elements so governance diagrams support adding tasks.
 - 0.2.56 - Synchronize README version header with source.

@@ -631,6 +631,12 @@ class AutoMLApp(
             accelerator="Ctrl+Shift+R",
         )
         self._paa_menu_indices["add_robustness"] = paa_menu.index("end")
+        paa_menu.add_command(
+            label="Add Gate",
+            command=lambda: self.add_node_of_type("GATE"),
+            accelerator="Ctrl+Shift+G",
+        )
+        self._paa_menu_indices["add_gate"] = paa_menu.index("end")
         qualitative_menu.add_cascade(
             label="Prototype Assurance Analysis",
             menu=paa_menu,
