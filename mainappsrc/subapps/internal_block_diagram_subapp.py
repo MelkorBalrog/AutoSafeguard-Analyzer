@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from tkinter import simpledialog
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
-from gui.architecture import InternalBlockDiagramWindow
+from gui.windows.architecture import InternalBlockDiagramWindow
 
 
 class InternalBlockDiagramSubApp:
