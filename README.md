@@ -1,4 +1,4 @@
-version: 0.2.21
+version: 0.2.22
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1642,6 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.22 - Re-export add_treeview_scrollbars via gui.utils for legacy compatibility.
 - 0.2.21 - Expose DIALOG_BG_COLOR via gui.utils and re-export drawing helper for compatibility.
 - 0.2.20 - Re-export logger through gui package to fix DIALOG_BG_COLOR import failure.
 - 0.2.19 - Provide compatibility wrapper for splash screen import.
