@@ -269,7 +269,6 @@ from .ui_setup import UISetupMixin
 from .event_handlers import EventHandlersMixin
 from .persistence_wrappers import PersistenceWrappersMixin
 from .analysis_utils import AnalysisUtilsMixin
-from .style_setup_mixin import StyleSetupMixin
 from .service_init_mixin import ServiceInitMixin
 from .icon_setup_mixin import IconSetupMixin
 from .editors import (
@@ -295,6 +294,11 @@ from gui.utils.drawing_helper import FTADrawingHelper, fta_drawing_helper
 from mainappsrc.core.event_dispatcher import EventDispatcher
 from mainappsrc.core.window_controllers import WindowControllers
 from mainappsrc.core.top_event_workflows import Top_Event_Workflows
+from mainappsrc.managers.review_manager import ReviewManager
+from mainappsrc.managers.drawing_manager import DrawingManager
+from .versioning_review import Versioning_Review
+from .validation_consistency import Validation_Consistency
+from .reporting_export import Reporting_Export
 from analysis.user_config import (
     load_user_config,
     save_user_config,
