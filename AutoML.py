@@ -17,14 +17,14 @@ from tools.crash_report_logger import install_best
 from tools.memory_manager import manager as memory_manager
 from tools.splash_launcher import SplashLauncher
 from mainappsrc.version import VERSION
-from mainappsrc.automl_core import (
+from mainappsrc.core.automl_core import (
     AutoMLApp,
     FaultTreeNode,
     AutoML_Helper,
     messagebox,
     GATE_NODE_TYPES,
 )
-from mainappsrc.safety_analysis import SafetyAnalysis_FTA_FMEA
+from mainappsrc.core.safety_analysis import SafetyAnalysis_FTA_FMEA
 from config.automl_constants import PMHF_TARGETS
 from analysis.models import HazopDoc
 from gui.dialogs.edit_node_dialog import EditNodeDialog
