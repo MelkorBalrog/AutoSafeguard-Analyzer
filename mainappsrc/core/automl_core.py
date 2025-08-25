@@ -284,16 +284,7 @@ try:
 except Exception:  # openpyxl may not be installed
     load_workbook = None
 from gui.utils.drawing_helper import FTADrawingHelper, fta_drawing_helper
-try:  # pragma: no cover
-    from .page_diagram import PageDiagram
-except Exception:  # pragma: no cover
-    import os, sys
-    base = os.path.dirname(__file__)
-    sys.path.append(base)
-    sys.path.append(os.path.dirname(base))
-    from page_diagram import PageDiagram
 from mainappsrc.core.event_dispatcher import EventDispatcher
-from mainappsrc.core.page_diagram import PageDiagram
 from mainappsrc.core.window_controllers import WindowControllers
 from mainappsrc.core.navigation_selection_input import Navigation_Selection_Input
 from mainappsrc.managers.review_manager import ReviewManager
@@ -2115,50 +2106,7 @@ class AutoMLApp:
         return self.data_access_queries.get_page_nodes(node)
 
     def capture_page_diagram(self, page_node):
-        """
-        Create an off-screen Toplevel with a Canvas, draw the page diagram (using PageDiagram),
-        and return a PIL Image of the diagram.
-        """
-        from io import BytesIO
-        from PIL import Image
-
-        # Create a temporary Toplevel window and canvas
-        temp = tk.Toplevel(self.root)
-        temp.withdraw()
-        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
-        canvas.pack()
-        
-        # Create and redraw the page diagram
-        pd = PageDiagram(self, page_node, canvas)
-        pd.redraw_canvas()
-        
-        # Remove grid if present and force an update
-        canvas.delete("grid")
-        canvas.update()
-        
-        # Get the bounding box; print debug info if empty.
-        bbox = canvas.bbox("all")
-        if not bbox:
-            print(f"Debug: No drawing found for page node {page_node.unique_id} - bbox is empty.")
-            temp.destroy()
-            return None
-        
-        x, y, x2, y2 = bbox
-        width, height = x2 - x, y2 - y
-        print(f"Debug: Capturing page diagram for node {page_node.unique_id} with bbox=({x},{y},{x2},{y2})")
-        
-        # Get the PostScript output for the region.
-        ps = canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
-        ps_bytes = BytesIO(ps.encode("utf-8"))
-
-        try:
-            img = Image.open(ps_bytes)
-            img.load(scale=3)
-        except Exception as e:
-            print(f"Debug: Error loading image for page node {page_node.unique_id}: {e}")
-            img = None
-        temp.destroy()
-        return img.convert("RGB") if img else None
+        return self.pages_and_paa.capture_page_diagram(page_node)
 
     def capture_gsn_diagram(self, diagram):
         """Return a PIL Image of the given GSN diagram."""
@@ -8852,8 +8800,9 @@ class AutoMLApp:
             ):
                 self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
                 
-    def enable_paa_actions(self, enabled: bool) -> None:  # pragma: no cover - delegation
-        return self.validation_consistency.enable_paa_actions(enabled)
+    def enable_paa_actions(self, enabled: bool) -> None:
+        """Delegate to :class:`Pages_and_PAA` to toggle PAA actions."""
+        self.pages_and_paa.enable_paa_actions(enabled)
                 
     def _update_analysis_menus(self,mode=None):
         """Enable or disable node-adding menu items based on diagram mode."""
@@ -8864,12 +8813,12 @@ class AutoMLApp:
         self.validation_consistency.enable_paa_actions(mode == "PAA")
 
     def _create_paa_tab(self) -> None:
-        """Delegate to :class:`PrototypeAssuranceManager` to create a PAA tab."""
-        self.paa_manager._create_paa_tab()
+        """Delegate PAA tab creation to helper."""
+        self.pages_and_paa._create_paa_tab()
 
     def create_paa_diagram(self) -> None:
-        """Delegate to :class:`PrototypeAssuranceManager` for diagram setup."""
-        self.paa_manager.create_paa_diagram()
+        """Delegate PAA diagram setup to helper."""
+        self.pages_and_paa.create_paa_diagram()
 
     @property
     def paa_manager(self) -> PrototypeAssuranceManager:
@@ -8877,6 +8826,15 @@ class AutoMLApp:
         if not hasattr(self, "_paa_manager"):
             self._paa_manager = PrototypeAssuranceManager(self)
         return self._paa_manager
+
+    @property
+    def pages_and_paa(self):
+        """Lazily create and return the Pages_and_PAA helper."""
+        if not hasattr(self, "_pages_and_paa"):
+            from .pages_and_paa import Pages_and_PAA
+
+            self._pages_and_paa = Pages_and_PAA(self)
+        return self._pages_and_paa
 
     def _reset_fta_state(self):
         """Clear references to the FTA tab and its canvas."""
@@ -8931,7 +8889,7 @@ class AutoMLApp:
         self.window_controllers.open_arch_window(diag_id)
 
     def open_page_diagram(self, node, push_history=True):
-        self.window_controllers.open_page_diagram(node, push_history)
+        return self.pages_and_paa.open_page_diagram(node, push_history)
 
     def manage_architecture(self):
         return self.open_windows_features.manage_architecture()
@@ -10469,154 +10427,19 @@ class AutoMLApp:
         return self.nav_input.go_back()
 
     def draw_page_subtree(self, page_root):
-        self.page_canvas.delete("all")
-        self.draw_page_grid()
-        visited_ids = set()
-        self.draw_page_connections_subtree(page_root, visited_ids)
-        self.draw_page_nodes_subtree(page_root)
-        bbox = self.page_canvas.bbox("all")
-        if bbox:
-            self.page_canvas.config(scrollregion=bbox)
+        return self.pages_and_paa.draw_page_subtree(page_root)
 
     def draw_page_grid(self):
-        spacing = 20
-        width = self.page_canvas.winfo_width() or 800
-        height = self.page_canvas.winfo_height() or 600
-        for x in range(0, width, spacing):
-            self.page_canvas.create_line(x, 0, x, height, fill="#ddd", tags="grid")
-        for y in range(0, height, spacing):
-            self.page_canvas.create_line(0, y, width, y, fill="#ddd", tags="grid")
+        return self.pages_and_paa.draw_page_grid()
 
     def draw_page_connections_subtree(self, node, visited_ids):
-        if id(node) in visited_ids:
-            return
-        visited_ids.add(id(node))
-        region_width = 100
-        parent_bottom = (node.x, node.y + 40)
-        N = len(node.children)
-        for i, child in enumerate(node.children):
-            parent_conn = (node.x - region_width/2 + (i+0.5)*(region_width/N), parent_bottom[1])
-            child_top = (child.x, child.y - 45)
-            draw_90_connection(self.page_canvas, parent_conn, child_top, outline_color="dimgray", line_width=1)
-        for child in node.children:
-            self.draw_page_connections_subtree(child, visited_ids)
+        return self.pages_and_paa.draw_page_connections_subtree(node, visited_ids)
 
     def draw_page_nodes_subtree(self, node):
-        self.draw_node_on_page_canvas(node)
-        for child in node.children:
-            self.draw_page_nodes_subtree(child)
+        return self.pages_and_paa.draw_page_nodes_subtree(node)
 
-    def draw_node_on_page_canvas(self, canvas, node):
-        # Use the clone's own display label and append a marker
-        if not node.is_primary_instance:
-            display_label = node.display_label + " (clone)"
-        else:
-            display_label = node.display_label
-        
-        fill_color = self.get_node_fill_color(node, getattr(canvas, "diagram_mode", None))
-        eff_x, eff_y = node.x, node.y
-        top_text = f"Type: {node.node_type}"
-        if node.input_subtype:
-            top_text += f" ({node.input_subtype})"
-        if node.description:
-            top_text += f"\nDesc: {node.description}"
-        if node.rationale:
-            top_text += f"\nRationale: {node.rationale}"
-        bottom_text = node.name
-
-        outline_color = "dimgray"
-        line_width = 1
-        if node.unique_id in getattr(self.app, "diff_nodes", []):
-            outline_color = "blue"
-            line_width = 2
-        elif not node.is_primary_instance:
-            outline_color = "red"
-        
-        # For page elements, assume they use a triangle shape.
-        if node.is_page:
-            fta_drawing_helper.draw_triangle_shape(
-                canvas,
-                eff_x,
-                eff_y,
-                scale=40,
-                top_text=top_text,
-                bottom_text=bottom_text,
-                fill=fill_color,
-                outline_color=outline_color,
-                line_width=line_width,
-                font_obj=self.diagram_font,
-                obj_id=node.unique_id,
-            )
-        else:
-            node_type_upper = node.node_type.upper()
-            if node_type_upper in GATE_NODE_TYPES:
-                if node.gate_type and node.gate_type.upper() == "OR":
-                    fta_drawing_helper.draw_rotated_or_gate_shape(
-                        self.page_canvas,
-                        eff_x,
-                        eff_y,
-                        scale=40,
-                        top_text=top_text,
-                        bottom_text=bottom_text,
-                        fill=fill_color,
-                        outline_color=outline_color,
-                        line_width=line_width,
-                        obj_id=node.unique_id,
-                    )
-                else:
-                    fta_drawing_helper.draw_rotated_and_gate_shape(
-                        self.page_canvas,
-                        eff_x,
-                        eff_y,
-                        scale=40,
-                        top_text=top_text,
-                        bottom_text=bottom_text,
-                        fill=fill_color,
-                        outline_color=outline_color,
-                        line_width=line_width,
-                        obj_id=node.unique_id,
-                    )
-            elif node_type_upper in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-                fta_drawing_helper.draw_circle_event_shape(
-                    self.page_canvas,
-                    eff_x,
-                    eff_y,
-                    45,
-                    top_text=top_text,
-                    bottom_text=bottom_text,
-                    fill=fill_color,
-                    outline_color=outline_color,
-                    line_width=line_width,
-                    obj_id=node.unique_id,
-                )
-            else:
-                fta_drawing_helper.draw_circle_event_shape(
-                    self.page_canvas,
-                    eff_x,
-                    eff_y,
-                    45,
-                    top_text=top_text,
-                    bottom_text=bottom_text,
-                    fill=fill_color,
-                    outline_color=outline_color,
-                    line_width=line_width,
-                    obj_id=node.unique_id,
-                )
-
-        if self.review_data:
-            unresolved = any(
-                c.node_id == node.unique_id and not c.resolved
-                for c in self.review_data.comments
-            )
-            if unresolved:
-                canvas.create_oval(
-                    eff_x + 35,
-                    eff_y + 35,
-                    eff_x + 45,
-                    eff_y + 45,
-                    fill="yellow",
-                    outline=StyleManager.get_instance().outline_color,
-                )
+    def draw_node_on_page_canvas(self, *args, **kwargs):
+        return self.pages_and_paa.draw_node_on_page_canvas(*args, **kwargs)
 
     def on_ctrl_mousewheel_page(self, event):
         return self.nav_input.on_ctrl_mousewheel_page(event)

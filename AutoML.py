@@ -63,7 +63,7 @@ GS_PATH = Path(r"C:\\Program Files\\gs\\gs10.04.0\\bin\\gswin64c.exe")
 def parse_args() -> None:
     """Handle command line arguments for the launcher."""
 
-    parser = argparse.ArgumentParser(description="Launch the AutoML application")
+    parser = argparse.ArgumentParser(description=f"Launch the AutoML application (v{VERSION})")
     parser.add_argument("--version", action="version", version=VERSION)
     parser.parse_args()
 
