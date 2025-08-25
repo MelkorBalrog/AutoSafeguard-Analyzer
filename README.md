@@ -1,4 +1,4 @@
-version: 0.2.17
+version: 0.2.18
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1647,6 +1647,7 @@ and run the build again if you hit this issue.
 - 0.2.15 - Lazily import messagebox module to resolve circular import.
 - 0.2.14 - Fade out splash screen symmetrically before launching application.
 - 0.2.13 - Delegate tab motion events to lifecycle UI to prevent missing handler error.
+- 0.2.18 - Organised mainappsrc into core, managers and subapps packages.
 - 0.2.12 - Fix property initialisation error in safety analysis facade.
 - 0.2.11 - Keep splash screen visible through startup and five-second post-load delay.
 - 0.2.10 - Hold splash screen for five seconds after initialisation completes.

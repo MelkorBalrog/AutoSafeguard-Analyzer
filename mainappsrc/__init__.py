@@ -1,8 +1,52 @@
 """Main application package initializer."""
 
-from .automl_core import AutoMLApp
-from .page_diagram import PageDiagram
-from .fmeda_manager import FMEDAManager
-from .diagram_renderer import DiagramRenderer
+import importlib
+import sys
+
+_submodule_map = {
+    # Core modules (dependencies first)
+    "page_diagram": "core.page_diagram",
+    "event_dispatcher": "core.event_dispatcher",
+    "window_controllers": "core.window_controllers",
+    "diagram_renderer": "core.diagram_renderer",
+    "app_lifecycle_ui": "core.app_lifecycle_ui",
+    "fmea_service": "core.fmea_service",
+    "safety_analysis": "core.safety_analysis",
+    "automl_core": "core.automl_core",
+    # Managers
+    "cta_manager": "managers.cta_manager",
+    "cyber_manager": "managers.cyber_manager",
+    "fmeda_manager": "managers.fmeda_manager",
+    "governance_manager": "managers.governance_manager",
+    "gsn_manager": "managers.gsn_manager",
+    "paa_manager": "managers.paa_manager",
+    "project_manager": "managers.project_manager",
+    "repository_manager": "managers.repository_manager",
+    "requirements_manager": "managers.requirements_manager",
+    "review_manager": "managers.review_manager",
+    "sotif_manager": "managers.sotif_manager",
+    "user_manager": "managers.user_manager",
+    # Sub-apps
+    "activity_diagram_subapp": "subapps.activity_diagram_subapp",
+    "block_diagram_subapp": "subapps.block_diagram_subapp",
+    "control_flow_diagram_subapp": "subapps.control_flow_diagram_subapp",
+    "diagram_export_subapp": "subapps.diagram_export_subapp",
+    "fta_subapp": "subapps.fta_subapp",
+    "internal_block_diagram_subapp": "subapps.internal_block_diagram_subapp",
+    "project_editor_subapp": "subapps.project_editor_subapp",
+    "reliability_subapp": "subapps.reliability_subapp",
+    "risk_assessment_subapp": "subapps.risk_assessment_subapp",
+    "style_subapp": "subapps.style_subapp",
+    "tree_subapp": "subapps.tree_subapp",
+    "use_case_diagram_subapp": "subapps.use_case_diagram_subapp",
+}
+
+for old, new in _submodule_map.items():
+    sys.modules[f"{__name__}.{old}"] = importlib.import_module(f".{new}", __name__)
+
+from .core.automl_core import AutoMLApp
+from .core.page_diagram import PageDiagram
+from .managers.fmeda_manager import FMEDAManager
+from .core.diagram_renderer import DiagramRenderer
 
 __all__ = ["AutoMLApp", "PageDiagram", "FMEDAManager", "DiagramRenderer"]
