@@ -272,6 +272,7 @@ from .ui_setup import UISetupMixin
 from .event_handlers import EventHandlersMixin
 from .persistence_wrappers import PersistenceWrappersMixin
 from .analysis_utils import AnalysisUtilsMixin
+from .data_access_queries import DataAccess_Queries
 from analysis.mechanisms import (
     DiagnosticMechanism,
     MechanismLibrary,
@@ -296,6 +297,7 @@ from mainappsrc.managers.review_manager import ReviewManager
 from .versioning_review import Versioning_Review
 from mainappsrc.core.diagram_renderer import DiagramRenderer
 from .validation_consistency import Validation_Consistency
+from .reporting_export import Reporting_Export
 from analysis.user_config import (
     load_user_config,
     save_user_config,
@@ -631,6 +633,7 @@ class AutoMLApp(UISetupMixin, EventHandlersMixin, PersistenceWrappersMixin, Anal
     def __init__(self, root):
         AutoMLApp._instance = self
         self.root = root
+        self.setup_style(root)
         self.lifecycle_ui = AppLifecycleUI(self, root)
         self.labels_styling = Editing_Labels_Styling(self)
         self.top_events = []
@@ -650,10 +653,6 @@ class AutoMLApp(UISetupMixin, EventHandlersMixin, PersistenceWrappersMixin, Anal
         self.zoom = 1.0
         self.rc_dragged = False
         self.diagram_font = tkFont.Font(family="Arial", size=int(8 * self.zoom))
-        self.style = ttk.Style()
-        self.style_app = StyleSubApp(root, self.style)
-        self.style_app.apply()
-        self._btn_imgs = self.style_app.btn_images
         self.lifecycle_ui._init_nav_button_style()
         self.tree_app = TreeSubApp()
         self.project_editor_app = ProjectEditorSubApp()
@@ -828,6 +827,15 @@ class AutoMLApp(UISetupMixin, EventHandlersMixin, PersistenceWrappersMixin, Anal
 
         # Centralise data lookups in a dedicated helper
         self.data_access_queries = DataAccess_Queries(self)
+
+        # Helper for input validation and work product management
+        self.validation_consistency = Validation_Consistency(self)
+
+        # Reporting and export operations
+        self.reporting_export = Reporting_Export(self)
+
+        # Tree structure helpers
+        self.structure_tree_operations = Structure_Tree_Operations(self)
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
