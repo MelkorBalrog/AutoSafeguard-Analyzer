@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Project version information."""
+"""Compatibility wrapper exporting the core AutoML application classes."""
 
-VERSION = "0.2.57"
-
-__all__ = ["VERSION"]
+from mainappsrc.core.automl_core import *  # noqa: F401,F403
