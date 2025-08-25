@@ -16,8 +16,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Project version information."""
+"""Tests for safety tab population in EditNodeDialog."""
 
-VERSION = "0.2.58"
+import types
+import tkinter as tk
 
-__all__ = ["VERSION"]
+from gui.dialogs.edit_node_dialog import EditNodeDialog
+from mainappsrc.models.fta.fault_tree_node import FaultTreeNode
+
+
+def test_safety_tab_not_empty_for_intermediate_event():
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        node = FaultTreeNode("Test", "INTERMEDIATE EVENT")
+        app = types.SimpleNamespace(malfunctions=[], safety_mgmt_toolbox=None)
+        dlg = EditNodeDialog.__new__(EditNodeDialog)
+        dlg.node = node
+        dlg.app = app
+        dlg.body(root)
+        assert dlg.safety_frame.winfo_children()
+    finally:
+        root.destroy()
