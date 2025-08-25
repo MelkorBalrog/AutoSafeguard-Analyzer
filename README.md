@@ -1,4 +1,4 @@
-version: 0.2.10
+version: 0.2.11
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1638,6 +1638,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.11 - Use AppLifecycleUI as a composed helper within core app initialization.
 - 0.2.10 - Extracted lifecycle UI helpers into dedicated AppLifecycleUI class.
 - 0.2.9 - Display splash screen during dependency checks and startup.
 - 0.2.8 - Renamed core module to `automl_core.py` and launcher to `automl.py`.
