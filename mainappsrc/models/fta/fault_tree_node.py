@@ -342,6 +342,45 @@ class FaultTreeNode:
             parent.children.append(clone)
         return clone
 
+    @staticmethod
+    def add_basic_event_from_fmea(core):
+        """Add a basic event selected from FMEA/FMEDA entries."""
+        from gui.controls import messagebox
+        from gui.dialogs.select_base_event_dialog import SelectBaseEventDialog
+
+        core.push_undo_state()
+        events = list(core.fmea_entries)
+        for doc in core.fmeas:
+            events.extend(doc.get("entries", []))
+        for doc in core.fmedas:
+            events.extend(doc.get("entries", []))
+        if not events:
+            messagebox.showinfo(
+                "No Failure Modes",
+                "No FMEA or FMEDA failure modes available.",
+            )
+            return
+        dialog = SelectBaseEventDialog(core.root, events)
+        selected = dialog.selected
+        if not selected:
+            return
+        if core.selected_node:
+            parent_node = core.selected_node
+            if not parent_node.is_primary_instance:
+                messagebox.showwarning(
+                    "Invalid Operation",
+                    "Cannot add to a clone node. Select the original.",
+                )
+                return
+        else:
+            sel = core.analysis_tree.selection()
+            if not sel:
+                messagebox.showwarning(
+                    "No selection", "Select a parent node to paste into."
+                )
+                return
+            try:
+                node_id = int(core.analysis_tree.item(sel[0], "tags")[0])
 
 def add_failure_mode(
     core,
@@ -512,36 +551,22 @@ def add_node_of_type(app, event_type):
                     "No selection", "Select a parent node from the tree."
                 )
                 return
-            parent_node = app.find_node_by_id_all(node_id)
-        else:
+            parent_node = core.find_node_by_id_all(node_id)
+        if parent_node.node_type.upper() in [
+            "CONFIDENCE LEVEL",
+            "ROBUSTNESS SCORE",
+            "BASIC EVENT",
+        ]:
             messagebox.showwarning(
-                "No selection", "Select a parent node to paste into."
+                "Invalid", "Base events cannot have children."
             )
             return
-    if parent_node.node_type.upper() in {
-        "CONFIDENCE LEVEL",
-        "ROBUSTNESS SCORE",
-        "BASIC EVENT",
-    }:
-        messagebox.showwarning(
-            "Invalid", "Base events cannot have children."
-        )
-        return
-    templates = {
-        "CONFIDENCE LEVEL": ("Confidence Level", {"quant_value": 1}),
-        "ROBUSTNESS SCORE": ("Robustness Score", {"quant_value": 1}),
-        "GATE": ("GATE", {"gate_type": "AND"}),
-        "BASIC EVENT": ("Basic Event", {"failure_prob": 0.0}),
-        "TRIGGERING CONDITION": ("Triggering Condition", {}),
-        "FUNCTIONAL INSUFFICIENCY": ("Functional Insufficiency", {"gate_type": "AND"}),
-    }
-    node_type, attrs = templates.get(event_upper, (event_type, {}))
-    new_node = FaultTreeNode("", node_type, parent=parent_node)
-    for attr, val in attrs.items():
-        setattr(new_node, attr, val)
-    new_node.x = parent_node.x + 100
-    new_node.y = parent_node.y + 100
-    parent_node.children.append(new_node)
-    new_node.parents.append(parent_node)
-    app.update_views()
-    app.push_undo_state()
+        data = selected.to_dict()
+        data.pop("unique_id", None)
+        data["children"] = []
+        new_node = FaultTreeNode.from_dict(data, parent_node)
+        if hasattr(selected, "unique_id"):
+            new_node.failure_mode_ref = selected.unique_id
+        parent_node.children.append(new_node)
+        new_node.parents.append(parent_node)
+        core.update_views()

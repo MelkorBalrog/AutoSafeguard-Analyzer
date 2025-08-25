@@ -1981,41 +1981,7 @@ class AutoMLApp(
         return _add_node_of_type(self, event_type)
 
     def add_basic_event_from_fmea(self):
-        self.push_undo_state()
-        events = list(self.fmea_entries)
-        for doc in self.fmeas:
-            events.extend(doc.get("entries", []))
-        for doc in self.fmedas:
-            events.extend(doc.get("entries", []))
-        if not events:
-            messagebox.showinfo("No Failure Modes", "No FMEA or FMEDA failure modes available.")
-            return
-        dialog = SelectBaseEventDialog(self.root, events)
-        selected = dialog.selected
-        if not selected:
-            return
-        if self.selected_node:
-            parent_node = self.selected_node
-            if not parent_node.is_primary_instance:
-                messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
-                return
-        else:
-            sel = self.analysis_tree.selection()
-            if not sel:
-                messagebox.showwarning("No selection", "Select a parent node to paste into.")
-                return
-            try:
-                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
-            except (IndexError, ValueError):
-                messagebox.showwarning("No selection", "Select a parent node from the tree.")
-                return
-            parent_node = self.find_node_by_id_all(node_id)
-        if parent_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"]:
-            messagebox.showwarning("Invalid", "Base events cannot have children.")
-            return
-        FaultTreeNode.add_basic_event_from_fmea(parent_node, selected)
-        self.update_views()
-
+        FaultTreeNode.add_basic_event_from_fmea(self)
 
     def remove_node(self):
         return self.structure_tree_operations.remove_node()
