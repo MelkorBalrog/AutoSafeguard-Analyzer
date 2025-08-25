@@ -22,7 +22,10 @@ class PageDiagram:
         self.canvas = canvas
         self.diagram_mode = getattr(canvas, "diagram_mode", "FTA")
         self.zoom = 1.0
-        self.diagram_font = tkFont.Font(family="Arial", size=int(8 * self.zoom))
+        if tk._default_root is None:  # pragma: no cover - headless test env
+            self.diagram_font = None
+        else:
+            self.diagram_font = tkFont.Font(family="Arial", size=int(8 * self.zoom))
         self.grid_size = 20
         self.selected_node = None
         self.dragging_node = None
