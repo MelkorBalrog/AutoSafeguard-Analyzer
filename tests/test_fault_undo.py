@@ -31,6 +31,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from AutoML import AutoMLApp
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
+from mainappsrc.core.undo_manager import UndoRedoManager
 
 class FaultUndoRedoTests(unittest.TestCase):
     def setUp(self):
@@ -67,8 +68,7 @@ class FaultUndoRedoTests(unittest.TestCase):
         self.app.versions = {}
         self.app.update_odd_elements = lambda: None
         self.app.update_views = lambda: None
-        self.app._undo_stack = []
-        self.app._redo_stack = []
+        self.app.undo_manager = UndoRedoManager(self.app)
         SysMLRepository.reset_instance()
 
     def test_undo_redo_add_fault(self):

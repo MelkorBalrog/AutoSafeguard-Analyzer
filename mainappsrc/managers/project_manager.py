@@ -127,8 +127,7 @@ class ProjectManager:
             app.project_properties["severity_probabilities"],
         )
         app.apply_model_data({}, ensure_root=False)
-        app._undo_stack.clear()
-        app._redo_stack.clear()
+        app.undo_manager.clear_history()
         app.analysis_tree.delete(*app.analysis_tree.get_children())
         app.update_views()
         app.set_last_saved_state()
@@ -179,8 +178,7 @@ class ProjectManager:
         app.root_node = None
         app.selected_node = None
         app.page_history = []
-        app._undo_stack.clear()
-        app._redo_stack.clear()
+        app.undo_manager.clear_history()
         if getattr(app, "analysis_tree", None):
             app.analysis_tree.delete(*app.analysis_tree.get_children())
         app._reset_fta_state()

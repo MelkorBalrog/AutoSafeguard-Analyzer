@@ -30,6 +30,7 @@ sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 from mainappsrc.models.gsn import GSNNode, GSNDiagram
 from gui.gsn_explorer import GSNExplorer
 from AutoML import AutoMLApp
+from mainappsrc.core.undo_manager import UndoRedoManager
 
 
 def test_gsn_diagram_undo_redo_rename(monkeypatch):
@@ -40,8 +41,7 @@ def test_gsn_diagram_undo_redo_rename(monkeypatch):
     app.gsn_diagrams = [diag]
     app.gsn_modules = []
     app.update_views = lambda: None
-    app._undo_stack = []
-    app._redo_stack = []
+    app.undo_manager = UndoRedoManager(app)
 
     def export_model_data(include_versions=False):
         return {
@@ -87,8 +87,7 @@ def test_gsn_explorer_refreshes_after_undo(monkeypatch):
     app.gsn_diagrams = [diag]
     app.gsn_modules = []
     app.update_views = lambda: None
-    app._undo_stack = []
-    app._redo_stack = []
+    app.undo_manager = UndoRedoManager(app)
 
     def export_model_data(include_versions=False):
         return {

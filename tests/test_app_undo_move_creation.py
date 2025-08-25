@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from AutoML import AutoMLApp
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
+from mainappsrc.core.undo_manager import UndoRedoManager
 
 
 class AppUndoMoveCreationTests(unittest.TestCase):
@@ -32,8 +33,7 @@ class AppUndoMoveCreationTests(unittest.TestCase):
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Governance Diagram", name="Gov")
         app = AutoMLApp.__new__(AutoMLApp)
-        app._undo_stack = []
-        app._redo_stack = []
+        app.undo_manager = UndoRedoManager(app)
         app.export_model_data = lambda include_versions=False: repo.to_dict()
         app.apply_model_data = lambda data: repo.from_dict(data)
         app.push_undo_state = AutoMLApp.push_undo_state.__get__(app)
