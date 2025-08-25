@@ -147,6 +147,23 @@ class SysMLRepository:
         return cls._instance
 
     # ------------------------------------------------------------
+    # Export helpers
+    # ------------------------------------------------------------
+    def export_state(self) -> dict:
+        """Return a JSON-serialisable snapshot of the repository."""
+
+        return {
+            "elements": [asdict(e) for e in self.elements.values()],
+            "relationships": [asdict(r) for r in self.relationships],
+            "diagrams": [asdict(d) for d in self.diagrams.values()],
+            "element_diagrams": dict(self.element_diagrams),
+            "active_phase": self.active_phase,
+            "reuse_phases": list(self.reuse_phases),
+            "reuse_products": list(self.reuse_products),
+            "frozen_diagrams": list(self.frozen_diagrams),
+        }
+
+    # ------------------------------------------------------------
     # Undo support
     # ------------------------------------------------------------
     def _strip_object_positions(self, data: dict) -> dict:

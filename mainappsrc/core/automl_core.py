@@ -272,6 +272,7 @@ from .ui_setup import UISetupMixin
 from .event_handlers import EventHandlersMixin
 from .persistence_wrappers import PersistenceWrappersMixin
 from .analysis_utils import AnalysisUtilsMixin
+from .data_access_queries import DataAccess_Queries
 from analysis.mechanisms import (
     DiagnosticMechanism,
     MechanismLibrary,
@@ -296,6 +297,7 @@ from mainappsrc.managers.review_manager import ReviewManager
 from .versioning_review import Versioning_Review
 from mainappsrc.core.diagram_renderer import DiagramRenderer
 from .validation_consistency import Validation_Consistency
+from .reporting_export import Reporting_Export
 from analysis.user_config import (
     load_user_config,
     save_user_config,
@@ -828,6 +830,15 @@ class AutoMLApp(UISetupMixin, EventHandlersMixin, PersistenceWrappersMixin, Anal
 
         # Centralise data lookups in a dedicated helper
         self.data_access_queries = DataAccess_Queries(self)
+
+        # Helper for input validation and work product management
+        self.validation_consistency = Validation_Consistency(self)
+
+        # Reporting and export operations
+        self.reporting_export = Reporting_Export(self)
+
+        # Tree structure helpers
+        self.structure_tree_operations = Structure_Tree_Operations(self)
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
