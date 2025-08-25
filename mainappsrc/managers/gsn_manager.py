@@ -5,8 +5,8 @@ from __future__ import annotations
 import tkinter as tk
 from typing import TYPE_CHECKING, Optional
 
-from gui.gsn_explorer import GSNExplorer
-from gui.gsn_diagram_window import GSNDiagramWindow, GSN_WINDOWS
+from gui.explorers.gsn_explorer import GSNExplorer
+from gui.windows.gsn_diagram_window import GSNDiagramWindow, GSN_WINDOWS
 
 if TYPE_CHECKING:  # pragma: no cover - for type hints only
     from .AutoML import AutoMLApp
