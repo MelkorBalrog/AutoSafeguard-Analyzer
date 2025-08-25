@@ -1,4 +1,4 @@
-version: 0.2.14
+version: 0.2.15
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1642,6 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.15 - Lazily import messagebox module to resolve circular import.
 - 0.2.14 - Fade out splash screen symmetrically before launching application.
 - 0.2.13 - Delegate tab motion events to lifecycle UI to prevent missing handler error.
 - 0.2.12 - Fix property initialisation error in safety analysis facade.
