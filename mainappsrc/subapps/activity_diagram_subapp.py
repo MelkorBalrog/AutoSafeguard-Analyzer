@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from tkinter import simpledialog
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
-from gui.architecture import ActivityDiagramWindow
+from gui.windows.architecture import ActivityDiagramWindow
 
 
 class ActivityDiagramSubApp:
