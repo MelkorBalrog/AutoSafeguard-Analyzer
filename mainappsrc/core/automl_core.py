@@ -830,6 +830,9 @@ class AutoMLApp(UISetupMixin, EventHandlersMixin, PersistenceWrappersMixin, Anal
         # Centralise data lookups in a dedicated helper
         self.data_access_queries = DataAccess_Queries(self)
 
+        # Helper for input validation and work product management
+        self.validation_consistency = Validation_Consistency(self)
+
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
         self.load_default_mechanisms()
