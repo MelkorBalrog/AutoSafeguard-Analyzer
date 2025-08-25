@@ -67,7 +67,12 @@ def _expected_text(cfg, node_type: str) -> str:
 
 
 def test_governance_element_tooltips(monkeypatch):
-    cfg = load_diagram_rules(Path(__file__).resolve().parents[1] / "config/diagram_rules.json")
+    cfg = load_diagram_rules(
+        Path(__file__).resolve().parents[1]
+        / "config"
+        / "rules"
+        / "diagram_rules.json"
+    )
     SysMLRepository.reset_instance()
     repo = SysMLRepository.get_instance()
     diag = repo.create_diagram("Governance Diagram", name="Gov")

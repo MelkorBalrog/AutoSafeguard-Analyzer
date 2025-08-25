@@ -28,6 +28,7 @@ class SafetyCase:
         base = load_report_template(
             Path(__file__).resolve().parents[1]
             / "config"
+            / "templates"
             / "safety_security_report_template.json"
         )
 

@@ -492,6 +492,37 @@ def format_requirement(req, include_id=True):
 from pathlib import Path
 from gui.dialogs.user_info_dialog import UserInfoDialog
 
+# Node types treated as gates when rendering and editing
+_CONFIG_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "config"
+    / "rules"
+    / "diagram_rules.json"
+)
+_CONFIG = load_diagram_rules(_CONFIG_PATH)
+GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
+_PATTERN_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "config"
+    / "patterns"
+    / "requirement_patterns.json"
+)
+_REPORT_TEMPLATE_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "config"
+    / "templates"
+    / "product_report_template.json"
+)
+
+
+def _reload_local_config() -> None:
+    """Reload gate node types from the external configuration file."""
+    global _CONFIG, GATE_NODE_TYPES
+    _CONFIG = load_diagram_rules(_CONFIG_PATH)
+    GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
+    # Regenerate requirement patterns whenever diagram rules change
+    regenerate_requirement_patterns()
+
 from . import config_utils
 
 # Expose configuration helpers and global state

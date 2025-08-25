@@ -224,7 +224,9 @@ class ReportTemplateEditor(tk.Frame):
         self.config_path = Path(
             config_path
             or Path(__file__).resolve().parents[1]
-            / "config/product_report_template.json"
+            / "config"
+            / "templates"
+            / "product_report_template.json"
         )
         try:
             self.data = load_report_template(self.config_path)

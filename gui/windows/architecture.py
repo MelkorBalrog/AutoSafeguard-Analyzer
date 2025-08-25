@@ -64,11 +64,16 @@ _next_obj_id = 1
 CONNECTION_SELECT_RADIUS = 15
 
 
-_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
+_CONFIG_PATH = (
+    Path(__file__).resolve().parents[1] / "config" / "rules" / "diagram_rules.json"
+)
 _CONFIG = load_diagram_rules(_CONFIG_PATH)
 
 _REQ_PATTERN_PATH = (
-    Path(__file__).resolve().parents[1] / "config/requirement_patterns.json"
+    Path(__file__).resolve().parents[1]
+    / "config"
+    / "patterns"
+    / "requirement_patterns.json"
 )
 
 

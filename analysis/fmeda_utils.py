@@ -4,7 +4,12 @@ from pathlib import Path
 from config import load_diagram_rules
 
 # Node types treated as gates when determining component names
-_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
+_CONFIG_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "config"
+    / "rules"
+    / "diagram_rules.json"
+)
 _CONFIG = load_diagram_rules(_CONFIG_PATH)
 GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
