@@ -73,6 +73,7 @@ except ModuleNotFoundError:
     from AutoML import AutoMLApp
 
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
+from mainappsrc.core.undo_manager import UndoRedoManager
 
 
 def test_undo_does_not_unload_project_when_stack_empty():
@@ -87,8 +88,7 @@ def test_undo_does_not_unload_project_when_stack_empty():
     app.apply_model_data = lambda data: None
     app.refresh_all = lambda: None
     app.diagram_tabs = {}
-    app._undo_stack = []
-    app._redo_stack = []
+    app.undo_manager = UndoRedoManager(app)
     app.undo = AutoMLApp.undo.__get__(app)
 
     # Undoing with an empty app stack should not remove repository elements

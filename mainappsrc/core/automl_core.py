@@ -41,16 +41,13 @@ from gui.styles.style_manager import StyleManager
 from gui.toolboxes.review_toolbox import ReviewData, ReviewParticipant, ReviewComment
 from functools import partial
 # Governance helper class
-from mainappsrc.managers.governance_manager import GovernanceManager
 from mainappsrc.managers.paa_manager import PrototypeAssuranceManager
-from mainappsrc.managers.product_goal_manager import ProductGoalManager
 from gui.toolboxes.safety_management_toolbox import SafetyManagementToolbox
 from gui.explorers.safety_case_explorer import SafetyCaseExplorer
 from gui.windows.gsn_diagram_window import GSN_WINDOWS
 from gui.windows.causal_bayesian_network_window import CBN_WINDOWS
 from gui.windows.gsn_config_window import GSNElementConfig
 from mainappsrc.models.gsn import GSNDiagram, GSNModule
-from mainappsrc.managers.gsn_manager import GSNManager
 from mainappsrc.models.gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from gui.utils.closable_notebook import ClosableNotebook
 from gui.controls.mac_button_style import (
@@ -75,6 +72,7 @@ from .editors import (
     SafetyConceptEditorMixin,
     RequirementsEditorMixin,
 )
+from .app_initializer import AppInitializer
 from analysis.mechanisms import (
     DiagnosticMechanism,
     MechanismLibrary,
@@ -165,6 +163,7 @@ from gui.windows.architecture import (
     ARCH_WINDOWS,
 )
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
+from .undo_manager import UndoRedoManager
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.scenario_description import template_phrases
 from mainappsrc.core.app_lifecycle_ui import AppLifecycleUI
@@ -174,6 +173,7 @@ import tkinter.font as tkFont
 import builtins
 from mainappsrc.managers.user_manager import UserManager
 from mainappsrc.managers.project_manager import ProjectManager
+from mainappsrc.ui.project_properties_dialog import ProjectPropertiesDialog
 from mainappsrc.managers.sotif_manager import SOTIFManager
 from mainappsrc.managers.cyber_manager import CyberSecurityManager
 from mainappsrc.managers.cta_manager import ControlTreeManager
@@ -232,7 +232,6 @@ else:  # pragma: no cover - fallback for minimal stubs
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from analysis.utils import (
     append_unique_insensitive,
-    update_probability_tables,
     EXPOSURE_PROBABILITIES,
     CONTROLLABILITY_PROBABILITIES,
     SEVERITY_PROBABILITIES,
@@ -390,18 +389,6 @@ class AutoMLApp(
         self.setup_style(root)
         self.lifecycle_ui = AppLifecycleUI(self, root)
         self.labels_styling = Editing_Labels_Styling(self)
-        self.top_events = []
-        self.cta_events = []
-        self.paa_events = []
-        self.fta_root_node = None
-        self.cta_root_node = None
-        self.paa_root_node = None
-        self.analysis_tabs = {}
-        self.shared_product_goals = {}
-        self.product_goal_manager = ProductGoalManager()
-        self.selected_node = None
-        self.clone_offset_counter = {}
-        self._loaded_model_paths = []
         self.root.title("AutoML-Analyzer")
         self.messagebox = messagebox
         self.version = VERSION
@@ -411,110 +398,7 @@ class AutoMLApp(
         self.lifecycle_ui._init_nav_button_style()
         self.setup_services()
         self.setup_icons()
-        self.diagram_clipboard = DiagramClipboardManager(self)
-        self.active_arch_window = None
-        self.page_history = []
-        self.project_properties = {
-            "pdf_report_name": "AutoML-Analyzer PDF Report",
-            "pdf_detailed_formulas": True,
-            "exposure_probabilities": EXPOSURE_PROBABILITIES.copy(),
-            "controllability_probabilities": CONTROLLABILITY_PROBABILITIES.copy(),
-            "severity_probabilities": SEVERITY_PROBABILITIES.copy(),
-        }
-        update_probability_tables(
-            self.project_properties["exposure_probabilities"],
-            self.project_properties["controllability_probabilities"],
-            self.project_properties["severity_probabilities"],
-        )
-        self.item_definition = {"description": "", "assumptions": ""}
-        self.safety_concept = {"functional": "", "technical": "", "cybersecurity": ""}
-        self.mission_profiles = []
-        self.fmeda_components = []
-        self.reliability_analyses = []
-        self.reliability_components = []
-        self.reliability_total_fit = 0.0
-        self.spfm = 0.0
-        self.lpfm = 0.0
-        self.reliability_dc = 0.0
-        # Lists of user-defined faults and malfunctions
-        self.faults: list[str] = []
-        self.malfunctions: list[str] = []
-        self.hazards: list[str] = []
-        self.hazard_severity: dict[str, int] = {}
-        self.failures: list[str] = []
-        self.triggering_conditions: list[str] = []
-        self.functional_insufficiencies: list[str] = []
-        self.triggering_condition_nodes = []
-        self.functional_insufficiency_nodes = []
-        self.hazop_docs = []  # list of HazopDoc
-        self.hara_docs = []   # list of HaraDoc
-        self.stpa_docs = []   # list of StpaDoc
-        self.threat_docs = []  # list of ThreatDoc
-        self.active_hazop = None
-        self.active_hara = None
-        self.active_stpa = None
-        self.active_threat = None
-        self.hazop_entries = []  # backwards compatibility for active doc
-        self.hara_entries = []
-        self.stpa_entries = []
-        self.threat_entries = []
-        self.fi2tc_docs = []  # list of FI2TCDoc
-        self.tc2fi_docs = []  # list of TC2FIDoc
-        self.active_fi2tc = None
-        self.active_tc2fi = None
-        self.cbn_docs = []  # list of CausalBayesianNetworkDoc
-        self.active_cbn = None
-        self.cybersecurity_goals: list[CybersecurityGoal] = []
-        self.arch_diagrams = []
-        self.management_diagrams = []
-        self.gsn_modules = []  # top-level GSN modules
-        self.gsn_diagrams = []  # diagrams not assigned to a module
-        self.gsn_manager = GSNManager(self)
-        # Track open diagram tabs to avoid duplicates
-        self.diagram_tabs: dict[str, ttk.Frame] = {}
-        self.top_events = []
-        self.reviews = []
-        self.review_data = None
-        self.review_window = None
-        self.governance_manager = GovernanceManager(self)
-        self.safety_mgmt_toolbox = SafetyManagementToolbox()
-        self.governance_manager.attach_toolbox(self.safety_mgmt_toolbox)
-        self.probability_reliability = Probability_Reliability(self)
-        self.current_user = ""
-        self.comment_target = None
-        self._undo_stack: list[dict] = []
-        self._redo_stack: list[dict] = []
-        # Track which work products are currently enabled. Menu entries for
-        # these products remain disabled until the corresponding governance
-        # diagram adds the work product. The mapping stores references to the
-        # menu and entry index for each work product so they can be toggled at
-        # runtime.
-        self.enabled_work_products: set[str] = set()
-        self.work_product_menus: dict[str, list[tuple[tk.Menu, int]]] = {}
-        self.versions = []
-        self.diff_nodes = []
-        self.fi2tc_entries = []
-        self.tc2fi_entries = []
-        self.scenario_libraries = []
-        self.odd_libraries = []
-        self.odd_elements = []
-        self.update_odd_elements()
-        # Provide the drawing helper to dialogs that may be opened later
-        self.fta_drawing_helper = fta_drawing_helper
-
-        # Tree structure helpers
-        self.structure_tree_operations = Structure_Tree_Operations(self)
-
-        self.mechanism_libraries = []
-        self.selected_mechanism_libraries = []
-        self.load_default_mechanisms()
-
-        self.mechanism_libraries = []
-        self.selected_mechanism_libraries = []
-        self.load_default_mechanisms()
-
-        self.mechanism_libraries = []
-        self.load_default_mechanisms()
+        AppInitializer(self).initialize()
 
         menubar = tk.Menu(root)
         file_menu = tk.Menu(menubar, tearoff=0)
@@ -1594,146 +1478,15 @@ class AutoMLApp(
     def sync_cyber_risk_to_goals(self):
         return self.probability_reliability.sync_cyber_risk_to_goals()
 
-
     def add_top_level_event(self):
         return self.safety_analysis.add_top_level_event()
 
     def _build_probability_frame(self, parent, title: str, levels: range, values: dict, row: int, dialog_font):
         return self.probability_reliability._build_probability_frame(parent, title, levels, values, row, dialog_font)
 
-    def _apply_project_properties(
-        self,
-        name: str,
-        detailed: bool,
-        exp_vars: dict,
-        ctrl_vars: dict,
-        sev_vars: dict,
-        smt,
-        freeze: bool,
-    ) -> None:
-        """Persist updated project properties and refresh probability tables."""
-        self.project_properties["pdf_report_name"] = name
-        self.project_properties["pdf_detailed_formulas"] = detailed
-        self.project_properties["exposure_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-        }
-        self.project_properties["controllability_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-        }
-        self.project_properties["severity_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-        }
-        update_probability_tables(
-            self.project_properties["exposure_probabilities"],
-            self.project_properties["controllability_probabilities"],
-            self.project_properties["severity_probabilities"],
-        )
-        if smt:
-            self.governance_manager.freeze_governance_diagrams(freeze)
-
-    def edit_project_properties(self):
-        prop_win = tk.Toplevel(self.root)
-        prop_win.title("Project Properties")
-        prop_win.resizable(False, False)
-        dialog_font = tkFont.Font(family="Arial", size=10)
-
-        ttk.Label(prop_win, text="PDF Report Name:", font=dialog_font).grid(
-            row=0, column=0, padx=10, pady=10, sticky="w"
-        )
-        pdf_entry = ttk.Entry(prop_win, width=40, font=dialog_font)
-        pdf_entry.insert(0, self.project_properties.get("pdf_report_name", "AutoML-Analyzer PDF Report"))
-        pdf_entry.grid(row=0, column=1, padx=10, pady=10)
-
-        # Checkbox to choose between detailed formulas or score results only.
-        var_detailed = tk.BooleanVar(
-            value=self.project_properties.get("pdf_detailed_formulas", True)
-        )
-        chk = ttk.Checkbutton(
-            prop_win,
-            text="Show Detailed Formulas in PDF Report",
-            variable=var_detailed,
-        )
-        chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-
-        smt = getattr(self, "safety_mgmt_toolbox", None)
-        all_frozen = False
-        if smt:
-            diagrams = smt.list_diagrams()
-            all_frozen = diagrams and all(smt.diagram_frozen(d) for d in diagrams)
-        var_freeze = tk.BooleanVar(
-            value=self.project_properties.get("freeze_governance_diagrams", bool(all_frozen))
-        )
-        ttk.Checkbutton(
-            prop_win,
-            text="Freeze Governance Diagrams",
-            variable=var_freeze,
-        ).grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-
-        exp_vars = self._build_probability_frame(
-            prop_win,
-            "Exposure Probabilities P(E|HB)",
-            range(1, 5),
-            self.project_properties.get("exposure_probabilities", {}),
-            3,
-            dialog_font,
-        )
-        ctrl_vars = self._build_probability_frame(
-            prop_win,
-            "Controllability Probabilities P(C|E)",
-            range(1, 4),
-            self.project_properties.get("controllability_probabilities", {}),
-            4,
-            dialog_font,
-        )
-        sev_vars = self._build_probability_frame(
-            prop_win,
-            "Severity Probabilities P(S|C)",
-            range(1, 4),
-            self.project_properties.get("severity_probabilities", {}),
-            5,
-            dialog_font,
-        )
-
-        def save_props() -> None:
-            new_name = pdf_entry.get().strip()
-            if not new_name:
-                messagebox.showwarning(
-                    "Project Properties", "PDF Report Name cannot be empty."
-                )
-                return
-
-            self.project_properties["pdf_report_name"] = new_name
-            self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
-            self.project_properties["exposure_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-            }
-            self.project_properties["controllability_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-            }
-            self.project_properties["severity_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-            }
-            self.project_properties["freeze_governance_diagrams"] = var_freeze.get()
-            update_probability_tables(
-                self.project_properties["exposure_probabilities"],
-                self.project_properties["controllability_probabilities"],
-                self.project_properties["severity_probabilities"],
-            )
-            if smt:
-                self.governance_manager.freeze_governance_diagrams(var_freeze.get())
-            messagebox.showinfo(
-                "Project Properties", "Project properties updated."
-            )
-            prop_win.destroy()
-
-        ttk.Button(prop_win, text="Save", command=save_props, width=10).grid(
-            row=6, column=0, columnspan=2, pady=10
-        )
-        prop_win.update_idletasks()
-        prop_win.minsize(prop_win.winfo_width(), prop_win.winfo_height())
-        prop_win.transient(self.root)
-        prop_win.grab_set()
-        self.root.wait_window(prop_win)
+    def edit_project_properties(self) -> None:
+        """Open the project properties dialog."""
+        ProjectPropertiesDialog(self).show()
 
     def create_diagram_image(self):  # pragma: no cover - delegation
         return self.diagram_renderer.create_diagram_image()
@@ -6370,281 +6123,43 @@ class AutoMLApp(
         return current_state != getattr(self, "last_saved_state", None)
 
     # ------------------------------------------------------------
+    # ------------------------------------------------------------
     # Undo support
     # ------------------------------------------------------------
-    def _strip_object_positions(self, data: dict) -> dict:
-        """Return a copy of *data* without concrete object positions."""
-
-        cleaned = json.loads(json.dumps(data))
-
-        def scrub(obj: Any) -> None:
-            if isinstance(obj, dict):
-                for field in ("x", "y", "modified", "modified_by", "modified_by_email"):
-                    obj.pop(field, None)
-                for value in obj.values():
-                    scrub(value)
-            elif isinstance(obj, list):
-                for item in obj:
-                    scrub(item)
-
-        scrub(cleaned)
-        return cleaned
-
     def push_undo_state(self, strategy: str = "v4", sync_repo: bool = True) -> None:
-        """Save the current model state for undo operations."""
-        repo = SysMLRepository.get_instance()
-        if sync_repo:
-            repo.push_undo_state(strategy=strategy, sync_app=False)
-        if not hasattr(self, "_undo_stack"):
-            self._undo_stack = []
-        if not hasattr(self, "_redo_stack"):
-            self._redo_stack = []
-        try:
-            state = self.export_model_data(include_versions=False)
-            stripped = self._strip_object_positions(state)
-        except AttributeError:
-            state = {}
-            stripped = {}
+        self.undo_manager.push_undo_state(strategy=strategy, sync_repo=sync_repo)
 
-        handler = getattr(
-            self, f"_push_undo_state_{strategy}", self._push_undo_state_v1
-        )
-        changed = handler(state, stripped)
-
-        if changed and len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        if changed:
-            self._redo_stack.clear()
-
-    # Variants for push_undo_state
     def _push_undo_state_v1(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack:
-            last = self._undo_stack[-1]
-            if last == state:
-                return False
-            if self._strip_object_positions(last) == stripped:
-                if (
-                    len(self._undo_stack) >= 2
-                    and self._strip_object_positions(self._undo_stack[-2]) == stripped
-                ):
-                    self._undo_stack[-1] = state
-                    return True
-                self._undo_stack.append(state)
-                return True
-        else:
-            self._undo_stack.append(state)
-            return True
-
-        self._undo_stack.append(state)
-        return True
+        return self.undo_manager._push_undo_state_v1(state, stripped)
 
     def _push_undo_state_v2(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack and self._undo_stack[-1] == state:
-            return False
-        if self._undo_stack and self._strip_object_positions(self._undo_stack[-1]) == stripped:
-            if getattr(self, "_last_move_base", None) == stripped:
-                self._undo_stack[-1] = state
-            else:
-                self._undo_stack.append(state)
-                self._last_move_base = stripped
-            return True
-        self._last_move_base = None
-        self._undo_stack.append(state)
-        return True
+        return self.undo_manager._push_undo_state_v2(state, stripped)
 
     def _push_undo_state_v3(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack and self._undo_stack[-1] == state:
-            return False
-        if self._undo_stack and self._strip_object_positions(self._undo_stack[-1]) == stripped:
-            if getattr(self, "_move_run_length", 0):
-                self._undo_stack[-1] = state
-            else:
-                self._undo_stack.append(state)
-            self._move_run_length = getattr(self, "_move_run_length", 0) + 1
-            return True
-        self._move_run_length = 0
-        self._undo_stack.append(state)
-        return True
+        return self.undo_manager._push_undo_state_v3(state, stripped)
 
     def _push_undo_state_v4(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack and self._undo_stack[-1] == state:
-            return False
-        self._undo_stack.append(state)
-        if len(self._undo_stack) >= 3:
-            s1 = self._strip_object_positions(self._undo_stack[-3])
-            s2 = self._strip_object_positions(self._undo_stack[-2])
-            if s1 == s2 == stripped:
-                self._undo_stack.pop(-2)
-        return True
+        return self.undo_manager._push_undo_state_v4(state, stripped)
 
     def _undo_hotkey(self, event):
         """Keyboard shortcut handler for undo."""
-        self.undo()
+        self.undo_manager.undo()
         return "break"
 
     def _redo_hotkey(self, event):
         """Keyboard shortcut handler for redo."""
-        self.redo()
+        self.undo_manager.redo()
         return "break"
 
     def undo(self, strategy: str = "v4"):
-        """Revert the repository and model data to the previous state."""
-        repo = SysMLRepository.get_instance()
-        handler = getattr(self, f"_undo_{strategy}", self._undo_v1)
-        changed = handler(repo)
-        if not changed:
-            return
-        for tab in getattr(self, "diagram_tabs", {}).values():
-            for child in tab.winfo_children():
-                if hasattr(child, "refresh_from_repository"):
-                    child.refresh_from_repository()
-        self.refresh_all()
-        try:
-            self.apply_governance_rules()
-        except Exception:
-            pass
+        self.undo_manager.undo(strategy=strategy)
 
     def redo(self, strategy: str = "v4"):
-        """Restore the next state from the redo stack."""
-        repo = SysMLRepository.get_instance()
-        handler = getattr(self, f"_redo_{strategy}", self._redo_v1)
-        changed = handler(repo)
-        if not changed:
-            return
-        for tab in getattr(self, "diagram_tabs", {}).values():
-            for child in tab.winfo_children():
-                if hasattr(child, "refresh_from_repository"):
-                    child.refresh_from_repository()
-        self.refresh_all()
-        try:
-            self.apply_governance_rules()
-        except Exception:
-            pass
+        self.undo_manager.redo(strategy=strategy)
 
     def clear_undo_history(self) -> None:
         """Remove all undo and redo history."""
-        self._undo_stack.clear()
-        self._redo_stack.clear()
-        repo = SysMLRepository.get_instance()
-        getattr(repo, "_undo_stack", []).clear()
-        getattr(repo, "_redo_stack", []).clear()
-
-    # Undo/redo variants
-    def _undo_v1(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v1")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                return False
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _undo_v2(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v2")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                return False
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _undo_v3(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v3")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                return False
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _undo_v4(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v4")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                self._redo_stack.append(current)
-                if len(self._redo_stack) > 20:
-                    self._redo_stack.pop(0)
-                return True
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v1(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v1")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v2(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v2")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v3(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v3")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v4(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v4")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
+        self.undo_manager.clear_history()
     def confirm_close(self):
         """Prompt to save if there are unsaved changes before closing."""
         if self.has_unsaved_changes():
@@ -6677,7 +6192,7 @@ class AutoMLApp(
                 self.project_properties[key] = {
                     int(k): float(v) for k, v in probs.items()
                 }
-        update_probability_tables(
+        self.probability_reliability.update_probability_tables(
             self.project_properties.get("exposure_probabilities"),
             self.project_properties.get("controllability_probabilities"),
             self.project_properties.get("severity_probabilities"),
@@ -7121,7 +6636,7 @@ class AutoMLApp(
             props.get("severity_probabilities") or SEVERITY_PROBABILITIES
         )
         self.project_properties = props
-        update_probability_tables(
+        self.probability_reliability.update_probability_tables(
             self.project_properties["exposure_probabilities"],
             self.project_properties["controllability_probabilities"],
             self.project_properties["severity_probabilities"],
@@ -7261,8 +6776,7 @@ class AutoMLApp(
         self.root_node = None
         self.selected_node = None
         self.page_history = []
-        self._undo_stack.clear()
-        self._redo_stack.clear()
+        self.undo_manager.clear_history()
         if getattr(self, "analysis_tree", None):
             self.analysis_tree.delete(*self.analysis_tree.get_children())
 

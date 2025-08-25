@@ -31,6 +31,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from AutoML import AutoMLApp
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
+from mainappsrc.core.undo_manager import UndoRedoManager
 
 class HazardSeverityUndoRedoTests(unittest.TestCase):
     def setUp(self):
@@ -41,8 +42,7 @@ class HazardSeverityUndoRedoTests(unittest.TestCase):
         self.app.fi2tc_docs = []
         self.app.tc2fi_docs = []
         self.app.update_views = lambda: None
-        self.app._undo_stack = []
-        self.app._redo_stack = []
+        self.app.undo_manager = UndoRedoManager(self.app)
         self.app.export_model_data = lambda include_versions=False: {
             "hazard_severity": self.app.hazard_severity.copy()
         }
