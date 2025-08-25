@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Configuration dialog for editing GSN node properties."""
 from __future__ import annotations
+
+"""Configuration dialog for editing GSN node properties."""
 
 import tkinter as tk
 from tkinter import ttk

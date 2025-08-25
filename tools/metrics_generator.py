@@ -18,6 +18,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Generate simple code metrics for ISO 26262 quality checks.
 
 This script traverses a target directory and gathers basic metrics such as
@@ -30,7 +32,6 @@ Example usage::
 
 The output path may be customised with ``--output``.
 """
-from __future__ import annotations
 
 import argparse
 import ast

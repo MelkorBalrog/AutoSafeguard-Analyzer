@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Data access helper queries for :class:`AutoMLApp`.
 
 This module centralises database and model lookup helpers that were
@@ -23,7 +25,6 @@ previously methods on ``AutoMLApp``.  Separating them keeps the main
 application class focused on orchestration and UI responsibilities while
 these functions provide read-only views over the underlying model.
 """
-from __future__ import annotations
 
 from typing import List
 

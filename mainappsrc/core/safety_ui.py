@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""UI mixin providing safety-related dialogs and editors."""
 from __future__ import annotations
+
+"""UI mixin providing safety-related dialogs and editors."""
 
 import csv
 import tkinter as tk

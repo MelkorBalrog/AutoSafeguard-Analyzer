@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Simple Causal Bayesian Network utilities.
 
 This module provides a minimal implementation of a causal Bayesian
@@ -41,7 +43,6 @@ The small network above mirrors the example discussed in the project
 README and illustrates how priors, conditional probability tables and
 queries map to the "circles and tables" intuition.
 """
-from __future__ import annotations
 
 from dataclasses import dataclass, field
 from itertools import product

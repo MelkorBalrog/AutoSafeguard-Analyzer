@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Explorer for safety & security cases derived from GSN diagrams."""
 from __future__ import annotations
+
+"""Explorer for safety & security cases derived from GSN diagrams."""
 
 import tkinter as tk
 from tkinter import ttk, simpledialog

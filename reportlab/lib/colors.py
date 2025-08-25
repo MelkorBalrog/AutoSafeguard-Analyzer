@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Minimal color definitions for the ReportLab stub.
 
 The real :mod:`reportlab.lib.colors` module exposes a fairly extensive
@@ -30,7 +32,6 @@ tests, but storing something sensible makes debugging easier and keeps the
 API reasonably faithful.
 """
 
-from __future__ import annotations
 
 from typing import Tuple
 

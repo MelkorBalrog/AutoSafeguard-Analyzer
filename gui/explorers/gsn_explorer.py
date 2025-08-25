@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Simple explorer window for GSN argumentation diagrams."""
 from __future__ import annotations
+
+"""Simple explorer window for GSN argumentation diagrams."""
 
 import tkinter as tk
 from tkinter import ttk, simpledialog

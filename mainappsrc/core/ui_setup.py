@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """UI setup helpers for AutoMLApp.
 
 This module groups methods related to user interface
@@ -24,7 +26,6 @@ initialisation and diagram tab management. They are mixed into
 :class:`UISetupMixin` to keep ``automl_core`` lean.
 """
 
-from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk

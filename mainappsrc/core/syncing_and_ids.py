@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Synchronization helpers for nodes keyed by unique IDs."""
 from __future__ import annotations
+
+"""Synchronization helpers for nodes keyed by unique IDs."""
 
 from typing import TYPE_CHECKING, List, Any
 

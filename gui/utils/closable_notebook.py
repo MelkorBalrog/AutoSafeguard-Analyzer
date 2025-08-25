@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Custom ttk.Notebook widget with detachable tabs.
 
 The widget behaves like a regular :class:`ttk.Notebook` but displays a close
@@ -24,7 +26,6 @@ create a new floating window. Dragging a tab from a floating window back onto a
 notebook re-attaches it to that notebook.
 """
 
-from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk

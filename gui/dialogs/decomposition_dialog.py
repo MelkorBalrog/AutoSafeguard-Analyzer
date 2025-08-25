@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Dialog for selecting requirement decomposition schemes.
 
 This module defines :class:`DecompositionDialog`, which allows a user to
@@ -24,7 +26,6 @@ choose a decomposition scheme based on the ASIL level.  It was moved out of
 of the main application file.
 """
 
-from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk, simpledialog

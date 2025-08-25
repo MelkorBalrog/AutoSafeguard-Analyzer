@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Utilities to package the AutoML executable into installable archives.
 
 Four different packaging strategies are provided so that the build
@@ -24,7 +26,6 @@ process can choose the most appropriate installer format.  The
 scripts, but the other strategies are available for comparison and
 testing.
 """
-from __future__ import annotations
 
 import argparse
 import os

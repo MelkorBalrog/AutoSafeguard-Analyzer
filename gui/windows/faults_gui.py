@@ -23,6 +23,7 @@
 # Added: comprehensive tooltips for thresholds & columns, per-row breakdown tooltips,
 #        and Help menu with formulas & logic.
 
+
 from __future__ import annotations
 
 import sys

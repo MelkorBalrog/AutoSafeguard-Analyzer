@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Utilities for generating scenario descriptions from parameters."""
 
-from __future__ import annotations
 
 from typing import Iterable, List, Sequence, Tuple
 

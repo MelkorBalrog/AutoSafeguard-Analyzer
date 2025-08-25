@@ -19,6 +19,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Generate requirement patterns from diagram rule configuration.
 
 This module derives requirement pattern definitions for both Safety & AI
@@ -40,7 +42,6 @@ invoked by the application whenever the model changes so requirement patterns
 stay in sync with diagram rule updates and governance diagram creation.
 """
 
-from __future__ import annotations
 
 import argparse
 import json

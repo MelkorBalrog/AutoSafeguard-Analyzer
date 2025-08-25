@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Dialog for selecting an existing user or creating a new one."""
 
-from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk, simpledialog

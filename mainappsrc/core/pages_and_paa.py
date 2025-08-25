@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Helpers for page diagrams and Prototype Assurance activities."""
 
-from __future__ import annotations
 
 import tkinter as tk
 from gui.styles.style_manager import StyleManager
