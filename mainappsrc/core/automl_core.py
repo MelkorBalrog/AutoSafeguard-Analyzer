@@ -297,6 +297,7 @@ from mainappsrc.managers.review_manager import ReviewManager
 from .versioning_review import Versioning_Review
 from mainappsrc.core.diagram_renderer import DiagramRenderer
 from .validation_consistency import Validation_Consistency
+from .reporting_export import Reporting_Export
 from analysis.user_config import (
     load_user_config,
     save_user_config,
@@ -832,6 +833,9 @@ class AutoMLApp(UISetupMixin, EventHandlersMixin, PersistenceWrappersMixin, Anal
 
         # Helper for input validation and work product management
         self.validation_consistency = Validation_Consistency(self)
+
+        # Reporting and export operations
+        self.reporting_export = Reporting_Export(self)
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
