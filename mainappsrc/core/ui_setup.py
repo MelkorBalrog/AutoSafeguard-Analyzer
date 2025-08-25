@@ -9,12 +9,21 @@ initialisation and diagram tab management. They are mixed into
 from __future__ import annotations
 
 import tkinter as tk
+from tkinter import ttk
 from gui.utils.icon_factory import create_icon
 from mainappsrc.managers.paa_manager import PrototypeAssuranceManager
+from mainappsrc.subapps.style_subapp import StyleSubApp
 
 
 class UISetupMixin:
     """Mixin providing UI setup and diagram management helpers."""
+
+    def setup_style(self, root: tk.Misc) -> None:
+        """Initialise ttk styles and associated image resources."""
+        self.style = ttk.Style()
+        self.style_app = StyleSubApp(root, self.style)
+        self.style_app.apply()
+        self._btn_imgs = self.style_app.btn_images
 
     def enable_fta_actions(self, enabled: bool) -> None:
         """Enable or disable FTA-related menu actions."""
