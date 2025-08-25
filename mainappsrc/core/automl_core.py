@@ -272,6 +272,7 @@ from .ui_setup import UISetupMixin
 from .event_handlers import EventHandlersMixin
 from .persistence_wrappers import PersistenceWrappersMixin
 from .analysis_utils import AnalysisUtilsMixin
+from .data_access_queries import DataAccess_Queries
 from analysis.mechanisms import (
     DiagnosticMechanism,
     MechanismLibrary,
@@ -828,6 +829,9 @@ class AutoMLApp(UISetupMixin, EventHandlersMixin, PersistenceWrappersMixin, Anal
 
         # Centralise data lookups in a dedicated helper
         self.data_access_queries = DataAccess_Queries(self)
+
+        # Helper for input validation and work product management
+        self.validation_consistency = Validation_Consistency(self)
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
