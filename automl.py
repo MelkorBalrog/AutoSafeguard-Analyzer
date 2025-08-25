@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
@@ -16,11 +15,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""Compatibility alias exposing :mod:`AutoML` as ``automl``.
 
-"""Legacy lowercase launcher for :mod:`AutoML`."""
+This thin wrapper allows legacy imports such as ``import automl``
+while re-exporting all public names from the main :mod:`AutoML` module.
+"""
 
 from AutoML import *  # noqa: F401,F403
-
-if __name__ == "__main__":
-    from AutoML import main
-    main()
