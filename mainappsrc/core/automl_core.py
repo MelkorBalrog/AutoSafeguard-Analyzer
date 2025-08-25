@@ -479,6 +479,8 @@ except Exception:  # pragma: no cover
     sys.path.append(os.path.dirname(base))
     from models.fta.fault_tree_node import FaultTreeNode
 
+from .structure_tree_operations import Structure_Tree_Operations
+
 from gui.toolboxes import (
     RequirementsExplorerWindow,
     DiagramElementDialog,
@@ -656,6 +658,7 @@ class AutoMLApp:
         # expose through ``fmeda`` pointing at the combined safety helper.
         self.fmeda = self.safety_analysis
         self.helper = AutoML_Helper
+        self.structure_tree_operations = Structure_Tree_Operations(self)
         # Dedicated renderer for all diagram-related operations.
         self.diagram_renderer = DiagramRenderer(self)
         # style-aware icons used across tree views
@@ -1626,7 +1629,7 @@ class AutoMLApp:
         return self.fta_app.get_top_level_nodes(self)
 
     def get_all_nodes_no_filter(self, node):
-        return self.fta_app.get_all_nodes_no_filter(self, node)
+        return self.structure_tree_operations.get_all_nodes_no_filter(node)
 
     def derive_requirements_for_event(self, event):
         return self.fta_app.derive_requirements_for_event(self, event)
@@ -1644,13 +1647,13 @@ class AutoMLApp:
         return self.fta_app.generate_top_event_summary(self, top_event)
 
     def get_all_nodes(self, node=None):
-        return self.fta_app.get_all_nodes(self, node)
+        return self.structure_tree_operations.get_all_nodes(node)
 
     def get_all_nodes_table(self, root_node):
-        return self.fta_app.get_all_nodes_table(self, root_node)
+        return self.structure_tree_operations.get_all_nodes_table(root_node)
 
     def get_all_nodes_in_model(self):
-        return self.fta_app.get_all_nodes_in_model(self)
+        return self.structure_tree_operations.get_all_nodes_in_model()
 
     def get_all_basic_events(self):
         return self.fta_app.get_all_basic_events(self)
@@ -1711,26 +1714,7 @@ class AutoMLApp:
         return FTASubApp.auto_generate_fta_diagram(fta_model, output_path)
         
     def find_node_by_id_all(self, unique_id):
-        for top in self.top_events:
-            result = self.find_node_by_id(top, unique_id)
-            if result is not None:
-                return result
-
-        for entry in self.fmea_entries:
-            if getattr(entry, "unique_id", None) == unique_id:
-                return entry
-
-        for fmea in self.fmeas:
-            for e in fmea.get("entries", []):
-                if getattr(e, "unique_id", None) == unique_id:
-                    return e
-
-        for d in self.fmedas:
-            for e in d.get("entries", []):
-                if getattr(e, "unique_id", None) == unique_id:
-                    return e
-
-        return None
+        return self.structure_tree_operations.find_node_by_id_all(unique_id)
 
     def get_hazop_by_name(self, name):
         return self.risk_app.get_hazop_by_name(self, name)
@@ -2882,49 +2866,8 @@ class AutoMLApp:
         self.drag_offset_x = 0
         self.drag_offset_y = 0
 
-    def _move_subtree_strategy1(self, node, dx, dy):
-        for child in getattr(node, "children", []):
-            if not getattr(child, "is_primary_instance", True):
-                continue
-            child.x += dx
-            child.y += dy
-            self._move_subtree_strategy1(child, dx, dy)
-
-    def _move_subtree_strategy2(self, node, dx, dy):
-        for child in [c for c in getattr(node, "children", []) if getattr(c, "is_primary_instance", True)]:
-            child.x += dx
-            child.y += dy
-            self._move_subtree_strategy2(child, dx, dy)
-
-    def _move_subtree_strategy3(self, node, dx, dy):
-        children = getattr(node, "children", [])
-        for child in children:
-            if not getattr(child, "is_primary_instance", True):
-                continue
-            child.x += dx
-            child.y += dy
-            self._move_subtree_strategy3(child, dx, dy)
-
-    def _move_subtree_strategy4(self, node, dx, dy):
-        for child in list(getattr(node, "children", [])):
-            if not getattr(child, "is_primary_instance", True):
-                continue
-            child.x += dx
-            child.y += dy
-            self._move_subtree_strategy4(child, dx, dy)
-
     def move_subtree(self, node, dx, dy):
-        for strat in (
-            self._move_subtree_strategy1,
-            self._move_subtree_strategy2,
-            self._move_subtree_strategy3,
-            self._move_subtree_strategy4,
-        ):
-            try:
-                strat(node, dx, dy)
-                return
-            except Exception:
-                continue
+        return self.structure_tree_operations.move_subtree(node, dx, dy)
 
     def zoom_in(self):
         self.zoom *= 1.2
@@ -3485,31 +3428,6 @@ class AutoMLApp:
                 total += value
         return total
 
-
-
-    def get_all_nodes(self, node=None):
-        if node is None:
-            result = []
-            for te in self.top_events:
-                result.extend(self.get_all_nodes(te))
-            return result
-
-        visited = set()
-        def rec(n):
-            if n.unique_id in visited:
-                return []
-            visited.add(n.unique_id)
-            # ---- Remove or comment out any code that returns [] if n is a page or if a parent is a page
-            if n != self.root_node and any(parent.is_page for parent in n.parents):
-                return []
-
-            result = [n]
-            for c in n.children:
-                result.extend(rec(c))
-            return result
-
-        return rec(node)
-
     def update_views(self):
         self.refresh_model()
         # Compute occurrence counts from the current tree
@@ -4055,17 +3973,7 @@ class AutoMLApp:
                         win.refresh()
 
     def insert_node_in_tree(self, parent_item, node):
-        # If the node has no parent (i.e. it's a top-level event), display it.
-        if not node.parents or node.node_type.upper() == "TOP EVENT" or node.is_page:
-            txt = node.name
-            item_id = self.analysis_tree.insert(parent_item, "end", text=txt, open=True, tags=(str(node.unique_id),))
-            # Recursively insert all children regardless of their type.
-            for child in node.children:
-                self.insert_node_in_tree(item_id, child)
-        else:
-            # If the node is not top-level, still check its children.
-            for child in node.children:
-                self.insert_node_in_tree(parent_item, child)
+        return self.structure_tree_operations.insert_node_in_tree(parent_item, node)
 
     def redraw_canvas(self):
         if not hasattr(self, "canvas") or self.canvas is None or not self.canvas.winfo_exists():
@@ -4393,26 +4301,10 @@ class AutoMLApp:
                 )
 
     def find_node_by_id(self, node, unique_id, visited=None):
-        if visited is None:
-            visited = set()
-        if node.unique_id in visited:
-            return None
-        visited.add(node.unique_id)
-        if node.unique_id == unique_id:
-            return node
-        for c in node.children:
-            res = self.find_node_by_id(c, unique_id, visited)
-            if res:
-                return res
-        return None
+        return self.structure_tree_operations.find_node_by_id(node, unique_id, visited)
 
     def is_descendant(self, node, possible_ancestor):
-        if node == possible_ancestor:
-            return True
-        for p in node.parents:
-            if self.is_descendant(p, possible_ancestor):
-                return True
-        return False
+        return self.structure_tree_operations.is_descendant(node, possible_ancestor)
 
     def add_node_of_type(self, event_type):
         self.push_undo_state()
@@ -4621,56 +4513,13 @@ class AutoMLApp:
 
 
     def remove_node(self):
-        self.push_undo_state()
-        sel = self.analysis_tree.selection()
-        target = None
-        if sel:
-            tags = self.analysis_tree.item(sel[0], "tags")
-            target = self.find_node_by_id(self.root_node, int(tags[0]))
-        elif self.selected_node:
-            target = self.selected_node
-        if target and target != self.root_node:
-            if target.parents:
-                for p in target.parents:
-                    if target in p.children:
-                        p.children.remove(target)
-                target.parents = []
-            self.update_views()
-        else:
-            messagebox.showwarning("Invalid", "Cannot remove the root node.")
+        return self.structure_tree_operations.remove_node()
 
     def remove_connection(self, node):
-        self.push_undo_state()
-        if node and node != self.root_node:
-            if node.parents:
-                for p in node.parents:
-                    if node in p.children:
-                        p.children.remove(node)
-                node.parents = []
-                if node not in self.top_events:
-                    self.top_events.append(node)
-                self.update_views()
-                messagebox.showinfo("Remove Connection",
-                                    f"Disconnected {node.name} from its parent(s) and made it a top-level event.")
-            else:
-                messagebox.showwarning("Remove Connection", "Node has no parent connection.")
-        else:
-            messagebox.showwarning("Remove Connection", "Cannot disconnect the root node.")
+        return self.structure_tree_operations.remove_connection(node)
 
     def delete_node_and_subtree(self, node):
-        self.push_undo_state()
-        if node:
-            if node in self.top_events:
-                self.top_events.remove(node)
-            else:
-                for p in node.parents:
-                    if node in p.children:
-                        p.children.remove(node)
-                node.parents = []
-            self.update_views()
-            messagebox.showinfo("Delete Node", f"Deleted {node.name} and its subtree.")
-        else:
-            messagebox.showwarning("Delete Node", "Select a node to delete.")
+        return self.structure_tree_operations.delete_node_and_subtree(node)
 
     # ------------------------------------------------------------------
     # Helpers for malfunctions and failure modes
@@ -12702,7 +12551,7 @@ class AutoMLApp:
 
 
     def node_map_from_data(self, top_events):
-        return self.review_manager.node_map_from_data(top_events)
+        return self.structure_tree_operations.node_map_from_data(top_events)
 
 
     def set_current_user(self):
