@@ -12220,17 +12220,17 @@ class AutoMLApp:
             content += "</details>\n"
             return content
         return f"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>AutoML-Analyzer</title>
-<style>body {{ font-family: Arial; }} details {{ margin-left: 20px; }}</style>
-</head>
-<body>
-<h1>AutoML-Analyzer</h1>
-{node_to_html(self.root_node)}
-</body>
-</html>"""
+                    <html>
+                    <head>
+                    <meta charset="UTF-8">
+                    <title>AutoML-Analyzer</title>
+                    <style>body {{ font-family: Arial; }} details {{ margin-left: 20px; }}</style>
+                    </head>
+                    <body>
+                    <h1>AutoML-Analyzer</h1>
+                    {node_to_html(self.root_node)}
+                    </body>
+                    </html>"""
     def resolve_original(self,node):
         # Walk the clone chain until you find a primary instance.
         while not node.is_primary_instance and node.original is not None and node.original != node:
