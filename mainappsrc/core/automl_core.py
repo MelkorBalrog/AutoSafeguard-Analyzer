@@ -1415,6 +1415,9 @@ class AutoMLApp(
     def update_fta_statuses(self):
         return self.safety_analysis.update_fta_statuses()
 
+    def update_requirement_statuses(self):
+        return self.requirements_manager.update_requirement_statuses()
+
     def get_safety_goal_asil(self, sg_name):
         return self.safety_analysis.get_safety_goal_asil(sg_name)
 
