@@ -31,7 +31,7 @@ from tkinter import ttk, simpledialog
 from gui.controls import messagebox
 from config.automl_constants import PMHF_TARGETS
 from mainappsrc.models.fta.fault_tree_node import FaultTreeNode
-from analysis.models import ASIL_ORDER
+from analysis.models import ASIL_ORDER, global_requirements
 
 try:  # pragma: no cover - optional dependency
     from mainappsrc.models.sysml.sysml_repository import SysMLRepository
@@ -130,6 +130,46 @@ class RequirementsManagerSubApp:
             if ASIL_ORDER.get(a, 0) > ASIL_ORDER.get(asil, 0):
                 asil = a
         return asil
+
+    # ------------------------------------------------------------------
+    def update_requirement_statuses(self) -> None:
+        """Synchronize each requirement's status based on associated reviews."""
+
+        status_order = [
+            "draft",
+            "in review",
+            "peer reviewed",
+            "pending approval",
+            "approved",
+        ]
+        rank = {s: i for i, s in enumerate(status_order)}
+
+        for rid, req in global_requirements.items():
+            if req.get("status") == "obsolete":
+                continue
+
+            current = req.get("status", "draft")
+            current_rank = rank.get(current, 0)
+
+            for review in getattr(self.app, "reviews", []):
+                req_ids = self.app.review_manager.get_requirements_for_review(review)
+                if rid not in req_ids:
+                    continue
+                if review.mode == "joint":
+                    candidate = (
+                        "approved"
+                        if review.approved and self.app.review_is_closed_for(review)
+                        else "pending approval"
+                    )
+                else:
+                    candidate = "peer reviewed" if getattr(review, "reviewed", False) else "in review"
+
+                cand_rank = rank.get(candidate, 0)
+                if cand_rank > current_rank:
+                    current = candidate
+                    current_rank = cand_rank
+
+            req["status"] = current
 
     # ------------------------------------------------------------------
     def format_requirement(self, req: Dict[str, Any], include_id: bool = True) -> str:

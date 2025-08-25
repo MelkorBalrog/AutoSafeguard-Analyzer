@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Compatibility wrapper for the ``PageDiagram`` utilities."""
+"""Compatibility layer re-exporting page_diagram module."""
 
-from mainappsrc.core.page_diagram import PageDiagram, fta_drawing_helper
+from mainappsrc.core.page_diagram import *  # noqa: F401,F403
+from mainappsrc.core.page_diagram import fta_drawing_helper
 
-__all__ = ["PageDiagram", "fta_drawing_helper"]
+__all__ = [*globals().get("__all__", []), "fta_drawing_helper"]
