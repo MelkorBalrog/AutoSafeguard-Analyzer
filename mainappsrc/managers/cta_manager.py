@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""CTA diagram utilities for AutoMLApp."""
 from __future__ import annotations
+
+"""CTA diagram utilities for AutoMLApp."""
 
 import tkinter as tk
 from typing import Dict

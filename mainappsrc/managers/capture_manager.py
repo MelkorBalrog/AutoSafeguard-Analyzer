@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Helpers for capturing various diagram types into images.
 
 This manager centralises logic that was previously scattered in
 ``automl_core`` to reduce its complexity and improve modularity.
 """
-from __future__ import annotations
 
 import tkinter as tk
 from gui.styles.style_manager import StyleManager

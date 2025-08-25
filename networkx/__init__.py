@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Tiny fallback implementation of :mod:`networkx`.
 
 The repository bundles a very small subset of NetworkX so the test suite can
@@ -24,7 +26,6 @@ NetworkX exists somewhere else on ``sys.path`` we defer to that version to
 provide the full feature set expected by end users.
 """
 
-from __future__ import annotations
 
 import importlib.machinery
 import importlib.util

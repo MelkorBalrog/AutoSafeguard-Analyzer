@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """UI helpers extracted from AutoML core.
 
 This module defines :class:`AppLifecycleUI` which encapsulates window and
@@ -24,7 +26,6 @@ class delegates most attribute access to the parent application instance so
 existing code can continue to operate without modification.
 """
 
-from __future__ import annotations
 
 import datetime
 import tkinter as tk

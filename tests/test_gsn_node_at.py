@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Tests for GSNDiagramWindow node selection helpers.
 
 These tests exercise the four different ``_node_at`` strategies used by
@@ -25,7 +27,6 @@ select a node which previously happened due to ``Canvas.find_closest`` always
 returning an item.
 """
 
-from __future__ import annotations
 
 import pytest
 

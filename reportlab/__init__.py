@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Lightweight stand-in for the real :mod:`reportlab` package.
 
 This module provides a very small subset of the real project's
@@ -28,7 +30,6 @@ while the test environment continues to rely on the tiny fallback
 defined in this repo.
 """
 
-from __future__ import annotations
 
 import importlib.machinery
 import importlib.util

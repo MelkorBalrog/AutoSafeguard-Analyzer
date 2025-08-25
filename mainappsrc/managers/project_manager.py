@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Project persistence utilities for AutoMLApp."""
 from __future__ import annotations
+
+"""Project persistence utilities for AutoMLApp."""
 
 from tkinter import filedialog, simpledialog
 from gui.dialogs.dialog_utils import askstring_fixed

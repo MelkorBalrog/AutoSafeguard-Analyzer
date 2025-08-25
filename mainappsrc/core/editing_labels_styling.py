@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Editing and styling helpers extracted from AutoML core.
 
 This module defines :class:`Editing_Labels_Styling` which groups together
@@ -25,7 +27,6 @@ application instance so existing code can continue to call these methods
 without modification.
 """
 
-from __future__ import annotations
 
 from pathlib import Path
 import tkinter as tk

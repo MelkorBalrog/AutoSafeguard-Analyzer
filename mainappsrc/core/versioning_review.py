@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Review and versioning helpers separated from the main application."""
 from __future__ import annotations
+
+"""Review and versioning helpers separated from the main application."""
 
 from typing import Any
 

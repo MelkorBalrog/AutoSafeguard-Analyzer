@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Simple memory management utilities for lazy loading and process cleanup.
 
 The :class:`MemoryManager` centralizes lazy loading of modules or data and
@@ -23,7 +25,6 @@ tracks subprocesses so idle ones can be terminated.  It provides a minimal
 framework for the tool to only keep resources required for the currently
 visible data.
 """
-from __future__ import annotations
 
 import gc
 import importlib

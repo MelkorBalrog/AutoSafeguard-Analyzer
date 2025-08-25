@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""SOTIF management utilities for AutoMLApp."""
 from __future__ import annotations
+
+"""SOTIF management utilities for AutoMLApp."""
 
 import math
 import tkinter as tk

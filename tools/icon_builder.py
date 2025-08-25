@@ -17,13 +17,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #!/usr/bin/env python3
+from __future__ import annotations
+
 """Utility to programmatically generate an AutoML icon.
 
 Provides four drawing strategies, each producing a small 3D cube with a gear
 inside.  Strategy ``v4`` offers the most detailed rendering and is the default
 used by build scripts.
 """
-from __future__ import annotations
 
 import struct
 from pathlib import Path

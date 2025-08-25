@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Requirement quality checker.
 
 This module provides simple heuristics to verify that requirement
@@ -38,7 +40,6 @@ The implementation intentionally avoids external dependencies to keep the
 checker lightweight and easy to run in constrained environments.
 """
 
-from __future__ import annotations
 
 import re
 from typing import List, Tuple

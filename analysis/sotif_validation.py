@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Utilities for acceptance criteria and validation targets per ISO 21448.
 
 This module provides helper functions to derive the rate of hazardous behaviour
@@ -24,7 +26,6 @@ specified in ISO 21448:2022, Annex C. The formulas implemented here correspond
 to equations (C.1) and (C.2) and assume rates are expressed per hour.
 """
 
-from __future__ import annotations
 
 import math
 

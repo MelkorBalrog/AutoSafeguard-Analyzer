@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Governance management helpers for :class:`AutoMLApp`.
 
 This module centralises interactions with the Safety Management Toolbox so the
@@ -24,7 +26,6 @@ controls lifecycle module activation, toolbox change propagation and diagram
 freezing utilities.
 """
 
-from __future__ import annotations
 
 from typing import Optional, Iterable
 import tkinter as tk

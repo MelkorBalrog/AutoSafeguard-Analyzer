@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Custom control widgets for the AutoML GUI.
 
 The messagebox module is imported lazily to avoid circular import issues.  It
@@ -25,7 +27,6 @@ at module import time would cause a partially initialised package when
 ``messagebox`` is first requested.
 """
 
-from __future__ import annotations
 
 from types import ModuleType
 import importlib

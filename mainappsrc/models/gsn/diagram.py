@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Simple rendering support for GSN diagrams."""
 from __future__ import annotations
+
+"""Simple rendering support for GSN diagrams."""
 
 from dataclasses import dataclass, field
 from typing import Iterable, List

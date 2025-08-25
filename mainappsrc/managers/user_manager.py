@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""User management utilities for AutoMLApp."""
 from __future__ import annotations
+
+"""User management utilities for AutoMLApp."""
 
 from tkinter import simpledialog
 from gui.toolboxes.review_toolbox import UserSelectDialog as ReviewUserSelectDialog

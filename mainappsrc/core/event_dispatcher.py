@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Event binding utilities for :class:`AutoMLApp`.
 
 The :class:`EventDispatcher` centralises keyboard shortcut and tab-related
 bindings so that the main application class is less cluttered and easier to
 reason about.
 """
-from __future__ import annotations
 
 from typing import TYPE_CHECKING
 

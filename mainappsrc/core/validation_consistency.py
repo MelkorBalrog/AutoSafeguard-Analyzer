@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """Validation and work product consistency helpers."""
 
-from __future__ import annotations
 
 import tkinter as tk
 from analysis.models import global_requirements

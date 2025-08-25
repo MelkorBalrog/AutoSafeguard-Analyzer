@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Simple canvas window with toolbox for editing GSN diagrams."""
 from __future__ import annotations
+
+"""Simple canvas window with toolbox for editing GSN diagrams."""
 
 import csv
 import tkinter as tk

@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Search toolbox for finding objects within the AutoML model."""
 from __future__ import annotations
+
+"""Search toolbox for finding objects within the AutoML model."""
 
 import re
 import tkinter as tk

@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Table view showing solutions for a safety & security case."""
 from __future__ import annotations
+
+"""Table view showing solutions for a safety & security case."""
 
 import math
 import tkinter as tk

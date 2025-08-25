@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 """
 ===============================================================================
 Risk & Assurance Gate Calculator for Autonomous Systems
@@ -223,7 +225,6 @@ References
 """
 
 """Prototype Assurance Analysis utilities for AutoMLApp."""
-from __future__ import annotations
 
 import tkinter as tk
 
