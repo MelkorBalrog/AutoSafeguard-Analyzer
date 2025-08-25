@@ -17,6 +17,7 @@ from tools.crash_report_logger import install_best
 from tools.memory_manager import manager as memory_manager
 from tools.splash_launcher import SplashLauncher
 from mainappsrc.version import VERSION
+from mainappsrc.automl_core import AutoMLApp
 
 # Hint PyInstaller to bundle AutoML and its dependencies (e.g. gui package)
 if False:  # pragma: no cover
