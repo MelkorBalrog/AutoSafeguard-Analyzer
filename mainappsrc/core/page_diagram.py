@@ -154,6 +154,7 @@ class PageDiagram:
             menu.add_command(label="Edit Page Flag", command=lambda: self.context_edit_page_flag(node))
         menu.add_separator()
         if self.diagram_mode == "PAA":
+            menu.add_command(label="Add Gate", command=lambda: self.context_add("GATE"))
             menu.add_command(label="Add Confidence", command=lambda: self.context_add("Confidence Level"))
             menu.add_command(label="Add Robustness", command=lambda: self.context_add("Robustness Score"))
         elif self.diagram_mode == "CTA":

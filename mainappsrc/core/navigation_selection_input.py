@@ -235,6 +235,7 @@ class Navigation_Selection_Input:
         menu.add_separator()
         diag_mode = getattr(app.canvas, "diagram_mode", "FTA")
         if diag_mode == "PAA":
+            menu.add_command(label="Add Gate", command=lambda: app.add_node_of_type("GATE"))
             menu.add_command(label="Add Confidence", command=lambda: app.add_node_of_type("Confidence Level"))
             menu.add_command(label="Add Robustness", command=lambda: app.add_node_of_type("Robustness Score"))
         elif diag_mode == "CTA":

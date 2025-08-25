@@ -511,11 +511,28 @@ def refresh_tree(app, tree):
             ],
         )
 
+
+def _resolve_parent_node(app, parent_node):
+    """Return a valid parent node or ``None`` if selection is invalid."""
+    if parent_node is None:
+        sel = app.analysis_tree.selection()
+        if not sel:
+            messagebox.showwarning("No selection", "Select a parent node from the tree.")
+            return None
+        try:
+            node_id = int(app.analysis_tree.item(sel[0], "tags")[0])
+        except (IndexError, ValueError):
+            messagebox.showwarning("No selection", "Select a parent node from the tree.")
+            return None
+        parent_node = app.find_node_by_id_all(node_id)
+    return parent_node
+
 def add_node_of_type(app, event_type):
     """Attach a new ``FaultTreeNode`` of ``event_type`` under the current selection."""
 
     app.push_undo_state()
-    diag_mode = getattr(app, "diagram_mode", "FTA").upper()
+    canvas_mode = getattr(getattr(app, "canvas", None), "diagram_mode", None)
+    diag_mode = (canvas_mode or getattr(app, "diagram_mode", "FTA")).upper()
     event_upper = event_type.upper()
 
     allowed = {
@@ -541,17 +558,9 @@ def add_node_of_type(app, event_type):
         )
         return
 
-    if parent_node is None:
-        sel = app.analysis_tree.selection()
-        if not sel:
-            messagebox.showwarning("No selection", "Select a parent node from the tree.")
-            return
-        try:
-            node_id = int(app.analysis_tree.item(sel[0], "tags")[0])
-        except (IndexError, ValueError):
-            messagebox.showwarning("No selection", "Select a parent node from the tree.")
-            return
-        parent_node = app.find_node_by_id_all(node_id)
+    parent_node = _resolve_parent_node(app, parent_node)
+    if not parent_node:
+        return
 
     if parent_node.node_type.upper() in {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"}:
         messagebox.showwarning("Invalid", "Base events cannot have children.")

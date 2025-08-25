@@ -16,25 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Utility helpers for the AutoML tool."""
+"""Compatibility wrapper for tests importing ``mainappsrc.automl_core``.
 
-from .diagnostics_manager import (
-    AsyncDiagnosticsManager,
-    DiagnosticError,
-    DiagnosticsManagerBase,
-    EventDiagnosticsManager,
-    PassiveDiagnosticsManager,
-    PollingDiagnosticsManager,
-)
-from .trash_eater import TrashEater, manager_eater
+The project structure exposes the core implementation in
+``mainappsrc.core.automl_core``.  Certain tests expect the module to be
+available directly under :mod:`mainappsrc`, so this file re-exports all symbols
+from the actual location.
+"""
 
-__all__ = [
-    "AsyncDiagnosticsManager",
-    "DiagnosticError",
-    "DiagnosticsManagerBase",
-    "EventDiagnosticsManager",
-    "PassiveDiagnosticsManager",
-    "PollingDiagnosticsManager",
-    "TrashEater",
-    "manager_eater",
-]
+from mainappsrc.core.automl_core import *  # noqa: F401,F403
+

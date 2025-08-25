@@ -16,25 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Utility helpers for the AutoML tool."""
+import sys
+from pathlib import Path
 
-from .diagnostics_manager import (
-    AsyncDiagnosticsManager,
-    DiagnosticError,
-    DiagnosticsManagerBase,
-    EventDiagnosticsManager,
-    PassiveDiagnosticsManager,
-    PollingDiagnosticsManager,
-)
-from .trash_eater import TrashEater, manager_eater
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-__all__ = [
-    "AsyncDiagnosticsManager",
-    "DiagnosticError",
-    "DiagnosticsManagerBase",
-    "EventDiagnosticsManager",
-    "PassiveDiagnosticsManager",
-    "PollingDiagnosticsManager",
-    "TrashEater",
-    "manager_eater",
-]
+from mainappsrc.core.ui_setup import UISetupMixin
+
+
+def test_enable_paa_actions_includes_gate():
+    called = []
+
+    class DummyMenu:
+        def entryconfig(self, index, state):
+            called.append(index)
+
+    obj = type("O", (UISetupMixin,), {})()
+    obj.paa_menu = DummyMenu()
+    obj._paa_menu_indices = {"add_confidence": 0, "add_robustness": 1, "add_gate": 2}
+    obj.enable_paa_actions(True)
+
+    assert 2 in called

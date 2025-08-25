@@ -239,7 +239,7 @@ class PrototypeAssuranceManager:
         """Enable or disable PAA-related menu actions."""
         if hasattr(self.app, "paa_menu"):
             state = tk.NORMAL if enabled else tk.DISABLED
-            for key in ("add_confidence", "add_robustness"):
+            for key in ("add_confidence", "add_robustness", "add_gate"):
                 self.app.paa_menu.entryconfig(
                     self.app._paa_menu_indices[key], state=state
                 )

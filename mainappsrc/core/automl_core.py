@@ -631,6 +631,12 @@ class AutoMLApp(
             accelerator="Ctrl+Shift+R",
         )
         self._paa_menu_indices["add_robustness"] = paa_menu.index("end")
+        paa_menu.add_command(
+            label="Add Gate",
+            command=lambda: self.add_node_of_type("GATE"),
+            accelerator="Ctrl+Shift+G",
+        )
+        self._paa_menu_indices["add_gate"] = paa_menu.index("end")
         qualitative_menu.add_cascade(
             label="Prototype Assurance Analysis",
             menu=paa_menu,
@@ -1147,10 +1153,16 @@ class AutoMLApp(
         return self.lifecycle_ui.show_about(*args, **kwargs)
 
     def _window_has_focus(self, *args, **kwargs):
-        return self.lifecycle_ui._window_has_focus(*args, **kwargs)
+        ui = getattr(self, "lifecycle_ui", None)
+        if ui:
+            return ui._window_has_focus(*args, **kwargs)
+        return True
 
     def _window_in_selected_tab(self, *args, **kwargs):
-        return self.lifecycle_ui._window_in_selected_tab(*args, **kwargs)
+        ui = getattr(self, "lifecycle_ui", None)
+        if ui:
+            return ui._window_in_selected_tab(*args, **kwargs)
+        return True
 
     def _on_tab_change(self, *args, **kwargs):
         return self.lifecycle_ui._on_tab_change(*args, **kwargs)
