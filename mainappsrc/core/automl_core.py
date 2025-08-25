@@ -69,6 +69,7 @@ from .service_init_mixin import ServiceInitMixin
 from .icon_setup_mixin import IconSetupMixin
 from .style_setup_mixin import StyleSetupMixin
 from .page_diagram import PageDiagram
+from .diagram_clipboard_manager import DiagramClipboardManager
 from .editors import (
     ItemDefinitionEditorMixin,
     SafetyConceptEditorMixin,
@@ -410,11 +411,8 @@ class AutoMLApp(
         self.lifecycle_ui._init_nav_button_style()
         self.setup_services()
         self.setup_icons()
-        self.clipboard_node = None
-        self.diagram_clipboard = None
-        self.diagram_clipboard_type = None
+        self.diagram_clipboard = DiagramClipboardManager(self)
         self.active_arch_window = None
-        self.cut_mode = False
         self.page_history = []
         self.project_properties = {
             "pdf_report_name": "AutoML-Analyzer PDF Report",
@@ -6106,67 +6104,10 @@ class AutoMLApp(
         return False
 
     def copy_node(self):
-        for strat in (
-            self._diagram_copy_strategy1,
-            self._diagram_copy_strategy2,
-            self._diagram_copy_strategy3,
-            self._diagram_copy_strategy4,
-        ):
-            if strat():
-                return
-        node = self.selected_node
-        if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
-            sel = self.analysis_tree.selection()
-            if sel:
-                tags = self.analysis_tree.item(sel[0], "tags")
-                if tags:
-                    node = self.find_node_by_id(self.root_node, int(tags[0]))
-        if node and node != self.root_node:
-            self.clipboard_node = node
-            self.selected_node = node
-            self.cut_mode = False
-            if node.parents:
-                parent = node.parents[0]
-                context_children = getattr(parent, "context_children", [])
-                rel = "context" if node in context_children else "solved"
-            else:
-                rel = "solved"
-            self.clipboard_relation = rel
-            return
-        messagebox.showwarning("Copy", "Select a non-root node to copy.")
+        self.diagram_clipboard.copy_node()
 
     def cut_node(self):
-        """Store the currently selected node for a cut & paste operation."""
-        for strat in (
-            self._diagram_cut_strategy1,
-            self._diagram_cut_strategy2,
-            self._diagram_cut_strategy3,
-            self._diagram_cut_strategy4,
-        ):
-            if strat():
-                return
-        node = self.selected_node
-        if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
-            sel = self.analysis_tree.selection()
-            if sel:
-                tags = self.analysis_tree.item(sel[0], "tags")
-                if tags:
-                    node = self.find_node_by_id(self.root_node, int(tags[0]))
-        if node and node != self.root_node:
-            self.clipboard_node = node
-            self.selected_node = node
-            self.cut_mode = True
-            if node.parents:
-                parent = node.parents[0]
-                context_children = getattr(parent, "context_children", [])
-                rel = "context" if node in context_children else "solved"
-            else:
-                rel = "solved"
-            self.clipboard_relation = rel
-            return
-        if getattr(self, "active_arch_window", None) or ARCH_WINDOWS:
-            return
-        messagebox.showwarning("Cut", "Select a non-root node to cut.")
+        self.diagram_clipboard.cut_node()
 
     # ------------------------------------------------------------------
     def _reset_gsn_clone(self, node):
@@ -6256,129 +6197,7 @@ class AutoMLApp(
         return self.clipboard_node
 
     def paste_node(self):
-        if self.clipboard_node:
-            # NOTE: Paste logic and target resolution chain (selection → focused diagram root → app root)
-            # are final and must not be modified without explicit user approval.
-            target = None
-            sel = self.analysis_tree.selection()
-            if sel:
-                tags = self.analysis_tree.item(sel[0], "tags")
-                if tags:
-                    target = self.find_node_by_id(self.root_node, int(tags[0]))
-            if not target:
-                target = self.selected_node or self.root_node
-            if not target:
-                win = self.window_controllers._focused_gsn_window()
-                if win and getattr(win, "diagram", None):
-                    target = win.diagram.root
-            if not target:
-                win = self.window_controllers._focused_cbn_window()
-                if win and getattr(win, "diagram", None):
-                    target = win.diagram.root
-            if not target:
-                target = self.root_node
-            if not target:
-                win = self.window_controllers._focused_gsn_window()
-                if win and getattr(win, "diagram", None):
-                    target = win.diagram.root
-            if not target:
-                win = self.window_controllers._focused_cbn_window()
-                if win and getattr(win, "diagram", None):
-                    target = win.diagram.root
-            if not target:
-                target = self.root_node
-            if not target:
-                messagebox.showwarning("Paste", "Select a target node to paste into.")
-                return
-            if target.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-                messagebox.showwarning("Paste", "Cannot paste into a base event.")
-                return
-            if not target.is_primary_instance:
-                target = target.original
-            if target.unique_id == self.clipboard_node.unique_id:
-                messagebox.showwarning("Paste", "Cannot paste a node onto itself.")
-                return
-            if self.cut_mode:
-                for child in target.children:
-                    if child.unique_id == self.clipboard_node.unique_id:
-                        messagebox.showwarning("Paste", "This node is already a child of the target.")
-                        return
-            if self.cut_mode:
-                if self.clipboard_node in self.top_events:
-                    self.top_events.remove(self.clipboard_node)
-                for p in list(self.clipboard_node.parents):
-                    if self.clipboard_node in p.children:
-                        p.children.remove(self.clipboard_node)
-                self.clipboard_node.parents = []
-                if self.clipboard_node.node_type.upper() == "TOP EVENT":
-                    self.clipboard_node.node_type = "RIGOR LEVEL"
-                    self.clipboard_node.severity = None
-                    self.clipboard_node.is_page = False
-                    self.clipboard_node.input_subtype = "Failure"
-                self.clipboard_node.is_primary_instance = True
-                relation = getattr(self, "clipboard_relation", "solved")
-                if hasattr(target, "add_child"):
-                    target.add_child(self.clipboard_node, relation=relation)
-                else:
-                    if relation == "context":
-                        target.context_children.append(self.clipboard_node)
-                    else:
-                        target.children.append(self.clipboard_node)
-                    self.clipboard_node.parents.append(target)
-                if isinstance(self.clipboard_node, GSNNode):
-                    old_diag = self._find_gsn_diagram(self.clipboard_node)
-                    new_diag = self._find_gsn_diagram(target)
-                    if old_diag and old_diag is not new_diag and self.clipboard_node in old_diag.nodes:
-                        old_diag.nodes.remove(self.clipboard_node)
-                    if new_diag and self.clipboard_node not in new_diag.nodes:
-                        new_diag.add_node(self.clipboard_node)
-                self.clipboard_node.x = target.x + 100
-                self.clipboard_node.y = target.y + 100
-                self.clipboard_node.display_label = self.clipboard_node.display_label.replace(" (clone)", "")
-                self.clipboard_node = None
-                self.cut_mode = False
-                messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
-            else:
-                target_diag = self._find_gsn_diagram(target)
-                node_for_pos = self._prepare_node_for_paste(target)
-                target.children.append(node_for_pos)
-                node_for_pos.parents.append(target)
-                if isinstance(node_for_pos, GSNNode):
-                    if target_diag and node_for_pos not in target_diag.nodes:
-                        target_diag.add_node(node_for_pos)
-                node_for_pos.x = target.x + 100
-                node_for_pos.y = target.y + 100
-                if hasattr(node_for_pos, "display_label"):
-                    node_for_pos.display_label = node_for_pos.display_label.replace(" (clone)", "")
-                messagebox.showinfo("Paste", "Node pasted successfully (copied).")
-            try:
-                AutoML_Helper.calculate_assurance_recursive(
-                    self.root_node,
-                    self.top_events,
-                )
-            except AttributeError:
-                pass
-            self.update_views()
-            return
-        clip_type = getattr(self, "diagram_clipboard_type", None)
-        win = self.window_controllers._focused_cbn_window()
-        if win and getattr(self, "diagram_clipboard", None):
-            if not clip_type or clip_type == "Causal Bayesian Network":
-                if getattr(win, "paste_selected", None):
-                    win.paste_selected()
-                    return
-        win = self.window_controllers._focused_gsn_window()
-        if win and getattr(self, "diagram_clipboard", None):
-            if not clip_type or clip_type == "GSN":
-                if getattr(win, "paste_selected", None):
-                    win.paste_selected()
-                    return
-        win = self.window_controllers._focused_arch_window(clip_type)
-        if win and getattr(self, "diagram_clipboard", None):
-            if getattr(win, "paste_selected", None):
-                win.paste_selected()
-                return
-        messagebox.showwarning("Paste", "Clipboard is empty.")
+        self.diagram_clipboard.paste_node()
 
     def _get_diag_type(self, win):
         repo = getattr(win, "repo", None)

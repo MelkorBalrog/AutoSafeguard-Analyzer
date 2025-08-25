@@ -20,6 +20,7 @@ import unittest
 from types import SimpleNamespace
 
 from AutoML import AutoMLApp, AutoML_Helper, messagebox
+from mainappsrc.core.diagram_clipboard_manager import DiagramClipboardManager
 from mainappsrc.models.gsn import GSNNode, GSNDiagram
 
 
@@ -31,6 +32,7 @@ class CopyPasteActiveDiagramTests(unittest.TestCase):
 
     def _make_app(self):
         app = AutoMLApp.__new__(AutoMLApp)
+        app.diagram_clipboard = DiagramClipboardManager(app)
         app.top_events = []
         app.update_views = lambda: None
         app._make_doc_tab_visible = lambda _id: None
@@ -52,8 +54,8 @@ class CopyPasteActiveDiagramTests(unittest.TestCase):
                 diag2 = GSNDiagram(root2)
                 app.gsn_diagrams = [diag1, diag2]
                 app.root_node = root1
-                app.clipboard_node = node
-                app.cut_mode = mode == "cut"
+                app.diagram_clipboard.clipboard_node = node
+                app.diagram_clipboard.cut_mode = mode == "cut"
                 tab1 = SimpleNamespace(gsn_window=SimpleNamespace(diagram=diag1), winfo_children=lambda: [])
                 tab2 = SimpleNamespace(gsn_window=SimpleNamespace(diagram=diag2), winfo_children=lambda: [])
                 notebook = SimpleNamespace(select=lambda: "tab2", nametowidget=lambda tid: {"tab1": tab1, "tab2": tab2}[tid])

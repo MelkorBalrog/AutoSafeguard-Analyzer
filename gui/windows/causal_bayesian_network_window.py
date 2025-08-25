@@ -1406,8 +1406,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
             return
         snap = self._clone_node(self.selected_node)
         if snap:
-            self.app.diagram_clipboard = snap
-            self.app.diagram_clipboard_type = "Causal Bayesian Network"
+            self.app.diagram_clipboard.diagram_clipboard = snap
+            self.app.diagram_clipboard.diagram_clipboard_type = "Causal Bayesian Network"
 
     def cut_selected(self, _event=None) -> None:
         if not self.app or not self.selected_node:
@@ -1418,13 +1418,13 @@ class CausalBayesianNetworkWindow(tk.Frame):
 
     def paste_selected(self, _event=None) -> None:
         doc = getattr(self.app, "active_cbn", None)
-        if not doc or not self.app or not getattr(self.app, "diagram_clipboard", None):
+        if not doc or not self.app or not getattr(self.app.diagram_clipboard, "diagram_clipboard", None):
             return
-        clip_type = getattr(self.app, "diagram_clipboard_type", None)
+        clip_type = getattr(self.app.diagram_clipboard, "diagram_clipboard_type", None)
         if clip_type and clip_type != "Causal Bayesian Network":
             messagebox.showwarning("Paste", "Clipboard contains incompatible diagram element.")
             return
-        res = self._reconstruct_node(self.app.diagram_clipboard, doc)
+        res = self._reconstruct_node(self.app.diagram_clipboard.diagram_clipboard, doc)
         if not res:
             return
         name, idx = res

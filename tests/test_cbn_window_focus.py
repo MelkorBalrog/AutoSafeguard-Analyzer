@@ -20,6 +20,7 @@ import types
 import weakref
 
 from AutoML import AutoMLApp
+from mainappsrc.core.diagram_clipboard_manager import DiagramClipboardManager
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui.causal_bayesian_network_window import (
     CausalBayesianNetworkWindow,
@@ -48,12 +49,13 @@ def _make_window(app, doc):
 
 def setup_app():
     app = AutoMLApp.__new__(AutoMLApp)
-    app.diagram_clipboard = None
-    app.diagram_clipboard_type = None
+    app.diagram_clipboard = DiagramClipboardManager(app)
+    app.diagram_clipboard.diagram_clipboard = None
+    app.diagram_clipboard.diagram_clipboard_type = None
     app.selected_node = None
     app.root_node = None
-    app.clipboard_node = None
-    app.cut_mode = False
+    app.diagram_clipboard.clipboard_node = None
+    app.diagram_clipboard.cut_mode = False
     doc1 = CausalBayesianNetworkDoc(name="d1")
     doc1.network.add_node("A", cpd=0.5)
     doc1.positions["A"] = [(0, 0)]
@@ -88,7 +90,7 @@ def test_cbn_paste_uses_focused_window():
     win1.selected_node = ("A", 0)
     win1._on_focus_in()
     app.copy_node()
-    assert app.diagram_clipboard == (doc1, "A", 0)
+    assert app.diagram_clipboard.diagram_clipboard == (doc1, "A", 0)
     win1.has_focus = False
     win2.has_focus = True
     app.active_cbn = doc2
