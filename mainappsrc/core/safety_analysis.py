@@ -14,12 +14,14 @@ from tkinter import filedialog, ttk, simpledialog, messagebox
 import csv
 
 from gui.controls.mac_button_style import apply_translucid_button_style
+from gui.styles.style_manager import StyleManager
 from analysis.models import QUALIFICATIONS, COMPONENT_ATTR_TEMPLATES, component_fit_map
 from analysis.fmeda_utils import GATE_NODE_TYPES, ASIL_TARGETS
 from mainappsrc.models.fta.fault_tree_node import FaultTreeNode
 from mainappsrc.subapps.fta_subapp import FTASubApp
 from mainappsrc.core.fmea_service import FMEAService
 from mainappsrc.managers.fmeda_manager import FMEDAManager
+from . import config_utils
 
 
 class SafetyAnalysis_FTA_FMEA(FTASubApp, FMEAService, FMEDAManager):
@@ -579,3 +581,394 @@ class SafetyAnalysis_FTA_FMEA(FTASubApp, FMEAService, FMEDAManager):
     def show_fmeda_list(self):
         return FMEDAManager.show_fmeda_list(self)
 
+    # ------------------------------------------------------------------
+    # Risk and library helpers
+    # ------------------------------------------------------------------
+    def get_hazop_by_name(self, name):
+        return self.app.risk_app.get_hazop_by_name(self.app, name)
+
+    def get_hara_by_name(self, name):
+        return self.app.risk_app.get_hara_by_name(self.app, name)
+
+    def get_safety_goal_asil(self, sg_name):
+        return self.app.risk_app.get_safety_goal_asil(self.app, sg_name)
+
+    def get_hara_goal_asil(self, sg_name):
+        return self.app.risk_app.get_hara_goal_asil(self.app, sg_name)
+
+    def get_cyber_goal_cal(self, goal_id):
+        return self.app.risk_app.get_cyber_goal_cal(self.app, goal_id)
+
+    def get_top_event_safety_goals(self, node):
+        return self.app.data_access_queries.get_top_event_safety_goals(node)
+
+    def get_safety_goals_for_malfunctions(self, malfunctions: list[str]) -> list[str]:
+        goals: list[str] = []
+        for te in self.app.top_events:
+            mal = getattr(te, "malfunction", "")
+            if mal and mal in malfunctions:
+                sg = te.safety_goal_description or te.user_name or ""
+                if sg and sg not in goals:
+                    goals.append(sg)
+        return goals
+
+    def is_malfunction_used(self, name: str) -> bool:
+        if not name:
+            return False
+        for te in self.app.top_events:
+            if getattr(te, "malfunction", "") == name:
+                return True
+        for n in self.app.structure_tree_operations.get_all_nodes_in_model():
+            mals = [
+                m.strip()
+                for m in getattr(n, "fmeda_malfunction", "").split(";")
+                if m.strip()
+            ]
+            if name in mals:
+                return True
+        return False
+
+    def add_malfunction(self, name: str) -> None:
+        return self.app.risk_app.add_malfunction(self.app, name)
+
+    def add_failure(self, name: str) -> None:
+        return self.app.risk_app.add_failure(self.app, name)
+
+    def add_hazard(self, name: str, severity: int | str = 1) -> None:
+        return self.app.risk_app.add_hazard(self.app, name, severity)
+
+    def add_triggering_condition(self, name: str) -> None:
+        return self.app.risk_app.add_triggering_condition(self.app, name)
+
+    def delete_triggering_condition(self, name: str) -> None:
+        return self.app.risk_app.delete_triggering_condition(self.app, name)
+
+    def add_functional_insufficiency(self, name: str) -> None:
+        return self.app.risk_app.add_functional_insufficiency(self.app, name)
+
+    def delete_functional_insufficiency(self, name: str) -> None:
+        return self.app.risk_app.delete_functional_insufficiency(self.app, name)
+
+    # ------------------------------------------------------------------
+    # Data access wrappers
+    # ------------------------------------------------------------------
+    def get_all_gates(self):
+        return self.app.data_access_queries.get_all_gates()
+
+    def get_all_failure_modes(self):
+        return self.app.data_access_queries.get_all_failure_modes()
+
+    def get_all_fmea_entries(self):
+        return self.app.data_access_queries.get_all_fmea_entries()
+
+    def get_non_basic_failure_modes(self):
+        return self.app.data_access_queries.get_non_basic_failure_modes()
+
+    def get_failure_mode_node(self, node):
+        return self.app.data_access_queries.get_failure_mode_node(node)
+
+    def get_component_name_for_node(self, node):
+        return self.app.data_access_queries.get_component_name_for_node(node)
+
+    def get_failure_modes_for_malfunction(self, malfunction: str) -> list[str]:
+        return self.app.data_access_queries.get_failure_modes_for_malfunction(malfunction)
+
+    # ------------------------------------------------------------------
+    # Hazard and FTA views
+    # ------------------------------------------------------------------
+    def show_hazard_list(self):
+        return self.app.risk_app.show_hazard_list(self.app)
+
+    def show_hazard_explorer(self):
+        return self.app.risk_app.show_hazard_explorer(self.app)
+
+    def show_common_cause_view(self):
+        win = tk.Toplevel(self.app.root)
+        win.title("Common Cause Toolbox")
+        var_fmea = tk.BooleanVar(value=True)
+        var_fmeda = tk.BooleanVar(value=True)
+        var_fta = tk.BooleanVar(value=True)
+        chk_frame = ttk.Frame(win)
+        chk_frame.pack(anchor="w")
+        ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
+        ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
+        ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
+        for c in ["Cause", "Events"]:
+            tree.heading(c, text=c)
+            tree.column(c, width=150)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
+
+        def refresh():
+            tree.delete(*tree.get_children())
+            events_by_cause = {}
+            if var_fmea.get():
+                for fmea in self.fmeas:
+                    for be in fmea["entries"]:
+                        cause = be.description
+                        label = f"{fmea['name']}:{be.user_name or be.description or be.unique_id}"
+                        events_by_cause.setdefault(cause, set()).add(label)
+            if var_fmeda.get():
+                for fmeda in self.fmedas:
+                    for be in fmeda["entries"]:
+                        cause = be.description
+                        label = f"{fmeda['name']}:{be.user_name or be.description or be.unique_id}"
+                        events_by_cause.setdefault(cause, set()).add(label)
+            if var_fta.get():
+                for be in self.get_all_basic_events():
+                    cause = be.description or ""
+                    label = be.user_name or f"BE {be.unique_id}"
+                    events_by_cause.setdefault(cause, set()).add(label)
+            for cause, evts in events_by_cause.items():
+                if len(evts) > 1:
+                    tree.insert("", "end", values=[cause, ", ".join(sorted(evts))])
+
+        refresh()
+
+        def export_csv():
+            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
+            if not path:
+                return
+            with open(path, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["Cause", "Events"])
+                for iid in tree.get_children():
+                    writer.writerow(tree.item(iid, "values"))
+            messagebox.showinfo("Export", "Common cause data exported")
+
+        btn_frame = ttk.Frame(win)
+        btn_frame.pack()
+        ttk.Button(btn_frame, text="Refresh", command=refresh).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(btn_frame, text="Export CSV", command=export_csv).pack(side=tk.LEFT, padx=5, pady=5)
+
+    def show_cause_effect_chain(self):
+        data = self.app.build_cause_effect_data()
+        if not data:
+            messagebox.showinfo("Cause & Effect", "No data available")
+            return
+
+        win = tk.Toplevel(self.app.root)
+        win.title("Cause & Effect Chain")
+
+        nb = ttk.Notebook(win)
+        nb.pack(fill=tk.BOTH, expand=True)
+
+        table_frame = ttk.Frame(nb)
+        diagram_frame = ttk.Frame(nb)
+        nb.add(table_frame, text="Table")
+        nb.add(diagram_frame, text="Diagram")
+
+        table_frame.columnconfigure(0, weight=1)
+        table_frame.rowconfigure(0, weight=1)
+        diagram_frame.columnconfigure(0, weight=1)
+        diagram_frame.rowconfigure(0, weight=1)
+
+        cols = (
+            "Hazard",
+            "Malfunction",
+            "Threats",
+            "Attack Paths",
+            "Failure Modes",
+            "Faults",
+            "Threat Scenarios",
+            "Attack Paths",
+            "FIs",
+            "TCs",
+        )
+
+        tree = ttk.Treeview(table_frame, columns=cols, show="headings")
+        vsb = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(table_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+
+        canvas = tk.Canvas(diagram_frame, bg=StyleManager.get_instance().canvas_bg)
+        cvs_vsb = ttk.Scrollbar(diagram_frame, orient="vertical", command=canvas.yview)
+        cvs_hsb = ttk.Scrollbar(diagram_frame, orient="horizontal", command=canvas.xview)
+        canvas.configure(yscrollcommand=cvs_vsb.set, xscrollcommand=cvs_hsb.set)
+        canvas.grid(row=0, column=0, sticky="nsew")
+        cvs_vsb.grid(row=0, column=1, sticky="ns")
+        cvs_hsb.grid(row=1, column=0, sticky="ew")
+
+        row_map = {}
+        for row in data:
+            iid = tree.insert(
+                "",
+                "end",
+                values=(
+                    row["hazard"],
+                    row["malfunction"],
+                    ", ".join(sorted(row["threats"].keys())),
+                    ", ".join(sorted(row["attack_paths"])),
+                    ", ".join(sorted(row["failure_modes"].keys())),
+                    ", ".join(sorted(row["faults"])),
+                    ", ".join(sorted(row["threats"].keys())),
+                    ", ".join(sorted(row["attack_paths"])),
+                    ", ".join(sorted(row["fis"])),
+                    ", ".join(sorted(row["tcs"])),
+                ),
+            )
+            row_map[iid] = row
+
+        def draw_row(row):
+            import textwrap
+
+            nodes, edges, pos = self.app._build_cause_effect_graph(row)
+
+            color_map = {
+                "hazard": "#F08080",
+                "malfunction": "#ADD8E6",
+                "failure_mode": "#FFA500",
+                "fault": "#D3D3D3",
+                "fi": "#FFFFE0",
+                "tc": "#90EE90",
+                "attack_path": "#E0FFFF",
+                "threat": "#FFB6C1",
+            }
+
+            canvas.delete("all")
+            scale = 80
+            x_off = 50
+            y_off = 50
+            box_w = 80
+            box_h = 40
+
+            def to_canvas(x: float, y: float) -> tuple[float, float]:
+                return x_off + scale * x, y_off + scale * y
+
+            for u, v in edges:
+                x1, y1 = to_canvas(*pos[u])
+                x2, y2 = to_canvas(*pos[v])
+                canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST, tags="edge")
+                canvas.create_text(
+                    (x1 + x2) / 2,
+                    (y1 + y2) / 2,
+                    text="caused by",
+                    font=("TkDefaultFont", 8),
+                    tags="edge",
+                )
+
+            for n, (x, y) in pos.items():
+                label, kind = nodes.get(n, (n, ""))
+                color = color_map.get(kind, "white")
+                cx, cy = to_canvas(x, y)
+                canvas.create_rectangle(
+                    cx - box_w / 2,
+                    cy - box_h / 2,
+                    cx + box_w / 2,
+                    cy + box_h / 2,
+                    fill=color,
+                    outline=StyleManager.get_instance().outline_color,
+                    tags="node",
+                )
+                label = textwrap.fill(str(label), 20)
+                canvas.create_text(
+                    cx,
+                    cy,
+                    text=label,
+                    width=box_w - 10,
+                    font=("TkDefaultFont", 8),
+                    tags="node",
+                )
+
+            canvas.config(scrollregion=canvas.bbox("all"))
+            canvas.xview_moveto(0)
+            canvas.yview_moveto(0)
+            canvas.update_idletasks()
+
+        def on_select(event):
+            sel = tree.selection()
+            if sel:
+                row = row_map.get(sel[0])
+                if row:
+                    draw_row(row)
+                    nb.select(diagram_frame)
+
+        tree.bind("<<TreeviewSelect>>", on_select)
+
+        if row_map:
+            first_iid = next(iter(row_map))
+            tree.selection_set(first_iid)
+            draw_row(row_map[first_iid])
+            nb.select(diagram_frame)
+
+        def export_csv():
+            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
+            if not path:
+                return
+            with open(path, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(cols)
+                for iid in tree.get_children():
+                    writer.writerow(tree.item(iid, "values"))
+            messagebox.showinfo("Export", "Cause & effect data exported")
+
+        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
+
+    # ------------------------------------------------------------------
+    # Model refresh and requirement utilities
+    # ------------------------------------------------------------------
+    def refresh_model(self):
+        app = self.app
+        app.ensure_asil_consistency()
+        for fm in app.get_all_failure_modes():
+            app.propagate_failure_mode_attributes(fm)
+
+        def iter_analysis_events():
+            for be in self.get_all_basic_events():
+                yield be
+            for e in app.fmea_entries:
+                yield e
+            for doc in self.fmeas:
+                for e in doc.get("entries", []):
+                    yield e
+            for doc in self.fmedas:
+                for e in doc.get("entries", []):
+                    yield e
+
+        for entry in iter_analysis_events():
+            mals = [m.strip() for m in getattr(entry, "fmeda_malfunction", "").split(";") if m.strip()]
+            goals = self.get_safety_goals_for_malfunctions(mals) or self.get_top_event_safety_goals(entry)
+            if goals:
+                sg = ", ".join(goals)
+                entry.fmeda_safety_goal = sg
+                first = goals[0]
+                te = next((t for t in app.top_events if first in [t.user_name, t.safety_goal_description]), None)
+                if te:
+                    entry.fmeda_dc_target = getattr(te, "sg_dc_target", 0.0)
+                    entry.fmeda_spfm_target = getattr(te, "sg_spfm_target", 0.0)
+                    entry.fmeda_lpfm_target = getattr(te, "sg_lpfm_target", 0.0)
+
+        self.update_basic_event_probabilities()
+        app.sync_cyber_risk_to_goals()
+
+    def refresh_all(self):
+        app = self.app
+        app.update_views()
+        config_utils.regenerate_requirement_patterns()
+        app.gsn_manager.refresh()
+        for attr in dir(app):
+            if attr.endswith("_window"):
+                win = getattr(app, attr)
+                if hasattr(win, "winfo_exists") and win.winfo_exists():
+                    if hasattr(win, "refresh_docs"):
+                        win.refresh_docs()
+                    if hasattr(win, "refresh"):
+                        win.refresh()
+
+    def collect_requirements_recursive(self, node):
+        reqs = list(getattr(node, "safety_requirements", []))
+        for child in node.children:
+            reqs.extend(self.collect_requirements_recursive(child))
+        return reqs

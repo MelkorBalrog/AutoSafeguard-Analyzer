@@ -1,4 +1,4 @@
-version: 0.2.35
+version: 0.2.36
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1642,7 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.36 - Correct AutoML_Helper import for drawing manager.
+- 0.2.36 - Delegate add/get/show/link/refresh/collect routines to safety analysis facade.
 - 0.2.35 - Wrap update routines within safety analysis facade.
 - 0.2.34 - Centralise safety analysis helpers into facade and delegate from core.
 - 0.2.33 - Extract dialog classes into dedicated modules and update mixins.

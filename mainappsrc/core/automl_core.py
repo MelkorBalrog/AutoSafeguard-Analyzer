@@ -1784,7 +1784,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.safety_analysis.get_all_basic_events()
 
     def get_all_gates(self):
-        return self.data_access_queries.get_all_gates()
+        return self.safety_analysis.get_all_gates()
 
     def metric_to_text(self, metric_type, value):
         return self.probability_reliability.metric_to_text(metric_type, value)
@@ -1848,10 +1848,10 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.structure_tree_operations.find_node_by_id_all(unique_id)
 
     def get_hazop_by_name(self, name):
-        return self.risk_app.get_hazop_by_name(self, name)
+        return self.safety_analysis.get_hazop_by_name(name)
 
     def get_hara_by_name(self, name):
-        return self.risk_app.get_hara_by_name(self, name)
+        return self.safety_analysis.get_hara_by_name(name)
 
     def update_hara_statuses(self):
         return self.safety_analysis.update_hara_statuses()
@@ -1860,65 +1860,46 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.safety_analysis.update_fta_statuses()
 
     def get_safety_goal_asil(self, sg_name):
-        return self.risk_app.get_safety_goal_asil(self, sg_name)
+        return self.safety_analysis.get_safety_goal_asil(sg_name)
 
     def get_hara_goal_asil(self, sg_name):
-        return self.risk_app.get_hara_goal_asil(self, sg_name)
+        return self.safety_analysis.get_hara_goal_asil(sg_name)
 
     def get_cyber_goal_cal(self, goal_id):
-        return self.data_access_queries.get_cyber_goal_cal(goal_id)
+        return self.safety_analysis.get_cyber_goal_cal(goal_id)
 
     def get_top_event_safety_goals(self, node):
-        return self.data_access_queries.get_top_event_safety_goals(node)
+        return self.safety_analysis.get_top_event_safety_goals(node)
 
     def get_safety_goals_for_malfunctions(self, malfunctions: list[str]) -> list[str]:
-        """Return safety goal names for given malfunctions."""
-        goals = []
-        for te in self.top_events:
-            mal = getattr(te, "malfunction", "")
-            if mal and mal in malfunctions:
-                sg = te.safety_goal_description or te.user_name or ""
-                if sg and sg not in goals:
-                    goals.append(sg)
-        return goals
+        return self.safety_analysis.get_safety_goals_for_malfunctions(malfunctions)
 
     def is_malfunction_used(self, name: str) -> bool:
-        """Return True if the malfunction is used in any FTA or analysis."""
-        if not name:
-            return False
-        for te in self.top_events:
-            if getattr(te, "malfunction", "") == name:
-                return True
-        for n in self.get_all_nodes_in_model():
-            mals = [m.strip() for m in getattr(n, "fmeda_malfunction", "").split(";") if m.strip()]
-            if name in mals:
-                return True
-        return False
+        return self.safety_analysis.is_malfunction_used(name)
 
     def add_malfunction(self, name: str) -> None:
-        return self.risk_app.add_malfunction(self, name)
+        return self.safety_analysis.add_malfunction(name)
 
     def add_fault(self, name: str) -> None:
         return self.safety_analysis.add_fault(name)
 
     def add_failure(self, name: str) -> None:
-        return self.risk_app.add_failure(self, name)
+        return self.safety_analysis.add_failure(name)
 
     def add_hazard(self, name: str, severity: int | str = 1) -> None:
-        return self.risk_app.add_hazard(self, name, severity)
+        return self.safety_analysis.add_hazard(name, severity)
 
     def add_triggering_condition(self, name: str) -> None:
-        return self.risk_app.add_triggering_condition(self, name)
+        return self.safety_analysis.add_triggering_condition(name)
 
     def delete_triggering_condition(self, name: str) -> None:
-        return self.risk_app.delete_triggering_condition(self, name)
-
+        return self.safety_analysis.delete_triggering_condition(name)
 
     def add_functional_insufficiency(self, name: str) -> None:
-        return self.risk_app.add_functional_insufficiency(self, name)
+        return self.safety_analysis.add_functional_insufficiency(name)
 
     def delete_functional_insufficiency(self, name: str) -> None:
-        return self.risk_app.delete_functional_insufficiency(self, name)
+        return self.safety_analysis.delete_functional_insufficiency(name)
 
 
     def _update_shared_product_goals(self):
@@ -2506,25 +2487,25 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.data_access_queries.get_entry_field(entry, field, default)
 
     def get_all_failure_modes(self):
-        return self.data_access_queries.get_all_failure_modes()
+        return self.safety_analysis.get_all_failure_modes()
 
     def get_all_fmea_entries(self):
-        return self.data_access_queries.get_all_fmea_entries()
+        return self.safety_analysis.get_all_fmea_entries()
 
     def get_non_basic_failure_modes(self):
-        return self.data_access_queries.get_non_basic_failure_modes()
+        return self.safety_analysis.get_non_basic_failure_modes()
 
     def get_available_failure_modes_for_gates(self, current_gate=None):
         return self.safety_analysis.get_available_failure_modes_for_gates(current_gate)
 
     def get_failure_mode_node(self, node):
-        return self.data_access_queries.get_failure_mode_node(node)
+        return self.safety_analysis.get_failure_mode_node(node)
 
     def get_component_name_for_node(self, node):
-        return self.data_access_queries.get_component_name_for_node(node)
+        return self.safety_analysis.get_component_name_for_node(node)
 
     def get_failure_modes_for_malfunction(self, malfunction: str) -> list[str]:
-        return self.data_access_queries.get_failure_modes_for_malfunction(malfunction)
+        return self.safety_analysis.get_failure_modes_for_malfunction(malfunction)
 
     def get_faults_for_failure_mode(self, failure_mode_node) -> list[str]:
         return self.safety_analysis.get_faults_for_failure_mode(failure_mode_node)
@@ -2967,72 +2948,10 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
 
     def refresh_model(self):
-        """Recalculate derived values across the entire model.
-
-        This recomputes ASIL assignments, basic-event probabilities and
-        cybersecurity CAL levels so that edits in one analysis propagate
-        throughout the full input→output flow.
-        """
-
-        # Ensure safety-related data is consistent first
-        self.ensure_asil_consistency()
-
-        # Propagate FMEDA attributes to any linked basic events
-        for fm in self.get_all_failure_modes():
-            self.propagate_failure_mode_attributes(fm)
-
-        def iter_analysis_events():
-            for be in self.get_all_basic_events():
-                yield be
-            for e in self.fmea_entries:
-                yield e
-            for doc in self.fmeas:
-                for e in doc.get("entries", []):
-                    yield e
-            for doc in self.fmedas:
-                for e in doc.get("entries", []):
-                    yield e
-
-        for entry in iter_analysis_events():
-            mals = [m.strip() for m in getattr(entry, "fmeda_malfunction", "").split(";") if m.strip()]
-            goals = self.get_safety_goals_for_malfunctions(mals) or self.get_top_event_safety_goals(entry)
-            if goals:
-                sg = ", ".join(goals)
-                entry.fmeda_safety_goal = sg
-                first = goals[0]
-                te = next((t for t in self.top_events if first in [t.user_name, t.safety_goal_description]), None)
-                if te:
-                    entry.fmeda_dc_target = getattr(te, "sg_dc_target", 0.0)
-                    entry.fmeda_spfm_target = getattr(te, "sg_spfm_target", 0.0)
-                    entry.fmeda_lpfm_target = getattr(te, "sg_lpfm_target", 0.0)
-
-        # Recalculate probabilities for all basic events
-        self.update_basic_event_probabilities()
-
-        # Synchronize cybersecurity risk assessments with goal CAL values
-        self.sync_cyber_risk_to_goals()
+        return self.safety_analysis.refresh_model()
 
     def refresh_all(self):
-        """Synchronize model elements and refresh all open views.
-
-        This is invoked whenever the user opens, closes or edits content so
-        analyses and diagrams remain consistent with the underlying data.
-        """
-        # Update the main explorer and propagate model changes
-        self.update_views()
-        # Regenerate requirement patterns for any model change
-        config_utils.regenerate_requirement_patterns()
-        # Refresh GSN views separately via the manager
-        self.gsn_manager.refresh()
-        # Refresh any secondary windows that may be open
-        for attr in dir(self):
-            if attr.endswith("_window"):
-                win = getattr(self, attr)
-                if hasattr(win, "winfo_exists") and win.winfo_exists():
-                    if hasattr(win, "refresh_docs"):
-                        win.refresh_docs()
-                    if hasattr(win, "refresh"):
-                        win.refresh()
+        return self.safety_analysis.refresh_all()
 
     def insert_node_in_tree(self, parent_item, node):
         return self.structure_tree_operations.insert_node_in_tree(parent_item, node)
@@ -3810,7 +3729,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         refresh_tree()
 
     def show_hazard_list(self):
-        self.risk_app.show_hazard_list(self)
+        return self.safety_analysis.show_hazard_list()
 
     class SelectFailureModeDialog(simpledialog.Dialog):
         def __init__(self, parent, app, modes):
@@ -4432,10 +4351,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
             )
 
     def collect_requirements_recursive(self, node):
-        reqs = list(getattr(node, "safety_requirements", []))
-        for child in node.children:
-            reqs.extend(self.collect_requirements_recursive(child))
-        return reqs
+        return self.safety_analysis.collect_requirements_recursive(node)
 
     def show_safety_goals_matrix(self):
         """Display product goals and derived requirements in a tree view."""
@@ -5143,50 +5059,6 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
     def export_cybersecurity_goal_requirements(self):
         return self.reporting_export.export_cybersecurity_goal_requirements()
 
-    def show_cut_sets(self):
-        """Display minimal cut sets for every top event."""
-        if not self.top_events:
-            return
-        win = tk.Toplevel(self.root)
-        win.title("FTA Cut Sets")
-        columns = ("Top Event", "Cut Set #", "Basic Events")
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for c in columns:
-            tree.heading(c, text=c)
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        for te in self.top_events:
-            nodes_by_id = {}
-
-            def map_nodes(n):
-                nodes_by_id[n.unique_id] = n
-                for child in n.children:
-                    map_nodes(child)
-
-            map_nodes(te)
-            cut_sets = self.calculate_cut_sets(te)
-            te_label = te.user_name or f"Top Event {te.unique_id}"
-            for idx, cs in enumerate(cut_sets, start=1):
-                names = ", ".join(
-                    f"{nodes_by_id[uid].user_name or nodes_by_id[uid].node_type} [{uid}]"
-                    for uid in sorted(cs)
-                )
-                tree.insert("", "end", values=(te_label, idx, names))
-                te_label = ""
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Top Event", "Cut Set #", "Basic Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Cut sets exported")
-
-        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
-
     def build_cause_effect_data(self):
         return self.probability_reliability.build_cause_effect_data()
 
@@ -5194,145 +5066,84 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.probability_reliability._build_cause_effect_graph(row)
 
     def render_cause_effect_diagram(self, row):
-        return self.diagram_renderer.render_cause_effect_diagram(row)
+        """Render *row* as a PIL image matching the on-screen diagram."""
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+        except Exception:
+            return None
+        import textwrap, math
 
+        nodes, edges, pos = self._build_cause_effect_graph(row)
+        color_map = {
+            "hazard": "#F08080",
+            "malfunction": "#ADD8E6",
+            "failure_mode": "#FFA500",
+            "fault": "#D3D3D3",
+            "fi": "#FFFFE0",
+            "tc": "#90EE90",
+            "attack_path": "#E0FFFF",
+            "threat": "#FFB6C1",
+        }
+
+        scale = 80
+        x_off = 50
+        y_off = 50
+        box_w = 80
+        box_h = 40
+
+        max_x = max(x for x, _ in pos.values())
+        max_y = max(y for _, y in pos.values())
+        width = int(x_off * 2 + scale * max_x + box_w)
+        height = int(y_off * 2 + scale * max_y + box_h)
+
+        img = Image.new("RGB", (width, height), "white")
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.load_default()
+
+        def to_canvas(x: float, y: float) -> tuple[float, float]:
+            return x_off + scale * x, y_off + scale * y
+
+        for u, v in edges:
+            x1, y1 = to_canvas(*pos[u])
+            x2, y2 = to_canvas(*pos[v])
+            draw.line((x1, y1, x2, y2), fill="black")
+            dx, dy = x2 - x1, y2 - y1
+            length = math.hypot(dx, dy) or 1
+            ux, uy = dx / length, dy / length
+            arrow = 10
+            px, py = x2 - arrow * ux, y2 - arrow * uy
+            perp = (-uy, ux)
+            left = (px + perp[0] * arrow / 2, py + perp[1] * arrow / 2)
+            right = (px - perp[0] * arrow / 2, py - perp[1] * arrow / 2)
+            draw.polygon([ (x2, y2), left, right ], fill="black")
+            if hasattr(draw, "text"):
+                draw.text(((x1 + x2) / 2, (y1 + y2) / 2), "caused by", fill="black", font=font, anchor="mm")
+
+        for n, (x, y) in pos.items():
+            label, kind = nodes.get(n, (n, ""))
+            color = color_map.get(kind, "white")
+            cx, cy = to_canvas(x, y)
+            rect = [cx - box_w / 2, cy - box_h / 2, cx + box_w / 2, cy + box_h / 2]
+            draw.rectangle(
+                rect,
+                fill=color,
+                outline=StyleManager.get_instance().outline_color,
+            )
+            text = textwrap.fill(str(label), 20)
+            bbox = draw.multiline_textbbox((0, 0), text, font=font)
+            tw = bbox[2] - bbox[0]
+            th = bbox[3] - bbox[1]
+            draw.multiline_text((cx - tw / 2, cy - th / 2), text, font=font, align="center")
+
+        return img
     def show_cause_effect_chain(self):
-        return self.diagram_renderer.show_cause_effect_chain()
+        return self.safety_analysis.show_cause_effect_chain()
 
     def show_cut_sets(self):
-        """Display minimal cut sets for every top event."""
-        if not self.top_events:
-            return
-        win = tk.Toplevel(self.root)
-        win.title("FTA Cut Sets")
-        columns = ("Top Event", "Cut Set #", "Basic Events")
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for c in columns:
-            tree.heading(c, text=c)
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        for te in self.top_events:
-            nodes_by_id = {}
-
-            def map_nodes(n):
-                nodes_by_id[n.unique_id] = n
-                for child in n.children:
-                    map_nodes(child)
-
-            map_nodes(te)
-            cut_sets = self.calculate_cut_sets(te)
-            te_label = te.user_name or f"Top Event {te.unique_id}"
-            for idx, cs in enumerate(cut_sets, start=1):
-                names = ", ".join(
-                    f"{nodes_by_id[uid].user_name or nodes_by_id[uid].node_type} [{uid}]"
-                    for uid in sorted(cs)
-                )
-                tree.insert("", "end", values=(te_label, idx, names))
-                te_label = ""
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Top Event", "Cut Set #", "Basic Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Cut sets exported")
-
-        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
-
-    def show_cut_sets(self):
-        """Display minimal cut sets for every top event."""
-        if not self.top_events:
-            return
-        win = tk.Toplevel(self.root)
-        win.title("FTA Cut Sets")
-        columns = ("Top Event", "Cut Set #", "Basic Events")
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for c in columns:
-            tree.heading(c, text=c)
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        for te in self.top_events:
-            nodes_by_id = {}
-
-            def map_nodes(n):
-                nodes_by_id[n.unique_id] = n
-                for child in n.children:
-                    map_nodes(child)
-
-            map_nodes(te)
-            cut_sets = self.calculate_cut_sets(te)
-            te_label = te.user_name or f"Top Event {te.unique_id}"
-            for idx, cs in enumerate(cut_sets, start=1):
-                names = ", ".join(
-                    f"{nodes_by_id[uid].user_name or nodes_by_id[uid].node_type} [{uid}]"
-                    for uid in sorted(cs)
-                )
-                tree.insert("", "end", values=(te_label, idx, names))
-                te_label = ""
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Top Event", "Cut Set #", "Basic Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Cut sets exported")
-
-        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
-
-    def show_cut_sets(self):
-        """Display minimal cut sets for every top event."""
-        if not self.top_events:
-            return
-        win = tk.Toplevel(self.root)
-        win.title("FTA Cut Sets")
-        columns = ("Top Event", "Cut Set #", "Basic Events")
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for c in columns:
-            tree.heading(c, text=c)
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        for te in self.top_events:
-            nodes_by_id = {}
-
-            def map_nodes(n):
-                nodes_by_id[n.unique_id] = n
-                for child in n.children:
-                    map_nodes(child)
-
-            map_nodes(te)
-            cut_sets = self.calculate_cut_sets(te)
-            te_label = te.user_name or f"Top Event {te.unique_id}"
-            for idx, cs in enumerate(cut_sets, start=1):
-                names = ", ".join(
-                    f"{nodes_by_id[uid].user_name or nodes_by_id[uid].node_type} [{uid}]"
-                    for uid in sorted(cs)
-                )
-                tree.insert("", "end", values=(te_label, idx, names))
-                te_label = ""
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Top Event", "Cut Set #", "Basic Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Cut sets exported")
-
-        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
+        return self.safety_analysis.show_cut_sets()
 
     def show_common_cause_view(self):
-        return self.diagram_renderer.show_common_cause_view()
+        return self.safety_analysis.show_common_cause_view()
 
     def manage_mission_profiles(self):
         if hasattr(self, "_mp_tab") and self._mp_tab.winfo_exists():
@@ -6362,7 +6173,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
                     child.redraw()
 
     def show_hazard_explorer(self):
-        self.risk_app.show_hazard_explorer(self)
+        return self.safety_analysis.show_hazard_explorer()
 
     def show_requirements_explorer(self):
         if hasattr(self, "_req_exp_tab") and self._req_exp_tab.winfo_exists():
