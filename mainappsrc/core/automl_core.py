@@ -164,6 +164,7 @@ from gui.windows.architecture import (
     ARCH_WINDOWS,
 )
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
+from .undo_manager import UndoRedoManager
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.scenario_description import template_phrases
 from mainappsrc.core.app_lifecycle_ui import AppLifecycleUI
@@ -484,8 +485,7 @@ class AutoMLApp(
         self.probability_reliability = Probability_Reliability(self)
         self.current_user = ""
         self.comment_target = None
-        self._undo_stack: list[dict] = []
-        self._redo_stack: list[dict] = []
+        self.undo_manager = UndoRedoManager(self)
         # Track which work products are currently enabled. Menu entries for
         # these products remain disabled until the corresponding governance
         # diagram adds the work product. The mapping stores references to the
@@ -6551,281 +6551,43 @@ class AutoMLApp(
         return current_state != getattr(self, "last_saved_state", None)
 
     # ------------------------------------------------------------
+    # ------------------------------------------------------------
     # Undo support
     # ------------------------------------------------------------
-    def _strip_object_positions(self, data: dict) -> dict:
-        """Return a copy of *data* without concrete object positions."""
-
-        cleaned = json.loads(json.dumps(data))
-
-        def scrub(obj: Any) -> None:
-            if isinstance(obj, dict):
-                for field in ("x", "y", "modified", "modified_by", "modified_by_email"):
-                    obj.pop(field, None)
-                for value in obj.values():
-                    scrub(value)
-            elif isinstance(obj, list):
-                for item in obj:
-                    scrub(item)
-
-        scrub(cleaned)
-        return cleaned
-
     def push_undo_state(self, strategy: str = "v4", sync_repo: bool = True) -> None:
-        """Save the current model state for undo operations."""
-        repo = SysMLRepository.get_instance()
-        if sync_repo:
-            repo.push_undo_state(strategy=strategy, sync_app=False)
-        if not hasattr(self, "_undo_stack"):
-            self._undo_stack = []
-        if not hasattr(self, "_redo_stack"):
-            self._redo_stack = []
-        try:
-            state = self.export_model_data(include_versions=False)
-            stripped = self._strip_object_positions(state)
-        except AttributeError:
-            state = {}
-            stripped = {}
+        self.undo_manager.push_undo_state(strategy=strategy, sync_repo=sync_repo)
 
-        handler = getattr(
-            self, f"_push_undo_state_{strategy}", self._push_undo_state_v1
-        )
-        changed = handler(state, stripped)
-
-        if changed and len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        if changed:
-            self._redo_stack.clear()
-
-    # Variants for push_undo_state
     def _push_undo_state_v1(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack:
-            last = self._undo_stack[-1]
-            if last == state:
-                return False
-            if self._strip_object_positions(last) == stripped:
-                if (
-                    len(self._undo_stack) >= 2
-                    and self._strip_object_positions(self._undo_stack[-2]) == stripped
-                ):
-                    self._undo_stack[-1] = state
-                    return True
-                self._undo_stack.append(state)
-                return True
-        else:
-            self._undo_stack.append(state)
-            return True
-
-        self._undo_stack.append(state)
-        return True
+        return self.undo_manager._push_undo_state_v1(state, stripped)
 
     def _push_undo_state_v2(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack and self._undo_stack[-1] == state:
-            return False
-        if self._undo_stack and self._strip_object_positions(self._undo_stack[-1]) == stripped:
-            if getattr(self, "_last_move_base", None) == stripped:
-                self._undo_stack[-1] = state
-            else:
-                self._undo_stack.append(state)
-                self._last_move_base = stripped
-            return True
-        self._last_move_base = None
-        self._undo_stack.append(state)
-        return True
+        return self.undo_manager._push_undo_state_v2(state, stripped)
 
     def _push_undo_state_v3(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack and self._undo_stack[-1] == state:
-            return False
-        if self._undo_stack and self._strip_object_positions(self._undo_stack[-1]) == stripped:
-            if getattr(self, "_move_run_length", 0):
-                self._undo_stack[-1] = state
-            else:
-                self._undo_stack.append(state)
-            self._move_run_length = getattr(self, "_move_run_length", 0) + 1
-            return True
-        self._move_run_length = 0
-        self._undo_stack.append(state)
-        return True
+        return self.undo_manager._push_undo_state_v3(state, stripped)
 
     def _push_undo_state_v4(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack and self._undo_stack[-1] == state:
-            return False
-        self._undo_stack.append(state)
-        if len(self._undo_stack) >= 3:
-            s1 = self._strip_object_positions(self._undo_stack[-3])
-            s2 = self._strip_object_positions(self._undo_stack[-2])
-            if s1 == s2 == stripped:
-                self._undo_stack.pop(-2)
-        return True
+        return self.undo_manager._push_undo_state_v4(state, stripped)
 
     def _undo_hotkey(self, event):
         """Keyboard shortcut handler for undo."""
-        self.undo()
+        self.undo_manager.undo()
         return "break"
 
     def _redo_hotkey(self, event):
         """Keyboard shortcut handler for redo."""
-        self.redo()
+        self.undo_manager.redo()
         return "break"
 
     def undo(self, strategy: str = "v4"):
-        """Revert the repository and model data to the previous state."""
-        repo = SysMLRepository.get_instance()
-        handler = getattr(self, f"_undo_{strategy}", self._undo_v1)
-        changed = handler(repo)
-        if not changed:
-            return
-        for tab in getattr(self, "diagram_tabs", {}).values():
-            for child in tab.winfo_children():
-                if hasattr(child, "refresh_from_repository"):
-                    child.refresh_from_repository()
-        self.refresh_all()
-        try:
-            self.apply_governance_rules()
-        except Exception:
-            pass
+        self.undo_manager.undo(strategy=strategy)
 
     def redo(self, strategy: str = "v4"):
-        """Restore the next state from the redo stack."""
-        repo = SysMLRepository.get_instance()
-        handler = getattr(self, f"_redo_{strategy}", self._redo_v1)
-        changed = handler(repo)
-        if not changed:
-            return
-        for tab in getattr(self, "diagram_tabs", {}).values():
-            for child in tab.winfo_children():
-                if hasattr(child, "refresh_from_repository"):
-                    child.refresh_from_repository()
-        self.refresh_all()
-        try:
-            self.apply_governance_rules()
-        except Exception:
-            pass
+        self.undo_manager.redo(strategy=strategy)
 
     def clear_undo_history(self) -> None:
         """Remove all undo and redo history."""
-        self._undo_stack.clear()
-        self._redo_stack.clear()
-        repo = SysMLRepository.get_instance()
-        getattr(repo, "_undo_stack", []).clear()
-        getattr(repo, "_redo_stack", []).clear()
-
-    # Undo/redo variants
-    def _undo_v1(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v1")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                return False
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _undo_v2(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v2")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                return False
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _undo_v3(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v3")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                return False
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _undo_v4(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v4")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                self._redo_stack.append(current)
-                if len(self._redo_stack) > 20:
-                    self._redo_stack.pop(0)
-                return True
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v1(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v1")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v2(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v2")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v3(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v3")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v4(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v4")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
+        self.undo_manager.clear_history()
     def confirm_close(self):
         """Prompt to save if there are unsaved changes before closing."""
         if self.has_unsaved_changes():
@@ -7442,8 +7204,7 @@ class AutoMLApp(
         self.root_node = None
         self.selected_node = None
         self.page_history = []
-        self._undo_stack.clear()
-        self._redo_stack.clear()
+        self.undo_manager.clear_history()
         if getattr(self, "analysis_tree", None):
             self.analysis_tree.delete(*self.analysis_tree.get_children())
 

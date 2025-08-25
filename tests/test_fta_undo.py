@@ -31,6 +31,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from AutoML import AutoMLApp, FaultTreeNode
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
+from mainappsrc.core.undo_manager import UndoRedoManager
 
 class FTAUndoRedoTests(unittest.TestCase):
     def setUp(self):
@@ -42,8 +43,7 @@ class FTAUndoRedoTests(unittest.TestCase):
         # stub analysis tree and view updates
         self.app.analysis_tree = types.SimpleNamespace(selection=lambda: ())
         self.app.update_views = lambda: None
-        self.app._undo_stack = []
-        self.app._redo_stack = []
+        self.app.undo_manager = UndoRedoManager(self.app)
         # minimal persistence of state for undo/redo
         self.app.export_model_data = lambda include_versions=False: {
             "top_events": [n.to_dict() for n in self.app.top_events],
