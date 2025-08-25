@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import tkinter as tk
 import tkinter.font as tkFont
 import textwrap
@@ -12092,6 +12091,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         if not phase:
             return
         toolbox.activate_phase(phase, app)
+
+    def _on_focus_in(self, event=None):
+        self._activate_parent_phase()
+        super()._on_focus_in(event)
 
     # ------------------------------------------------------------------
     # Dynamic toolbox construction

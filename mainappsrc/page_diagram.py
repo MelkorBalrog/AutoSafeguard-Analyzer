@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Project version information."""
+"""Compatibility shim for relocated PageDiagram module."""
 
-VERSION = "0.2.59"
-
-__all__ = ["VERSION"]
+from mainappsrc.core.page_diagram import *  # noqa: F401,F403
