@@ -378,6 +378,7 @@ try:  # pragma: no cover - support direct module import
     from .user_manager import UserManager
     from .project_manager import ProjectManager
     from .sotif_manager import SOTIFManager
+    from .clipboard_paste import ClipboardAndPaste
 except Exception:  # pragma: no cover
     import os, sys
     base = os.path.dirname(__file__)
@@ -386,6 +387,7 @@ except Exception:  # pragma: no cover
     from user_manager import UserManager
     from project_manager import ProjectManager
     from sotif_manager import SOTIFManager
+    from clipboard_paste import ClipboardAndPaste
 from user_manager import UserManager
 from project_manager import ProjectManager
 from cyber_manager import CyberSecurityManager
@@ -664,6 +666,7 @@ class AutoMLApp:
         self.diagram_clipboard_type = None
         self.active_arch_window = None
         self.cut_mode = False
+        self.clipboard = ClipboardAndPaste(self)
         self.page_history = []
         self.project_properties = {
             "pdf_report_name": "AutoML-Analyzer PDF Report",
@@ -799,9 +802,9 @@ class AutoMLApp:
         edit_menu.add_command(label="Delete Node", command=lambda: self.delete_node_and_subtree(self.selected_node) if self.selected_node else None)
         edit_menu.add_command(label="Remove Node", command=self.remove_node)
         edit_menu.add_separator()
-        edit_menu.add_command(label="Copy", command=self.copy_node, accelerator="Ctrl+C")
-        edit_menu.add_command(label="Cut", command=self.cut_node, accelerator="Ctrl+X")
-        edit_menu.add_command(label="Paste", command=self.paste_node, accelerator="Ctrl+V")
+        edit_menu.add_command(label="Copy", command=self.clipboard.copy_node, accelerator="Ctrl+C")
+        edit_menu.add_command(label="Cut", command=self.clipboard.cut_node, accelerator="Ctrl+X")
+        edit_menu.add_command(label="Paste", command=self.clipboard.paste_node, accelerator="Ctrl+V")
         edit_menu.add_separator()
         edit_menu.add_command(label="Edit User Name", command=self.user_manager.edit_user_name, accelerator="Ctrl+U")
         edit_menu.add_command(label="Edit Description", command=self.edit_description, accelerator="Ctrl+D")
@@ -2784,9 +2787,9 @@ class AutoMLApp:
         menu.add_command(label="Remove Connection", command=lambda: self.remove_connection(clicked_node))
         menu.add_command(label="Delete Node", command=lambda: self.delete_node_and_subtree(clicked_node))
         menu.add_command(label="Remove Node", command=lambda: self.remove_node())
-        menu.add_command(label="Copy", command=lambda: self.copy_node())
-        menu.add_command(label="Cut", command=lambda: self.cut_node())
-        menu.add_command(label="Paste", command=lambda: self.paste_node())
+        menu.add_command(label="Copy", command=lambda: self.clipboard.copy_node())
+        menu.add_command(label="Cut", command=lambda: self.clipboard.cut_node())
+        menu.add_command(label="Paste", command=lambda: self.clipboard.paste_node())
         menu.add_separator()
         menu.add_command(label="Edit User Name", command=lambda: self.user_manager.edit_user_name())
         menu.add_command(label="Edit Description", command=lambda: self.edit_description())
@@ -10803,150 +10806,12 @@ class AutoMLApp:
             ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.refresh_all()
 
-    def _diagram_copy_strategy1(self):
-        win = self._focused_cbn_window()
-        if win and getattr(win, "selected_node", None) and getattr(win, "copy_selected", None):
-            self.selected_node = None
-            self.clipboard_node = None
-            self.cut_mode = False
-            win.copy_selected()
-            return True
-        return False
-
-    def _diagram_copy_strategy2(self):
-        win = self._focused_gsn_window()
-        if win and getattr(win, "selected_node", None) and getattr(win, "copy_selected", None):
-            self.selected_node = None
-            self.clipboard_node = None
-            self.cut_mode = False
-            win.copy_selected()
-            return True
-        return False
-
-    def _diagram_copy_strategy3(self):
-        win = getattr(self, "active_arch_window", None)
-        if win and getattr(win, "selected_obj", None) and getattr(win, "copy_selected", None):
-            self.selected_node = None
-            self.clipboard_node = None
-            self.cut_mode = False
-            win.copy_selected()
-            return True
-        return False
-
-    def _diagram_copy_strategy4(self):
-        for ref in list(ARCH_WINDOWS):
-            win = ref()
-            if win and getattr(win, "selected_obj", None) and getattr(win, "copy_selected", None):
-                self.selected_node = None
-                self.clipboard_node = None
-                self.cut_mode = False
-                win.copy_selected()
-                return True
-        return False
-
-    def _diagram_cut_strategy1(self):
-        win = self._focused_cbn_window()
-        if win and getattr(win, "selected_node", None) and getattr(win, "cut_selected", None):
-            self.selected_node = None
-            self.clipboard_node = None
-            self.cut_mode = False
-            win.cut_selected()
-            return True
-        return False
-
-    def _diagram_cut_strategy2(self):
-        win = self._focused_gsn_window()
-        if win and getattr(win, "selected_node", None) and getattr(win, "cut_selected", None):
-            self.selected_node = None
-            self.clipboard_node = None
-            self.cut_mode = False
-            win.cut_selected()
-            return True
-        return False
-
-    def _diagram_cut_strategy3(self):
-        win = getattr(self, "active_arch_window", None)
-        if win and getattr(win, "selected_obj", None) and getattr(win, "cut_selected", None):
-            self.selected_node = None
-            self.clipboard_node = None
-            self.cut_mode = False
-            win.cut_selected()
-            return True
-        return False
-
-    def _diagram_cut_strategy4(self):
-        for ref in list(ARCH_WINDOWS):
-            win = ref()
-            if win and getattr(win, "selected_obj", None) and getattr(win, "cut_selected", None):
-                self.selected_node = None
-                self.clipboard_node = None
-                self.cut_mode = False
-                win.cut_selected()
-                return True
-        return False
 
     def copy_node(self):
-        for strat in (
-            self._diagram_copy_strategy1,
-            self._diagram_copy_strategy2,
-            self._diagram_copy_strategy3,
-            self._diagram_copy_strategy4,
-        ):
-            if strat():
-                return
-        node = self.selected_node
-        if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
-            sel = self.analysis_tree.selection()
-            if sel:
-                tags = self.analysis_tree.item(sel[0], "tags")
-                if tags:
-                    node = self.find_node_by_id(self.root_node, int(tags[0]))
-        if node and node != self.root_node:
-            self.clipboard_node = node
-            self.selected_node = node
-            self.cut_mode = False
-            if node.parents:
-                parent = node.parents[0]
-                context_children = getattr(parent, "context_children", [])
-                rel = "context" if node in context_children else "solved"
-            else:
-                rel = "solved"
-            self.clipboard_relation = rel
-            return
-        messagebox.showwarning("Copy", "Select a non-root node to copy.")
+        return self.clipboard.copy_node()
 
     def cut_node(self):
-        """Store the currently selected node for a cut & paste operation."""
-        for strat in (
-            self._diagram_cut_strategy1,
-            self._diagram_cut_strategy2,
-            self._diagram_cut_strategy3,
-            self._diagram_cut_strategy4,
-        ):
-            if strat():
-                return
-        node = self.selected_node
-        if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
-            sel = self.analysis_tree.selection()
-            if sel:
-                tags = self.analysis_tree.item(sel[0], "tags")
-                if tags:
-                    node = self.find_node_by_id(self.root_node, int(tags[0]))
-        if node and node != self.root_node:
-            self.clipboard_node = node
-            self.selected_node = node
-            self.cut_mode = True
-            if node.parents:
-                parent = node.parents[0]
-                context_children = getattr(parent, "context_children", [])
-                rel = "context" if node in context_children else "solved"
-            else:
-                rel = "solved"
-            self.clipboard_relation = rel
-            return
-        if getattr(self, "active_arch_window", None) or ARCH_WINDOWS:
-            return
-        messagebox.showwarning("Cut", "Select a non-root node to cut.")
+        return self.clipboard.cut_node()
 
     # ------------------------------------------------------------------
     def _reset_gsn_clone(self, node):
@@ -10962,203 +10827,8 @@ class AutoMLApp:
             for child in old_children:
                 self._reset_gsn_clone(child)
 
-    # ------------------------------------------------------------------
-    def _clone_for_paste_strategy1(self, node, parent=None):
-        if hasattr(node, "clone"):
-            if parent and getattr(node, "node_type", None) in {"Context", "Assumption", "Justification"}:
-                return node.clone(parent)
-            return node.clone()
-        import copy
-        clone = copy.deepcopy(node)
-        self._reset_gsn_clone(clone)
-        return clone
-
-    def _clone_for_paste_strategy2(self, node, parent=None):
-        import copy
-        if isinstance(node, GSNNode):
-            if parent and node.node_type in {"Context", "Assumption", "Justification"}:
-                return node.clone(parent)
-            return node.clone()
-        clone = copy.deepcopy(node)
-        self._reset_gsn_clone(clone)
-        return clone
-
-    def _clone_for_paste_strategy3(self, node, parent=None):
-        try:
-            if parent and getattr(node, "node_type", None) in {"Context", "Assumption", "Justification"}:
-                return node.clone(parent)  # type: ignore[attr-defined]
-            return node.clone()  # type: ignore[attr-defined]
-        except Exception:
-            import copy
-            clone = copy.deepcopy(node)
-            self._reset_gsn_clone(clone)
-            return clone
-
-    def _clone_for_paste_strategy4(self, node, parent=None):
-        import copy
-        clone = copy.deepcopy(node)
-        self._reset_gsn_clone(clone)
-        return clone
-
-    def _clone_for_paste(self, node, parent=None):
-        for strat in (
-            self._clone_for_paste_strategy1,
-            self._clone_for_paste_strategy2,
-            self._clone_for_paste_strategy3,
-            self._clone_for_paste_strategy4,
-        ):
-            try:
-                clone = strat(node, parent)
-                if clone is not None:
-                    return clone
-            except ValueError:
-                messagebox.showwarning("Clone", "Cannot clone this node type.")
-                return None
-            except Exception:
-                continue
-        messagebox.showwarning("Clone", "Cannot clone this node type.")
-        return None
-
-    def _prepare_node_for_paste(self, target):
-        """Return appropriate node instance when pasting."""
-        if (
-            isinstance(self.clipboard_node, GSNNode)
-            and target in getattr(self.clipboard_node, "parents", [])
-        ):
-            return self._clone_for_paste(self.clipboard_node)
-        from mainappsrc.models.fta.fault_tree_node import FaultTreeNode
-
-        if (
-            isinstance(self.clipboard_node, FaultTreeNode)
-            or type(self.clipboard_node).__name__ == "FaultTreeNode"
-        ):
-            return self._clone_for_paste(self.clipboard_node)
-        return self.clipboard_node
-
     def paste_node(self):
-        if self.clipboard_node:
-            # NOTE: Paste logic and target resolution chain (selection → focused diagram root → app root)
-            # are final and must not be modified without explicit user approval.
-            target = None
-            sel = self.analysis_tree.selection()
-            if sel:
-                tags = self.analysis_tree.item(sel[0], "tags")
-                if tags:
-                    target = self.find_node_by_id(self.root_node, int(tags[0]))
-            if not target:
-                target = self.selected_node or self.root_node
-            if not target:
-                win = self._focused_gsn_window()
-                if win and getattr(win, "diagram", None):
-                    target = win.diagram.root
-            if not target:
-                win = self._focused_cbn_window()
-                if win and getattr(win, "diagram", None):
-                    target = win.diagram.root
-            if not target:
-                target = self.root_node
-            if not target:
-                win = self._focused_gsn_window()
-                if win and getattr(win, "diagram", None):
-                    target = win.diagram.root
-            if not target:
-                win = self._focused_cbn_window()
-                if win and getattr(win, "diagram", None):
-                    target = win.diagram.root
-            if not target:
-                target = self.root_node
-            if not target:
-                messagebox.showwarning("Paste", "Select a target node to paste into.")
-                return
-            if target.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-                messagebox.showwarning("Paste", "Cannot paste into a base event.")
-                return
-            if not target.is_primary_instance:
-                target = target.original
-            if target.unique_id == self.clipboard_node.unique_id:
-                messagebox.showwarning("Paste", "Cannot paste a node onto itself.")
-                return
-            if self.cut_mode:
-                for child in target.children:
-                    if child.unique_id == self.clipboard_node.unique_id:
-                        messagebox.showwarning("Paste", "This node is already a child of the target.")
-                        return
-            if self.cut_mode:
-                if self.clipboard_node in self.top_events:
-                    self.top_events.remove(self.clipboard_node)
-                for p in list(self.clipboard_node.parents):
-                    if self.clipboard_node in p.children:
-                        p.children.remove(self.clipboard_node)
-                self.clipboard_node.parents = []
-                if self.clipboard_node.node_type.upper() == "TOP EVENT":
-                    self.clipboard_node.node_type = "RIGOR LEVEL"
-                    self.clipboard_node.severity = None
-                    self.clipboard_node.is_page = False
-                    self.clipboard_node.input_subtype = "Failure"
-                self.clipboard_node.is_primary_instance = True
-                relation = getattr(self, "clipboard_relation", "solved")
-                if hasattr(target, "add_child"):
-                    target.add_child(self.clipboard_node, relation=relation)
-                else:
-                    if relation == "context":
-                        target.context_children.append(self.clipboard_node)
-                    else:
-                        target.children.append(self.clipboard_node)
-                    self.clipboard_node.parents.append(target)
-                if isinstance(self.clipboard_node, GSNNode):
-                    old_diag = self._find_gsn_diagram(self.clipboard_node)
-                    new_diag = self._find_gsn_diagram(target)
-                    if old_diag and old_diag is not new_diag and self.clipboard_node in old_diag.nodes:
-                        old_diag.nodes.remove(self.clipboard_node)
-                    if new_diag and self.clipboard_node not in new_diag.nodes:
-                        new_diag.add_node(self.clipboard_node)
-                self.clipboard_node.x = target.x + 100
-                self.clipboard_node.y = target.y + 100
-                self.clipboard_node.display_label = self.clipboard_node.display_label.replace(" (clone)", "")
-                self.clipboard_node = None
-                self.cut_mode = False
-                messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
-            else:
-                target_diag = self._find_gsn_diagram(target)
-                node_for_pos = self._prepare_node_for_paste(target)
-                target.children.append(node_for_pos)
-                node_for_pos.parents.append(target)
-                if isinstance(node_for_pos, GSNNode):
-                    if target_diag and node_for_pos not in target_diag.nodes:
-                        target_diag.add_node(node_for_pos)
-                node_for_pos.x = target.x + 100
-                node_for_pos.y = target.y + 100
-                if hasattr(node_for_pos, "display_label"):
-                    node_for_pos.display_label = node_for_pos.display_label.replace(" (clone)", "")
-                messagebox.showinfo("Paste", "Node pasted successfully (copied).")
-            try:
-                AutoML_Helper.calculate_assurance_recursive(
-                    self.root_node,
-                    self.top_events,
-                )
-            except AttributeError:
-                pass
-            self.update_views()
-            return
-        clip_type = getattr(self, "diagram_clipboard_type", None)
-        win = self._focused_cbn_window()
-        if win and getattr(self, "diagram_clipboard", None):
-            if not clip_type or clip_type == "Causal Bayesian Network":
-                if getattr(win, "paste_selected", None):
-                    win.paste_selected()
-                    return
-        win = self._focused_gsn_window()
-        if win and getattr(self, "diagram_clipboard", None):
-            if not clip_type or clip_type == "GSN":
-                if getattr(win, "paste_selected", None):
-                    win.paste_selected()
-                    return
-        win = self._focused_arch_window(clip_type)
-        if win and getattr(self, "diagram_clipboard", None):
-            if getattr(win, "paste_selected", None):
-                win.paste_selected()
-                return
-        messagebox.showwarning("Paste", "Clipboard is empty.")
+        return self.clipboard.paste_node()
 
     def _get_diag_type(self, win):
         repo = getattr(win, "repo", None)
@@ -11314,56 +10984,7 @@ class AutoMLApp:
         return None
  
     def clone_node_preserving_id(self, node, parent=None):
-        """Return a clone of *node* with a new unique ID.
-
-        The function handles both FaultTreeNode and GSNNode instances.  For
-        FaultTreeNode objects, a new :class:`FaultTreeNode` is created and the
-        relevant attributes are copied across.  For :class:`GSNNode` instances
-        the built-in ``clone`` method is used to ensure GSN-specific fields are
-        preserved.  When *parent* is provided and the node represents a
-        ``Context``, ``Assumption`` or ``Justification`` element the clone is
-        automatically linked to *parent* using an ``in-context-of`` relation.
-        """
-
-        if isinstance(node, GSNNode):
-            if node.node_type not in ALLOWED_AWAY_TYPES:
-                raise ValueError(
-                    "Only Goal, Solution, Context, Assumption, and Justification nodes can be cloned."
-                )
-            # GSN nodes provide their own clone method.  Offset the position of
-            # the cloned node so that it does not overlap the original.
-            clone_parent = (
-                parent
-                if parent and node.node_type in {"Context", "Assumption", "Justification"}
-                else None
-            )
-            new_node = node.clone(clone_parent)
-            new_node.x = node.x + 100
-            new_node.y = node.y + 100
-            return new_node
-
-        # Default behaviour is to treat the node as a FaultTreeNode.  Create a
-        # fresh instance and copy over attributes that exist on the source
-        # object.  ``getattr`` is used to avoid AttributeError if a field is
-        # missing on the source node.
-        new_node = FaultTreeNode(node.user_name, node.node_type)
-        new_node.unique_id = AutoML_Helper.get_next_unique_id()
-        new_node.quant_value = getattr(node, "quant_value", None)
-        new_node.gate_type = getattr(node, "gate_type", None)
-        new_node.description = getattr(node, "description", "")
-        new_node.rationale = getattr(node, "rationale", "")
-        new_node.x = node.x + 100
-        new_node.y = node.y + 100
-        new_node.severity = getattr(node, "severity", None)
-        new_node.input_subtype = getattr(node, "input_subtype", None)
-        new_node.display_label = getattr(node, "display_label", "")
-        new_node.equation = getattr(node, "equation", "")
-        new_node.detailed_equation = getattr(node, "detailed_equation", "")
-        new_node.is_page = getattr(node, "is_page", False)
-        new_node.is_primary_instance = False
-        new_node.original = node if node.is_primary_instance else node.original
-        new_node.children = []
-        return new_node
+        return self.clipboard.clone_node_preserving_id(node, parent)
 
     def _find_gsn_diagram(self, node):
         """Return the GSN diagram containing ``node`` if known.
@@ -11391,60 +11012,6 @@ class AutoMLApp:
 
         return _search_modules(getattr(self, "gsn_modules", []))
 
-    def _copy_attrs_no_xy_strategy1(self, target, source, attrs):
-        tx, ty = getattr(target, "x", None), getattr(target, "y", None)
-        for attr in attrs:
-            setattr(target, attr, getattr(source, attr, None))
-        if tx is not None:
-            target.x = tx
-        if ty is not None:
-            target.y = ty
-
-    def _copy_attrs_no_xy_strategy2(self, target, source, attrs):
-        tx, ty = getattr(target, "x", None), getattr(target, "y", None)
-        values = {a: getattr(source, a, None) for a in attrs if hasattr(source, a)}
-        for a, v in values.items():
-            setattr(target, a, v)
-        if tx is not None:
-            target.x = tx
-        if ty is not None:
-            target.y = ty
-
-    def _copy_attrs_no_xy_strategy3(self, target, source, attrs):
-        tx, ty = getattr(target, "x", None), getattr(target, "y", None)
-        for attr in attrs:
-            if attr in {"x", "y"}:
-                continue
-            setattr(target, attr, getattr(source, attr, None))
-        if tx is not None:
-            target.x = tx
-        if ty is not None:
-            target.y = ty
-
-    def _copy_attrs_no_xy_strategy4(self, target, source, attrs):
-        tx, ty = getattr(target, "x", None), getattr(target, "y", None)
-        for attr in attrs:
-            try:
-                setattr(target, attr, getattr(source, attr))
-            except Exception:
-                continue
-        if tx is not None:
-            target.x = tx
-        if ty is not None:
-            target.y = ty
-
-    def _copy_attrs_no_xy(self, target, source, attrs):
-        for strat in (
-            self._copy_attrs_no_xy_strategy1,
-            self._copy_attrs_no_xy_strategy2,
-            self._copy_attrs_no_xy_strategy3,
-            self._copy_attrs_no_xy_strategy4,
-        ):
-            try:
-                strat(target, source, attrs)
-                return
-            except Exception:
-                continue
 
     # ------------------------------------------------------------
     # Helpers to gather all nodes when synchronising by ID
@@ -11532,7 +11099,7 @@ class AutoMLApp:
         clone = updated_node if (not updated_node.is_primary_instance and updated_node.original) else None
         if clone:
             updated_node = clone.original
-            self._copy_attrs_no_xy(updated_node, clone, attrs)
+            self.clipboard._copy_attrs_no_xy(updated_node, clone, attrs)
             updated_node.display_label = clone.display_label.replace(" (clone)", "")
         updated_primary_id = updated_node.unique_id
         nodes_to_check = self._collect_sync_nodes()
@@ -11540,14 +11107,14 @@ class AutoMLApp:
             if node is updated_node or node is clone:
                 continue
             if node.is_primary_instance and node.unique_id == updated_primary_id:
-                self._copy_attrs_no_xy(node, updated_node, attrs)
+                self.clipboard._copy_attrs_no_xy(node, updated_node, attrs)
                 node.display_label = updated_node.display_label
             elif (
                 not node.is_primary_instance
                 and node.original
                 and node.original.unique_id == updated_primary_id
             ):
-                self._copy_attrs_no_xy(node, updated_node, attrs)
+                self.clipboard._copy_attrs_no_xy(node, updated_node, attrs)
                 node.display_label = updated_node.display_label + " (clone)"
 
     def _sync_nodes_by_id_strategy2(self, updated_node, attrs):
@@ -11555,23 +11122,23 @@ class AutoMLApp:
         if not updated_node.is_primary_instance and updated_node.original:
             clone = updated_node
             updated_node = clone.original
-            self._copy_attrs_no_xy(updated_node, clone, attrs)
+            self.clipboard._copy_attrs_no_xy(updated_node, clone, attrs)
             updated_node.display_label = clone.display_label.replace(" (clone)", "")
         updated_primary_id = updated_node.unique_id
         nodes = [n for n in self._collect_sync_nodes() if n not in (updated_node, clone)]
         for node in nodes:
             if node.is_primary_instance and node.unique_id == updated_primary_id:
-                self._copy_attrs_no_xy(node, updated_node, attrs)
+                self.clipboard._copy_attrs_no_xy(node, updated_node, attrs)
                 node.display_label = updated_node.display_label
             elif not node.is_primary_instance and getattr(node, "original", None) and node.original.unique_id == updated_primary_id:
-                self._copy_attrs_no_xy(node, updated_node, attrs)
+                self.clipboard._copy_attrs_no_xy(node, updated_node, attrs)
                 node.display_label = updated_node.display_label + " (clone)"
 
     def _sync_nodes_by_id_strategy3(self, updated_node, attrs):
         clone = updated_node if (hasattr(updated_node, "is_primary_instance") and not updated_node.is_primary_instance and getattr(updated_node, "original", None)) else None
         primary = clone.original if clone else updated_node
         if clone:
-            self._copy_attrs_no_xy(primary, clone, attrs)
+            self.clipboard._copy_attrs_no_xy(primary, clone, attrs)
             primary.display_label = clone.display_label.replace(" (clone)", "")
         updated_primary_id = primary.unique_id
         nodes = self._collect_sync_nodes()
@@ -11579,10 +11146,10 @@ class AutoMLApp:
             if node in (primary, clone):
                 continue
             if node.is_primary_instance and node.unique_id == updated_primary_id:
-                self._copy_attrs_no_xy(node, primary, attrs)
+                self.clipboard._copy_attrs_no_xy(node, primary, attrs)
                 node.display_label = primary.display_label
             elif not node.is_primary_instance and getattr(node, "original", None) and node.original.unique_id == updated_primary_id:
-                self._copy_attrs_no_xy(node, primary, attrs)
+                self.clipboard._copy_attrs_no_xy(node, primary, attrs)
                 node.display_label = primary.display_label + " (clone)"
 
     def _sync_nodes_by_id_strategy4(self, updated_node, attrs):
@@ -11712,24 +11279,6 @@ class AutoMLApp:
     # ------------------------------------------------------------
     # Undo support
     # ------------------------------------------------------------
-    def _strip_object_positions(self, data: dict) -> dict:
-        """Return a copy of *data* without concrete object positions."""
-
-        cleaned = json.loads(json.dumps(data))
-
-        def scrub(obj: Any) -> None:
-            if isinstance(obj, dict):
-                for field in ("x", "y", "modified", "modified_by", "modified_by_email"):
-                    obj.pop(field, None)
-                for value in obj.values():
-                    scrub(value)
-            elif isinstance(obj, list):
-                for item in obj:
-                    scrub(item)
-
-        scrub(cleaned)
-        return cleaned
-
     def push_undo_state(self, strategy: str = "v4", sync_repo: bool = True) -> None:
         """Save the current model state for undo operations."""
         repo = SysMLRepository.get_instance()
@@ -11741,7 +11290,7 @@ class AutoMLApp:
             self._redo_stack = []
         try:
             state = self.export_model_data(include_versions=False)
-            stripped = self._strip_object_positions(state)
+            stripped = self.clipboard._strip_object_positions(state)
         except AttributeError:
             state = {}
             stripped = {}
@@ -11762,10 +11311,10 @@ class AutoMLApp:
             last = self._undo_stack[-1]
             if last == state:
                 return False
-            if self._strip_object_positions(last) == stripped:
+            if self.clipboard._strip_object_positions(last) == stripped:
                 if (
                     len(self._undo_stack) >= 2
-                    and self._strip_object_positions(self._undo_stack[-2]) == stripped
+                    and self.clipboard._strip_object_positions(self._undo_stack[-2]) == stripped
                 ):
                     self._undo_stack[-1] = state
                     return True
@@ -11781,7 +11330,7 @@ class AutoMLApp:
     def _push_undo_state_v2(self, state: dict, stripped: dict) -> bool:
         if self._undo_stack and self._undo_stack[-1] == state:
             return False
-        if self._undo_stack and self._strip_object_positions(self._undo_stack[-1]) == stripped:
+        if self._undo_stack and self.clipboard._strip_object_positions(self._undo_stack[-1]) == stripped:
             if getattr(self, "_last_move_base", None) == stripped:
                 self._undo_stack[-1] = state
             else:
@@ -11795,7 +11344,7 @@ class AutoMLApp:
     def _push_undo_state_v3(self, state: dict, stripped: dict) -> bool:
         if self._undo_stack and self._undo_stack[-1] == state:
             return False
-        if self._undo_stack and self._strip_object_positions(self._undo_stack[-1]) == stripped:
+        if self._undo_stack and self.clipboard._strip_object_positions(self._undo_stack[-1]) == stripped:
             if getattr(self, "_move_run_length", 0):
                 self._undo_stack[-1] = state
             else:
@@ -11811,8 +11360,8 @@ class AutoMLApp:
             return False
         self._undo_stack.append(state)
         if len(self._undo_stack) >= 3:
-            s1 = self._strip_object_positions(self._undo_stack[-3])
-            s2 = self._strip_object_positions(self._undo_stack[-2])
+            s1 = self.clipboard._strip_object_positions(self._undo_stack[-3])
+            s2 = self.clipboard._strip_object_positions(self._undo_stack[-2])
             if s1 == s2 == stripped:
                 self._undo_stack.pop(-2)
         return True
@@ -12953,11 +12502,8 @@ class AutoMLApp:
 {node_to_html(self.root_node)}
 </body>
 </html>"""
-    def resolve_original(self,node):
-        # Walk the clone chain until you find a primary instance.
-        while not node.is_primary_instance and node.original is not None and node.original != node:
-            node = node.original
-        return node
+    def resolve_original(self, node):
+        return self.clipboard.resolve_original(node)
 
     def open_page_diagram(self, node, push_history=True):
         self.ensure_fta_tab()

@@ -62,9 +62,9 @@ class EventDispatcher:
             "<Control-Shift-f>",
             lambda event: self.app.add_node_of_type("Functional Insufficiency"),
         )
-        root.bind_all("<Control-c>", lambda event: self.app.copy_node(), add="+")
-        root.bind_all("<Control-x>", lambda event: self.app.cut_node(), add="+")
-        root.bind_all("<Control-v>", lambda event: self.app.paste_node(), add="+")
+        root.bind_all("<Control-c>", lambda event: self.app.clipboard.copy_node(), add="+")
+        root.bind_all("<Control-x>", lambda event: self.app.clipboard.cut_node(), add="+")
+        root.bind_all("<Control-v>", lambda event: self.app.clipboard.paste_node(), add="+")
         root.bind(
             "<Control-p>",
             lambda event: self.app.save_diagram_png(),

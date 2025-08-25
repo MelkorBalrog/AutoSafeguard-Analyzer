@@ -163,15 +163,15 @@ class PageDiagram:
 
     def context_copy(self, node):
         self.selected_node = node
-        self.app.copy_node()
+        self.app.clipboard.copy_node()
 
     def context_cut(self, node):
         self.selected_node = node
-        self.app.cut_node()
+        self.app.clipboard.cut_node()
 
     def context_paste(self, node):
         self.selected_node = node
-        self.app.paste_node()
+        self.app.clipboard.paste_node()
 
     def context_edit_page_flag(self, node):
         self.selected_node = node
