@@ -287,7 +287,7 @@ from analysis.mechanisms import (
     ANNEX_D_MECHANISMS,
     PAS_8800_MECHANISMS,
 )
-from config import load_report_template
+from config import load_report_template, load_diagram_rules
 from pathlib import Path
 from collections.abc import Mapping
 import csv
