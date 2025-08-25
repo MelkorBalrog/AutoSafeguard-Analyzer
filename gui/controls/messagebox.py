@@ -11,7 +11,7 @@ from tkinter import TclError
 import tkinter as tk
 from tkinter import ttk
 
-from .. import logger, DIALOG_BG_COLOR, PurpleButton
+from .. import logger, DIALOG_BG_COLOR
 
 
 def _log_and_return(title: str | None, message: str | None, level: str) -> str:
@@ -50,6 +50,8 @@ def _create_dialog(
     buttons: list[tuple[str, object]],
 ) -> object:
     """Create a simple ``ttk`` dialog returning the associated button value."""
+
+    from .. import PurpleButton  # Local import to avoid circular dependency
 
     root = tk._default_root
     temp_root = False
