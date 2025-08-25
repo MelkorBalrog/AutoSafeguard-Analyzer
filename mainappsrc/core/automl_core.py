@@ -7725,7 +7725,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         self.window_controllers.open_arch_window(diag_id)
 
     def open_page_diagram(self, node, push_history=True):
-        return self.pages_and_paa.open_page_diagram(node, push_history)
+        self.window_controllers.open_page_diagram(node, push_history)
 
     def manage_architecture(self):
         return self.open_windows_features.manage_architecture()
