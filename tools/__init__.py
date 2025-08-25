@@ -26,6 +26,7 @@ from .diagnostics_manager import (
     PassiveDiagnosticsManager,
     PollingDiagnosticsManager,
 )
+from .trash_eater import TrashEater, manager_eater
 
 __all__ = [
     "AsyncDiagnosticsManager",
@@ -34,4 +35,6 @@ __all__ = [
     "EventDiagnosticsManager",
     "PassiveDiagnosticsManager",
     "PollingDiagnosticsManager",
+    "TrashEater",
+    "manager_eater",
 ]
