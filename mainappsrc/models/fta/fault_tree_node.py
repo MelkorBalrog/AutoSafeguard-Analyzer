@@ -512,63 +512,53 @@ def refresh_tree(app, tree):
         )
 
 def add_node_of_type(app, event_type):
-    """Create and attach a node of ``event_type`` to the current selection."""
+    """Attach a new ``FaultTreeNode`` of ``event_type`` under the current selection."""
+
     app.push_undo_state()
-    diag_mode = getattr(app, "diagram_mode", "FTA")
+    diag_mode = getattr(app, "diagram_mode", "FTA").upper()
     event_upper = event_type.upper()
-    if diag_mode == "PAA":
-        allowed = {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"}
-        if event_upper not in allowed:
-            messagebox.showwarning(
-                "Invalid",
-                "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis.",
-            )
-            return
-    else:
-        allowed = {
-            "TRIGGERING CONDITION",
-            "FUNCTIONAL INSUFFICIENCY",
-        } if diag_mode == "CTA" else {"GATE", "BASIC EVENT"}
-        if event_upper not in allowed:
-            messagebox.showwarning(
-                "Invalid",
-                f"Node type '{event_type}' is not allowed in {diag_mode} diagrams.",
-            )
-            return
-    if app.selected_node:
-        if not app.selected_node.is_primary_instance:
-            messagebox.showwarning(
-                "Invalid Operation",
-                "Cannot add new elements to a clone node.\nPlease select the original node instead.",
-            )
-            return
-        parent_node = app.selected_node
-    else:
+
+    allowed = {
+        "FTA": {"GATE", "BASIC EVENT"},
+        "CTA": {"TRIGGERING CONDITION", "FUNCTIONAL INSUFFICIENCY"},
+        "PAA": {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"},
+    }
+
+    if event_upper not in allowed.get(diag_mode, set()):
+        msg = (
+            "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis."
+            if diag_mode == "PAA"
+            else f"Node type '{event_type}' is not allowed in {diag_mode} diagrams."
+        )
+        messagebox.showwarning("Invalid", msg)
+        return
+
+    parent_node = app.selected_node
+    if parent_node and not parent_node.is_primary_instance:
+        messagebox.showwarning(
+            "Invalid Operation",
+            "Cannot add new elements to a clone node.\nPlease select the original node instead.",
+        )
+        return
+
+    if parent_node is None:
         sel = app.analysis_tree.selection()
-        if sel:
-            try:
-                node_id = int(app.analysis_tree.item(sel[0], "tags")[0])
-            except (IndexError, ValueError):
-                messagebox.showwarning(
-                    "No selection", "Select a parent node from the tree."
-                )
-                return
-            parent_node = core.find_node_by_id_all(node_id)
-        if parent_node.node_type.upper() in [
-            "CONFIDENCE LEVEL",
-            "ROBUSTNESS SCORE",
-            "BASIC EVENT",
-        ]:
-            messagebox.showwarning(
-                "Invalid", "Base events cannot have children."
-            )
+        if not sel:
+            messagebox.showwarning("No selection", "Select a parent node from the tree.")
             return
-        data = selected.to_dict()
-        data.pop("unique_id", None)
-        data["children"] = []
-        new_node = FaultTreeNode.from_dict(data, parent_node)
-        if hasattr(selected, "unique_id"):
-            new_node.failure_mode_ref = selected.unique_id
-        parent_node.children.append(new_node)
-        new_node.parents.append(parent_node)
-        core.update_views()
+        try:
+            node_id = int(app.analysis_tree.item(sel[0], "tags")[0])
+        except (IndexError, ValueError):
+            messagebox.showwarning("No selection", "Select a parent node from the tree.")
+            return
+        parent_node = app.find_node_by_id_all(node_id)
+
+    if parent_node.node_type.upper() in {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"}:
+        messagebox.showwarning("Invalid", "Base events cannot have children.")
+        return
+
+    new_node = FaultTreeNode("", event_type, parent_node)
+    parent_node.children.append(new_node)
+    new_node.parents.append(parent_node)
+    app.update_views()
+    return new_node
