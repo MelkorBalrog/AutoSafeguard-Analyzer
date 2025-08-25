@@ -88,6 +88,11 @@ class SysMLDiagram:
             name = f"{name} : {abbr}"
         return f"{name} ({self.phase})" if self.phase else name
 
+    # ------------------------------------------------------------
+    def to_dict(self) -> dict:
+        """Return a JSON-serialisable representation of the diagram."""
+        return asdict(self)
+
 class SysMLRepository:
     """Singleton repository for all AutoML elements and relationships."""
     _instance = None
