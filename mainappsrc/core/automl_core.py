@@ -174,6 +174,7 @@ import tkinter.font as tkFont
 import builtins
 from mainappsrc.managers.user_manager import UserManager
 from mainappsrc.managers.project_manager import ProjectManager
+from mainappsrc.managers.product_goal_manager import ProductGoalManager
 from mainappsrc.ui.project_properties_dialog import ProjectPropertiesDialog
 from mainappsrc.managers.sotif_manager import SOTIFManager
 from mainappsrc.managers.cyber_manager import CyberSecurityManager
