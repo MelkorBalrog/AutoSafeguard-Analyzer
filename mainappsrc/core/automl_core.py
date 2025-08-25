@@ -66,7 +66,7 @@ from .service_init_mixin import ServiceInitMixin
 from .icon_setup_mixin import IconSetupMixin
 from .style_setup_mixin import StyleSetupMixin
 from .page_diagram import PageDiagram
-from .diagram_clipboard_manager import DiagramClipboardManager
+from .node_utils import resolve_original as resolve_node_original
 from .editors import (
     ItemDefinitionEditorMixin,
     SafetyConceptEditorMixin,
@@ -6768,11 +6768,8 @@ class AutoMLApp(
 
     def build_html_report(self):
         return self.reporting_export.build_html_report()
-    def resolve_original(self,node):
-        # Walk the clone chain until you find a primary instance.
-        while not node.is_primary_instance and node.original is not None and node.original != node:
-            node = node.original
-        return node
+    def resolve_original(self, node):
+        return resolve_node_original(node)
 
     def go_back(self):
         return self.nav_input.go_back()
