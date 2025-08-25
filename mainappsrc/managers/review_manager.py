@@ -23,7 +23,7 @@ from gui.toolboxes.review_toolbox import (
     VersionCompareDialog,
 )
 from gui.dialogs.dialog_utils import askstring_fixed
-from gui.managers.style_manager import StyleManager
+from gui.styles.style_manager import StyleManager
 from analysis.fmeda_utils import GATE_NODE_TYPES
 
 
