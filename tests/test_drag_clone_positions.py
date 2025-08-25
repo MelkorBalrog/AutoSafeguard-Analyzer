@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from AutoML import AutoMLApp
 from mainappsrc.models.gsn import GSNNode, GSNDiagram
+from mainappsrc.core.syncing_and_ids import Syncing_And_IDs
 
 
 class DummyEvent:
@@ -71,13 +72,13 @@ def test_dragging_original_preserves_clone_coordinates():
 def test_sync_nodes_by_id_excludes_coordinates():
     app, root, _ = _make_app_with_clone()
     captured_attrs = {}
-    orig = AutoMLApp._sync_nodes_by_id_strategy1
+    orig = Syncing_And_IDs._sync_nodes_by_id_strategy1
 
     def capture(self, updated_node, attrs):
         captured_attrs["attrs"] = list(attrs)
         return orig(self, updated_node, attrs)
 
-    app._sync_nodes_by_id_strategy1 = types.MethodType(capture, app)
-    AutoMLApp.sync_nodes_by_id(app, root)
+    app.syncing_and_ids._sync_nodes_by_id_strategy1 = types.MethodType(capture, app.syncing_and_ids)
+    app.syncing_and_ids.sync_nodes_by_id(root)
     assert "x" not in captured_attrs["attrs"]
     assert "y" not in captured_attrs["attrs"]
