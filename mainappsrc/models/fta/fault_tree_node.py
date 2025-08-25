@@ -524,7 +524,7 @@ def _resolve_parent_node(app, parent_node):
         except Exception:  # noqa: BLE001 - broad to guard against malformed selections
             messagebox.showwarning("No selection", "Select a parent node from the tree.")
             return None
-    parent_node = app.find_node_by_id_all(node_id)
+        parent_node = app.find_node_by_id_all(node_id)
     return parent_node
 
 ALLOWED_NODE_TYPES = {
