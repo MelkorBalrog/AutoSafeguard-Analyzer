@@ -15,9 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""Compatibility wrapper for relocated page diagram module."""
 
-"""Project version information."""
-
-VERSION = "0.2.61"
-
-__all__ = ["VERSION"]
+from mainappsrc.core.page_diagram import *  # noqa: F401,F403
+from gui.utils.drawing_helper import fta_drawing_helper  # noqa: F401

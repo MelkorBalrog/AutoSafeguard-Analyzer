@@ -521,7 +521,7 @@ def _resolve_parent_node(app, parent_node):
             return None
         try:
             node_id = int(app.analysis_tree.item(sel[0], "tags")[0])
-        except (IndexError, ValueError):
+        except Exception:  # noqa: BLE001 - broad to guard against malformed selections
             messagebox.showwarning("No selection", "Select a parent node from the tree.")
             return None
     parent_node = app.find_node_by_id_all(node_id)
@@ -533,42 +533,26 @@ ALLOWED_NODE_TYPES = {
     "PAA": {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"},
 }
 
+def _infer_diagram_mode(app, event_upper: str) -> str:
+    """Infer diagram mode, allowing FTA/CTA nodes when active mode is PAA."""
 
-def _current_diagram_mode(app):
-    canvas_obj = getattr(app, "canvas", None)
-    canvas_mode = getattr(canvas_obj, "diagram_mode", None)
-    mode = canvas_mode if canvas_mode is not None else getattr(app, "diagram_mode", "FTA")
-    return str(mode).upper()
-
-
-def _validate_node_type(diag_mode, event_upper, event_type):
-    if event_upper in ALLOWED_NODE_TYPES.get(diag_mode, set()):
-        return True
-    msg = (
-        "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis."
-        if diag_mode == "PAA"
-        else f"Node type '{event_type}' is not allowed in {diag_mode} diagrams."
-    )
-    messagebox.showwarning("Invalid", msg)
-    return False
+    canvas_mode = getattr(getattr(app, "canvas", None), "diagram_mode", None)
+    mode = (canvas_mode or getattr(app, "diagram_mode", "FTA")).upper()
+    if mode != "PAA":  # enforce gating when not in PAA mode
+        return mode
+    for candidate, types in ALLOWED_NODE_TYPES.items():
+        if candidate != "PAA" and event_upper in types:
+            return candidate
+    return mode
 
 def add_node_of_type(app, event_type):
     """Attach a new ``FaultTreeNode`` of ``event_type`` under the current selection."""
 
     app.push_undo_state()
-    diag_mode = _current_diagram_mode(app)
     event_upper = event_type.upper()
+    diag_mode = _infer_diagram_mode(app, event_upper)
 
-    allowed = {
-        "FTA": {"GATE", "BASIC EVENT"},
-        "CTA": {"TRIGGERING CONDITION", "FUNCTIONAL INSUFFICIENCY"},
-        "PAA": {"GATE", "CONFIDENCE LEVEL", "ROBUSTNESS SCORE"},
-    }
-
-    if event_upper not in allowed.get(diag_mode, set()):
-        allowed_nodes = ", ".join(
-            sorted(name.title() for name in allowed.get(diag_mode, []))
-        )
+    if event_upper not in ALLOWED_NODE_TYPES.get(diag_mode, set()):
         msg = (
             f"Only {allowed_nodes} nodes are allowed in Prototype Assurance Analysis."
             if diag_mode == "PAA"

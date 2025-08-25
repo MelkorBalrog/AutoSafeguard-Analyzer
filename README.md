@@ -1,4 +1,4 @@
-version: 0.2.60
+version: 0.2.61
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1644,7 +1644,8 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.60 - Correct SysML repository export key so saved projects reload properly.
+- 0.2.61 - Fix parent-node resolution and enable FTA/CTA node creation when PAA mode is active.
+- 0.2.60 - Allow adding FTA and CTA nodes regardless of active work product mode.
 - 0.2.59 - Reactivate lifecycle phase when focusing governance diagrams to allow editing after opening other analyses.
 - 0.2.58 - Fix empty Safety tab when editing nodes in FTA, CTA and PAA diagrams.
 - 0.2.57 - Map Task toolbox selection to Action elements so governance diagrams support adding tasks.
