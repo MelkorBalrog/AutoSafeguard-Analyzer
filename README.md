@@ -1,8 +1,10 @@
-version: 0.2.50
+version: 0.2.51
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
 AutoML is an automotive modeling and analysis tool built around a SysML-based metamodel. It lets you describe items, operating scenarios, functions, structure and interfaces in a single environment.
+
+Project configuration is handled by the new **ProjectPropertiesManager** module, centralising probability tables and other project properties.
 
 The metamodel blends concepts from key automotive standards—ISO 26262 (functional safety), ISO 21448 (SOTIF), ISO 21434 (cybersecurity) and ISO 8800 (safety and AI)—so one project can address safety, cybersecurity and assurance requirements side by side.
 
@@ -1642,6 +1644,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.51 - Introduced ProjectPropertiesManager for centralized project configuration.
 - 0.2.50 - Extract shared product goal updates into ProductGoalManager.
 - 0.2.49 - Move ``from __future__`` annotations imports to top-level of modules.
 - 0.2.48 - Provide wrapper for 90° connections and serialize SysML diagrams for export.

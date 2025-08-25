@@ -235,7 +235,6 @@ from analysis.utils import (
     EXPOSURE_PROBABILITIES,
     CONTROLLABILITY_PROBABILITIES,
     SEVERITY_PROBABILITIES,
-    normalize_probability_mapping,
 )
 from analysis.safety_management import SafetyManagementToolbox, ACTIVE_TOOLBOX
 from analysis.causal_bayesian_network import CausalBayesianNetwork, CausalBayesianNetworkDoc
@@ -268,6 +267,7 @@ from gui.dialogs.user_info_dialog import UserInfoDialog
 
 from . import config_utils
 from .config_utils import _reload_local_config
+from .project_properties_manager import ProjectPropertiesManager
 
 # Expose configuration helpers and global state
 _CONFIG_PATH = config_utils._CONFIG_PATH
@@ -428,6 +428,7 @@ class AutoMLApp(
             self.project_properties["controllability_probabilities"],
             self.project_properties["severity_probabilities"],
         )
+        self.project_properties_manager = ProjectPropertiesManager(self.project_properties)
         self.item_definition = {"description": "", "assumptions": ""}
         self.safety_concept = {"functional": "", "technical": "", "cybersecurity": ""}
         self.mission_profiles = []
@@ -6846,22 +6847,9 @@ class AutoMLApp(
         return self.reporting_export.export_model_data(include_versions)
 
     def _load_project_properties(self, data: dict) -> None:
-        """Load project properties from *data* and normalize probability keys."""
-        self.project_properties = data.get("project_properties", self.project_properties)
-        for key in (
-            "exposure_probabilities",
-            "controllability_probabilities",
-            "severity_probabilities",
-        ):
-            probs = self.project_properties.get(key)
-            if isinstance(probs, Mapping):
-                self.project_properties[key] = {
-                    int(k): float(v) for k, v in probs.items()
-                }
-        update_probability_tables(
-            self.project_properties.get("exposure_probabilities"),
-            self.project_properties.get("controllability_probabilities"),
-            self.project_properties.get("severity_probabilities"),
+        """Delegate project property loading to the manager."""
+        self.project_properties = self.project_properties_manager.load_project_properties(
+            data
         )
 
     def _load_fault_tree_events(self, data: dict, ensure_root: bool) -> None:
@@ -6881,6 +6869,7 @@ class AutoMLApp(
             except Exception:
                 pass
         self.enabled_work_products = set()
+        self._load_project_properties(data)
 
         repo_data = data.get("sysml_repository")
         if repo_data:
@@ -7291,22 +7280,6 @@ class AutoMLApp(
             self.update_global_requirements_from_nodes(event)
         if hasattr(self, "hara_entries"):
             self.sync_hara_to_safety_goals()
-        props = data.get("project_properties", self.project_properties)
-        props["exposure_probabilities"] = normalize_probability_mapping(
-            props.get("exposure_probabilities") or EXPOSURE_PROBABILITIES
-        )
-        props["controllability_probabilities"] = normalize_probability_mapping(
-            props.get("controllability_probabilities") or CONTROLLABILITY_PROBABILITIES
-        )
-        props["severity_probabilities"] = normalize_probability_mapping(
-            props.get("severity_probabilities") or SEVERITY_PROBABILITIES
-        )
-        self.project_properties = props
-        update_probability_tables(
-            self.project_properties["exposure_probabilities"],
-            self.project_properties["controllability_probabilities"],
-            self.project_properties["severity_probabilities"],
-        )
         self.item_definition = data.get(
             "item_definition",
             getattr(self, "item_definition", {"description": "", "assumptions": ""}),
