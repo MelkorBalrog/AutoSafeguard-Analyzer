@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 from typing import Dict, Any, Set
+from functools import partial
 
 import tkinter as tk
 from tkinter import ttk, simpledialog
@@ -481,6 +482,55 @@ class RequirementsManagerSubApp:
         ttk.Button(btn, text="Delete", command=del_sg).pack(side=tk.LEFT)
 
         refresh_tree()
+
+    # ------------------------------------------------------------------
+    def show_traceability_matrix(self) -> None:
+        """Display a traceability matrix linking FTA basic events to FMEA components."""
+        app = self.app
+        basic_events = [
+            n
+            for n in app.get_all_nodes(app.root_node)
+            if n.node_type.upper() == "BASIC EVENT"
+        ]
+        win = tk.Toplevel(app.root)
+        win.title("FTA-FMEA Traceability")
+        columns = ["Basic Event", "Component"]
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=200, anchor="center")
+        tree.pack(fill=tk.BOTH, expand=True)
+
+        for be in basic_events:
+            comp = app.get_component_name_for_node(be) or "N/A"
+            tree.insert(
+                "",
+                "end",
+                values=[be.user_name or f"BE {be.unique_id}", comp],
+            )
+
+    # ------------------------------------------------------------------
+    def refresh_phase_requirements_menu(self) -> None:
+        """Populate the phase requirements menu from safety management toolbox."""
+        app = self.app
+        if not hasattr(app, "phase_req_menu"):
+            return
+        app.phase_req_menu.delete(0, tk.END)
+        toolbox = getattr(app, "safety_mgmt_toolbox", None)
+        if not toolbox:
+            return
+        phases = sorted(toolbox.list_modules())
+        for phase in phases:
+            app.phase_req_menu.add_command(
+                label=phase,
+                command=partial(app.generate_phase_requirements, phase),
+            )
+        if phases:
+            app.phase_req_menu.add_separator()
+        app.phase_req_menu.add_command(
+            label="Lifecycle",
+            command=app.generate_lifecycle_requirements,
+        )
 
     # ------------------------------------------------------------------
     def collect_reqs(self, node_dict: Dict[str, Any], target: Dict[str, Any]) -> None:

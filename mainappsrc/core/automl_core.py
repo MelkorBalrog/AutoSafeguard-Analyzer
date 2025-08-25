@@ -1972,24 +1972,7 @@ class AutoMLApp(
 
     def show_traceability_matrix(self):
         """Display a traceability matrix linking FTA basic events to FMEA components."""
-        basic_events = [n for n in self.get_all_nodes(self.root_node)
-                        if n.node_type.upper() == "BASIC EVENT"]
-        win = tk.Toplevel(self.root)
-        win.title("FTA-FMEA Traceability")
-        columns = ["Basic Event", "Component"]
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for col in columns:
-            tree.heading(col, text=col)
-            tree.column(col, width=200, anchor="center")
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        for be in basic_events:
-            comp = self.get_component_name_for_node(be) or "N/A"
-            tree.insert(
-                "",
-                "end",
-                values=[be.user_name or f"BE {be.unique_id}", comp],
-            )
+        return self.requirements_manager.show_traceability_matrix()
 
     def collect_requirements_recursive(self, node):
         return self.safety_analysis.collect_requirements_recursive(node)
@@ -2038,26 +2021,7 @@ class AutoMLApp(
 
 
     def _refresh_phase_requirements_menu(self) -> None:
-        if not hasattr(self, "phase_req_menu"):
-            return
-        self.phase_req_menu.delete(0, tk.END)
-        toolbox = getattr(self, "safety_mgmt_toolbox", None)
-        if not toolbox:
-            return
-        phases = sorted(toolbox.list_modules())
-        for phase in phases:
-            # Use ``functools.partial`` to bind the phase name at creation time
-            # so each menu entry triggers generation for its own phase.
-            self.phase_req_menu.add_command(
-                label=phase,
-                command=partial(self.generate_phase_requirements, phase),
-            )
-        if phases:
-            self.phase_req_menu.add_separator()
-        self.phase_req_menu.add_command(
-            label="Lifecycle",
-            command=self.generate_lifecycle_requirements,
-        )
+        return self.requirements_manager.refresh_phase_requirements_menu()
 
     def export_cybersecurity_goal_requirements(self):
         return self.reporting_export.export_cybersecurity_goal_requirements()
