@@ -111,20 +111,10 @@ class SafetyAnalysis_FTA_FMEA(FTASubApp, FMEAService, FMEDAManager):
     def update_base_event_requirement_asil(self):
         return self.app.risk_app.update_base_event_requirement_asil(self.app)
 
-    # Convenience properties to expose underlying data structures
-    @property
-    def fmeas(self):
-        return self.fmea_service.fmeas if isinstance(self, FMEAService) else self.fmeas
-
-    @fmeas.setter
-    def fmeas(self, value):
-        self.fmea_service.fmeas = value
-
-    @property
-    def fmedas(self):
-        return self.fmeda_manager.fmedas if isinstance(self, FMEDAManager) else self.fmedas
-
-    @fmedas.setter
-    def fmedas(self, value):
-        self.fmeda_manager.fmedas = value
+    # The mixins :class:`FMEAService` and :class:`FMEDAManager` already expose
+    # ``fmeas`` and ``fmedas`` attributes respectively.  Previous versions of
+    # this facade attempted to proxy those attributes through properties, but
+    # that indirection caused the ``AttributeError`` seen when the mixins were
+    # initialised.  By relying directly on the inherited attributes we avoid the
+    # recursive property lookups while keeping the public interface unchanged.
 
