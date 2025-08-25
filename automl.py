@@ -15,9 +15,31 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""Compatibility wrapper for the AutoML launcher."""
 
-"""Project version information."""
+from importlib.util import module_from_spec, spec_from_file_location
+from pathlib import Path
 
-VERSION = "0.2.57"
+spec = spec_from_file_location("AutoMLLauncher", Path(__file__).with_name("AutoML.py"))
+_launcher = module_from_spec(spec)
+spec.loader.exec_module(_launcher)  # type: ignore[assignment]
 
-__all__ = ["VERSION"]
+REQUIRED_PACKAGES = _launcher.REQUIRED_PACKAGES
+ensure_packages = _launcher.ensure_packages
+ensure_ghostscript = _launcher.ensure_ghostscript
+importlib = _launcher.importlib
+subprocess = _launcher.subprocess
+memory_manager = _launcher.memory_manager
+os = _launcher.os
+GS_PATH = _launcher.GS_PATH
+
+__all__ = [
+    "REQUIRED_PACKAGES",
+    "ensure_packages",
+    "ensure_ghostscript",
+    "importlib",
+    "subprocess",
+    "memory_manager",
+    "os",
+    "GS_PATH",
+]

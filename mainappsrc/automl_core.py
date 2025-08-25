@@ -15,9 +15,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""Compatibility shim forwarding to :mod:`mainappsrc.core.automl_core`."""
 
-"""Project version information."""
+import importlib as _importlib
 
-VERSION = "0.2.57"
+module = _importlib.import_module("mainappsrc.core.automl_core")
+globals().update({k: getattr(module, k) for k in dir(module) if not k.startswith("_")})
 
-__all__ = ["VERSION"]
+__all__ = [name for name in globals() if not name.startswith("_")]
