@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Optional
 
-from gui.managers.style_manager import StyleManager
+from gui.styles.style_manager import StyleManager
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from gui.windows.architecture import (
     UseCaseDiagramWindow,
