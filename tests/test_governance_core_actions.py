@@ -61,8 +61,8 @@ def test_governance_core_has_add_buttons(monkeypatch):
     win.toolbox_selector = types.SimpleNamespace(configure=lambda **k: None)
     win.toolbox_var = types.SimpleNamespace(get=lambda: "Governance Core", set=lambda v: None)
     win._toolbox_frames = {}
-
     win._rebuild_toolboxes()
+    win._switch_toolbox()
     assert "Governance Core" in win._toolbox_frames
     core_frames = win._toolbox_frames["Governance Core"]
     assert win.rel_frame not in core_frames

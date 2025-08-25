@@ -54,6 +54,12 @@ class MemoryManager:
         for key in inactive:
             obj = self._cache.pop(key, None)
             if obj is not None:
+                destroy = getattr(obj, "destroy", None)
+                if callable(destroy):
+                    try:
+                        destroy()
+                    except Exception:  # pragma: no cover - best effort cleanup
+                        pass
                 del obj
         if inactive:
             gc.collect()
@@ -84,6 +90,11 @@ def lazy_import(name: str) -> Any:
             return getattr(module, item)
 
     return _LazyModule()
+
+
+def lazy_widget(key: str, loader: Callable[[], Any]) -> Any:
+    """Lazily create a GUI widget using the shared memory manager."""
+    return manager.lazy_load(key, loader)
 
 
 manager = MemoryManager()
