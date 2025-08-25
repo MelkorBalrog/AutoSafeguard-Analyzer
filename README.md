@@ -1,4 +1,4 @@
-version: 0.2.26
+version: 0.2.27
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1642,7 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.27 - Refactor core into modular mixins for UI setup, events, persistence and analysis utilities.
+- 0.2.27 - Import Probability_Reliability in fallback path to avoid initialization error.
 - 0.2.26 - Import Syncing_And_IDs in fallback path to avoid initialization error.
 - 0.2.25 - Extract page and PAA helpers into dedicated module and delegate from core.
 - 0.2.24 - Move UI lifecycle helpers to dedicated class and delegate calls.
