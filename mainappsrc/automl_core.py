@@ -297,8 +297,6 @@ except Exception:  # pragma: no cover
 from mainappsrc.event_dispatcher import EventDispatcher
 from mainappsrc.page_diagram import PageDiagram
 from mainappsrc.window_controllers import WindowControllers
-from mainappsrc.fmeda_manager import FMEDAManager
-from mainappsrc.fmea_service import FMEAService
 from mainappsrc.review_manager import ReviewManager
 from mainappsrc.diagram_renderer import DiagramRenderer
 from analysis.user_config import (
@@ -465,7 +463,7 @@ try:  # pragma: no cover - support direct module import
     from .block_diagram_subapp import BlockDiagramSubApp
     from .internal_block_diagram_subapp import InternalBlockDiagramSubApp
     from .control_flow_diagram_subapp import ControlFlowDiagramSubApp
-    from .fta_subapp import FTASubApp
+    from .safety_analysis import SafetyAnalysis_FTA_FMEA
     from .project_editor_subapp import ProjectEditorSubApp
     from .risk_assessment_subapp import RiskAssessmentSubApp
     from .reliability_subapp import ReliabilitySubApp
@@ -480,7 +478,7 @@ except Exception:  # pragma: no cover
     from block_diagram_subapp import BlockDiagramSubApp
     from internal_block_diagram_subapp import InternalBlockDiagramSubApp
     from control_flow_diagram_subapp import ControlFlowDiagramSubApp
-    from fta_subapp import FTASubApp
+    from safety_analysis import SafetyAnalysis_FTA_FMEA
     from project_editor_subapp import ProjectEditorSubApp
     from risk_assessment_subapp import RiskAssessmentSubApp
     from reliability_subapp import ReliabilitySubApp
@@ -638,13 +636,18 @@ class AutoMLApp(AppLifecycleUI):
         self._btn_imgs = self.style_app.btn_images
         self._init_nav_button_style()
         self.tree_app = TreeSubApp()
-        self.fta_app = FTASubApp()
         self.project_editor_app = ProjectEditorSubApp()
         self.risk_app = RiskAssessmentSubApp()
-        # Risk assessment helpers also provide FMEDA metric calculations
-        # so expose them through a dedicated ``fmeda`` attribute for clarity.
-        self.fmeda = self.risk_app
         self.reliability_app = ReliabilitySubApp()
+        # Unified FTA/FMEA/FMEMA helper
+        self.safety_analysis = SafetyAnalysis_FTA_FMEA(self)
+        # Backwards compatible aliases
+        self.fta_app = self.safety_analysis
+        self.fmea_service = self.safety_analysis
+        self.fmeda_manager = self.safety_analysis
+        # Risk assessment helpers also provide FMEDA metric calculations,
+        # expose through ``fmeda`` pointing at the combined safety helper.
+        self.fmeda = self.safety_analysis
         self.helper = AutoML_Helper
         # Dedicated renderer for all diagram-related operations.
         self.diagram_renderer = DiagramRenderer(self)
@@ -771,8 +774,6 @@ class AutoMLApp(AppLifecycleUI):
         self.internal_block_diagram_app = InternalBlockDiagramSubApp(self)
         self.control_flow_diagram_app = ControlFlowDiagramSubApp(self)
         self.sotif_manager = SOTIFManager(self)
-        self.fmeda_manager = FMEDAManager(self)
-        self.fmea_service = FMEAService(self)
         self.cta_manager = ControlTreeManager(self)
         self.requirements_manager = RequirementsManagerSubApp(self)
         self.review_manager = ReviewManager(self)
@@ -1453,7 +1454,7 @@ class AutoMLApp(AppLifecycleUI):
         self.root_node = None
         self.top_events = []
         self.fmea_entries = []
-        self.fmea_service = FMEAService(self)
+        self.fmea_service = self.safety_analysis
         self.selected_node = None
         self.dragging_node = None
         self.drag_offset_x = 0
@@ -1470,18 +1471,14 @@ class AutoMLApp(AppLifecycleUI):
 
     @property
     def fmeas(self):
-        service = getattr(self, "fmea_service", None)
-        if service is None:
-            service = FMEAService(self)
-            self.fmea_service = service
+        service = getattr(self, "fmea_service", None) or self.safety_analysis
+        self.fmea_service = service
         return service.fmeas
 
     @fmeas.setter
     def fmeas(self, value):
-        service = getattr(self, "fmea_service", None)
-        if service is None:
-            service = FMEAService(self)
-            self.fmea_service = service
+        service = getattr(self, "fmea_service", None) or self.safety_analysis
+        self.fmea_service = service
         service.fmeas = value
 
     def show_fmea_list(self):

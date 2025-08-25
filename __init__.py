@@ -9,6 +9,7 @@ from .mainappsrc.automl_core import (
     messagebox,
     GATE_NODE_TYPES,
 )
+from .mainappsrc.safety_analysis import SafetyAnalysis_FTA_FMEA
 from config.automl_constants import PMHF_TARGETS
 from analysis.models import HazopDoc
 from gui.dialogs.edit_node_dialog import EditNodeDialog
@@ -27,4 +28,5 @@ __all__ = [
     "PMHF_TARGETS",
     "HazopDoc",
     "EditNodeDialog",
+    "SafetyAnalysis_FTA_FMEA",
 ]
