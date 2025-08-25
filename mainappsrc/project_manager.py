@@ -10,6 +10,7 @@ from analysis.utils import (
     update_probability_tables,
 )
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
+from analysis.risk_assessment import AutoMLHelper
 
 
 class ProjectManager:
@@ -42,10 +43,11 @@ class ProjectManager:
                 except Exception:
                     pass
         app._reset_fta_state()
-        import AutoML as automl_mod
+        import importlib
         global AutoML_Helper, unique_node_id_counter
-        AutoML_Helper = automl_mod.AutoML_Helper = automl_mod.AutoMLHelper()
-        unique_node_id_counter = automl_mod.unique_node_id_counter = 1
+        automl_mod = importlib.import_module("AutoML")
+        AutoML_Helper = automl_mod.AutoMLHelper()
+        unique_node_id_counter = 1
         SysMLRepository.reset_instance()
         app.zoom = 1.0
         app.diagram_font.config(size=int(8 * app.zoom))
@@ -103,10 +105,11 @@ class ProjectManager:
         app.activity_windows = []
         app.block_windows = []
         app.ibd_windows = []
-        import AutoML as automl_mod
+        import importlib
+        automl_mod = importlib.import_module("AutoML")
         global AutoML_Helper, unique_node_id_counter
-        AutoML_Helper = automl_mod.AutoML_Helper = automl_mod.AutoMLHelper()
-        unique_node_id_counter = automl_mod.unique_node_id_counter = 1
+        AutoML_Helper = automl_mod.AutoMLHelper()
+        unique_node_id_counter = 1
         SysMLRepository.reset_instance()
         app.top_events = []
         app.cta_events = []
