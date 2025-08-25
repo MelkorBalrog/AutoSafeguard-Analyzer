@@ -171,6 +171,7 @@ import tkinter.font as tkFont
 import builtins
 from mainappsrc.managers.user_manager import UserManager
 from mainappsrc.managers.project_manager import ProjectManager
+from mainappsrc.ui.project_properties_dialog import ProjectPropertiesDialog
 from mainappsrc.managers.sotif_manager import SOTIFManager
 from mainappsrc.managers.cyber_manager import CyberSecurityManager
 from mainappsrc.managers.cta_manager import ControlTreeManager
@@ -229,7 +230,6 @@ else:  # pragma: no cover - fallback for minimal stubs
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from analysis.utils import (
     append_unique_insensitive,
-    update_probability_tables,
     EXPOSURE_PROBABILITIES,
     CONTROLLABILITY_PROBABILITIES,
     SEVERITY_PROBABILITIES,
@@ -1476,146 +1476,15 @@ class AutoMLApp(
     def sync_cyber_risk_to_goals(self):
         return self.probability_reliability.sync_cyber_risk_to_goals()
 
-
     def add_top_level_event(self):
         return self.safety_analysis.add_top_level_event()
 
     def _build_probability_frame(self, parent, title: str, levels: range, values: dict, row: int, dialog_font):
         return self.probability_reliability._build_probability_frame(parent, title, levels, values, row, dialog_font)
 
-    def _apply_project_properties(
-        self,
-        name: str,
-        detailed: bool,
-        exp_vars: dict,
-        ctrl_vars: dict,
-        sev_vars: dict,
-        smt,
-        freeze: bool,
-    ) -> None:
-        """Persist updated project properties and refresh probability tables."""
-        self.project_properties["pdf_report_name"] = name
-        self.project_properties["pdf_detailed_formulas"] = detailed
-        self.project_properties["exposure_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-        }
-        self.project_properties["controllability_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-        }
-        self.project_properties["severity_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-        }
-        update_probability_tables(
-            self.project_properties["exposure_probabilities"],
-            self.project_properties["controllability_probabilities"],
-            self.project_properties["severity_probabilities"],
-        )
-        if smt:
-            self.governance_manager.freeze_governance_diagrams(freeze)
-
-    def edit_project_properties(self):
-        prop_win = tk.Toplevel(self.root)
-        prop_win.title("Project Properties")
-        prop_win.resizable(False, False)
-        dialog_font = tkFont.Font(family="Arial", size=10)
-
-        ttk.Label(prop_win, text="PDF Report Name:", font=dialog_font).grid(
-            row=0, column=0, padx=10, pady=10, sticky="w"
-        )
-        pdf_entry = ttk.Entry(prop_win, width=40, font=dialog_font)
-        pdf_entry.insert(0, self.project_properties.get("pdf_report_name", "AutoML-Analyzer PDF Report"))
-        pdf_entry.grid(row=0, column=1, padx=10, pady=10)
-
-        # Checkbox to choose between detailed formulas or score results only.
-        var_detailed = tk.BooleanVar(
-            value=self.project_properties.get("pdf_detailed_formulas", True)
-        )
-        chk = ttk.Checkbutton(
-            prop_win,
-            text="Show Detailed Formulas in PDF Report",
-            variable=var_detailed,
-        )
-        chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-
-        smt = getattr(self, "safety_mgmt_toolbox", None)
-        all_frozen = False
-        if smt:
-            diagrams = smt.list_diagrams()
-            all_frozen = diagrams and all(smt.diagram_frozen(d) for d in diagrams)
-        var_freeze = tk.BooleanVar(
-            value=self.project_properties.get("freeze_governance_diagrams", bool(all_frozen))
-        )
-        ttk.Checkbutton(
-            prop_win,
-            text="Freeze Governance Diagrams",
-            variable=var_freeze,
-        ).grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-
-        exp_vars = self._build_probability_frame(
-            prop_win,
-            "Exposure Probabilities P(E|HB)",
-            range(1, 5),
-            self.project_properties.get("exposure_probabilities", {}),
-            3,
-            dialog_font,
-        )
-        ctrl_vars = self._build_probability_frame(
-            prop_win,
-            "Controllability Probabilities P(C|E)",
-            range(1, 4),
-            self.project_properties.get("controllability_probabilities", {}),
-            4,
-            dialog_font,
-        )
-        sev_vars = self._build_probability_frame(
-            prop_win,
-            "Severity Probabilities P(S|C)",
-            range(1, 4),
-            self.project_properties.get("severity_probabilities", {}),
-            5,
-            dialog_font,
-        )
-
-        def save_props() -> None:
-            new_name = pdf_entry.get().strip()
-            if not new_name:
-                messagebox.showwarning(
-                    "Project Properties", "PDF Report Name cannot be empty."
-                )
-                return
-
-            self.project_properties["pdf_report_name"] = new_name
-            self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
-            self.project_properties["exposure_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-            }
-            self.project_properties["controllability_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-            }
-            self.project_properties["severity_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-            }
-            self.project_properties["freeze_governance_diagrams"] = var_freeze.get()
-            update_probability_tables(
-                self.project_properties["exposure_probabilities"],
-                self.project_properties["controllability_probabilities"],
-                self.project_properties["severity_probabilities"],
-            )
-            if smt:
-                self.governance_manager.freeze_governance_diagrams(var_freeze.get())
-            messagebox.showinfo(
-                "Project Properties", "Project properties updated."
-            )
-            prop_win.destroy()
-
-        ttk.Button(prop_win, text="Save", command=save_props, width=10).grid(
-            row=6, column=0, columnspan=2, pady=10
-        )
-        prop_win.update_idletasks()
-        prop_win.minsize(prop_win.winfo_width(), prop_win.winfo_height())
-        prop_win.transient(self.root)
-        prop_win.grab_set()
-        self.root.wait_window(prop_win)
+    def edit_project_properties(self) -> None:
+        """Open the project properties dialog."""
+        ProjectPropertiesDialog(self).show()
 
     def create_diagram_image(self):  # pragma: no cover - delegation
         return self.diagram_renderer.create_diagram_image()
@@ -6738,7 +6607,7 @@ class AutoMLApp(
                 self.project_properties[key] = {
                     int(k): float(v) for k, v in probs.items()
                 }
-        update_probability_tables(
+        self.probability_reliability.update_probability_tables(
             self.project_properties.get("exposure_probabilities"),
             self.project_properties.get("controllability_probabilities"),
             self.project_properties.get("severity_probabilities"),
@@ -7182,7 +7051,7 @@ class AutoMLApp(
             props.get("severity_probabilities") or SEVERITY_PROBABILITIES
         )
         self.project_properties = props
-        update_probability_tables(
+        self.probability_reliability.update_probability_tables(
             self.project_properties["exposure_probabilities"],
             self.project_properties["controllability_probabilities"],
             self.project_properties["severity_probabilities"],
