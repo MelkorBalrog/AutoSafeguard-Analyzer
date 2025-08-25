@@ -237,29 +237,29 @@ if parent not in sys.path:
     sys.path.append(parent)
 from typing import Any, Optional
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
-from gui.dialog_utils import askstring_fixed
+from gui.dialogs.dialog_utils import askstring_fixed
 from gui.controls import messagebox
-from gui import logger, add_treeview_scrollbars
+from gui.utils import logger, add_treeview_scrollbars
 from gui.controls.button_utils import enable_listbox_hover_highlight
-from gui.tooltip import ToolTip
-from gui.style_manager import StyleManager
-from gui.review_toolbox import ReviewData, ReviewParticipant, ReviewComment
+from gui.utils.tooltip import ToolTip
+from gui.styles.style_manager import StyleManager
+from gui.toolboxes.review_toolbox import ReviewData, ReviewParticipant, ReviewComment
 from functools import partial
 # Governance helper class
 from mainappsrc.managers.governance_manager import GovernanceManager
 from mainappsrc.managers.paa_manager import PrototypeAssuranceManager
-from gui.safety_management_toolbox import SafetyManagementToolbox
-from gui.safety_management_explorer import SafetyManagementExplorer
-from gui.safety_case_explorer import SafetyCaseExplorer
-from gui.gsn_diagram_window import GSN_WINDOWS
-from gui.causal_bayesian_network_window import CBN_WINDOWS
-from gui.gsn_config_window import GSNElementConfig
-from gui.search_toolbox import SearchToolbox
+from gui.toolboxes.safety_management_toolbox import SafetyManagementToolbox
+from gui.explorers.safety_management_explorer import SafetyManagementExplorer
+from gui.explorers.safety_case_explorer import SafetyCaseExplorer
+from gui.windows.gsn_diagram_window import GSN_WINDOWS
+from gui.windows.causal_bayesian_network_window import CBN_WINDOWS
+from gui.windows.gsn_config_window import GSNElementConfig
+from gui.toolboxes.search_toolbox import SearchToolbox
 from mainappsrc.models.gsn import GSNDiagram, GSNModule
 from mainappsrc.managers.gsn_manager import GSNManager
 from mainappsrc.models.gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
-from gui.closable_notebook import ClosableNotebook
-from gui.icon_factory import create_icon
+from gui.utils.closable_notebook import ClosableNotebook
+from gui.utils.icon_factory import create_icon
 from gui.controls.mac_button_style import (
     apply_translucid_button_style,
     apply_purplish_button_style,
@@ -283,7 +283,7 @@ try:
     from openpyxl import load_workbook
 except Exception:  # openpyxl may not be installed
     load_workbook = None
-from gui.drawing_helper import FTADrawingHelper, fta_drawing_helper
+from gui.utils.drawing_helper import FTADrawingHelper, fta_drawing_helper
 try:  # pragma: no cover
     from .page_diagram import PageDiagram
 except Exception:  # pragma: no cover
@@ -349,8 +349,8 @@ from analysis.models import (
     CAL_LEVEL_OPTIONS,
     CybersecurityGoal,
 )
-from gui.safety_case_table import SafetyCaseTable
-from gui.architecture import (
+from gui.utils.safety_case_table import SafetyCaseTable
+from gui.windows.architecture import (
     UseCaseDiagramWindow,
     ActivityDiagramWindow,
     BlockDiagramWindow,
@@ -396,7 +396,7 @@ os.environ["GS_EXECUTABLE"] = r"C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe"
 import networkx as nx
 # Import ReportLab for PDF export.
 from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, PageBreak
-from gui.style_editor import StyleEditor
+from gui.styles.style_editor import StyleEditor
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
