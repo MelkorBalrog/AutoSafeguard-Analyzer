@@ -252,7 +252,7 @@ class Reporting_Export:
             "versions": app.versions if include_versions else [],
             "fmea_settings": app.fmea_service.get_settings_dict(),
             "req_editor": app.requirements_manager.export_state(),
-            "sysml_repo": repo.export_state() if repo else {},
+            "sysml_repository": repo.export_state() if repo else {},
             "diagrams": [d.to_dict() for d in app.arch_diagrams],
             "management_diagrams": [
                 d.to_dict() for d in getattr(app, "management_diagrams", [])

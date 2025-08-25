@@ -1644,7 +1644,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.60 - Place added FTA, CTA and PAA nodes below their selected parents.
+- 0.2.60 - Correct SysML repository export key so saved projects reload properly.
 - 0.2.59 - Reactivate lifecycle phase when focusing governance diagrams to allow editing after opening other analyses.
 - 0.2.58 - Fix empty Safety tab when editing nodes in FTA, CTA and PAA diagrams.
 - 0.2.57 - Map Task toolbox selection to Action elements so governance diagrams support adding tasks.
