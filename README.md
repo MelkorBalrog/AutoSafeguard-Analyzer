@@ -1642,6 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.32 - Extract safety UI helpers into mixin and separate FMEDA row dialog.
 - 0.2.31 - Provide requirements editor export placeholder to prevent export error.
 - 0.2.30 - Instantiate reporting export helper during application start-up.
 - 0.2.29 - Instantiate validation consistency helper during application start-up.
