@@ -1854,10 +1854,10 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.risk_app.get_hara_by_name(self, name)
 
     def update_hara_statuses(self):
-        return self.risk_app.update_hara_statuses(self)
+        return self.safety_analysis.update_hara_statuses()
 
     def update_fta_statuses(self):
-        return self.risk_app.update_fta_statuses(self)
+        return self.safety_analysis.update_fta_statuses()
 
     def get_safety_goal_asil(self, sg_name):
         return self.risk_app.get_safety_goal_asil(self, sg_name)
@@ -1946,7 +1946,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
 
     def update_hazard_severity(self, hazard: str, severity: int | str) -> None:
-        return self.risk_app.update_hazard_severity(self, hazard, severity)
+        return self.safety_analysis.update_hazard_severity(hazard, severity)
 
 
     def calculate_fmeda_metrics(self, events):
@@ -2488,100 +2488,19 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return hazards
 
     def update_odd_elements(self):
-        """Aggregate elements from all ODD libraries into odd_elements list."""
-        self.odd_elements = []
-        for lib in getattr(self, "odd_libraries", []):
-            self.odd_elements.extend(lib.get("elements", []))
+        return self.safety_analysis.update_odd_elements()
 
     def update_hazard_list(self):
-        """Aggregate hazards from risk assessment and HAZOP documents."""
-        hazards: list[str] = []
-        # Track severities found in analysis documents so the hazard editor
-        # can restore previously entered values.  Previously, only the hazard
-        # names were collected and any severity information was discarded,
-        # causing all hazards to default to severity 1 when the list was
-        # rebuilt.
-        severity_map: dict[str, int] = {}
-
-        for doc in self.hara_docs:
-            for e in doc.entries:
-                h = getattr(e, "hazard", "").strip()
-                if not h:
-                    continue
-                if h not in hazards:
-                    hazards.append(h)
-                # HARA entries store severity as an integer attribute
-                sev = getattr(e, "severity", None)
-                if sev is not None:
-                    try:
-                        severity_map[h] = int(sev)
-                    except Exception:
-                        severity_map[h] = 1
-
-        for doc in self.hazop_docs:
-            for e in doc.entries:
-                h = getattr(e, "hazard", "").strip()
-                if not h:
-                    continue
-                if h not in hazards:
-                    hazards.append(h)
-                # HAZOP entries currently do not have severities, but if they
-                # ever do, attempt to capture them as well.
-                sev = getattr(e, "severity", None)
-                if sev is not None and h not in severity_map:
-                    try:
-                        severity_map[h] = int(sev)
-                    except Exception:
-                        severity_map[h] = 1
-
-        for h in hazards:
-            if h in severity_map:
-                self.hazard_severity[h] = severity_map[h]
-            elif h not in self.hazard_severity:
-                self.hazard_severity[h] = 1
-
-        self.hazards = hazards
+        return self.safety_analysis.update_hazard_list()
 
     def update_failure_list(self):
-        """Aggregate failure effects from FMEA and FMEDA entries."""
-        failures: list[str] = []
-        for entry in self.get_all_fmea_entries():
-            eff = getattr(entry, "fmea_effect", "").strip()
-            if eff and eff not in failures:
-                failures.append(eff)
-        self.failures = failures
+        return self.safety_analysis.update_failure_list()
 
     def update_triggering_condition_list(self):
-        """Aggregate triggering conditions from docs and FTAs."""
-        names: list[str] = []
-        for n in self.get_all_triggering_conditions():
-            nm = n.user_name or f"TC {n.unique_id}"
-            if nm not in names:
-                names.append(nm)
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                val = e.get("triggering_conditions", "")
-                for part in val.split(";"):
-                    p = part.strip()
-                    if p and p not in names:
-                        names.append(p)
-        self.triggering_conditions = names
+        return self.safety_analysis.update_triggering_condition_list()
 
     def update_functional_insufficiency_list(self):
-        """Aggregate functional insufficiencies from docs and FTAs."""
-        names: list[str] = []
-        for n in self.get_all_functional_insufficiencies():
-            nm = n.user_name or f"FI {n.unique_id}"
-            if nm not in names:
-                names.append(nm)
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                val = e.get("functional_insufficiencies", "")
-                for part in val.split(";"):
-                    p = part.strip()
-                    if p and p not in names:
-                        names.append(p)
-        self.functional_insufficiencies = names
+        return self.safety_analysis.update_functional_insufficiency_list()
 
     def get_entry_field(self, entry, field, default=""):
         return self.data_access_queries.get_entry_field(entry, field, default)
@@ -3001,7 +2920,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
                 self.canvas.delete("all")
 
     def update_basic_event_probabilities(self):
-        return self.probability_reliability.update_basic_event_probabilities()
+        return self.safety_analysis.update_basic_event_probabilities()
 
     def validate_float(self, value):
         """Return ``True`` if ``value`` resembles a float.
@@ -8211,18 +8130,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
             self.update_requirement_asil(rid)
 
     def update_base_event_requirement_asil(self):
-        """Update ASIL for requirements allocated to base events."""
-        for node in self.get_all_nodes(self.root_node):
-            if getattr(node, "node_type", "").upper() != "BASIC EVENT":
-                continue
-            for req in getattr(node, "safety_requirements", []):
-                rid = req.get("id")
-                if not rid:
-                    continue
-                asil = self.compute_requirement_asil(rid)
-                req["asil"] = asil
-                if rid in global_requirements:
-                    global_requirements[rid]["asil"] = asil
+        return self.safety_analysis.update_base_event_requirement_asil()
 
     def ensure_asil_consistency(self):
         """Sync safety goal ASILs from risk assessments and update requirement ASILs."""

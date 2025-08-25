@@ -1,4 +1,4 @@
-version: 0.2.34
+version: 0.2.35
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1642,7 +1642,8 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.34 - Move diagram rendering logic into dedicated ``DiagramRenderer`` class.
+- 0.2.35 - Wrap update routines within safety analysis facade.
+- 0.2.34 - Centralise safety analysis helpers into facade and delegate from core.
 - 0.2.33 - Extract dialog classes into dedicated modules and update mixins.
 - 0.2.32 - Refactor core initialization into mixins for style, services, and icons.
 - 0.2.31 - Provide requirements editor export placeholder to prevent export error.

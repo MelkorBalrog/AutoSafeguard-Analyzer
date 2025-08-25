@@ -113,6 +113,9 @@ class SafetyAnalysis_FTA_FMEA(FTASubApp, FMEAService, FMEDAManager):
     # ------------------------------------------------------------------
     # Delegated helpers used by existing code paths
     # ------------------------------------------------------------------
+    def update_hara_statuses(self):
+        return self.app.risk_app.update_hara_statuses(self.app)
+
     def update_fta_statuses(self):
         return self.app.risk_app.update_fta_statuses(self.app)
 
@@ -121,6 +124,95 @@ class SafetyAnalysis_FTA_FMEA(FTASubApp, FMEAService, FMEDAManager):
 
     def update_base_event_requirement_asil(self):
         return self.app.risk_app.update_base_event_requirement_asil(self.app)
+
+    def update_hazard_severity(self, hazard: str, severity: int | str) -> None:
+        return self.app.risk_app.update_hazard_severity(self.app, hazard, severity)
+
+    # ------------------------------------------------------------------
+    # List maintenance helpers
+    # ------------------------------------------------------------------
+    def update_odd_elements(self) -> None:
+        self.app.odd_elements = []
+        for lib in getattr(self.app, "odd_libraries", []):
+            self.app.odd_elements.extend(lib.get("elements", []))
+
+    def update_hazard_list(self) -> None:
+        hazards: list[str] = []
+        severity_map: dict[str, int] = {}
+
+        for doc in self.app.hara_docs:
+            for e in doc.entries:
+                h = getattr(e, "hazard", "").strip()
+                if not h:
+                    continue
+                if h not in hazards:
+                    hazards.append(h)
+                sev = getattr(e, "severity", None)
+                if sev is not None:
+                    try:
+                        severity_map[h] = int(sev)
+                    except Exception:
+                        severity_map[h] = 1
+
+        for doc in self.app.hazop_docs:
+            for e in doc.entries:
+                h = getattr(e, "hazard", "").strip()
+                if not h:
+                    continue
+                if h not in hazards:
+                    hazards.append(h)
+                sev = getattr(e, "severity", None)
+                if sev is not None and h not in severity_map:
+                    try:
+                        severity_map[h] = int(sev)
+                    except Exception:
+                        severity_map[h] = 1
+
+        for h in hazards:
+            if h in severity_map:
+                self.app.hazard_severity[h] = severity_map[h]
+            elif h not in self.app.hazard_severity:
+                self.app.hazard_severity[h] = 1
+
+        self.app.hazards = hazards
+
+    def update_failure_list(self) -> None:
+        failures: list[str] = []
+        for entry in self.app.data_access_queries.get_all_fmea_entries():
+            eff = getattr(entry, "fmea_effect", "").strip()
+            if eff and eff not in failures:
+                failures.append(eff)
+        self.app.failures = failures
+
+    def update_triggering_condition_list(self) -> None:
+        names: list[str] = []
+        for n in self.app.get_all_triggering_conditions():
+            nm = n.user_name or f"TC {n.unique_id}"
+            if nm not in names:
+                names.append(nm)
+        for doc in self.app.fi2tc_docs + self.app.tc2fi_docs:
+            for e in doc.entries:
+                val = e.get("triggering_conditions", "")
+                for part in val.split(";"):
+                    p = part.strip()
+                    if p and p not in names:
+                        names.append(p)
+        self.app.triggering_conditions = names
+
+    def update_functional_insufficiency_list(self) -> None:
+        names: list[str] = []
+        for n in self.app.get_all_functional_insufficiencies():
+            nm = n.user_name or f"FI {n.unique_id}"
+            if nm not in names:
+                names.append(nm)
+        for doc in self.app.fi2tc_docs + self.app.tc2fi_docs:
+            for e in doc.entries:
+                val = e.get("functional_insufficiencies", "")
+                for part in val.split(";"):
+                    p = part.strip()
+                    if p and p not in names:
+                        names.append(p)
+        self.app.functional_insufficiencies = names
 
     # ------------------------------------------------------------------
     # Attribute proxies
