@@ -16,7 +16,7 @@ import weakref
 import copy
 from pathlib import Path
 from dataclasses import dataclass, field, asdict, replace
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Callable
 
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository, SysMLDiagram, SysMLElement
 from gui.styles.style_manager import StyleManager
@@ -25,6 +25,7 @@ from config import load_diagram_rules, load_json_with_comments
 import json
 from gui.utils.icon_factory import create_icon
 from gui.controls.button_utils import set_uniform_button_width
+from tools.memory_manager import manager as memory_manager
 
 from mainappsrc.models.sysml.sysml_spec import SYSML_PROPERTIES
 from analysis.models import (
@@ -12121,6 +12122,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 if fr not in (self.tools_frame, getattr(self, "rel_frame", None)) and hasattr(fr, "destroy"):
                     fr.destroy()
         self._toolbox_frames = {}
+        self._frame_loaders: dict[str, Callable[[], object]] = {}
         if hasattr(self.toolbox, "tk"):
             action_frame = ttk.Frame(self.toolbox)
             cmds = [
@@ -12222,22 +12224,21 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 )
             return frame
 
-        # Build a toolbox entry for each category.  All options include the
-        # shared selection/connection tools.  Governance Core also exposes
-        # its action buttons for adding work products, generic work products,
-        # and lifecycle phases.
+        # Build loaders for each category. Governance Core includes the action
+        # buttons while other categories only load their specific frames when
+        # first displayed.
         for name, data in defs.items():
             frames = [self.tools_frame]
             if name == "Governance Core":
                 frames.append(action_frame)
-            frames.append(build_frame(name, data))
             self._toolbox_frames[name] = frames
+            self._frame_loaders[name] = lambda data=data, name=name: build_frame(name, data)
 
         if ai_data:
-            self._toolbox_frames["Safety & AI Lifecycle"] = [
-                self.tools_frame,
-                build_frame("Safety & AI Lifecycle", ai_data),
-            ]
+            self._toolbox_frames["Safety & AI Lifecycle"] = [self.tools_frame]
+            self._frame_loaders["Safety & AI Lifecycle"] = lambda data=ai_data: build_frame(
+                "Safety & AI Lifecycle", data
+            )
 
         options = sorted(self._toolbox_frames.keys())
         if "Governance Core" in options:
@@ -12255,9 +12256,18 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             for frame in frames:
                 if frame and hasattr(frame, "pack_forget"):
                     frame.pack_forget()
-        for frame in self._toolbox_frames.get(choice, []):
+        frames = self._toolbox_frames.get(choice, [])
+        key = f"toolbox:{choice}"
+        if choice in getattr(self, "_frame_loaders", {}):
+            loader = self._frame_loaders.pop(choice)
+            frame = memory_manager.lazy_load(key, loader)
+            frames.append(frame)
+        else:
+            memory_manager.mark_active(key)
+        for frame in frames:
             if frame and hasattr(frame, "pack"):
                 frame.pack(fill=tk.X, padx=2, pady=2)
+        memory_manager.cleanup()
 
     class _SelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
         def __init__(self, parent, title: str, options: list[str]):
