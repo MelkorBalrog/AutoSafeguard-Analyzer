@@ -13,11 +13,13 @@ from .mainappsrc.safety_analysis import SafetyAnalysis_FTA_FMEA
 from config.automl_constants import PMHF_TARGETS
 from analysis.models import HazopDoc
 from gui.dialogs.edit_node_dialog import EditNodeDialog
+from analysis.risk_assessment import AutoMLHelper
 
 __all__ = [
     "AutoMLApp",
     "FaultTreeNode",
     "AutoML_Helper",
+    "AutoMLHelper",
     "messagebox",
     "tk",
     "ttk",
