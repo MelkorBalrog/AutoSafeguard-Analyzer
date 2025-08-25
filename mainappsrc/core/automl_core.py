@@ -2505,10 +2505,12 @@ class AutoMLApp(
         return False
 
     def copy_node(self):
-        self.diagram_clipboard.copy_node()
+        if self.diagram_clipboard:
+            self.diagram_clipboard.copy_node()
 
     def cut_node(self):
-        self.diagram_clipboard.cut_node()
+        if self.diagram_clipboard:
+            self.diagram_clipboard.cut_node()
 
     # ------------------------------------------------------------------
     def _reset_gsn_clone(self, node):
@@ -2598,7 +2600,8 @@ class AutoMLApp(
         return self.clipboard_node
 
     def paste_node(self):
-        self.diagram_clipboard.paste_node()
+        if self.diagram_clipboard:
+            self.diagram_clipboard.paste_node()
 
     def _get_diag_type(self, win):
         repo = getattr(win, "repo", None)
