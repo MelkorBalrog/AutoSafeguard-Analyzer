@@ -610,6 +610,26 @@ class AutoMLApp:
             self._window_controllers = WindowControllers(self)
         return self._window_controllers
 
+    def __getattr__(self, name):  # pragma: no cover - simple delegation
+        """Delegate missing attributes to the lifecycle UI helper.
+
+        ``AppLifecycleUI`` now hosts a number of UI-centric helpers that were
+        previously methods on :class:`AutoMLApp`.  Existing code (and tests)
+        still expect these helpers to be accessible directly from the main
+        application instance.  This ``__getattr__`` implementation forwards
+        such attribute lookups to ``self.lifecycle_ui`` when the attribute
+        exists there, preserving backwards compatibility without replicating
+        numerous wrapper methods.
+        """
+
+        ui = self.__dict__.get("lifecycle_ui")
+        if ui and (
+            name in ui.__dict__
+            or any(name in cls.__dict__ for cls in ui.__class__.mro())
+        ):
+            return getattr(ui, name)
+        raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
+
     def __init__(self, root):
         AutoMLApp._instance = self
         self.root = root
