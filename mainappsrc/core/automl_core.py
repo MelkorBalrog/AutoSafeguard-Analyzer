@@ -509,6 +509,8 @@ import uuid
 ##########################################
 from gui.dialogs.edit_node_dialog import EditNodeDialog, DecompositionDialog
 from gui.dialogs.fmea_row_dialog import FMEARowDialog
+from gui.dialogs.req_dialog import ReqDialog
+from gui.dialogs.select_base_event_dialog import SelectBaseEventDialog
 from .safety_ui import SafetyUIMixin
 
 ##########################################
@@ -3752,7 +3754,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         if not events:
             messagebox.showinfo("No Failure Modes", "No FMEA or FMEDA failure modes available.")
             return
-        dialog = self.SelectBaseEventDialog(self.root, events)
+        dialog = SelectBaseEventDialog(self.root, events)
         selected = dialog.selected
         if not selected:
             return
@@ -3795,7 +3797,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         if not events:
             messagebox.showinfo("No Failure Modes", "No FMEA or FMEDA failure modes available.")
             return
-        dialog = self.SelectBaseEventDialog(self.root, events)
+        dialog = SelectBaseEventDialog(self.root, events)
         selected = dialog.selected
         if not selected:
             return
@@ -3838,7 +3840,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         if not events:
             messagebox.showinfo("No Failure Modes", "No FMEA or FMEDA failure modes available.")
             return
-        dialog = self.SelectBaseEventDialog(self.root, events)
+        dialog = SelectBaseEventDialog(self.root, events)
         selected = dialog.selected
         if not selected:
             return
@@ -4286,106 +4288,6 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
                 )
             style.configure("ReqEditor.Treeview", rowheight=20 * max_lines)
 
-        class ReqDialog(simpledialog.Dialog):
-            def __init__(self, parent, title, initial=None):
-                self.initial = initial or {}
-                super().__init__(parent, title=title)
-
-            def body(self, master):
-                ttk.Label(master, text="ID:").grid(row=0, column=0, sticky="e")
-                self.id_var = tk.StringVar(value=self.initial.get("id", ""))
-                tk.Entry(master, textvariable=self.id_var).grid(row=0, column=1, padx=5, pady=5)
-
-                ttk.Label(master, text="Type:").grid(row=1, column=0, sticky="e")
-                self.type_var = tk.StringVar(value=self.initial.get("req_type", "vehicle"))
-                self.type_cb = ttk.Combobox(
-                    master,
-                    textvariable=self.type_var,
-                    values=REQUIREMENT_TYPE_OPTIONS,
-                    state="readonly",
-                    width=20,
-                )
-                self.type_cb.grid(row=1, column=1, padx=5, pady=5)
-                self.type_cb.bind("<<ComboboxSelected>>", self._toggle_fields)
-
-                self.asil_label = ttk.Label(master, text="ASIL:")
-                self.asil_label.grid(row=2, column=0, sticky="e")
-                self.asil_var = tk.StringVar(value=self.initial.get("asil", "QM"))
-                self.asil_combo = ttk.Combobox(master, textvariable=self.asil_var, values=ASIL_LEVEL_OPTIONS, state="readonly", width=8)
-                self.asil_combo.grid(row=2, column=1, padx=5, pady=5)
-
-                self.cal_label = ttk.Label(master, text="CAL:")
-                self.cal_label.grid(row=3, column=0, sticky="e")
-                self.cal_var = tk.StringVar(value=self.initial.get("cal", CAL_LEVEL_OPTIONS[0]))
-                self.cal_combo = ttk.Combobox(master, textvariable=self.cal_var, values=CAL_LEVEL_OPTIONS, state="readonly", width=8)
-                self.cal_combo.grid(row=3, column=1, padx=5, pady=5)
-                self._toggle_fields()
-
-                ttk.Label(master, text="Parent ID:").grid(row=4, column=0, sticky="e")
-                self.parent_var = tk.StringVar(value=self.initial.get("parent_id", ""))
-                tk.Entry(master, textvariable=self.parent_var).grid(row=4, column=1, padx=5, pady=5)
-
-                ttk.Label(master, text="Status:").grid(row=5, column=0, sticky="e")
-                self.status_var = tk.StringVar(value=self.initial.get("status", "draft"))
-                ttk.Combobox(master, textvariable=self.status_var,
-                             values=["draft", "in review", "peer reviewed", "pending approval", "approved"],
-                             state="readonly").grid(row=5, column=1, padx=5, pady=5)
-
-                ttk.Label(master, text="Text:").grid(row=6, column=0, sticky="e")
-                self.text_var = tk.StringVar(value=self.initial.get("text", ""))
-                tk.Entry(master, textvariable=self.text_var, width=40).grid(row=6, column=1, padx=5, pady=5)
-                return master
-
-            def apply(self):
-                rid = self.id_var.get().strip() or str(uuid.uuid4())
-                req_type = self.type_var.get().strip()
-                self.result = {
-                    "id": rid,
-                    "req_type": req_type,
-                    "parent_id": self.parent_var.get().strip(),
-                    "status": self.status_var.get().strip(),
-                    "text": self.text_var.get().strip(),
-                }
-                if req_type not in (
-                    "operational",
-                    "functional modification",
-                    "production",
-                    "service",
-                    "product",
-                    "legal",
-                    "organizational",
-                ):
-                    self.result["asil"] = self.asil_var.get().strip()
-                    self.result["cal"] = self.cal_var.get().strip()
-
-            def validate(self):
-                rid = self.id_var.get().strip()
-                if rid and rid != self.initial.get("id") and rid in global_requirements:
-                    messagebox.showerror("ID", "ID already exists")
-                    return False
-                return True
-
-            def _toggle_fields(self, event=None):
-                req_type = self.type_var.get()
-                hide = req_type in (
-                    "operational",
-                    "functional modification",
-                    "production",
-                    "service",
-                    "product",
-                    "legal",
-                    "organizational",
-                )
-                widgets = [self.asil_label, self.asil_combo, self.cal_label, self.cal_combo]
-                if hide:
-                    for w in widgets:
-                        w.grid_remove()
-                else:
-                    self.asil_label.grid(row=2, column=0, sticky="e")
-                    self.asil_combo.grid(row=2, column=1, padx=5, pady=5)
-                    self.cal_label.grid(row=3, column=0, sticky="e")
-                    self.cal_combo.grid(row=3, column=1, padx=5, pady=5)
-
         def add_req():
             dlg = ReqDialog(win, "Add Requirement")
             if dlg.result:
@@ -4593,36 +4495,6 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
     def show_hazard_list(self):
         self.risk_app.show_hazard_list(self)
-
-    class SelectBaseEventDialog(simpledialog.Dialog):
-        def __init__(self, parent, events, allow_new=False):
-            self.events = events
-            self.allow_new = allow_new
-            self.selected = None
-            super().__init__(parent, title="Select Base Event")
-
-        def body(self, master):
-            self.listbox = tk.Listbox(master, height=10, width=40)
-            self._visible_events = []
-            for be in self.events:
-                desc = getattr(be, "description", "").strip()
-                if not desc:
-                    continue
-                self._visible_events.append(be)
-                self.listbox.insert(tk.END, desc)
-            if self.allow_new:
-                self.listbox.insert(tk.END, "<Create New Failure Mode>")
-            self.listbox.grid(row=0, column=0, padx=5, pady=5)
-            return self.listbox
-
-        def apply(self):
-            sel = self.listbox.curselection()
-            if sel:
-                idx = sel[0]
-                if self.allow_new and idx == len(self._visible_events):
-                    self.selected = "NEW"
-                else:
-                    self.selected = self._visible_events[idx]
 
     class SelectFailureModeDialog(simpledialog.Dialog):
         def __init__(self, parent, app, modes):
@@ -5107,7 +4979,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         tree.bind("<Double-1>", on_double)
 
         def add_failure_mode():
-            dialog = self.SelectBaseEventDialog(win, basic_events, allow_new=True)
+            dialog = SelectBaseEventDialog(win, basic_events, allow_new=True)
             node = dialog.selected
             if node == "NEW":
                 node = FaultTreeNode("", "Basic Event")
