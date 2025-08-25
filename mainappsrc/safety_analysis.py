@@ -13,14 +13,9 @@ import tkinter as tk
 from tkinter import filedialog, ttk
 import csv
 
-try:  # pragma: no cover - support direct module import
-    from .fta_subapp import FTASubApp
-    from .fmea_service import FMEAService
-    from .fmeda_manager import FMEDAManager
-except Exception:  # pragma: no cover
-    from mainappsrc.fta_subapp import FTASubApp
-    from mainappsrc.fmea_service import FMEAService
-    from mainappsrc.fmeda_manager import FMEDAManager
+from .fta_subapp import FTASubApp
+from .fmea_service import FMEAService
+from .fmeda_manager import FMEDAManager
 
 
 class SafetyAnalysis_FTA_FMEA(FTASubApp, FMEAService, FMEDAManager):
