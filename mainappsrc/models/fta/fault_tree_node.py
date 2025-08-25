@@ -311,3 +311,103 @@ class FaultTreeNode:
             clone.parents.append(parent)
             parent.children.append(clone)
         return clone
+
+
+def add_failure_mode(
+    core,
+    win,
+    basic_events,
+    entries,
+    selected_libs,
+    refresh_tree,
+    fmea=None,
+    fmeda=False,
+):
+    """Add failure modes to an FMEA or FMEDA table.
+
+    Parameters
+    ----------
+    core:
+        The application core invoking this helper.
+    win:
+        Parent window for dialogs.
+    basic_events:
+        Available basic events to choose from.
+    entries:
+        Current FMEA/FMeda entry list to append to.
+    selected_libs:
+        Libraries providing failure mechanisms.
+    refresh_tree:
+        Callback to update the displayed tree after modifications.
+    fmea:
+        Optional FMEA document being edited.
+    fmeda:
+        Flag indicating FMEDA mode.
+    """
+
+    from gui.dialogs.select_base_event_dialog import SelectBaseEventDialog
+    from gui.dialogs.fmea_row_dialog import FMEARowDialog
+
+    dialog = SelectBaseEventDialog(win, basic_events, allow_new=True)
+    node = dialog.selected
+    if node == "NEW":
+        node = FaultTreeNode("", "Basic Event")
+        entries.append(node)
+        mechs = []
+        for lib in selected_libs:
+            mechs.extend(lib.mechanisms)
+        comp_name = getattr(node, "fmea_component", "")
+        is_passive = any(
+            c.name == comp_name and c.is_passive for c in core.reliability_components
+        )
+        FMEARowDialog(
+            win,
+            node,
+            core,
+            entries,
+            mechanisms=mechs,
+            hide_diagnostics=is_passive,
+            is_fmeda=fmeda,
+        )
+    elif node:
+        if node.parents:
+            parent_id = node.parents[0].unique_id
+            related = [
+                be
+                for be in basic_events
+                if be.parents and be.parents[0].unique_id == parent_id
+            ]
+        else:
+            comp = getattr(node, "fmea_component", "")
+            related = [
+                be
+                for be in basic_events
+                if not be.parents and getattr(be, "fmea_component", "") == comp
+            ]
+        if node not in related:
+            related.append(node)
+        existing_ids = {be.unique_id for be in entries}
+        for be in related:
+            if be.unique_id not in existing_ids:
+                entries.append(be)
+                existing_ids.add(be.unique_id)
+            mechs = []
+            for lib in selected_libs:
+                mechs.extend(lib.mechanisms)
+            comp_name = core.get_component_name_for_node(be)
+            is_passive = any(
+                c.name == comp_name and c.is_passive for c in core.reliability_components
+            )
+            FMEARowDialog(
+                win,
+                be,
+                core,
+                entries,
+                mechanisms=mechs,
+                hide_diagnostics=is_passive,
+                is_fmeda=fmeda,
+            )
+    refresh_tree()
+    if fmea is not None:
+        core.lifecycle_ui.touch_doc(fmea)
+
