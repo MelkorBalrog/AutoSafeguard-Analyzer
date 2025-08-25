@@ -9,7 +9,7 @@ import textwrap
 import uuid
 from typing import Callable
 
-from gui.tooltip import ToolTip
+from gui.utils.tooltip import ToolTip
 from gui.controls.button_utils import add_hover_highlight
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.models import (
@@ -42,9 +42,9 @@ from analysis.safety_management import ACTIVE_TOOLBOX, SAFETY_ANALYSIS_WORK_PROD
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from gui.controls.mac_button_style import apply_translucid_button_style
-from gui.icon_factory import create_icon
+from gui.utils.icon_factory import create_icon
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
-from gui.architecture import (
+from gui.windows.architecture import (
     _work_product_name,
     draw_icon,
 )
