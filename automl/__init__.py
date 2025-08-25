@@ -15,9 +15,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""Compatibility wrapper exposing :mod:`AutoML` as ``automl``.
 
-"""Project version information."""
+The module simply re-exports the contents of :mod:`AutoML` so that
+case-sensitive filesystems can still import ``automl``.
+"""
+import importlib as _importlib
+import sys as _sys
 
-VERSION = "0.2.53"
-
-__all__ = ["VERSION"]
+_AutoML = _importlib.import_module("AutoML")
+_sys.modules[__name__] = _AutoML
