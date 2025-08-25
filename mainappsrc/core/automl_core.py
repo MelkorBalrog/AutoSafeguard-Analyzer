@@ -295,6 +295,7 @@ except Exception:  # pragma: no cover
 from mainappsrc.core.event_dispatcher import EventDispatcher
 from mainappsrc.core.page_diagram import PageDiagram
 from mainappsrc.core.window_controllers import WindowControllers
+from mainappsrc.core.top_event_workflows import Top_Event_Workflows
 from mainappsrc.managers.review_manager import ReviewManager
 from mainappsrc.core.diagram_renderer import DiagramRenderer
 from .validation_consistency import Validation_Consistency
@@ -370,6 +371,7 @@ from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.scenario_description import template_phrases
 from mainappsrc.core.app_lifecycle_ui import AppLifecycleUI
+from mainappsrc.core.reporting_export import Reporting_Export
 import copy
 import tkinter.font as tkFont
 import builtins
@@ -596,6 +598,12 @@ class AutoMLApp:
         if not hasattr(self, "_window_controllers"):
             self._window_controllers = WindowControllers(self)
         return self._window_controllers
+
+    @property
+    def top_event_workflows(self) -> Top_Event_Workflows:
+        if not hasattr(self, "_top_event_workflows"):
+            self._top_event_workflows = Top_Event_Workflows(self)
+        return self._top_event_workflows
 
     def __getattr__(self, name):  # pragma: no cover - simple delegation
         """Delegate missing attributes to the lifecycle UI helper.
@@ -1611,7 +1619,7 @@ class AutoMLApp:
         return self.requirements_manager.format_requirement_with_trace(req)
 
     def build_requirement_diff_html(self, review):
-        return self.requirements_manager.build_requirement_diff_html(review)
+        return self.reporting_export.build_requirement_diff_html(review)
 
     def generate_recommendations_for_top_event(self, node):
         return self.fta_app.generate_recommendations_for_top_event(self, node)
@@ -1638,13 +1646,13 @@ class AutoMLApp:
         return self.fta_app.get_combined_safety_requirements(self, node)
 
     def get_top_event(self, node):
-        return self.fta_app.get_top_event(self, node)
+        return self.top_event_workflows.get_top_event(node)
 
     def aggregate_safety_requirements(self, node, all_nodes):
         return self.fta_app.aggregate_safety_requirements(self, node, all_nodes)
 
     def generate_top_event_summary(self, top_event):
-        return self.fta_app.generate_top_event_summary(self, top_event)
+        return self.top_event_workflows.generate_top_event_summary(top_event)
 
     def get_all_nodes(self, node=None):
         return self.fta_app.get_all_nodes(self, node)
@@ -1680,7 +1688,13 @@ class AutoMLApp:
         return self.fta_app.build_page_argumentation(self, page_node)
 
     def build_unified_recommendation_table(self):
-        return self.fta_app.build_unified_recommendation_table(self)
+        return self.reporting_export.build_unified_recommendation_table()
+
+    def build_dynamic_recommendations_table(self):
+        return self.reporting_export.build_dynamic_recommendations_table()
+
+    def build_base_events_table_html(self):
+        return self.reporting_export.build_base_events_table_html()
 
     def get_extra_recommendations_list(self, description, level):
         return self.fta_app.get_extra_recommendations_list(self, description, level)
@@ -1701,7 +1715,7 @@ class AutoMLApp:
         return self.fta_app.analyze_common_causes(self, node)
 
     def build_text_report(self, node, indent=0):
-        return self.fta_app.build_text_report(self, node, indent)
+        return self.reporting_export.build_text_report(node, indent)
 
     def all_children_are_base_events(self, node):
         return self.fta_app.all_children_are_base_events(self, node)
@@ -2086,17 +2100,7 @@ class AutoMLApp:
         self.root.wait_window(prop_win)
 
     def create_diagram_image(self):
-        self.canvas.update()
-        bbox = self.canvas.bbox("all")
-        if not bbox:
-            return None
-        x, y, w, h = bbox[0], bbox[1], bbox[2]-bbox[0], bbox[3]-bbox[1]
-        ps = self.canvas.postscript(colormode="color", x=x, y=y, width=w, height=h)
-        from io import BytesIO
-        ps_bytes = BytesIO(ps.encode("utf-8"))
-        img = Image.open(ps_bytes)
-        img.load(scale=3)
-        return img.convert("RGB")
+        return self.reporting_export.create_diagram_image()
 
     def get_page_nodes(self, node):
         result = []
@@ -3925,29 +3929,7 @@ class AutoMLApp:
 
 
     def create_diagram_image_without_grid(self):
-        if hasattr(self, "canvas") and self.canvas is not None and self.canvas.winfo_exists():
-            target_canvas = self.canvas
-        elif hasattr(self, "page_diagram") and self.page_diagram is not None:
-            target_canvas = self.page_diagram.canvas
-        else:
-            return None
-        grid_items = target_canvas.find_withtag("grid")
-        target_canvas.delete("grid")
-        target_canvas.update()
-        bbox = target_canvas.bbox("all")
-        if not bbox:
-            return None
-        x, y, w, h = bbox[0], bbox[1], bbox[2]-bbox[0], bbox[3]-bbox[1]
-        ps = target_canvas.postscript(colormode="color", x=x, y=y, width=w, height=h)
-        from io import BytesIO
-        ps_bytes = BytesIO(ps.encode("utf-8"))
-        img = Image.open(ps_bytes)
-        img.load(scale=3)
-        if target_canvas == self.canvas:
-            self.redraw_canvas()
-        else:
-            self.page_diagram.redraw_canvas()
-        return img.convert("RGB")
+        return self.reporting_export.create_diagram_image_without_grid()
 
     def draw_connections(self, node, drawn_ids=set()):
         if id(node) in drawn_ids:
@@ -4516,22 +4498,7 @@ class AutoMLApp:
     # Helpers for malfunctions and failure modes
     # ------------------------------------------------------------------
     def create_top_event_for_malfunction(self, name: str) -> None:
-        """Create a new top level event linked to the given malfunction."""
-        self.push_undo_state()
-        new_event = FaultTreeNode("", "TOP EVENT")
-        new_event.x, new_event.y = 300, 200
-        new_event.is_top_event = True
-        new_event.malfunction = name
-        self.top_events.append(new_event)
-        self.root_node = new_event
-        if hasattr(self, "safety_mgmt_toolbox"):
-            analysis = (
-                "Prototype Assurance Analysis"
-                if getattr(self, "diagram_mode", "") == "PAA"
-                else "FTA"
-            )
-            self.safety_mgmt_toolbox.register_created_work_product(analysis, new_event.name)
-        self.update_views()
+        return self.top_event_workflows.create_top_event_for_malfunction(name)
 
     def delete_top_events_for_malfunction(self, name: str) -> None:
         """Remove all FTAs tied to the malfunction ``name``."""
@@ -4557,48 +4524,7 @@ class AutoMLApp:
         self.update_views()
 
     def add_gate_from_failure_mode(self):
-        self.push_undo_state()
-        modes = self.get_available_failure_modes_for_gates()
-        if not modes:
-            messagebox.showinfo("No Failure Modes", "No failure modes available.")
-            return
-        dialog = self.SelectFailureModeDialog(self.root, self, modes)
-        selected = dialog.selected
-        if not selected:
-            return
-        if self.selected_node:
-            parent_node = self.selected_node
-            if not parent_node.is_primary_instance:
-                messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
-                return
-        else:
-            sel = self.analysis_tree.selection()
-            if not sel:
-                messagebox.showwarning("No selection", "Select a parent node to paste into.")
-                return
-            try:
-                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
-            except (IndexError, ValueError):
-                messagebox.showwarning("No selection", "Select a parent node from the tree.")
-                return
-            parent_node = self.find_node_by_id_all(node_id)
-        if parent_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"]:
-            messagebox.showwarning("Invalid", "Base events cannot have children.")
-            return
-        new_node = FaultTreeNode("", "GATE", parent=parent_node)
-        new_node.gate_type = "AND"
-        if hasattr(selected, "unique_id"):
-            new_node.failure_mode_ref = selected.unique_id
-            new_node.description = getattr(selected, "description", "")
-            new_node.user_name = getattr(selected, "user_name", "")
-        else:
-            new_node.description = self.get_entry_field(selected, "description", "")
-            new_node.user_name = self.get_entry_field(selected, "user_name", "")
-        new_node.x = parent_node.x + 100
-        new_node.y = parent_node.y + 100
-        parent_node.children.append(new_node)
-        new_node.parents.append(parent_node)
-        self.update_views()
+        return self.top_event_workflows.add_gate_from_failure_mode()
 
     def add_fault_event(self):
         self.push_undo_state()
@@ -7635,27 +7561,7 @@ class AutoMLApp:
         self.refresh_safety_case_table()
 
     def export_product_goal_requirements(self):
-        """Export requirements traced to product goals including their ASIL."""
-        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-        if not path:
-            return
-
-        columns = ["Product Goal", "PG ASIL", "Safe State", "Requirement ID", "Req ASIL", "Text"]
-        with open(path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(columns)
-            for te in self.top_events:
-                sg_text = te.safety_goal_description or (te.user_name or f"SG {te.unique_id}")
-                sg_asil = te.safety_goal_asil
-                reqs = self.collect_requirements_recursive(te)
-                seen = set()
-                for req in reqs:
-                    rid = req.get("id")
-                    if rid in seen:
-                        continue
-                    seen.add(rid)
-                    writer.writerow([sg_text, sg_asil, te.safe_state, rid, req.get("asil", ""), req.get("text", "")])
-        messagebox.showinfo("Export", "Product goal requirements exported.")
+        return self.reporting_export.export_product_goal_requirements()
     def generate_phase_requirements(self, phase: str) -> None:
         """Generate requirements for all governance diagrams in a phase."""
         self.open_safety_management_toolbox(show_diagrams=False)
@@ -7694,8 +7600,7 @@ class AutoMLApp:
         )
 
     def export_cybersecurity_goal_requirements(self):
-        """Export cybersecurity goals with linked risk assessments."""
-        self.cyber_manager.export_goal_requirements()
+        return self.reporting_export.export_cybersecurity_goal_requirements()
 
     def show_cut_sets(self):
         """Display minimal cut sets for every top event."""
@@ -11234,196 +11139,7 @@ class AutoMLApp:
 
 
     def export_model_data(self, include_versions=True):
-        # Ensure aggregated ODD elements are up to date
-        self.update_odd_elements()
-        reviews = []
-        for r in getattr(self, "reviews", []):
-            reviews.append({
-                "name": r.name,
-                "description": r.description,
-                "mode": r.mode,
-                "moderators": [asdict(m) for m in r.moderators],
-                "approved": r.approved,
-                "reviewed": getattr(r, 'reviewed', False),
-                "due_date": r.due_date,
-                "closed": r.closed,
-                "participants": [asdict(p) for p in r.participants],
-                "comments": [asdict(c) for c in r.comments],
-                "fta_ids": r.fta_ids,
-                "fmea_names": r.fmea_names,
-                "fmeda_names": getattr(r, 'fmeda_names', []),
-                "hazop_names": getattr(r, 'hazop_names', []),
-                "hara_names": getattr(r, 'hara_names', []),
-                "stpa_names": getattr(r, 'stpa_names', []),
-                "fi2tc_names": getattr(r, 'fi2tc_names', []),
-                "tc2fi_names": getattr(r, 'tc2fi_names', []),
-            })
-        review_data = getattr(self, "review_data", None)
-        current_name = review_data.name if review_data else None
-        repo = SysMLRepository.get_instance()
-        data = {
-            "top_events": [event.to_dict() for event in getattr(self, "top_events", [])],
-            "cta_events": [event.to_dict() for event in getattr(self, "cta_events", [])],
-            "paa_events": [event.to_dict() for event in getattr(self, "paa_events", [])],
-            "fmeas": [
-                {
-                    "name": f["name"],
-                    "file": f["file"],
-                    "entries": [e.to_dict() for e in f["entries"]],
-                    "created": f.get("created", ""),
-                    "author": f.get("author", ""),
-                    "modified": f.get("modified", ""),
-                    "modified_by": f.get("modified_by", ""),
-                }
-                for f in self.fmeas
-            ],
-            "fmedas": [
-                {
-                    "name": d["name"],
-                    "file": d["file"],
-                    "entries": [e.to_dict() for e in d["entries"]],
-                    "bom": d.get("bom", ""),
-                    "created": d.get("created", ""),
-                    "author": d.get("author", ""),
-                    "modified": d.get("modified", ""),
-                    "modified_by": d.get("modified_by", ""),
-                }
-                for d in self.fmedas
-            ],
-            "mechanism_libraries": [
-                {
-                    "name": lib.name,
-                    "mechanisms": [asdict(m) for m in lib.mechanisms],
-                }
-                for lib in self.mechanism_libraries
-            ],
-            "selected_mechanism_libraries": [lib.name for lib in self.selected_mechanism_libraries],
-            "mission_profiles": [
-                {
-                    **asdict(mp),
-                    "duty_cycle": mp.tau_on / (mp.tau_on + mp.tau_off)
-                    if (mp.tau_on + mp.tau_off)
-                    else 0.0,
-                }
-                for mp in self.mission_profiles
-            ],
-            "reliability_analyses": [
-                {
-                    "name": ra.name,
-                    "standard": ra.standard,
-                    "profile": ra.profile,
-                    "components": [asdict(c) for c in ra.components],
-                    "total_fit": ra.total_fit,
-                    "spfm": ra.spfm,
-                    "lpfm": ra.lpfm,
-                    "dc": ra.dc,
-                }
-                for ra in self.reliability_analyses
-            ],
-            "hazops": [
-                {
-                    "name": doc.name,
-                    "entries": [asdict(e) for e in doc.entries],
-                }
-                for doc in self.hazop_docs
-            ],
-            "haras": [
-                {
-                    "name": doc.name,
-                    "hazops": getattr(doc, "hazops", []),
-                    "entries": [asdict(e) for e in doc.entries],
-                    "approved": getattr(doc, "approved", False),
-                    "status": getattr(doc, "status", "draft"),
-                    "stpa": getattr(doc, "stpa", ""),
-                    "threat": getattr(doc, "threat", ""),
-                }
-                for doc in self.hara_docs
-            ],
-            "stpas": [
-                {
-                    "name": doc.name,
-                    "diagram": doc.diagram,
-                    "entries": [asdict(e) for e in doc.entries],
-                }
-                for doc in self.stpa_docs
-            ],
-            "threat_docs": [
-                {
-                    "name": doc.name,
-                    "diagram": doc.diagram,
-                    "entries": [asdict(e) for e in doc.entries],
-                }
-                for doc in self.threat_docs
-            ],
-            "fi2tc_docs": [
-                {"name": doc.name, "entries": doc.entries}
-                for doc in self.fi2tc_docs
-            ],
-            "tc2fi_docs": [
-                {"name": doc.name, "entries": doc.entries}
-                for doc in self.tc2fi_docs
-            ],
-            "cbn_docs": [
-                {
-                    "name": doc.name,
-                    # Copy node and parent collections so undo/redo work correctly
-                    "nodes": list(doc.network.nodes),
-                    "parents": {k: list(v) for k, v in doc.network.parents.items()},
-                    "cpds": {
-                        var: (
-                            cpd
-                            if not isinstance(cpd, Mapping)
-                            else {
-                                "".join("1" if b else "0" for b in key): val
-                                for key, val in cpd.items()
-                            }
-                        )
-                        for var, cpd in doc.network.cpds.items()
-                    },
-                    # Positions and types must also be copied to avoid mutation
-                    "positions": {k: tuple(v) for k, v in doc.positions.items()},
-                    "types": dict(doc.types),
-                }
-                for doc in getattr(self, "cbn_docs", [])
-            ],
-            "scenario_libraries": copy.deepcopy(self.scenario_libraries),
-            "odd_libraries": copy.deepcopy(self.odd_libraries),
-            "faults": self.faults.copy(),
-            "malfunctions": self.malfunctions.copy(),
-            "hazards": self.hazards.copy(),
-            "failures": self.failures.copy(),
-            "project_properties": self.project_properties.copy(),
-            "item_definition": getattr(
-                self, "item_definition", {"description": "", "assumptions": ""}
-            ).copy(),
-            "safety_concept": getattr(
-                self,
-                "safety_concept",
-                {"functional": "", "technical": "", "cybersecurity": ""},
-            ).copy(),
-            "global_requirements": {
-                rid: ensure_requirement_defaults(req.copy())
-                for rid, req in global_requirements.items()
-            },
-            "reviews": reviews,
-            "current_review": current_name,
-            "sysml_repository": repo.to_dict(),
-            "gsn_modules": [m.to_dict() for m in getattr(self, "gsn_modules", [])],
-            "gsn_diagrams": [d.to_dict() for d in getattr(self, "gsn_diagrams", [])],
-            "safety_mgmt_toolbox": self._export_toolbox_dict(),
-            "enabled_work_products": sorted(
-                getattr(self, "enabled_work_products", set())
-            ),
-        }
-        if self.hazop_docs:
-            data["hazop_entries"] = [asdict(e) for e in self.hazop_entries]
-        if self.fi2tc_docs:
-            data["fi2tc_entries"] = copy.deepcopy(self.fi2tc_entries)
-        if self.tc2fi_docs:
-            data["tc2fi_entries"] = copy.deepcopy(self.tc2fi_entries)
-        if include_versions:
-            data["versions"] = self.versions
-        return data
+        return self.reporting_export.export_model_data(include_versions)
 
     def _load_project_properties(self, data: dict) -> None:
         """Load project properties from *data* and normalize probability keys."""
@@ -12094,78 +11810,16 @@ class AutoMLApp:
             self.update_global_requirements_from_nodes(child)
 
     def _generate_pdf_report(self):
-        """Export a PDF report using a template.
-
-        The user is prompted for an output PDF path and a JSON template
-        describing the report structure.  The template is currently written
-        verbatim to a sibling ``.json`` file so tests can validate the
-        placeholder expansion logic without requiring the reportlab backend.
-        """
-
-        pdf_path = filedialog.asksaveasfilename(
-            defaultextension=".pdf", filetypes=[("PDF", "*.pdf")]
-        )
-        if not pdf_path:
-            return
-
-        template_path = filedialog.askopenfilename(
-            defaultextension=".json", filetypes=[("JSON", "*.json")]
-        )
-        if not template_path:
-            return
-
-        try:
-            with open(template_path, "r", encoding="utf-8") as tpl:
-                template = json.load(tpl)
-            debug_path = Path(pdf_path).with_suffix(".json")
-            with open(debug_path, "w", encoding="utf-8") as dbg:
-                json.dump(template, dbg)
-            messagebox.showinfo("Report", "PDF report generated.")
-        except Exception as exc:  # pragma: no cover - best effort error path
-            messagebox.showerror("Report", f"Failed to generate PDF report: {exc}")
+        return self.reporting_export._generate_pdf_report()
 
     def generate_pdf_report(self):
-        """Public wrapper for :meth:`_generate_pdf_report`."""
-
-        self._generate_pdf_report()
+        return self.reporting_export.generate_pdf_report()
 
     def generate_report(self):
-        path = filedialog.asksaveasfilename(defaultextension=".html", filetypes=[("HTML", "*.html")])
-        if path:
-            html = self.build_html_report()
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(html)
-            messagebox.showinfo("Report", "HTML report generated.")
+        return self.reporting_export.generate_report()
 
     def build_html_report(self):
-        def node_to_html(n):
-            txt = f"{n.name} ({n.node_type}"
-            if n.node_type.upper() in GATE_NODE_TYPES:
-                txt += f", {n.gate_type}"
-            txt += ")"
-            if n.display_label:
-                txt += f" => {n.display_label}"
-            if n.description:
-                txt += f"<br>Desc: {n.description}"
-            if n.rationale:
-                txt += f"<br>Rationale: {n.rationale}"
-            content = f"<details open><summary>{txt}</summary>\n"
-            for c in n.children:
-                content += node_to_html(c)
-            content += "</details>\n"
-            return content
-        return f"""<!DOCTYPE html>
-                    <html>
-                    <head>
-                    <meta charset="UTF-8">
-                    <title>AutoML-Analyzer</title>
-                    <style>body {{ font-family: Arial; }} details {{ margin-left: 20px; }}</style>
-                    </head>
-                    <body>
-                    <h1>AutoML-Analyzer</h1>
-                    {node_to_html(self.root_node)}
-                    </body>
-                    </html>"""
+        return self.reporting_export.build_html_report()
     def resolve_original(self,node):
         # Walk the clone chain until you find a primary instance.
         while not node.is_primary_instance and node.original is not None and node.original != node:
