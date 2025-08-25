@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import re
 import math
 import sys
 import json
@@ -1755,56 +1754,8 @@ class AutoMLApp(
         return self.data_access_queries.get_all_scenario_names()
 
     def get_validation_targets_for_odd(self, element_name):
-        """Return product goals linked to scenarios using ``element_name``.
-
-        The search traverses scenario libraries, HAZOP documents and risk
-        assessment entries to locate safety goals whose top events contain
-        validation targets. The returned list contains the matching top event
-        nodes so their validation data can be displayed.
-        """
-        scenarios = set()
-        for lib in self.scenario_libraries:
-            for sc in lib.get("scenarios", []):
-                if isinstance(sc, dict):
-                    name = sc.get("name", "")
-                    scenery = sc.get("scenery", "")
-                    desc = sc.get("description", "")
-                else:
-                    name = sc
-                    scenery = ""
-                    desc = ""
-                elems = {e.strip() for e in str(scenery).split(",") if e}
-                if desc:
-                    elems.update(re.findall(r"\[\[(.+?)\]\]", str(desc)))
-                if element_name and name and element_name in elems:
-                    scenarios.add(name)
-
-        if not scenarios:
-            return []
-
-        hazop_scenarios = set()
-        for doc in self.hazop_docs:
-            for entry in doc.entries:
-                if getattr(entry, "scenario", "") in scenarios:
-                    hazop_scenarios.add(entry.scenario)
-
-        if not hazop_scenarios:
-            return []
-
-        goals = []
-        seen = set()
-        for doc in self.hara_docs:
-            for entry in doc.entries:
-                if getattr(entry, "scenario", "") in hazop_scenarios:
-                    sg_name = getattr(entry, "safety_goal", "")
-                    for te in self.top_events:
-                        name = te.safety_goal_description or (
-                            te.user_name or f"SG {te.unique_id}"
-                        )
-                        if name == sg_name and sg_name not in seen:
-                            goals.append(te)
-                            seen.add(sg_name)
-        return goals
+        """Wrapper for :class:`RiskAssessmentSubApp` ODD validation lookup."""
+        return self.risk_app.get_validation_targets_for_odd(self, element_name)
 
     def get_scenario_exposure(self, name: str) -> int:
         return self.data_access_queries.get_scenario_exposure(name)
@@ -1835,19 +1786,8 @@ class AutoMLApp(
         return self.data_access_queries.get_all_malfunction_names()
 
     def get_hazards_for_malfunction(self, malfunction: str, hazop_names=None) -> list[str]:
-        """Return hazards linked to the malfunction in the given HAZOPs."""
-        hazards: list[str] = []
-        names = hazop_names or [d.name for d in self.hazop_docs]
-        for hz_name in names:
-            doc = self.get_hazop_by_name(hz_name)
-            if not doc:
-                continue
-            for entry in doc.entries:
-                if entry.malfunction == malfunction:
-                    h = getattr(entry, "hazard", "").strip()
-                    if h and h not in hazards:
-                        hazards.append(h)
-        return hazards
+        """Wrapper for :class:`RiskAssessmentSubApp` hazard lookup."""
+        return self.risk_app.get_hazards_for_malfunction(self, malfunction, hazop_names)
 
     def update_odd_elements(self):
         return self.safety_analysis.update_odd_elements()
@@ -2027,24 +1967,7 @@ class AutoMLApp(
 
     def show_traceability_matrix(self):
         """Display a traceability matrix linking FTA basic events to FMEA components."""
-        basic_events = [n for n in self.get_all_nodes(self.root_node)
-                        if n.node_type.upper() == "BASIC EVENT"]
-        win = tk.Toplevel(self.root)
-        win.title("FTA-FMEA Traceability")
-        columns = ["Basic Event", "Component"]
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for col in columns:
-            tree.heading(col, text=col)
-            tree.column(col, width=200, anchor="center")
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        for be in basic_events:
-            comp = self.get_component_name_for_node(be) or "N/A"
-            tree.insert(
-                "",
-                "end",
-                values=[be.user_name or f"BE {be.unique_id}", comp],
-            )
+        return self.requirements_manager.show_traceability_matrix()
 
     def collect_requirements_recursive(self, node):
         return self.safety_analysis.collect_requirements_recursive(node)
@@ -2093,26 +2016,7 @@ class AutoMLApp(
 
 
     def _refresh_phase_requirements_menu(self) -> None:
-        if not hasattr(self, "phase_req_menu"):
-            return
-        self.phase_req_menu.delete(0, tk.END)
-        toolbox = getattr(self, "safety_mgmt_toolbox", None)
-        if not toolbox:
-            return
-        phases = sorted(toolbox.list_modules())
-        for phase in phases:
-            # Use ``functools.partial`` to bind the phase name at creation time
-            # so each menu entry triggers generation for its own phase.
-            self.phase_req_menu.add_command(
-                label=phase,
-                command=partial(self.generate_phase_requirements, phase),
-            )
-        if phases:
-            self.phase_req_menu.add_separator()
-        self.phase_req_menu.add_command(
-            label="Lifecycle",
-            command=self.generate_lifecycle_requirements,
-        )
+        return self.requirements_manager.refresh_phase_requirements_menu()
 
     def export_cybersecurity_goal_requirements(self):
         return self.reporting_export.export_cybersecurity_goal_requirements()
