@@ -1642,6 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.27 - Refactor core into modular mixins for UI setup, events, persistence and analysis utilities.
 - 0.2.26 - Import Syncing_And_IDs in fallback path to avoid initialization error.
 - 0.2.25 - Extract page and PAA helpers into dedicated module and delegate from core.
 - 0.2.24 - Move UI lifecycle helpers to dedicated class and delegate calls.

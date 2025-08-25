@@ -268,6 +268,10 @@ from gui.dialogs.user_select_dialog import UserSelectDialog
 from gui.dialogs.decomposition_dialog import DecompositionDialog
 from dataclasses import asdict
 from pathlib import Path
+from .ui_setup import UISetupMixin
+from .event_handlers import EventHandlersMixin
+from .persistence_wrappers import PersistenceWrappersMixin
+from .analysis_utils import AnalysisUtilsMixin
 from analysis.mechanisms import (
     DiagnosticMechanism,
     MechanismLibrary,
@@ -538,7 +542,7 @@ from gui.dialogs.edit_node_dialog import EditNodeDialog, DecompositionDialog
 ##########################################
 # Main Application (Parent Diagram)
 ##########################################
-class AutoMLApp:
+class AutoMLApp(UISetupMixin, EventHandlersMixin, PersistenceWrappersMixin, AnalysisUtilsMixin):
     """Main application window for AutoML Analyzer."""
 
     _instance: Optional["AutoMLApp"] = None
@@ -2359,6 +2363,9 @@ class AutoMLApp:
                                text=detailed_eq, anchor="e", fill="gray",
                                font=self.diagram_font)
 
+    def rename_selected_tree_item(self):
+        self.tree_app.rename_selected_tree_item(self)
+
     def save_diagram_png(self):
         self.diagram_export_app.save_diagram_png()
 
@@ -2373,8 +2380,6 @@ class AutoMLApp:
 
     def on_analysis_tree_select(self, _event):
         return self.nav_input.on_analysis_tree_select(_event)
-
-
 
     def on_tool_list_double_click(self, event):
         return self.nav_input.on_tool_list_double_click(event)
@@ -2667,22 +2672,6 @@ class AutoMLApp:
                             goals.append(te)
                             seen.add(sg_name)
         return goals
-
-    def classify_scenarios(self):
-        """Return two lists of scenario names grouped by category."""
-        use_case = []
-        sotif = []
-        for lib in self.scenario_libraries:
-            for sc in lib.get("scenarios", []):
-                if isinstance(sc, dict):
-                    name = sc.get("name", "")
-                    if sc.get("tcs") or sc.get("fis") or sc.get("tc") or sc.get("fi") or sc.get("type") == "sotif":
-                        sotif.append(name)
-                    else:
-                        use_case.append(name)
-                else:
-                    use_case.append(sc)
-        return {"use_case": use_case, "sotif": sotif}
 
     def get_scenario_exposure(self, name: str) -> int:
         return self.data_access_queries.get_scenario_exposure(name)
@@ -7795,33 +7784,6 @@ class AutoMLApp:
 
         refresh()
 
-    def load_default_mechanisms(self):
-        """Ensure the built-in diagnostic mechanism libraries are present.
-
-        Earlier versions only populated the ISO 26262 Annex D list when no
-        mechanism libraries were loaded at all.  Users that had already saved
-        models therefore never saw the newly introduced PAS 8800 library.  This
-        implementation checks each default library individually and adds any
-        that are missing, also marking them as selected so they appear in the
-        user interface without extra steps.
-        """
-
-        defaults = {
-            "ISO 26262 Annex D": ANNEX_D_MECHANISMS,
-            "PAS 8800": PAS_8800_MECHANISMS,
-        }
-
-        existing = {lib.name: lib for lib in self.mechanism_libraries}
-
-        for name, mechanisms in defaults.items():
-            lib = existing.get(name)
-            if lib is None:
-                lib = MechanismLibrary(name, mechanisms.copy())
-                self.mechanism_libraries.append(lib)
-                existing[name] = lib
-            if lib not in self.selected_mechanism_libraries:
-                self.selected_mechanism_libraries.append(lib)
-
     def manage_mechanism_libraries(self):
         return self.open_windows_features.manage_mechanism_libraries()
 
@@ -8850,21 +8812,11 @@ class AutoMLApp:
     def ensure_fta_tab(self):  # pragma: no cover - delegation
         return self.validation_consistency.ensure_fta_tab()
 
-
-
-
-
-
-
-
-
-
     def _format_diag_title(self, diag) -> str:
         """Return SysML style title for a diagram tab."""
         if diag.name:
             return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK} {diag.name}"
         return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK}"
-
 
     def open_use_case_diagram(self):
         self.window_controllers.open_use_case_diagram()
@@ -10318,9 +10270,6 @@ class AutoMLApp:
             pass
         self.update_views()
 
-    def save_model(self):
-        self.project_manager.save_model()
-
     def _reset_on_load(self):
         """Close all open windows and clear state before loading a project."""
 
@@ -10391,9 +10340,6 @@ class AutoMLApp:
 
     def _prompt_save_before_load(self):
         return self._prompt_save_before_load_v3()
-
-    def load_model(self):
-        self.project_manager.load_model()
 
 
     def update_global_requirements_from_nodes(self,node):
