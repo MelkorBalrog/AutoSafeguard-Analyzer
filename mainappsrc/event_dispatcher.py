@@ -94,10 +94,10 @@ class EventDispatcher:
         app.prop_view.bind("<Map>", app._resize_prop_columns)
         app.prop_frame.bind("<Configure>", app._resize_prop_columns)
 
-        app.tools_nb.bind("<Motion>", app._on_tool_tab_motion)
+        app.tools_nb.bind("<Motion>", app.lifecycle_ui._on_tool_tab_motion)
         app.tools_nb.bind("<Leave>", lambda _e: app._tools_tip.hide())
 
-        app.doc_nb.bind("<<NotebookTabClosed>>", app._on_tab_close)
-        app.doc_nb.bind("<<NotebookTabChanged>>", app._on_tab_change)
-        app.doc_nb.bind("<Motion>", app._on_doc_tab_motion)
+        app.doc_nb.bind("<<NotebookTabClosed>>", app.lifecycle_ui._on_tab_close)
+        app.doc_nb.bind("<<NotebookTabChanged>>", app.lifecycle_ui._on_tab_change)
+        app.doc_nb.bind("<Motion>", app.lifecycle_ui._on_doc_tab_motion)
         app.doc_nb.bind("<Leave>", lambda _e: app._doc_tip.hide())
