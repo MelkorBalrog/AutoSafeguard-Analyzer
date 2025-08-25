@@ -560,11 +560,11 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
     @property
     def fmedas(self):
-        return self.fmeda_manager.fmedas
+        return self.safety_analysis.fmedas
 
     @fmedas.setter
     def fmedas(self, value):
-        self.fmeda_manager.fmedas = value
+        self.safety_analysis.fmedas = value
 
     #: Maximum characters shown for tool notebook tab titles. Tool tabs use
     #: a fixed width so they remain readable but long names are capped at this
@@ -1705,19 +1705,23 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
     @property
     def fmeas(self):
-        service = getattr(self, "fmea_service", None) or self.safety_analysis
-        self.fmea_service = service
-        return service.fmeas
+        return self.safety_analysis.fmeas
 
     @fmeas.setter
     def fmeas(self, value):
-        service = getattr(self, "fmea_service", None) or self.safety_analysis
-        self.fmea_service = service
-        service.fmeas = value
+        self.safety_analysis.fmeas = value
 
     def show_fmea_list(self):
-        """Delegate to the FMEA service to display the FMEA manager."""
-        self.fmea_service.show_fmea_list()
+        """Delegate to the safety analysis facade to display FMEA manager."""
+        self.safety_analysis.show_fmea_list()
+
+    def show_fmea_table(self, fmea=None, fmeda=False):
+        """Delegate to safety analysis for rendering FMEA/FMeda tables."""
+        return self.safety_analysis.show_fmea_table(fmea, fmeda)
+
+    def show_fmeda_list(self):
+        """Open the FMEDA document manager via the facade."""
+        self.safety_analysis.show_fmeda_list()
 
         # --- Requirement Traceability Helpers used by reviews and matrix view ---
     def get_requirement_allocation_names(self, req_id):
@@ -1733,16 +1737,16 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.reporting_export.build_requirement_diff_html(review)
 
     def generate_recommendations_for_top_event(self, node):
-        return self.fta_app.generate_recommendations_for_top_event(self, node)
+        return self.safety_analysis.generate_recommendations_for_top_event(node)
 
     def back_all_pages(self):
         return self.nav_input.back_all_pages()
 
     def move_top_event_up(self):
-        return self.fta_app.move_top_event_up(self)
+        return self.safety_analysis.move_top_event_up()
 
     def move_top_event_down(self):
-        return self.fta_app.move_top_event_down(self)
+        return self.safety_analysis.move_top_event_down()
 
     def get_top_level_nodes(self):
         return self.data_access_queries.get_top_level_nodes()
@@ -1751,19 +1755,19 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.structure_tree_operations.get_all_nodes_no_filter(node)
 
     def derive_requirements_for_event(self, event):
-        return self.fta_app.derive_requirements_for_event(self, event)
+        return self.safety_analysis.derive_requirements_for_event(event)
 
     def get_combined_safety_requirements(self, node):
         return self.fta_app.get_combined_safety_requirements(self, node)
 
     def get_top_event(self, node):
-        return self.top_event_workflows.get_top_event(node)
+        return self.safety_analysis.get_top_event(node)
 
     def aggregate_safety_requirements(self, node, all_nodes):
         return self.fta_app.aggregate_safety_requirements(self, node, all_nodes)
 
     def generate_top_event_summary(self, top_event):
-        return self.top_event_workflows.generate_top_event_summary(top_event)
+        return self.safety_analysis.generate_top_event_summary(top_event)
 
     def get_all_nodes(self, node=None):
         return self.structure_tree_operations.get_all_nodes(node)
@@ -1775,7 +1779,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.structure_tree_operations.get_all_nodes_in_model()
 
     def get_all_basic_events(self):
-        return self.data_access_queries.get_all_basic_events()
+        return self.safety_analysis.get_all_basic_events()
 
     def get_all_gates(self):
         return self.data_access_queries.get_all_gates()
@@ -1787,7 +1791,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.probability_reliability.assurance_level_text(level)
 
     def calculate_cut_sets(self, node):
-        return self.fta_app.calculate_cut_sets(self, node)
+        return self.safety_analysis.calculate_cut_sets(node)
 
     def build_hierarchical_argumentation(self, node, indent=0):
         return self.fta_app.build_hierarchical_argumentation(self, node, indent)
@@ -1829,10 +1833,10 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.reporting_export.build_text_report(node, indent)
 
     def all_children_are_base_events(self, node):
-        return self.fta_app.all_children_are_base_events(self, node)
+        return self.safety_analysis.all_children_are_base_events(node)
 
     def build_simplified_fta_model(self, top_event):
-        return self.fta_app.build_simplified_fta_model(self, top_event)
+        return self.safety_analysis.build_simplified_fta_model(top_event)
 
     @staticmethod
     def auto_generate_fta_diagram(fta_model, output_path):
@@ -1848,10 +1852,10 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.risk_app.get_hara_by_name(self, name)
 
     def update_hara_statuses(self):
-        return self.risk_app.update_hara_statuses(self)
+        return self.safety_analysis.update_hara_statuses()
 
     def update_fta_statuses(self):
-        return self.risk_app.update_fta_statuses(self)
+        return self.safety_analysis.update_fta_statuses()
 
     def get_safety_goal_asil(self, sg_name):
         return self.risk_app.get_safety_goal_asil(self, sg_name)
@@ -1893,7 +1897,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.risk_app.add_malfunction(self, name)
 
     def add_fault(self, name: str) -> None:
-        return self.risk_app.add_fault(self, name)
+        return self.safety_analysis.add_fault(name)
 
     def add_failure(self, name: str) -> None:
         return self.risk_app.add_failure(self, name)
@@ -1940,16 +1944,16 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
 
     def update_hazard_severity(self, hazard: str, severity: int | str) -> None:
-        return self.risk_app.update_hazard_severity(self, hazard, severity)
+        return self.safety_analysis.update_hazard_severity(hazard, severity)
 
 
     def calculate_fmeda_metrics(self, events):
-        """Delegate FMEDA metric calculation to the dedicated helper."""
-        return self.fmeda.calculate_fmeda_metrics(self, events)
+        """Delegate FMEDA metric calculation to the safety analysis facade."""
+        return self.safety_analysis.calculate_fmeda_metrics(events)
 
     def compute_fmeda_metrics(self, events):
-        """Delegate detailed FMEDA metric computation to the helper."""
-        return self.fmeda.compute_fmeda_metrics(self, events)
+        """Delegate detailed FMEDA metric computation to the facade."""
+        return self.safety_analysis.compute_fmeda_metrics(events)
 
     def sync_hara_to_safety_goals(self):
         """Synchronise HARA results with safety goals via the risk sub-app."""
@@ -1960,27 +1964,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
 
     def add_top_level_event(self):
-        new_event = FaultTreeNode("", "TOP EVENT")
-        new_event.x, new_event.y = 300, 200
-        new_event.is_top_event = True
-        diag_mode = getattr(self, "diagram_mode", "FTA")
-        if diag_mode == "CTA":
-            self.cta_events.append(new_event)
-            self.cta_root_node = new_event
-            wp = "CTA"
-        elif diag_mode == "PAA":
-            self.paa_events.append(new_event)
-            self.paa_root_node = new_event
-            wp = "Prototype Assurance Analysis"
-        else:
-            self.top_events.append(new_event)
-            self.fta_root_node = new_event
-            wp = "FTA"
-        self.root_node = new_event
-        if hasattr(self, "safety_mgmt_toolbox"):
-            self.safety_mgmt_toolbox.register_created_work_product(wp, new_event.user_name)
-        self._update_shared_product_goals()
-        self.update_views()
+        return self.safety_analysis.add_top_level_event()
 
     def _build_probability_frame(self, parent, title: str, levels: range, values: dict, row: int, dialog_font):
         return self.probability_reliability._build_probability_frame(parent, title, levels, values, row, dialog_font)
@@ -2731,100 +2715,19 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return hazards
 
     def update_odd_elements(self):
-        """Aggregate elements from all ODD libraries into odd_elements list."""
-        self.odd_elements = []
-        for lib in getattr(self, "odd_libraries", []):
-            self.odd_elements.extend(lib.get("elements", []))
+        return self.safety_analysis.update_odd_elements()
 
     def update_hazard_list(self):
-        """Aggregate hazards from risk assessment and HAZOP documents."""
-        hazards: list[str] = []
-        # Track severities found in analysis documents so the hazard editor
-        # can restore previously entered values.  Previously, only the hazard
-        # names were collected and any severity information was discarded,
-        # causing all hazards to default to severity 1 when the list was
-        # rebuilt.
-        severity_map: dict[str, int] = {}
-
-        for doc in self.hara_docs:
-            for e in doc.entries:
-                h = getattr(e, "hazard", "").strip()
-                if not h:
-                    continue
-                if h not in hazards:
-                    hazards.append(h)
-                # HARA entries store severity as an integer attribute
-                sev = getattr(e, "severity", None)
-                if sev is not None:
-                    try:
-                        severity_map[h] = int(sev)
-                    except Exception:
-                        severity_map[h] = 1
-
-        for doc in self.hazop_docs:
-            for e in doc.entries:
-                h = getattr(e, "hazard", "").strip()
-                if not h:
-                    continue
-                if h not in hazards:
-                    hazards.append(h)
-                # HAZOP entries currently do not have severities, but if they
-                # ever do, attempt to capture them as well.
-                sev = getattr(e, "severity", None)
-                if sev is not None and h not in severity_map:
-                    try:
-                        severity_map[h] = int(sev)
-                    except Exception:
-                        severity_map[h] = 1
-
-        for h in hazards:
-            if h in severity_map:
-                self.hazard_severity[h] = severity_map[h]
-            elif h not in self.hazard_severity:
-                self.hazard_severity[h] = 1
-
-        self.hazards = hazards
+        return self.safety_analysis.update_hazard_list()
 
     def update_failure_list(self):
-        """Aggregate failure effects from FMEA and FMEDA entries."""
-        failures: list[str] = []
-        for entry in self.get_all_fmea_entries():
-            eff = getattr(entry, "fmea_effect", "").strip()
-            if eff and eff not in failures:
-                failures.append(eff)
-        self.failures = failures
+        return self.safety_analysis.update_failure_list()
 
     def update_triggering_condition_list(self):
-        """Aggregate triggering conditions from docs and FTAs."""
-        names: list[str] = []
-        for n in self.get_all_triggering_conditions():
-            nm = n.user_name or f"TC {n.unique_id}"
-            if nm not in names:
-                names.append(nm)
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                val = e.get("triggering_conditions", "")
-                for part in val.split(";"):
-                    p = part.strip()
-                    if p and p not in names:
-                        names.append(p)
-        self.triggering_conditions = names
+        return self.safety_analysis.update_triggering_condition_list()
 
     def update_functional_insufficiency_list(self):
-        """Aggregate functional insufficiencies from docs and FTAs."""
-        names: list[str] = []
-        for n in self.get_all_functional_insufficiencies():
-            nm = n.user_name or f"FI {n.unique_id}"
-            if nm not in names:
-                names.append(nm)
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                val = e.get("functional_insufficiencies", "")
-                for part in val.split(";"):
-                    p = part.strip()
-                    if p and p not in names:
-                        names.append(p)
-        self.functional_insufficiencies = names
+        return self.safety_analysis.update_functional_insufficiency_list()
 
     def get_entry_field(self, entry, field, default=""):
         return self.data_access_queries.get_entry_field(entry, field, default)
@@ -2839,14 +2742,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.data_access_queries.get_non_basic_failure_modes()
 
     def get_available_failure_modes_for_gates(self, current_gate=None):
-        """Return failure modes not already used by other gates."""
-        modes = self.get_non_basic_failure_modes()
-        used = {
-            getattr(g, "failure_mode_ref", None)
-            for g in self.get_all_gates()
-            if g is not current_gate and getattr(g, "failure_mode_ref", None)
-        }
-        return [m for m in modes if getattr(m, "unique_id", None) not in used]
+        return self.safety_analysis.get_available_failure_modes_for_gates(current_gate)
 
     def get_failure_mode_node(self, node):
         return self.data_access_queries.get_failure_mode_node(node)
@@ -2858,32 +2754,10 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.data_access_queries.get_failure_modes_for_malfunction(malfunction)
 
     def get_faults_for_failure_mode(self, failure_mode_node) -> list[str]:
-        """Return fault names causing the given failure mode."""
-        fm_node = self.get_failure_mode_node(failure_mode_node)
-        fm_id = fm_node.unique_id
-        faults: list[str] = []
-        for be in self.get_all_basic_events():
-            if getattr(be, "failure_mode_ref", None) == fm_id:
-                fault = getattr(be, "fault_ref", "") or getattr(be, "description", "")
-                if fault:
-                    faults.append(fault)
-        return sorted(set(faults))
+        return self.safety_analysis.get_faults_for_failure_mode(failure_mode_node)
 
     def get_fit_for_fault(self, fault_name: str) -> float:
-        """Return total FIT for FMEDA entries referencing ``fault_name``."""
-        comp_fit = component_fit_map(self.reliability_components)
-        total = 0.0
-        for fm in self.get_all_fmea_entries():
-            causes = [c.strip() for c in getattr(fm, "fmea_cause", "").split(";") if c.strip()]
-            if fault_name in causes:
-                comp_name = self.get_component_name_for_node(fm)
-                base = comp_fit.get(comp_name)
-                frac = getattr(fm, "fmeda_fault_fraction", 0.0)
-                if frac > 1.0:
-                    frac /= 100.0
-                value = base * frac if base is not None else getattr(fm, "fmeda_fit", 0.0)
-                total += value
-        return total
+        return self.safety_analysis.get_fit_for_fault(fault_name)
 
     def update_views(self):
         self.refresh_model()
@@ -3273,7 +3147,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
                 self.canvas.delete("all")
 
     def update_basic_event_probabilities(self):
-        return self.probability_reliability.update_basic_event_probabilities()
+        return self.safety_analysis.update_basic_event_probabilities()
 
     def validate_float(self, value):
         """Return ``True`` if ``value`` resembles a float.
@@ -3921,84 +3795,13 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.top_event_workflows.create_top_event_for_malfunction(name)
 
     def delete_top_events_for_malfunction(self, name: str) -> None:
-        """Remove all FTAs tied to the malfunction ``name``."""
-        self.push_undo_state()
-        removed = [te for te in self.top_events if getattr(te, "malfunction", "") == name]
-        if not removed:
-            return
-        for te in removed:
-            if hasattr(self, "safety_mgmt_toolbox"):
-                analysis = (
-                    "Prototype Assurance Analysis"
-                    if getattr(self, "diagram_mode", "") == "PAA"
-                    else "FTA"
-                )
-                self.safety_mgmt_toolbox.register_deleted_work_product(analysis, te.name)
-            self.top_events.remove(te)
-            if hasattr(self, "safety_mgmt_toolbox"):
-                self.safety_mgmt_toolbox.register_deleted_work_product(
-                    analysis, te.user_name
-                )
-        if self.root_node in removed:
-            self.root_node = self.top_events[0] if self.top_events else FaultTreeNode("", "TOP EVENT")
-        self.update_views()
+        return self.safety_analysis.delete_top_events_for_malfunction(name)
 
     def add_gate_from_failure_mode(self):
         return self.top_event_workflows.add_gate_from_failure_mode()
 
     def add_fault_event(self):
-        self.push_undo_state()
-        dialog = self.SelectFaultDialog(self.root, sorted(self.faults), allow_new=True)
-        fault = dialog.selected
-        if fault == "NEW":
-            fault = simpledialog.askstring("New Fault", "Name:")
-            if not fault:
-                return
-            fault = fault.strip()
-            if not fault:
-                return
-            self.add_fault(fault)
-        if not fault:
-            return
-        if self.selected_node:
-            parent_node = self.selected_node
-            if not parent_node.is_primary_instance:
-                messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
-                return
-        else:
-            sel = self.analysis_tree.selection()
-            if not sel:
-                messagebox.showwarning("No selection", "Select a parent node to paste into.")
-                return
-            try:
-                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
-            except (IndexError, ValueError):
-                messagebox.showwarning("No selection", "Select a parent node from the tree.")
-                return
-            parent_node = self.find_node_by_id_all(node_id)
-        if parent_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"]:
-            messagebox.showwarning("Invalid", "Base events cannot have children.")
-            return
-        new_node = FaultTreeNode("", "Basic Event", parent=parent_node)
-        new_node.failure_prob = 0.0
-        new_node.fault_ref = fault
-        new_node.description = fault
-        # Pull FIT data from any FMEDA entries using this fault
-        fit_total = 0.0
-        for entry in self.get_all_fmea_entries():
-            causes = [c.strip() for c in getattr(entry, "fmea_cause", "").split(";") if c.strip()]
-            if fault in causes:
-                fit_total += getattr(entry, "fmeda_fit", 0.0)
-                if not getattr(new_node, "prob_formula", None):
-                    new_node.prob_formula = getattr(entry, "prob_formula", "linear")
-        if fit_total > 0:
-            new_node.fmeda_fit = fit_total
-            new_node.failure_prob = self.compute_failure_prob(new_node)
-        new_node.x = parent_node.x + 100
-        new_node.y = parent_node.y + 100
-        parent_node.children.append(new_node)
-        new_node.parents.append(parent_node)
-        self.update_views()
+        return self.safety_analysis.add_fault_event()
 
     def calculate_overall(self):
         return self.probability_reliability.calculate_overall()
@@ -4592,8 +4395,8 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         def apply(self):
             self.result = [sg for sg, var in self.vars.items() if var.get()]
 
-    def show_fmea_table(self, fmea=None, fmeda=False):
-        """Display an editable AIAG-compliant FMEA or FMEDA table."""
+    def _show_fmea_table_impl(self, fmea=None, fmeda=False):
+        """Internal implementation for rendering FMEA/FMeda tables."""
         # Use failure modes defined on gates or within FMEA/FMEDA documents.
         # Do not include FTA base events as selectable failure modes.
         basic_events = self.get_non_basic_failure_modes()
@@ -5119,72 +4922,10 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
             win.bind("<Destroy>", lambda e: on_close() if e.widget is win else None)
 
     def export_fmea_to_csv(self, fmea, path):
-        columns = ["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements", "Malfunction"]
-        with open(path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(columns)
-            for be in fmea['entries']:
-                src = self.get_failure_mode_node(be)
-                comp = self.get_component_name_for_node(src) or "N/A"
-                parent = src.parents[0] if src.parents else None
-                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
-                req_ids = "; ".join([f"{req['req_type']}:{req['text']}" for req in getattr(be, 'safety_requirements', [])])
-                rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
-                failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
-                row = [comp, parent_name, failure_mode, be.fmea_effect, be.fmea_cause, be.fmea_severity, be.fmea_occurrence, be.fmea_detection, rpn, req_ids, getattr(be, "fmeda_malfunction", "")]
-                writer.writerow(row)
+        return self.safety_analysis.export_fmea_to_csv(fmea, path)
 
     def export_fmeda_to_csv(self, fmeda, path):
-        columns = [
-            "Component",
-            "Parent",
-            "Failure Mode",
-            "Failure Effect",
-            "Cause",
-            "S",
-            "O",
-            "D",
-            "RPN",
-            "Requirements",
-            "Malfunction",
-            "Safety Goal",
-            "FaultType",
-            "Fraction",
-            "FIT",
-            "DiagCov",
-            "Mechanism",
-        ]
-        with open(path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(columns)
-            for be in fmeda['entries']:
-                src = self.get_failure_mode_node(be)
-                comp = self.get_component_name_for_node(src) or "N/A"
-                parent = src.parents[0] if src.parents else None
-                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
-                req_ids = "; ".join([f"{req['req_type']}:{req['text']}" for req in getattr(be, 'safety_requirements', [])])
-                rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
-                failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
-                row = [
-                    comp,
-                    parent_name,
-                    failure_mode,
-                    be.fmea_effect,
-                    be.fmea_cause,
-                    be.fmea_severity,
-                    be.fmea_occurrence,
-                    be.fmea_detection,
-                    rpn,
-                    req_ids,
-                    getattr(be, "fmeda_malfunction", ""),
-                    ", ".join(self.get_top_event_safety_goals(be)) or getattr(be, "fmeda_safety_goal", ""),
-                    getattr(be, "fmeda_fault_type", ""),
-                    be.fmeda_fault_fraction,
-                    be.fmeda_fit,
-                    be.fmeda_diag_cov,
-                    getattr(be, "fmeda_mechanism", ""),
-                ]
-                writer.writerow(row)
+        return self.safety_analysis.export_fmeda_to_csv(fmeda, path)
 
 
     def show_traceability_matrix(self):
@@ -8696,28 +8437,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         )
 
     def _load_fault_tree_events(self, data: dict, ensure_root: bool) -> None:
-        """Initialise FTA, CTA and PAA events from *data*."""
-        if "top_events" in data:
-            self.top_events = [FaultTreeNode.from_dict(e) for e in data["top_events"]]
-        elif "root_node" in data:
-            root = FaultTreeNode.from_dict(data["root_node"])
-            self.top_events = [root]
-        else:
-            self.top_events = []
-
-        self.cta_events = [FaultTreeNode.from_dict(e) for e in data.get("cta_events", [])]
-        self.paa_events = [FaultTreeNode.from_dict(e) for e in data.get("paa_events", [])]
-
-        if (
-            ensure_root
-            and not self.top_events
-            and "top_events" not in data
-            and "root_node" not in data
-        ):
-            new_root = FaultTreeNode("Vehicle Level Function", "TOP EVENT")
-            new_root.x, new_root.y = 300, 200
-            self.top_events.append(new_root)
-        self.root_node = self.top_events[0] if self.top_events else None
+        return self.safety_analysis._load_fault_tree_events(data, ensure_root)
           
     def apply_model_data(self, data: dict, ensure_root: bool = True):
         """Load model state from a dictionary."""
@@ -9487,18 +9207,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
             self.update_requirement_asil(rid)
 
     def update_base_event_requirement_asil(self):
-        """Update ASIL for requirements allocated to base events."""
-        for node in self.get_all_nodes(self.root_node):
-            if getattr(node, "node_type", "").upper() != "BASIC EVENT":
-                continue
-            for req in getattr(node, "safety_requirements", []):
-                rid = req.get("id")
-                if not rid:
-                    continue
-                asil = self.compute_requirement_asil(rid)
-                req["asil"] = asil
-                if rid in global_requirements:
-                    global_requirements[rid]["asil"] = asil
+        return self.safety_analysis.update_base_event_requirement_asil()
 
     def ensure_asil_consistency(self):
         """Sync safety goal ASILs from risk assessments and update requirement ASILs."""
