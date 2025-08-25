@@ -560,11 +560,11 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
     @property
     def fmedas(self):
-        return self.fmeda_manager.fmedas
+        return self.safety_analysis.fmedas
 
     @fmedas.setter
     def fmedas(self, value):
-        self.fmeda_manager.fmedas = value
+        self.safety_analysis.fmedas = value
 
     #: Maximum characters shown for tool notebook tab titles. Tool tabs use
     #: a fixed width so they remain readable but long names are capped at this
@@ -1705,19 +1705,23 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
     @property
     def fmeas(self):
-        service = getattr(self, "fmea_service", None) or self.safety_analysis
-        self.fmea_service = service
-        return service.fmeas
+        return self.safety_analysis.fmeas
 
     @fmeas.setter
     def fmeas(self, value):
-        service = getattr(self, "fmea_service", None) or self.safety_analysis
-        self.fmea_service = service
-        service.fmeas = value
+        self.safety_analysis.fmeas = value
 
     def show_fmea_list(self):
-        """Delegate to the FMEA service to display the FMEA manager."""
-        self.fmea_service.show_fmea_list()
+        """Delegate to the safety analysis facade to display FMEA manager."""
+        self.safety_analysis.show_fmea_list()
+
+    def show_fmea_table(self, fmea=None, fmeda=False):
+        """Delegate to safety analysis for rendering FMEA/FMeda tables."""
+        return self.safety_analysis.show_fmea_table(fmea, fmeda)
+
+    def show_fmeda_list(self):
+        """Open the FMEDA document manager via the facade."""
+        self.safety_analysis.show_fmeda_list()
 
         # --- Requirement Traceability Helpers used by reviews and matrix view ---
     def get_requirement_allocation_names(self, req_id):
@@ -1733,16 +1737,16 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.reporting_export.build_requirement_diff_html(review)
 
     def generate_recommendations_for_top_event(self, node):
-        return self.fta_app.generate_recommendations_for_top_event(self, node)
+        return self.safety_analysis.generate_recommendations_for_top_event(node)
 
     def back_all_pages(self):
         return self.nav_input.back_all_pages()
 
     def move_top_event_up(self):
-        return self.fta_app.move_top_event_up(self)
+        return self.safety_analysis.move_top_event_up()
 
     def move_top_event_down(self):
-        return self.fta_app.move_top_event_down(self)
+        return self.safety_analysis.move_top_event_down()
 
     def get_top_level_nodes(self):
         return self.data_access_queries.get_top_level_nodes()
@@ -1751,19 +1755,19 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.structure_tree_operations.get_all_nodes_no_filter(node)
 
     def derive_requirements_for_event(self, event):
-        return self.fta_app.derive_requirements_for_event(self, event)
+        return self.safety_analysis.derive_requirements_for_event(event)
 
     def get_combined_safety_requirements(self, node):
         return self.fta_app.get_combined_safety_requirements(self, node)
 
     def get_top_event(self, node):
-        return self.top_event_workflows.get_top_event(node)
+        return self.safety_analysis.get_top_event(node)
 
     def aggregate_safety_requirements(self, node, all_nodes):
         return self.fta_app.aggregate_safety_requirements(self, node, all_nodes)
 
     def generate_top_event_summary(self, top_event):
-        return self.top_event_workflows.generate_top_event_summary(top_event)
+        return self.safety_analysis.generate_top_event_summary(top_event)
 
     def get_all_nodes(self, node=None):
         return self.structure_tree_operations.get_all_nodes(node)
@@ -1775,10 +1779,10 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.structure_tree_operations.get_all_nodes_in_model()
 
     def get_all_basic_events(self):
-        return self.data_access_queries.get_all_basic_events()
+        return self.safety_analysis.get_all_basic_events()
 
     def get_all_gates(self):
-        return self.data_access_queries.get_all_gates()
+        return self.safety_analysis.get_all_gates()
 
     def metric_to_text(self, metric_type, value):
         return self.probability_reliability.metric_to_text(metric_type, value)
@@ -1787,7 +1791,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.probability_reliability.assurance_level_text(level)
 
     def calculate_cut_sets(self, node):
-        return self.fta_app.calculate_cut_sets(self, node)
+        return self.safety_analysis.calculate_cut_sets(node)
 
     def build_hierarchical_argumentation(self, node, indent=0):
         return self.fta_app.build_hierarchical_argumentation(self, node, indent)
@@ -1829,10 +1833,10 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.reporting_export.build_text_report(node, indent)
 
     def all_children_are_base_events(self, node):
-        return self.fta_app.all_children_are_base_events(self, node)
+        return self.safety_analysis.all_children_are_base_events(node)
 
     def build_simplified_fta_model(self, top_event):
-        return self.fta_app.build_simplified_fta_model(self, top_event)
+        return self.safety_analysis.build_simplified_fta_model(top_event)
 
     @staticmethod
     def auto_generate_fta_diagram(fta_model, output_path):
@@ -1842,77 +1846,58 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.structure_tree_operations.find_node_by_id_all(unique_id)
 
     def get_hazop_by_name(self, name):
-        return self.risk_app.get_hazop_by_name(self, name)
+        return self.safety_analysis.get_hazop_by_name(name)
 
     def get_hara_by_name(self, name):
-        return self.risk_app.get_hara_by_name(self, name)
+        return self.safety_analysis.get_hara_by_name(name)
 
     def update_hara_statuses(self):
-        return self.risk_app.update_hara_statuses(self)
+        return self.safety_analysis.update_hara_statuses()
 
     def update_fta_statuses(self):
-        return self.risk_app.update_fta_statuses(self)
+        return self.safety_analysis.update_fta_statuses()
 
     def get_safety_goal_asil(self, sg_name):
-        return self.risk_app.get_safety_goal_asil(self, sg_name)
+        return self.safety_analysis.get_safety_goal_asil(sg_name)
 
     def get_hara_goal_asil(self, sg_name):
-        return self.risk_app.get_hara_goal_asil(self, sg_name)
+        return self.safety_analysis.get_hara_goal_asil(sg_name)
 
     def get_cyber_goal_cal(self, goal_id):
-        return self.data_access_queries.get_cyber_goal_cal(goal_id)
+        return self.safety_analysis.get_cyber_goal_cal(goal_id)
 
     def get_top_event_safety_goals(self, node):
-        return self.data_access_queries.get_top_event_safety_goals(node)
+        return self.safety_analysis.get_top_event_safety_goals(node)
 
     def get_safety_goals_for_malfunctions(self, malfunctions: list[str]) -> list[str]:
-        """Return safety goal names for given malfunctions."""
-        goals = []
-        for te in self.top_events:
-            mal = getattr(te, "malfunction", "")
-            if mal and mal in malfunctions:
-                sg = te.safety_goal_description or te.user_name or ""
-                if sg and sg not in goals:
-                    goals.append(sg)
-        return goals
+        return self.safety_analysis.get_safety_goals_for_malfunctions(malfunctions)
 
     def is_malfunction_used(self, name: str) -> bool:
-        """Return True if the malfunction is used in any FTA or analysis."""
-        if not name:
-            return False
-        for te in self.top_events:
-            if getattr(te, "malfunction", "") == name:
-                return True
-        for n in self.get_all_nodes_in_model():
-            mals = [m.strip() for m in getattr(n, "fmeda_malfunction", "").split(";") if m.strip()]
-            if name in mals:
-                return True
-        return False
+        return self.safety_analysis.is_malfunction_used(name)
 
     def add_malfunction(self, name: str) -> None:
-        return self.risk_app.add_malfunction(self, name)
+        return self.safety_analysis.add_malfunction(name)
 
     def add_fault(self, name: str) -> None:
-        return self.risk_app.add_fault(self, name)
+        return self.safety_analysis.add_fault(name)
 
     def add_failure(self, name: str) -> None:
-        return self.risk_app.add_failure(self, name)
+        return self.safety_analysis.add_failure(name)
 
     def add_hazard(self, name: str, severity: int | str = 1) -> None:
-        return self.risk_app.add_hazard(self, name, severity)
+        return self.safety_analysis.add_hazard(name, severity)
 
     def add_triggering_condition(self, name: str) -> None:
-        return self.risk_app.add_triggering_condition(self, name)
+        return self.safety_analysis.add_triggering_condition(name)
 
     def delete_triggering_condition(self, name: str) -> None:
-        return self.risk_app.delete_triggering_condition(self, name)
-
+        return self.safety_analysis.delete_triggering_condition(name)
 
     def add_functional_insufficiency(self, name: str) -> None:
-        return self.risk_app.add_functional_insufficiency(self, name)
+        return self.safety_analysis.add_functional_insufficiency(name)
 
     def delete_functional_insufficiency(self, name: str) -> None:
-        return self.risk_app.delete_functional_insufficiency(self, name)
+        return self.safety_analysis.delete_functional_insufficiency(name)
 
 
     def _update_shared_product_goals(self):
@@ -1940,16 +1925,16 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
 
     def update_hazard_severity(self, hazard: str, severity: int | str) -> None:
-        return self.risk_app.update_hazard_severity(self, hazard, severity)
+        return self.safety_analysis.update_hazard_severity(hazard, severity)
 
 
     def calculate_fmeda_metrics(self, events):
-        """Delegate FMEDA metric calculation to the dedicated helper."""
-        return self.fmeda.calculate_fmeda_metrics(self, events)
+        """Delegate FMEDA metric calculation to the safety analysis facade."""
+        return self.safety_analysis.calculate_fmeda_metrics(events)
 
     def compute_fmeda_metrics(self, events):
-        """Delegate detailed FMEDA metric computation to the helper."""
-        return self.fmeda.compute_fmeda_metrics(self, events)
+        """Delegate detailed FMEDA metric computation to the facade."""
+        return self.safety_analysis.compute_fmeda_metrics(events)
 
     def sync_hara_to_safety_goals(self):
         """Synchronise HARA results with safety goals via the risk sub-app."""
@@ -1960,27 +1945,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
 
     def add_top_level_event(self):
-        new_event = FaultTreeNode("", "TOP EVENT")
-        new_event.x, new_event.y = 300, 200
-        new_event.is_top_event = True
-        diag_mode = getattr(self, "diagram_mode", "FTA")
-        if diag_mode == "CTA":
-            self.cta_events.append(new_event)
-            self.cta_root_node = new_event
-            wp = "CTA"
-        elif diag_mode == "PAA":
-            self.paa_events.append(new_event)
-            self.paa_root_node = new_event
-            wp = "Prototype Assurance Analysis"
-        else:
-            self.top_events.append(new_event)
-            self.fta_root_node = new_event
-            wp = "FTA"
-        self.root_node = new_event
-        if hasattr(self, "safety_mgmt_toolbox"):
-            self.safety_mgmt_toolbox.register_created_work_product(wp, new_event.user_name)
-        self._update_shared_product_goals()
-        self.update_views()
+        return self.safety_analysis.add_top_level_event()
 
     def _build_probability_frame(self, parent, title: str, levels: range, values: dict, row: int, dialog_font):
         return self.probability_reliability._build_probability_frame(parent, title, levels, values, row, dialog_font)
@@ -2731,159 +2696,49 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return hazards
 
     def update_odd_elements(self):
-        """Aggregate elements from all ODD libraries into odd_elements list."""
-        self.odd_elements = []
-        for lib in getattr(self, "odd_libraries", []):
-            self.odd_elements.extend(lib.get("elements", []))
+        return self.safety_analysis.update_odd_elements()
 
     def update_hazard_list(self):
-        """Aggregate hazards from risk assessment and HAZOP documents."""
-        hazards: list[str] = []
-        # Track severities found in analysis documents so the hazard editor
-        # can restore previously entered values.  Previously, only the hazard
-        # names were collected and any severity information was discarded,
-        # causing all hazards to default to severity 1 when the list was
-        # rebuilt.
-        severity_map: dict[str, int] = {}
-
-        for doc in self.hara_docs:
-            for e in doc.entries:
-                h = getattr(e, "hazard", "").strip()
-                if not h:
-                    continue
-                if h not in hazards:
-                    hazards.append(h)
-                # HARA entries store severity as an integer attribute
-                sev = getattr(e, "severity", None)
-                if sev is not None:
-                    try:
-                        severity_map[h] = int(sev)
-                    except Exception:
-                        severity_map[h] = 1
-
-        for doc in self.hazop_docs:
-            for e in doc.entries:
-                h = getattr(e, "hazard", "").strip()
-                if not h:
-                    continue
-                if h not in hazards:
-                    hazards.append(h)
-                # HAZOP entries currently do not have severities, but if they
-                # ever do, attempt to capture them as well.
-                sev = getattr(e, "severity", None)
-                if sev is not None and h not in severity_map:
-                    try:
-                        severity_map[h] = int(sev)
-                    except Exception:
-                        severity_map[h] = 1
-
-        for h in hazards:
-            if h in severity_map:
-                self.hazard_severity[h] = severity_map[h]
-            elif h not in self.hazard_severity:
-                self.hazard_severity[h] = 1
-
-        self.hazards = hazards
+        return self.safety_analysis.update_hazard_list()
 
     def update_failure_list(self):
-        """Aggregate failure effects from FMEA and FMEDA entries."""
-        failures: list[str] = []
-        for entry in self.get_all_fmea_entries():
-            eff = getattr(entry, "fmea_effect", "").strip()
-            if eff and eff not in failures:
-                failures.append(eff)
-        self.failures = failures
+        return self.safety_analysis.update_failure_list()
 
     def update_triggering_condition_list(self):
-        """Aggregate triggering conditions from docs and FTAs."""
-        names: list[str] = []
-        for n in self.get_all_triggering_conditions():
-            nm = n.user_name or f"TC {n.unique_id}"
-            if nm not in names:
-                names.append(nm)
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                val = e.get("triggering_conditions", "")
-                for part in val.split(";"):
-                    p = part.strip()
-                    if p and p not in names:
-                        names.append(p)
-        self.triggering_conditions = names
+        return self.safety_analysis.update_triggering_condition_list()
 
     def update_functional_insufficiency_list(self):
-        """Aggregate functional insufficiencies from docs and FTAs."""
-        names: list[str] = []
-        for n in self.get_all_functional_insufficiencies():
-            nm = n.user_name or f"FI {n.unique_id}"
-            if nm not in names:
-                names.append(nm)
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                val = e.get("functional_insufficiencies", "")
-                for part in val.split(";"):
-                    p = part.strip()
-                    if p and p not in names:
-                        names.append(p)
-        self.functional_insufficiencies = names
+        return self.safety_analysis.update_functional_insufficiency_list()
 
     def get_entry_field(self, entry, field, default=""):
         return self.data_access_queries.get_entry_field(entry, field, default)
 
     def get_all_failure_modes(self):
-        return self.data_access_queries.get_all_failure_modes()
+        return self.safety_analysis.get_all_failure_modes()
 
     def get_all_fmea_entries(self):
-        return self.data_access_queries.get_all_fmea_entries()
+        return self.safety_analysis.get_all_fmea_entries()
 
     def get_non_basic_failure_modes(self):
-        return self.data_access_queries.get_non_basic_failure_modes()
+        return self.safety_analysis.get_non_basic_failure_modes()
 
     def get_available_failure_modes_for_gates(self, current_gate=None):
-        """Return failure modes not already used by other gates."""
-        modes = self.get_non_basic_failure_modes()
-        used = {
-            getattr(g, "failure_mode_ref", None)
-            for g in self.get_all_gates()
-            if g is not current_gate and getattr(g, "failure_mode_ref", None)
-        }
-        return [m for m in modes if getattr(m, "unique_id", None) not in used]
+        return self.safety_analysis.get_available_failure_modes_for_gates(current_gate)
 
     def get_failure_mode_node(self, node):
-        return self.data_access_queries.get_failure_mode_node(node)
+        return self.safety_analysis.get_failure_mode_node(node)
 
     def get_component_name_for_node(self, node):
-        return self.data_access_queries.get_component_name_for_node(node)
+        return self.safety_analysis.get_component_name_for_node(node)
 
     def get_failure_modes_for_malfunction(self, malfunction: str) -> list[str]:
-        return self.data_access_queries.get_failure_modes_for_malfunction(malfunction)
+        return self.safety_analysis.get_failure_modes_for_malfunction(malfunction)
 
     def get_faults_for_failure_mode(self, failure_mode_node) -> list[str]:
-        """Return fault names causing the given failure mode."""
-        fm_node = self.get_failure_mode_node(failure_mode_node)
-        fm_id = fm_node.unique_id
-        faults: list[str] = []
-        for be in self.get_all_basic_events():
-            if getattr(be, "failure_mode_ref", None) == fm_id:
-                fault = getattr(be, "fault_ref", "") or getattr(be, "description", "")
-                if fault:
-                    faults.append(fault)
-        return sorted(set(faults))
+        return self.safety_analysis.get_faults_for_failure_mode(failure_mode_node)
 
     def get_fit_for_fault(self, fault_name: str) -> float:
-        """Return total FIT for FMEDA entries referencing ``fault_name``."""
-        comp_fit = component_fit_map(self.reliability_components)
-        total = 0.0
-        for fm in self.get_all_fmea_entries():
-            causes = [c.strip() for c in getattr(fm, "fmea_cause", "").split(";") if c.strip()]
-            if fault_name in causes:
-                comp_name = self.get_component_name_for_node(fm)
-                base = comp_fit.get(comp_name)
-                frac = getattr(fm, "fmeda_fault_fraction", 0.0)
-                if frac > 1.0:
-                    frac /= 100.0
-                value = base * frac if base is not None else getattr(fm, "fmeda_fit", 0.0)
-                total += value
-        return total
+        return self.safety_analysis.get_fit_for_fault(fault_name)
 
     def update_views(self):
         self.refresh_model()
@@ -3273,7 +3128,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
                 self.canvas.delete("all")
 
     def update_basic_event_probabilities(self):
-        return self.probability_reliability.update_basic_event_probabilities()
+        return self.safety_analysis.update_basic_event_probabilities()
 
     def validate_float(self, value):
         """Return ``True`` if ``value`` resembles a float.
@@ -3320,72 +3175,10 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
 
     def refresh_model(self):
-        """Recalculate derived values across the entire model.
-
-        This recomputes ASIL assignments, basic-event probabilities and
-        cybersecurity CAL levels so that edits in one analysis propagate
-        throughout the full input→output flow.
-        """
-
-        # Ensure safety-related data is consistent first
-        self.ensure_asil_consistency()
-
-        # Propagate FMEDA attributes to any linked basic events
-        for fm in self.get_all_failure_modes():
-            self.propagate_failure_mode_attributes(fm)
-
-        def iter_analysis_events():
-            for be in self.get_all_basic_events():
-                yield be
-            for e in self.fmea_entries:
-                yield e
-            for doc in self.fmeas:
-                for e in doc.get("entries", []):
-                    yield e
-            for doc in self.fmedas:
-                for e in doc.get("entries", []):
-                    yield e
-
-        for entry in iter_analysis_events():
-            mals = [m.strip() for m in getattr(entry, "fmeda_malfunction", "").split(";") if m.strip()]
-            goals = self.get_safety_goals_for_malfunctions(mals) or self.get_top_event_safety_goals(entry)
-            if goals:
-                sg = ", ".join(goals)
-                entry.fmeda_safety_goal = sg
-                first = goals[0]
-                te = next((t for t in self.top_events if first in [t.user_name, t.safety_goal_description]), None)
-                if te:
-                    entry.fmeda_dc_target = getattr(te, "sg_dc_target", 0.0)
-                    entry.fmeda_spfm_target = getattr(te, "sg_spfm_target", 0.0)
-                    entry.fmeda_lpfm_target = getattr(te, "sg_lpfm_target", 0.0)
-
-        # Recalculate probabilities for all basic events
-        self.update_basic_event_probabilities()
-
-        # Synchronize cybersecurity risk assessments with goal CAL values
-        self.sync_cyber_risk_to_goals()
+        return self.safety_analysis.refresh_model()
 
     def refresh_all(self):
-        """Synchronize model elements and refresh all open views.
-
-        This is invoked whenever the user opens, closes or edits content so
-        analyses and diagrams remain consistent with the underlying data.
-        """
-        # Update the main explorer and propagate model changes
-        self.update_views()
-        # Regenerate requirement patterns for any model change
-        config_utils.regenerate_requirement_patterns()
-        # Refresh GSN views separately via the manager
-        self.gsn_manager.refresh()
-        # Refresh any secondary windows that may be open
-        for attr in dir(self):
-            if attr.endswith("_window"):
-                win = getattr(self, attr)
-                if hasattr(win, "winfo_exists") and win.winfo_exists():
-                    if hasattr(win, "refresh_docs"):
-                        win.refresh_docs()
-                    if hasattr(win, "refresh"):
-                        win.refresh()
+        return self.safety_analysis.refresh_all()
 
     def insert_node_in_tree(self, parent_item, node):
         return self.structure_tree_operations.insert_node_in_tree(parent_item, node)
@@ -3921,84 +3714,13 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.top_event_workflows.create_top_event_for_malfunction(name)
 
     def delete_top_events_for_malfunction(self, name: str) -> None:
-        """Remove all FTAs tied to the malfunction ``name``."""
-        self.push_undo_state()
-        removed = [te for te in self.top_events if getattr(te, "malfunction", "") == name]
-        if not removed:
-            return
-        for te in removed:
-            if hasattr(self, "safety_mgmt_toolbox"):
-                analysis = (
-                    "Prototype Assurance Analysis"
-                    if getattr(self, "diagram_mode", "") == "PAA"
-                    else "FTA"
-                )
-                self.safety_mgmt_toolbox.register_deleted_work_product(analysis, te.name)
-            self.top_events.remove(te)
-            if hasattr(self, "safety_mgmt_toolbox"):
-                self.safety_mgmt_toolbox.register_deleted_work_product(
-                    analysis, te.user_name
-                )
-        if self.root_node in removed:
-            self.root_node = self.top_events[0] if self.top_events else FaultTreeNode("", "TOP EVENT")
-        self.update_views()
+        return self.safety_analysis.delete_top_events_for_malfunction(name)
 
     def add_gate_from_failure_mode(self):
         return self.top_event_workflows.add_gate_from_failure_mode()
 
     def add_fault_event(self):
-        self.push_undo_state()
-        dialog = self.SelectFaultDialog(self.root, sorted(self.faults), allow_new=True)
-        fault = dialog.selected
-        if fault == "NEW":
-            fault = simpledialog.askstring("New Fault", "Name:")
-            if not fault:
-                return
-            fault = fault.strip()
-            if not fault:
-                return
-            self.add_fault(fault)
-        if not fault:
-            return
-        if self.selected_node:
-            parent_node = self.selected_node
-            if not parent_node.is_primary_instance:
-                messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
-                return
-        else:
-            sel = self.analysis_tree.selection()
-            if not sel:
-                messagebox.showwarning("No selection", "Select a parent node to paste into.")
-                return
-            try:
-                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
-            except (IndexError, ValueError):
-                messagebox.showwarning("No selection", "Select a parent node from the tree.")
-                return
-            parent_node = self.find_node_by_id_all(node_id)
-        if parent_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"]:
-            messagebox.showwarning("Invalid", "Base events cannot have children.")
-            return
-        new_node = FaultTreeNode("", "Basic Event", parent=parent_node)
-        new_node.failure_prob = 0.0
-        new_node.fault_ref = fault
-        new_node.description = fault
-        # Pull FIT data from any FMEDA entries using this fault
-        fit_total = 0.0
-        for entry in self.get_all_fmea_entries():
-            causes = [c.strip() for c in getattr(entry, "fmea_cause", "").split(";") if c.strip()]
-            if fault in causes:
-                fit_total += getattr(entry, "fmeda_fit", 0.0)
-                if not getattr(new_node, "prob_formula", None):
-                    new_node.prob_formula = getattr(entry, "prob_formula", "linear")
-        if fit_total > 0:
-            new_node.fmeda_fit = fit_total
-            new_node.failure_prob = self.compute_failure_prob(new_node)
-        new_node.x = parent_node.x + 100
-        new_node.y = parent_node.y + 100
-        parent_node.children.append(new_node)
-        new_node.parents.append(parent_node)
-        self.update_views()
+        return self.safety_analysis.add_fault_event()
 
     def calculate_overall(self):
         return self.probability_reliability.calculate_overall()
@@ -4525,7 +4247,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         refresh_tree()
 
     def show_hazard_list(self):
-        self.risk_app.show_hazard_list(self)
+        return self.safety_analysis.show_hazard_list()
 
     class SelectFailureModeDialog(simpledialog.Dialog):
         def __init__(self, parent, app, modes):
@@ -4592,8 +4314,8 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         def apply(self):
             self.result = [sg for sg, var in self.vars.items() if var.get()]
 
-    def show_fmea_table(self, fmea=None, fmeda=False):
-        """Display an editable AIAG-compliant FMEA or FMEDA table."""
+    def _show_fmea_table_impl(self, fmea=None, fmeda=False):
+        """Internal implementation for rendering FMEA/FMeda tables."""
         # Use failure modes defined on gates or within FMEA/FMEDA documents.
         # Do not include FTA base events as selectable failure modes.
         basic_events = self.get_non_basic_failure_modes()
@@ -5119,72 +4841,10 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
             win.bind("<Destroy>", lambda e: on_close() if e.widget is win else None)
 
     def export_fmea_to_csv(self, fmea, path):
-        columns = ["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements", "Malfunction"]
-        with open(path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(columns)
-            for be in fmea['entries']:
-                src = self.get_failure_mode_node(be)
-                comp = self.get_component_name_for_node(src) or "N/A"
-                parent = src.parents[0] if src.parents else None
-                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
-                req_ids = "; ".join([f"{req['req_type']}:{req['text']}" for req in getattr(be, 'safety_requirements', [])])
-                rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
-                failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
-                row = [comp, parent_name, failure_mode, be.fmea_effect, be.fmea_cause, be.fmea_severity, be.fmea_occurrence, be.fmea_detection, rpn, req_ids, getattr(be, "fmeda_malfunction", "")]
-                writer.writerow(row)
+        return self.safety_analysis.export_fmea_to_csv(fmea, path)
 
     def export_fmeda_to_csv(self, fmeda, path):
-        columns = [
-            "Component",
-            "Parent",
-            "Failure Mode",
-            "Failure Effect",
-            "Cause",
-            "S",
-            "O",
-            "D",
-            "RPN",
-            "Requirements",
-            "Malfunction",
-            "Safety Goal",
-            "FaultType",
-            "Fraction",
-            "FIT",
-            "DiagCov",
-            "Mechanism",
-        ]
-        with open(path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(columns)
-            for be in fmeda['entries']:
-                src = self.get_failure_mode_node(be)
-                comp = self.get_component_name_for_node(src) or "N/A"
-                parent = src.parents[0] if src.parents else None
-                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
-                req_ids = "; ".join([f"{req['req_type']}:{req['text']}" for req in getattr(be, 'safety_requirements', [])])
-                rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
-                failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
-                row = [
-                    comp,
-                    parent_name,
-                    failure_mode,
-                    be.fmea_effect,
-                    be.fmea_cause,
-                    be.fmea_severity,
-                    be.fmea_occurrence,
-                    be.fmea_detection,
-                    rpn,
-                    req_ids,
-                    getattr(be, "fmeda_malfunction", ""),
-                    ", ".join(self.get_top_event_safety_goals(be)) or getattr(be, "fmeda_safety_goal", ""),
-                    getattr(be, "fmeda_fault_type", ""),
-                    be.fmeda_fault_fraction,
-                    be.fmeda_fit,
-                    be.fmeda_diag_cov,
-                    getattr(be, "fmeda_mechanism", ""),
-                ]
-                writer.writerow(row)
+        return self.safety_analysis.export_fmeda_to_csv(fmeda, path)
 
 
     def show_traceability_matrix(self):
@@ -5209,10 +4869,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
             )
 
     def collect_requirements_recursive(self, node):
-        reqs = list(getattr(node, "safety_requirements", []))
-        for child in node.children:
-            reqs.extend(self.collect_requirements_recursive(child))
-        return reqs
+        return self.safety_analysis.collect_requirements_recursive(node)
 
     def show_safety_goals_matrix(self):
         """Display product goals and derived requirements in a tree view."""
@@ -5920,118 +5577,6 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
     def export_cybersecurity_goal_requirements(self):
         return self.reporting_export.export_cybersecurity_goal_requirements()
 
-    def show_cut_sets(self):
-        """Display minimal cut sets for every top event."""
-        if not self.top_events:
-            return
-        win = tk.Toplevel(self.root)
-        win.title("FTA Cut Sets")
-        columns = ("Top Event", "Cut Set #", "Basic Events")
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for c in columns:
-            tree.heading(c, text=c)
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        for te in self.top_events:
-            nodes_by_id = {}
-
-            def map_nodes(n):
-                nodes_by_id[n.unique_id] = n
-                for child in n.children:
-                    map_nodes(child)
-
-            map_nodes(te)
-            cut_sets = self.calculate_cut_sets(te)
-            te_label = te.user_name or f"Top Event {te.unique_id}"
-            for idx, cs in enumerate(cut_sets, start=1):
-                names = ", ".join(
-                    f"{nodes_by_id[uid].user_name or nodes_by_id[uid].node_type} [{uid}]"
-                    for uid in sorted(cs)
-                )
-                tree.insert("", "end", values=(te_label, idx, names))
-                te_label = ""
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Top Event", "Cut Set #", "Basic Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Cut sets exported")
-
-        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
-
-    def show_common_cause_view(self):
-        win = tk.Toplevel(self.root)
-        win.title("Common Cause Toolbox")
-        var_fmea = tk.BooleanVar(value=True)
-        var_fmeda = tk.BooleanVar(value=True)
-        var_fta = tk.BooleanVar(value=True)
-        chk_frame = ttk.Frame(win)
-        chk_frame.pack(anchor="w")
-        ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree_frame = ttk.Frame(win)
-        tree_frame.pack(fill=tk.BOTH, expand=True)
-        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
-        for c in ["Cause", "Events"]:
-            tree.heading(c, text=c)
-            tree.column(c, width=150)
-        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
-        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
-        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
-        tree_frame.rowconfigure(0, weight=1)
-        tree_frame.columnconfigure(0, weight=1)
-
-        def refresh():
-            tree.delete(*tree.get_children())
-            events_by_cause = {}
-            if var_fmea.get():
-                for fmea in self.fmeas:
-                    for be in fmea["entries"]:
-                        cause = be.description
-                        label = f"{fmea['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fmeda.get():
-                for fmeda in self.fmedas:
-                    for be in fmeda["entries"]:
-                        cause = be.description
-                        label = f"{fmeda['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fta.get():
-                for be in self.get_all_basic_events():
-                    cause = be.description or ""
-                    label = be.user_name or f"BE {be.unique_id}"
-                    events_by_cause.setdefault(cause, set()).add(label)
-            for cause, evts in events_by_cause.items():
-                if len(evts) > 1:
-                    tree.insert("", "end", values=[cause, ", ".join(sorted(evts))])
-
-        refresh()
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Cause", "Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Common cause data exported")
-
-        btn_frame = ttk.Frame(win)
-        btn_frame.pack()
-        ttk.Button(btn_frame, text="Refresh", command=refresh).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(btn_frame, text="Export CSV", command=export_csv).pack(side=tk.LEFT, padx=5, pady=5)
-
     def build_cause_effect_data(self):
         return self.probability_reliability.build_cause_effect_data()
 
@@ -6109,523 +5654,14 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
             draw.multiline_text((cx - tw / 2, cy - th / 2), text, font=font, align="center")
 
         return img
-
     def show_cause_effect_chain(self):
-        """Display a table linking hazards to downstream events with an optional diagram."""
-        data = self.build_cause_effect_data()
-        if not data:
-            messagebox.showinfo("Cause & Effect", "No data available")
-            return
-
-        win = tk.Toplevel(self.root)
-        win.title("Cause & Effect Chain")
-
-        nb = ttk.Notebook(win)
-        nb.pack(fill=tk.BOTH, expand=True)
-
-        table_frame = ttk.Frame(nb)
-        diagram_frame = ttk.Frame(nb)
-        nb.add(table_frame, text="Table")
-        nb.add(diagram_frame, text="Diagram")
-
-        table_frame.columnconfigure(0, weight=1)
-        table_frame.rowconfigure(0, weight=1)
-        diagram_frame.columnconfigure(0, weight=1)
-        diagram_frame.rowconfigure(0, weight=1)
-
-        cols = (
-            "Hazard",
-            "Malfunction",
-            "Threats",
-            "Attack Paths",
-            "Failure Modes",
-            "Faults",
-            "Threat Scenarios",
-            "Attack Paths",
-            "FIs",
-            "TCs",
-        )
-
-        tree = ttk.Treeview(table_frame, columns=cols, show="headings")
-        vsb = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
-        hsb = ttk.Scrollbar(table_frame, orient="horizontal", command=tree.xview)
-        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
-
-        canvas = tk.Canvas(diagram_frame, bg=StyleManager.get_instance().canvas_bg)
-        cvs_vsb = ttk.Scrollbar(diagram_frame, orient="vertical", command=canvas.yview)
-        cvs_hsb = ttk.Scrollbar(diagram_frame, orient="horizontal", command=canvas.xview)
-        canvas.configure(yscrollcommand=cvs_vsb.set, xscrollcommand=cvs_hsb.set)
-        canvas.grid(row=0, column=0, sticky="nsew")
-        cvs_vsb.grid(row=0, column=1, sticky="ns")
-        cvs_hsb.grid(row=1, column=0, sticky="ew")
-
-        row_map = {}
-        for row in data:
-            iid = tree.insert(
-                "",
-                "end",
-                values=(
-                    row["hazard"],
-                    row["malfunction"],
-                    ", ".join(sorted(row["threats"].keys())),
-                    ", ".join(sorted(row["attack_paths"])),
-                    ", ".join(sorted(row["failure_modes"].keys())),
-                    ", ".join(sorted(row["faults"])),
-                    ", ".join(sorted(row["threats"].keys())),
-                    ", ".join(sorted(row["attack_paths"])),
-                    ", ".join(sorted(row["fis"])),
-                    ", ".join(sorted(row["tcs"])),
-                ),
-            )
-            row_map[iid] = row
-
-        def draw_row(row):
-            """Render the cause-and-effect network for *row* on the Tk canvas."""
-            import textwrap
-
-            nodes, edges, pos = self._build_cause_effect_graph(row)
-
-            color_map = {
-                "hazard": "#F08080",       # light coral
-                "malfunction": "#ADD8E6",  # light blue
-                "failure_mode": "#FFA500",  # orange
-                "fault": "#D3D3D3",        # light gray
-                "fi": "#FFFFE0",           # light yellow
-                "tc": "#90EE90",           # light green
-                "attack_path": "#E0FFFF",   # light cyan
-                "threat": "#FFB6C1",       # light pink
-            }
-
-            # Clear any existing drawing
-            canvas.delete("all")
-
-            # Scaling factors to convert the logical layout coordinates to
-            # pixels on the canvas.
-            scale = 80
-            x_off = 50
-            y_off = 50
-            box_w = 80
-            box_h = 40
-
-            def to_canvas(x: float, y: float) -> tuple[float, float]:
-                return x_off + scale * x, y_off + scale * y
-
-            # Draw connections with arrows and labels
-            for u, v in edges:
-                x1, y1 = to_canvas(*pos[u])
-                x2, y2 = to_canvas(*pos[v])
-                canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST, tags="edge")
-                canvas.create_text(
-                    (x1 + x2) / 2,
-                    (y1 + y2) / 2,
-                    text="caused by",
-                    font=("TkDefaultFont", 8),
-                    tags="edge",
-                )
-
-            # Draw the nodes as rectangles with wrapped text
-            for n, (x, y) in pos.items():
-                label, kind = nodes.get(n, (n, ""))
-                color = color_map.get(kind, "white")
-                cx, cy = to_canvas(x, y)
-                canvas.create_rectangle(
-                    cx - box_w / 2,
-                    cy - box_h / 2,
-                    cx + box_w / 2,
-                    cy + box_h / 2,
-                    fill=color,
-                    outline=StyleManager.get_instance().outline_color,
-                    tags="node",
-                )
-                label = textwrap.fill(str(label), 20)
-                canvas.create_text(
-                    cx,
-                    cy,
-                    text=label,
-                    width=box_w - 10,
-                    font=("TkDefaultFont", 8),
-                    tags="node",
-                )
-
-            canvas.config(scrollregion=canvas.bbox("all"))
-            canvas.xview_moveto(0)
-            canvas.yview_moveto(0)
-            # Ensure the drawing appears immediately in environments where
-            # the Tk event loop has not yet run. Without this call the canvas
-            # may show up blank until the user interacts with the window.
-            canvas.update_idletasks()
-
-        def on_select(event):
-            sel = tree.selection()
-            if sel:
-                row = row_map.get(sel[0])
-                if row:
-                    draw_row(row)
-                    # Automatically show the diagram tab whenever a row is
-                    # selected so the rendered network is visible without the
-                    # user needing to switch tabs manually.
-                    nb.select(diagram_frame)
-
-        tree.bind("<<TreeviewSelect>>", on_select)
-
-        if row_map:
-            first_iid = next(iter(row_map))
-            tree.selection_set(first_iid)
-            draw_row(row_map[first_iid])
-            # Ensure the initial diagram is visible when the window opens.
-            nb.select(diagram_frame)
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(cols)
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Cause & effect data exported")
-
-        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
+        return self.safety_analysis.show_cause_effect_chain()
 
     def show_cut_sets(self):
-        """Display minimal cut sets for every top event."""
-        if not self.top_events:
-            return
-        win = tk.Toplevel(self.root)
-        win.title("FTA Cut Sets")
-        columns = ("Top Event", "Cut Set #", "Basic Events")
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for c in columns:
-            tree.heading(c, text=c)
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        for te in self.top_events:
-            nodes_by_id = {}
-
-            def map_nodes(n):
-                nodes_by_id[n.unique_id] = n
-                for child in n.children:
-                    map_nodes(child)
-
-            map_nodes(te)
-            cut_sets = self.calculate_cut_sets(te)
-            te_label = te.user_name or f"Top Event {te.unique_id}"
-            for idx, cs in enumerate(cut_sets, start=1):
-                names = ", ".join(
-                    f"{nodes_by_id[uid].user_name or nodes_by_id[uid].node_type} [{uid}]"
-                    for uid in sorted(cs)
-                )
-                tree.insert("", "end", values=(te_label, idx, names))
-                te_label = ""
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Top Event", "Cut Set #", "Basic Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Cut sets exported")
-
-        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
+        return self.safety_analysis.show_cut_sets()
 
     def show_common_cause_view(self):
-        win = tk.Toplevel(self.root)
-        win.title("Common Cause Toolbox")
-        var_fmea = tk.BooleanVar(value=True)
-        var_fmeda = tk.BooleanVar(value=True)
-        var_fta = tk.BooleanVar(value=True)
-        chk_frame = ttk.Frame(win)
-        chk_frame.pack(anchor="w")
-        ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree_frame = ttk.Frame(win)
-        tree_frame.pack(fill=tk.BOTH, expand=True)
-        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
-        for c in ["Cause", "Events"]:
-            tree.heading(c, text=c)
-            tree.column(c, width=150)
-        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
-        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
-        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
-        tree_frame.rowconfigure(0, weight=1)
-        tree_frame.columnconfigure(0, weight=1)
-
-        def refresh():
-            tree.delete(*tree.get_children())
-            events_by_cause = {}
-            if var_fmea.get():
-                for fmea in self.fmeas:
-                    for be in fmea["entries"]:
-                        cause = be.description
-                        label = f"{fmea['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fmeda.get():
-                for fmeda in self.fmedas:
-                    for be in fmeda["entries"]:
-                        cause = be.description
-                        label = f"{fmeda['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fta.get():
-                for be in self.get_all_basic_events():
-                    cause = be.description or ""
-                    label = be.user_name or f"BE {be.unique_id}"
-                    events_by_cause.setdefault(cause, set()).add(label)
-            for cause, evts in events_by_cause.items():
-                if len(evts) > 1:
-                    tree.insert("", "end", values=[cause, ", ".join(sorted(evts))])
-
-        refresh()
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Cause", "Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Common cause data exported")
-
-        btn_frame = ttk.Frame(win)
-        btn_frame.pack()
-        ttk.Button(btn_frame, text="Refresh", command=refresh).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(btn_frame, text="Export CSV", command=export_csv).pack(side=tk.LEFT, padx=5, pady=5)
-
-    def show_cut_sets(self):
-        """Display minimal cut sets for every top event."""
-        if not self.top_events:
-            return
-        win = tk.Toplevel(self.root)
-        win.title("FTA Cut Sets")
-        columns = ("Top Event", "Cut Set #", "Basic Events")
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for c in columns:
-            tree.heading(c, text=c)
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        for te in self.top_events:
-            nodes_by_id = {}
-
-            def map_nodes(n):
-                nodes_by_id[n.unique_id] = n
-                for child in n.children:
-                    map_nodes(child)
-
-            map_nodes(te)
-            cut_sets = self.calculate_cut_sets(te)
-            te_label = te.user_name or f"Top Event {te.unique_id}"
-            for idx, cs in enumerate(cut_sets, start=1):
-                names = ", ".join(
-                    f"{nodes_by_id[uid].user_name or nodes_by_id[uid].node_type} [{uid}]"
-                    for uid in sorted(cs)
-                )
-                tree.insert("", "end", values=(te_label, idx, names))
-                te_label = ""
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Top Event", "Cut Set #", "Basic Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Cut sets exported")
-
-        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
-
-    def show_common_cause_view(self):
-        win = tk.Toplevel(self.root)
-        win.title("Common Cause Toolbox")
-        var_fmea = tk.BooleanVar(value=True)
-        var_fmeda = tk.BooleanVar(value=True)
-        var_fta = tk.BooleanVar(value=True)
-        chk_frame = ttk.Frame(win)
-        chk_frame.pack(anchor="w")
-        ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree_frame = ttk.Frame(win)
-        tree_frame.pack(fill=tk.BOTH, expand=True)
-        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
-        for c in ["Cause", "Events"]:
-            tree.heading(c, text=c)
-            tree.column(c, width=150)
-        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
-        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
-        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
-        tree_frame.rowconfigure(0, weight=1)
-        tree_frame.columnconfigure(0, weight=1)
-
-        def refresh():
-            tree.delete(*tree.get_children())
-            events_by_cause = {}
-            if var_fmea.get():
-                for fmea in self.fmeas:
-                    for be in fmea["entries"]:
-                        cause = be.description
-                        label = f"{fmea['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fmeda.get():
-                for fmeda in self.fmedas:
-                    for be in fmeda["entries"]:
-                        cause = be.description
-                        label = f"{fmeda['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fta.get():
-                for be in self.get_all_basic_events():
-                    cause = be.description or ""
-                    label = be.user_name or f"BE {be.unique_id}"
-                    events_by_cause.setdefault(cause, set()).add(label)
-            for cause, evts in events_by_cause.items():
-                if len(evts) > 1:
-                    tree.insert("", "end", values=[cause, ", ".join(sorted(evts))])
-
-        refresh()
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Cause", "Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Common cause data exported")
-
-        btn_frame = ttk.Frame(win)
-        btn_frame.pack()
-        ttk.Button(btn_frame, text="Refresh", command=refresh).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(btn_frame, text="Export CSV", command=export_csv).pack(side=tk.LEFT, padx=5, pady=5)
-
-    def show_cut_sets(self):
-        """Display minimal cut sets for every top event."""
-        if not self.top_events:
-            return
-        win = tk.Toplevel(self.root)
-        win.title("FTA Cut Sets")
-        columns = ("Top Event", "Cut Set #", "Basic Events")
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for c in columns:
-            tree.heading(c, text=c)
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        for te in self.top_events:
-            nodes_by_id = {}
-
-            def map_nodes(n):
-                nodes_by_id[n.unique_id] = n
-                for child in n.children:
-                    map_nodes(child)
-
-            map_nodes(te)
-            cut_sets = self.calculate_cut_sets(te)
-            te_label = te.user_name or f"Top Event {te.unique_id}"
-            for idx, cs in enumerate(cut_sets, start=1):
-                names = ", ".join(
-                    f"{nodes_by_id[uid].user_name or nodes_by_id[uid].node_type} [{uid}]"
-                    for uid in sorted(cs)
-                )
-                tree.insert("", "end", values=(te_label, idx, names))
-                te_label = ""
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Top Event", "Cut Set #", "Basic Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Cut sets exported")
-
-        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
-
-    def show_common_cause_view(self):
-        win = tk.Toplevel(self.root)
-        win.title("Common Cause Toolbox")
-        var_fmea = tk.BooleanVar(value=True)
-        var_fmeda = tk.BooleanVar(value=True)
-        var_fta = tk.BooleanVar(value=True)
-        chk_frame = ttk.Frame(win)
-        chk_frame.pack(anchor="w")
-        ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree_frame = ttk.Frame(win)
-        tree_frame.pack(fill=tk.BOTH, expand=True)
-        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
-        for c in ["Cause", "Events"]:
-            tree.heading(c, text=c)
-            tree.column(c, width=150)
-        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
-        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
-        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
-        tree_frame.rowconfigure(0, weight=1)
-        tree_frame.columnconfigure(0, weight=1)
-
-        def refresh():
-            tree.delete(*tree.get_children())
-            events_by_cause = {}
-            if var_fmea.get():
-                for fmea in self.fmeas:
-                    for be in fmea["entries"]:
-                        cause = be.description
-                        label = f"{fmea['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fmeda.get():
-                for fmeda in self.fmedas:
-                    for be in fmeda["entries"]:
-                        cause = be.description
-                        label = f"{fmeda['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fta.get():
-                for be in self.get_all_basic_events():
-                    cause = be.description or ""
-                    label = be.user_name or f"BE {be.unique_id}"
-                    events_by_cause.setdefault(cause, set()).add(label)
-            for cause, evts in events_by_cause.items():
-                if len(evts) > 1:
-                    tree.insert("", "end", values=[cause, ", ".join(sorted(evts))])
-
-        refresh()
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Cause", "Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Common cause data exported")
-
-        btn_frame = ttk.Frame(win)
-        btn_frame.pack()
-        ttk.Button(btn_frame, text="Refresh", command=refresh).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(btn_frame, text="Export CSV", command=export_csv).pack(side=tk.LEFT, padx=5, pady=5)
+        return self.safety_analysis.show_common_cause_view()
 
     def manage_mission_profiles(self):
         if hasattr(self, "_mp_tab") and self._mp_tab.winfo_exists():
@@ -7655,7 +6691,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
                     child.redraw()
 
     def show_hazard_explorer(self):
-        self.risk_app.show_hazard_explorer(self)
+        return self.safety_analysis.show_hazard_explorer()
 
     def show_requirements_explorer(self):
         if hasattr(self, "_req_exp_tab") and self._req_exp_tab.winfo_exists():
@@ -8696,28 +7732,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         )
 
     def _load_fault_tree_events(self, data: dict, ensure_root: bool) -> None:
-        """Initialise FTA, CTA and PAA events from *data*."""
-        if "top_events" in data:
-            self.top_events = [FaultTreeNode.from_dict(e) for e in data["top_events"]]
-        elif "root_node" in data:
-            root = FaultTreeNode.from_dict(data["root_node"])
-            self.top_events = [root]
-        else:
-            self.top_events = []
-
-        self.cta_events = [FaultTreeNode.from_dict(e) for e in data.get("cta_events", [])]
-        self.paa_events = [FaultTreeNode.from_dict(e) for e in data.get("paa_events", [])]
-
-        if (
-            ensure_root
-            and not self.top_events
-            and "top_events" not in data
-            and "root_node" not in data
-        ):
-            new_root = FaultTreeNode("Vehicle Level Function", "TOP EVENT")
-            new_root.x, new_root.y = 300, 200
-            self.top_events.append(new_root)
-        self.root_node = self.top_events[0] if self.top_events else None
+        return self.safety_analysis._load_fault_tree_events(data, ensure_root)
           
     def apply_model_data(self, data: dict, ensure_root: bool = True):
         """Load model state from a dictionary."""
@@ -9487,18 +8502,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
             self.update_requirement_asil(rid)
 
     def update_base_event_requirement_asil(self):
-        """Update ASIL for requirements allocated to base events."""
-        for node in self.get_all_nodes(self.root_node):
-            if getattr(node, "node_type", "").upper() != "BASIC EVENT":
-                continue
-            for req in getattr(node, "safety_requirements", []):
-                rid = req.get("id")
-                if not rid:
-                    continue
-                asil = self.compute_requirement_asil(rid)
-                req["asil"] = asil
-                if rid in global_requirements:
-                    global_requirements[rid]["asil"] = asil
+        return self.safety_analysis.update_base_event_requirement_asil()
 
     def ensure_asil_consistency(self):
         """Sync safety goal ASILs from risk assessments and update requirement ASILs."""
