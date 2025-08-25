@@ -7,7 +7,7 @@ import tkinter as tk
 import tkinter.font as tkFont
 
 from config import load_diagram_rules
-from gui.drawing_helper import fta_drawing_helper
+from gui.utils.drawing_helper import fta_drawing_helper
 
 # Node types treated as gates when rendering and editing
 _CONFIG_PATH = Path(__file__).resolve().parent / "config/diagram_rules.json"
