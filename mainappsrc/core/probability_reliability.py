@@ -28,6 +28,7 @@ import tkinter.font as tkFont
 
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from config.automl_constants import PMHF_TARGETS
+from analysis.utils import update_probability_tables as _update_probability_tables
 
 
 class Probability_Reliability:
@@ -35,6 +36,16 @@ class Probability_Reliability:
 
     def __init__(self, app: tk.Misc) -> None:
         self.app = app
+
+    # ------------------------------------------------------------------
+    def update_probability_tables(
+        self,
+        exposure: dict | None,
+        controllability: dict | None,
+        severity: dict | None,
+    ) -> None:
+        """Delegate probability table updates to shared utility."""
+        _update_probability_tables(exposure, controllability, severity)
 
     # ------------------------------------------------------------------
     def compute_failure_prob(self, node, failure_mode_ref=None, formula=None):

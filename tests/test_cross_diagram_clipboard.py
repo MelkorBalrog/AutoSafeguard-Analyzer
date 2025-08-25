@@ -26,6 +26,7 @@ import types
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from AutoML import AutoMLApp
+from mainappsrc.core.diagram_clipboard_manager import DiagramClipboardManager
 from gui.architecture import SysMLDiagramWindow, _get_next_id, SysMLObject, ARCH_WINDOWS
 from gui.gsn_diagram_window import GSNDiagramWindow, GSN_WINDOWS
 from mainappsrc.models.gsn import GSNNode, GSNDiagram
@@ -126,12 +127,13 @@ class DummyNotebook:
 def test_copy_paste_between_same_type_diagrams():
     ARCH_WINDOWS.clear()
     app = AutoMLApp.__new__(AutoMLApp)
-    app.diagram_clipboard = None
-    app.diagram_clipboard_type = None
+    app.diagram_clipboard = DiagramClipboardManager(app)
+    app.diagram_clipboard.diagram_clipboard = None
+    app.diagram_clipboard.diagram_clipboard_type = None
     app.selected_node = None
     app.root_node = None
-    app.clipboard_node = None
-    app.cut_mode = False
+    app.diagram_clipboard.clipboard_node = None
+    app.diagram_clipboard.cut_mode = False
     repo = DummyRepo("Governance Diagram", "Governance Diagram")
 
     obj = SysMLObject(
@@ -157,7 +159,7 @@ def test_copy_paste_between_same_type_diagrams():
 
     win1._on_focus_in()
     app.copy_node()
-    assert app.diagram_clipboard is not None
+    assert app.diagram_clipboard.diagram_clipboard is not None
 
     win2._on_focus_in()
     app.paste_node()
@@ -169,12 +171,13 @@ def test_copy_paste_between_same_type_diagrams():
 def test_copy_paste_task_between_governance_diagrams():
     ARCH_WINDOWS.clear()
     app = AutoMLApp.__new__(AutoMLApp)
-    app.diagram_clipboard = None
-    app.diagram_clipboard_type = None
+    app.diagram_clipboard = DiagramClipboardManager(app)
+    app.diagram_clipboard.diagram_clipboard = None
+    app.diagram_clipboard.diagram_clipboard_type = None
     app.selected_node = None
     app.root_node = None
-    app.clipboard_node = None
-    app.cut_mode = False
+    app.diagram_clipboard.clipboard_node = None
+    app.diagram_clipboard.cut_mode = False
     repo = DummyRepo("Governance Diagram", "Governance Diagram")
 
     boundary1 = SysMLObject(
@@ -229,7 +232,7 @@ def test_copy_paste_task_between_governance_diagrams():
 
     win1._on_focus_in()
     app.copy_node()
-    assert app.diagram_clipboard is not None
+    assert app.diagram_clipboard.diagram_clipboard is not None
 
     win2._on_focus_in()
     app.paste_node()
@@ -242,13 +245,14 @@ def test_copy_paste_task_between_governance_diagrams():
 def test_copy_paste_governance_with_selected_node():
     ARCH_WINDOWS.clear()
     app = AutoMLApp.__new__(AutoMLApp)
-    app.diagram_clipboard = None
-    app.diagram_clipboard_type = None
+    app.diagram_clipboard = DiagramClipboardManager(app)
+    app.diagram_clipboard.diagram_clipboard = None
+    app.diagram_clipboard.diagram_clipboard_type = None
     # Simulate leftover selected node from another analysis
     app.selected_node = types.SimpleNamespace(node_type="Event", parents=[])
     app.root_node = object()
-    app.clipboard_node = None
-    app.cut_mode = False
+    app.diagram_clipboard.clipboard_node = None
+    app.diagram_clipboard.cut_mode = False
     repo = DummyRepo("Governance Diagram", "Governance Diagram")
 
     obj = SysMLObject(
@@ -274,8 +278,8 @@ def test_copy_paste_governance_with_selected_node():
 
     win1._on_focus_in()
     app.copy_node()
-    assert app.diagram_clipboard is not None
-    assert app.clipboard_node is None
+    assert app.diagram_clipboard.diagram_clipboard is not None
+    assert app.diagram_clipboard.clipboard_node is None
 
     win2._on_focus_in()
     app.paste_node()
@@ -287,12 +291,13 @@ def test_copy_paste_governance_with_selected_node():
 def test_cut_paste_between_governance_diagrams():
     ARCH_WINDOWS.clear()
     app = AutoMLApp.__new__(AutoMLApp)
-    app.diagram_clipboard = None
-    app.diagram_clipboard_type = None
+    app.diagram_clipboard = DiagramClipboardManager(app)
+    app.diagram_clipboard.diagram_clipboard = None
+    app.diagram_clipboard.diagram_clipboard_type = None
     app.selected_node = None
     app.root_node = None
-    app.clipboard_node = None
-    app.cut_mode = False
+    app.diagram_clipboard.clipboard_node = None
+    app.diagram_clipboard.cut_mode = False
     repo = DummyRepo("Governance Diagram", "Governance Diagram")
 
     obj = SysMLObject(
@@ -318,7 +323,7 @@ def test_cut_paste_between_governance_diagrams():
 
     win1._on_focus_in()
     app.cut_node()
-    assert app.diagram_clipboard is not None
+    assert app.diagram_clipboard.diagram_clipboard is not None
 
     win2._on_focus_in()
     app.paste_node()
@@ -331,10 +336,11 @@ def test_cut_paste_between_governance_diagrams():
 def test_copy_paste_governance_replaces_node_clipboard():
     ARCH_WINDOWS.clear()
     app = AutoMLApp.__new__(AutoMLApp)
-    app.diagram_clipboard = None
-    app.diagram_clipboard_type = None
+    app.diagram_clipboard = DiagramClipboardManager(app)
+    app.diagram_clipboard.diagram_clipboard = None
+    app.diagram_clipboard.diagram_clipboard_type = None
     # Simulate leftover clipboard node from a different analysis
-    app.clipboard_node = types.SimpleNamespace(
+    app.diagram_clipboard.clipboard_node = types.SimpleNamespace(
         unique_id="n1",
         parents=[],
         children=[],
@@ -344,9 +350,9 @@ def test_copy_paste_governance_replaces_node_clipboard():
         display_label="dummy",
         is_primary_instance=True,
     )
-    app.selected_node = app.clipboard_node
+    app.selected_node = app.diagram_clipboard.clipboard_node
     app.root_node = object()
-    app.cut_mode = False
+    app.diagram_clipboard.cut_mode = False
     repo = DummyRepo("Governance Diagram", "Governance Diagram")
 
     obj = SysMLObject(
@@ -373,8 +379,8 @@ def test_copy_paste_governance_replaces_node_clipboard():
     win1._on_focus_in()
     # Directly invoke window copy to mimic context menu usage
     win1.copy_selected()
-    assert app.diagram_clipboard is not None
-    assert app.clipboard_node is None
+    assert app.diagram_clipboard.diagram_clipboard is not None
+    assert app.diagram_clipboard.clipboard_node is None
 
     win2._on_focus_in()
     app.paste_node()
@@ -386,12 +392,13 @@ def test_copy_paste_governance_replaces_node_clipboard():
 def test_copy_paste_process_area_between_diagrams():
     ARCH_WINDOWS.clear()
     app = AutoMLApp.__new__(AutoMLApp)
-    app.diagram_clipboard = None
-    app.diagram_clipboard_type = None
+    app.diagram_clipboard = DiagramClipboardManager(app)
+    app.diagram_clipboard.diagram_clipboard = None
+    app.diagram_clipboard.diagram_clipboard_type = None
     app.selected_node = None
     app.root_node = None
-    app.clipboard_node = None
-    app.cut_mode = False
+    app.diagram_clipboard.clipboard_node = None
+    app.diagram_clipboard.cut_mode = False
     repo = DummyRepo("Governance Diagram", "Governance Diagram")
 
     area = SysMLObject(
@@ -417,7 +424,7 @@ def test_copy_paste_process_area_between_diagrams():
 
     win1._on_focus_in()
     app.copy_node()
-    assert app.diagram_clipboard is not None
+    assert app.diagram_clipboard.diagram_clipboard is not None
 
     win2._on_focus_in()
     app.paste_node()
@@ -429,11 +436,12 @@ def test_copy_paste_process_area_between_diagrams():
 def test_copy_paste_between_gsn_diagrams():
     GSN_WINDOWS.clear()
     app = AutoMLApp.__new__(AutoMLApp)
-    app.diagram_clipboard = None
-    app.diagram_clipboard_type = None
+    app.diagram_clipboard = DiagramClipboardManager(app)
+    app.diagram_clipboard.diagram_clipboard = None
+    app.diagram_clipboard.diagram_clipboard_type = None
     app.selected_node = None
-    app.clipboard_node = None
-    app.cut_mode = False
+    app.diagram_clipboard.clipboard_node = None
+    app.diagram_clipboard.cut_mode = False
     root1 = GSNNode("R1", "Goal")
     child = GSNNode("C1", "Goal")
     root1.add_child(child)
@@ -462,11 +470,12 @@ def test_copy_paste_between_gsn_diagrams():
 def test_cut_paste_between_gsn_diagrams():
     GSN_WINDOWS.clear()
     app = AutoMLApp.__new__(AutoMLApp)
-    app.diagram_clipboard = None
-    app.diagram_clipboard_type = None
+    app.diagram_clipboard = DiagramClipboardManager(app)
+    app.diagram_clipboard.diagram_clipboard = None
+    app.diagram_clipboard.diagram_clipboard_type = None
     app.selected_node = None
-    app.clipboard_node = None
-    app.cut_mode = False
+    app.diagram_clipboard.clipboard_node = None
+    app.diagram_clipboard.cut_mode = False
     root1 = GSNNode("R1", "Goal")
     child = GSNNode("C1", "Goal")
     root1.add_child(child)

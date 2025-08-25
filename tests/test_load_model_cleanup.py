@@ -28,6 +28,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 from AutoML import AutoMLApp
 import AutoML
+from mainappsrc.core.undo_manager import UndoRedoManager
 
 
 class DummyNotebook:
@@ -47,6 +48,7 @@ class DummyNotebook:
 
 def _minimal_app(monkeypatch):
     app = AutoMLApp.__new__(AutoMLApp)
+    app.undo_manager = UndoRedoManager(app)
     app.doc_nb = DummyNotebook()
     app.analysis_tree = MagicMock()
     app.analysis_tree.get_children.return_value = []
@@ -57,8 +59,6 @@ def _minimal_app(monkeypatch):
     app.activity_windows = [MagicMock()]
     app.block_windows = [MagicMock()]
     app.ibd_windows = [MagicMock()]
-    app._undo_stack = []
-    app._redo_stack = []
 
     def fake_create_tab():
         app.canvas = MagicMock()

@@ -41,6 +41,9 @@ from analysis.utils import (
 def _minimal_app():
     app = AutoMLApp.__new__(AutoMLApp)
     app.top_events = []
+    app.safety_analysis = types.SimpleNamespace(
+        fmeas=[], fmedas=[], _load_fault_tree_events=lambda *a, **k: None
+    )
     app.fmeas = []
     app.fmedas = []
     app.fmea_entries = []
@@ -68,6 +71,7 @@ def _minimal_app():
     app.reviews = []
     app.review_data = None
     app.versions = {}
+    app.safety_analysis = types.SimpleNamespace(fmeas=[], fmedas=[])
     app.update_odd_elements = lambda: None
     app.update_failure_list = lambda: None
     app.load_default_mechanisms = lambda: None
@@ -81,6 +85,12 @@ def _minimal_app():
     app.sync_hara_to_safety_goals = lambda: None
     app.close_page_diagram = lambda: None
     app.update_views = lambda: None
+    app.reporting_export = types.SimpleNamespace(
+        export_model_data=lambda include_versions=True: {}
+    )
+    app.probability_reliability = types.SimpleNamespace(
+        update_probability_tables=lambda *a, **k: None
+    )
     return app
 
 
