@@ -22,4 +22,3 @@ while re-exporting all public names from the main :mod:`AutoML` module.
 """
 
 from AutoML import *  # noqa: F401,F403
-
