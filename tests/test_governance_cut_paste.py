@@ -19,6 +19,7 @@
 import types
 
 from AutoML import AutoMLApp
+from mainappsrc.core.diagram_clipboard_manager import DiagramClipboardManager
 from gui.architecture import SysMLObject, ARCH_WINDOWS, _get_next_id
 from tests.test_cross_diagram_clipboard import DummyRepo, make_window
 
@@ -26,12 +27,13 @@ from tests.test_cross_diagram_clipboard import DummyRepo, make_window
 def test_cut_paste_task_between_governance_diagrams():
     ARCH_WINDOWS.clear()
     app = AutoMLApp.__new__(AutoMLApp)
-    app.diagram_clipboard = None
-    app.diagram_clipboard_type = None
+    app.diagram_clipboard = DiagramClipboardManager(app)
+    app.diagram_clipboard.diagram_clipboard = None
+    app.diagram_clipboard.diagram_clipboard_type = None
     app.selected_node = None
     app.root_node = None
-    app.clipboard_node = None
-    app.cut_mode = False
+    app.diagram_clipboard.clipboard_node = None
+    app.diagram_clipboard.cut_mode = False
     repo = DummyRepo("Governance Diagram", "Governance Diagram")
 
     boundary1 = SysMLObject(
@@ -86,9 +88,9 @@ def test_cut_paste_task_between_governance_diagrams():
 
     win1._on_focus_in()
     win1.copy_selected()
-    assert app.diagram_clipboard is not None
+    assert app.diagram_clipboard.diagram_clipboard is not None
     win1.objects.remove(task)
-    app.cut_mode = True
+    app.diagram_clipboard.cut_mode = True
 
     win2._on_focus_in()
     app.paste_node()

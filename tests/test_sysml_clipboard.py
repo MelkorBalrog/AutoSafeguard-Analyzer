@@ -63,7 +63,15 @@ def _make_window(app, repo):
 
 
 def test_sysml_clone_and_paste():
-    app = types.SimpleNamespace(diagram_clipboard=None, diagram_clipboard_type=None)
+    app = types.SimpleNamespace()
+    app.diagram_clipboard = types.SimpleNamespace(
+        diagram_clipboard=None,
+        diagram_clipboard_type=None,
+        clipboard_node=None,
+        cut_mode=False,
+        clipboard_relation=None,
+        diagram_clipboard_parent_name=None,
+    )
     repo = DummyRepo("Governance Diagram")
     obj = SysMLObject(
         obj_id=_get_next_id(),
@@ -91,8 +99,8 @@ def test_sysml_clone_and_paste():
     assert snap1 == snap2 == snap3 == snap4
 
     win1.copy_selected()
-    assert app.diagram_clipboard == snap1
-    assert app.diagram_clipboard_type == "Governance Diagram"
+    assert app.diagram_clipboard.diagram_clipboard == snap1
+    assert app.diagram_clipboard.diagram_clipboard_type == "Governance Diagram"
 
     win2 = _make_window(app, repo)
 
@@ -102,11 +110,11 @@ def test_sysml_clone_and_paste():
         win2._reconstruct_object_strategy3,
         win2._reconstruct_object_strategy4,
     ):
-        app.diagram_clipboard = copy.deepcopy(snap1)
-        new_obj = strat(app.diagram_clipboard)
+        app.diagram_clipboard.diagram_clipboard = copy.deepcopy(snap1)
+        new_obj = strat(app.diagram_clipboard.diagram_clipboard)
         assert new_obj.x == snap1["x"] + 20
 
-    app.diagram_clipboard = snap1
+    app.diagram_clipboard.diagram_clipboard = snap1
     win2.paste_selected()
     assert len(win2.objects) == 1
     assert win2.objects[0] is not obj

@@ -28,7 +28,15 @@ def test_copy_paste_creates_clone():
     root.add_child(child)
     diag = GSNDiagram(root)
 
-    app = types.SimpleNamespace(diagram_clipboard=None, diagram_clipboard_type=None)
+    app = types.SimpleNamespace()
+    app.diagram_clipboard = types.SimpleNamespace(
+        diagram_clipboard=None,
+        diagram_clipboard_type=None,
+        clipboard_node=None,
+        cut_mode=False,
+        clipboard_relation=None,
+        diagram_clipboard_parent_name=None,
+    )
     win = GSNDiagramWindow.__new__(GSNDiagramWindow)
     win.app = app
     win.diagram = diag
@@ -37,7 +45,7 @@ def test_copy_paste_creates_clone():
     win.refresh = lambda: None
 
     win.copy_selected()
-    assert app.diagram_clipboard is child
+    assert app.diagram_clipboard.diagram_clipboard is child
 
     app.sync_nodes_by_id = lambda n: setattr(n.original, "description", n.description)
     win.paste_selected()
