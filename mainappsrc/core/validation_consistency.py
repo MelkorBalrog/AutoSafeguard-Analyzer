@@ -207,6 +207,12 @@ class Validation_Consistency:
                             if lb.get(i) == tool_name:
                                 lb.delete(i)
                                 break
+                        if lb.size() == 0:
+                            app.tool_listboxes.pop(area, None)
+                            app.tool_categories.pop(area, None)
+                            lifecycle = getattr(app, "lifecycle_ui", None)
+                            if lifecycle and hasattr(lifecycle, "_remove_tool_category"):
+                                lifecycle._remove_tool_category(area)
                     app.tool_actions.pop(tool_name, None)
         parent = app.WORK_PRODUCT_PARENTS.get(name)
         if parent and parent in app.enabled_work_products:

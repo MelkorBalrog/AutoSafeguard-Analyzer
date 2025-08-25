@@ -20,6 +20,7 @@ import sys
 from pathlib import Path
 import tkinter as tk
 import pytest
+import types
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -82,8 +83,9 @@ def test_work_product_groups_follow_phase(work_product, parent):
 
     app = AutoMLApp.__new__(AutoMLApp)
     lb = DummyListbox()
-    app.tool_listboxes = {AutoMLApp.WORK_PRODUCT_INFO[work_product][0]: lb}
-    app.tool_categories = {AutoMLApp.WORK_PRODUCT_INFO[work_product][0]: []}
+    area = AutoMLApp.WORK_PRODUCT_INFO[work_product][0]
+    app.tool_listboxes = {area: lb}
+    app.tool_categories = {area: []}
     app.tool_actions = {}
     wp_menu = DummyMenu()
     parent_menu = wp_menu if work_product == parent else DummyMenu()
@@ -94,6 +96,7 @@ def test_work_product_groups_follow_phase(work_product, parent):
     app.enable_process_area = lambda area: None
     app.tool_to_work_product = {info[1]: name for name, info in AutoMLApp.WORK_PRODUCT_INFO.items()}
     app.update_views = lambda: None
+    app.lifecycle_ui = types.SimpleNamespace(_remove_tool_category=lambda n: None)
     app.safety_mgmt_toolbox = toolbox
     app.refresh_tool_enablement = AutoMLApp.refresh_tool_enablement.__get__(app, AutoMLApp)
     app.enable_work_product = AutoMLApp.enable_work_product.__get__(app, AutoMLApp)
@@ -107,6 +110,7 @@ def test_work_product_groups_follow_phase(work_product, parent):
     assert parent in app.enabled_work_products
     assert wp_menu.state == tk.NORMAL
     assert parent_menu.state == tk.NORMAL
+    assert area in app.tool_listboxes
 
     toolbox.set_active_module("P2")
     app.refresh_tool_enablement()
@@ -114,6 +118,7 @@ def test_work_product_groups_follow_phase(work_product, parent):
     assert parent not in app.enabled_work_products
     assert wp_menu.state == tk.DISABLED
     assert parent_menu.state == tk.DISABLED
+    assert area not in app.tool_listboxes
     # Reset global toolbox to avoid side effects on other tests
     from analysis import safety_management as _sm
     _sm.ACTIVE_TOOLBOX = None

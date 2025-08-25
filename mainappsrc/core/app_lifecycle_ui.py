@@ -139,6 +139,32 @@ class AppLifecycleUI:
         for n in names:
             lb.insert(tk.END, n)
 
+    def _remove_tool_category(self, cat: str) -> None:
+        """Remove toolbox category *cat* along with its tab and widgets."""
+        lb = self.tool_listboxes.pop(cat, None)
+        if lb is None:
+            return
+        tab_id = None
+        for tid, title in self._tool_tab_titles.items():
+            if title == cat:
+                tab_id = tid
+                break
+        if tab_id:
+            try:
+                self.tools_nb.forget(tab_id)
+            except tk.TclError:
+                pass
+            self._tool_tab_titles.pop(tab_id, None)
+            if tab_id in self._tool_all_tabs:
+                self._tool_all_tabs.remove(tab_id)
+            self._tool_tab_offset = max(0, len(self._tool_all_tabs) - self.MAX_VISIBLE_TABS)
+            self._update_tool_tab_visibility()
+        parent = lb.master
+        try:
+            parent.destroy()
+        except Exception:
+            pass
+
     def _on_tool_tab_motion(self, event):
         """Show tooltip for notebook tabs when hovering over them."""
         try:
