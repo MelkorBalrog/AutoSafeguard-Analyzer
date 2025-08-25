@@ -16,8 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Project version information."""
+import sys
+from pathlib import Path
 
-VERSION = "0.2.59"
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-__all__ = ["VERSION"]
+from mainappsrc.core.ui_setup import UISetupMixin
+
+
+def test_enable_paa_actions_includes_gate():
+    called = []
+
+    class DummyMenu:
+        def entryconfig(self, index, state):
+            called.append(index)
+
+    obj = type("O", (UISetupMixin,), {})()
+    obj.paa_menu = DummyMenu()
+    obj._paa_menu_indices = {"add_confidence": 0, "add_robustness": 1, "add_gate": 2}
+    obj.enable_paa_actions(True)
+
+    assert 2 in called

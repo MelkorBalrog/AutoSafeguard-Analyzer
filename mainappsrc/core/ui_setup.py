@@ -61,7 +61,7 @@ class UISetupMixin:
         """Enable or disable PAA-related menu actions."""
         if hasattr(self, "paa_menu"):
             state = tk.NORMAL if enabled else tk.DISABLED
-            for key in ("add_confidence", "add_robustness"):
+            for key in ("add_confidence", "add_robustness", "add_gate"):
                 self.paa_menu.entryconfig(self._paa_menu_indices[key], state=state)
 
     def _update_analysis_menus(self, mode: str | None = None) -> None:
