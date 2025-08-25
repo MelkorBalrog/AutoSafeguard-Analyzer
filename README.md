@@ -309,6 +309,10 @@ Open the **Requirements Matrix** from the Requirements menu to see every require
 
 Use case, activity, block and internal block diagrams can be created from the **Architecture** menu. Diagrams are stored inside a built-in SysML repository and appear in the *Analyses* explorer under *System Design (Item Definition)* so they can be reopened alongside safety documents. Each object keeps its saved size and properties so layouts remain stable when returning to the project.
 
+The new :class:`SafetyAnalysis_FTA_FMEA` facade combines previously separate
+fault-tree, FMEA and FMEDA helpers into a single interface, simplifying how the
+application orchestrates safety analyses.
+
 Activity diagrams list individual **actions** that describe the expected behavior for a block. These actions can be referenced directly in HAZOP tables as potential malfunctions. When a block is linked to a reliability analysis, any actions in its internal block diagram are inherited as additional failure modes for that analysis. The inherited actions automatically show up in new FMEDA tables along with the failure modes already defined for the analysis components.
 
 Elements on a diagram may reference reliability analyses. Choosing an **analysis** or **component** automatically fills the **fit**, **qualification** and **failureModes** fields using data from FMEA and FMEDA tables. These values show up in a *Reliability* compartment for blocks or below parts. When a block references an analysis, the components from that analysis BOM can be inserted as parts in the linked internal block diagram with their failure modes already listed.
@@ -1638,7 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.11 - Use AppLifecycleUI as a composed helper within core app initialization.
+- 0.2.11 - Introduced SafetyAnalysis_FTA_FMEA facade for FTA, FMEA and FMEDA.
 - 0.2.10 - Extracted lifecycle UI helpers into dedicated AppLifecycleUI class.
 - 0.2.9 - Display splash screen during dependency checks and startup.
 - 0.2.8 - Renamed core module to `automl_core.py` and launcher to `automl.py`.
