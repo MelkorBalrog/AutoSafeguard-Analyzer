@@ -25,6 +25,7 @@ from analysis.utils import (
 )
 from analysis.risk_assessment import boolify
 from analysis.user_config import CURRENT_USER_NAME
+from gui.controls import messagebox
 
 
 class FaultTreeNode:
@@ -295,6 +296,35 @@ class FaultTreeNode:
             node._original_id = None
         return node
 
+    @classmethod
+    def add_basic_event_from_fmea(cls, parent_node, selected):
+        """Create and attach a basic event node from an FMEA/FMEDA entry.
+
+        Parameters
+        ----------
+        parent_node:
+            The :class:`FaultTreeNode` under which the new event will be
+            attached.
+        selected:
+            An object exposing a ``to_dict`` method and optional
+            ``unique_id`` attribute representing the failure mode.
+
+        Returns
+        -------
+        FaultTreeNode
+            The newly created node.
+        """
+
+        data = selected.to_dict()
+        data.pop("unique_id", None)
+        data["children"] = []
+        new_node = cls.from_dict(data, parent_node)
+        if hasattr(selected, "unique_id"):
+            new_node.failure_mode_ref = selected.unique_id
+        parent_node.children.append(new_node)
+        new_node.parents.append(parent_node)
+        return new_node
+
     # ------------------------------------------------------------------
     def clone(self, parent=None):
         """Return a copy of this node referencing the same original."""
@@ -351,6 +381,171 @@ class FaultTreeNode:
                 return
             try:
                 node_id = int(core.analysis_tree.item(sel[0], "tags")[0])
+
+def add_failure_mode(
+    core,
+    win,
+    basic_events,
+    entries,
+    selected_libs,
+    refresh_tree,
+    fmea=None,
+    fmeda=False,
+):
+    """Add failure modes to an FMEA or FMEDA table.
+
+    Parameters
+    ----------
+    core:
+        The application core invoking this helper.
+    win:
+        Parent window for dialogs.
+    basic_events:
+        Available basic events to choose from.
+    entries:
+        Current FMEA/FMeda entry list to append to.
+    selected_libs:
+        Libraries providing failure mechanisms.
+    refresh_tree:
+        Callback to update the displayed tree after modifications.
+    fmea:
+        Optional FMEA document being edited.
+    fmeda:
+        Flag indicating FMEDA mode.
+    """
+
+    from gui.dialogs.select_base_event_dialog import SelectBaseEventDialog
+    from gui.dialogs.fmea_row_dialog import FMEARowDialog
+
+    dialog = SelectBaseEventDialog(win, basic_events, allow_new=True)
+    node = dialog.selected
+    if node == "NEW":
+        node = FaultTreeNode("", "Basic Event")
+        entries.append(node)
+        mechs = []
+        for lib in selected_libs:
+            mechs.extend(lib.mechanisms)
+        comp_name = getattr(node, "fmea_component", "")
+        is_passive = any(
+            c.name == comp_name and c.is_passive for c in core.reliability_components
+        )
+        FMEARowDialog(
+            win,
+            node,
+            core,
+            entries,
+            mechanisms=mechs,
+            hide_diagnostics=is_passive,
+            is_fmeda=fmeda,
+        )
+    elif node:
+        if node.parents:
+            parent_id = node.parents[0].unique_id
+            related = [
+                be
+                for be in basic_events
+                if be.parents and be.parents[0].unique_id == parent_id
+            ]
+        else:
+            comp = getattr(node, "fmea_component", "")
+            related = [
+                be
+                for be in basic_events
+                if not be.parents and getattr(be, "fmea_component", "") == comp
+            ]
+        if node not in related:
+            related.append(node)
+        existing_ids = {be.unique_id for be in entries}
+        for be in related:
+            if be.unique_id not in existing_ids:
+                entries.append(be)
+                existing_ids.add(be.unique_id)
+            mechs = []
+            for lib in selected_libs:
+                mechs.extend(lib.mechanisms)
+            comp_name = core.get_component_name_for_node(be)
+            is_passive = any(
+                c.name == comp_name and c.is_passive for c in core.reliability_components
+            )
+            FMEARowDialog(
+                win,
+                be,
+                core,
+                entries,
+                mechanisms=mechs,
+                hide_diagnostics=is_passive,
+                is_fmeda=fmeda,
+            )
+    refresh_tree()
+    if fmea is not None:
+        core.lifecycle_ui.touch_doc(fmea)
+
+def refresh_tree(app, tree):
+    """Populate a Treeview with the application's top events."""
+    from config.automl_constants import PMHF_TARGETS
+
+    tree.delete(*tree.get_children())
+    for sg in app.top_events:
+        name = sg.safety_goal_description or (sg.user_name or f"SG {sg.unique_id}")
+        sg.safety_goal_asil = app.get_hara_goal_asil(name)
+        pmhf_target = PMHF_TARGETS.get(sg.safety_goal_asil, 1.0)
+        tree.insert(
+            "",
+            "end",
+            iid=sg.unique_id,
+            values=[
+                sg.user_name or f"SG {sg.unique_id}",
+                sg.safety_goal_asil,
+                f"{pmhf_target:.2e}",
+                sg.safe_state,
+                getattr(sg, "ftti", ""),
+                str(getattr(sg, "acceptance_rate", "")),
+                getattr(sg, "operational_hours_on", ""),
+                getattr(sg, "validation_target", ""),
+                getattr(sg, "mission_profile", ""),
+                getattr(sg, "validation_desc", ""),
+                getattr(sg, "acceptance_criteria", ""),
+                sg.safety_goal_description,
+            ],
+        )
+
+def add_node_of_type(app, event_type):
+    """Create and attach a node of ``event_type`` to the current selection."""
+    app.push_undo_state()
+    diag_mode = getattr(app, "diagram_mode", "FTA")
+    event_upper = event_type.upper()
+    if diag_mode == "PAA":
+        allowed = {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"}
+        if event_upper not in allowed:
+            messagebox.showwarning(
+                "Invalid",
+                "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis.",
+            )
+            return
+    else:
+        allowed = {
+            "TRIGGERING CONDITION",
+            "FUNCTIONAL INSUFFICIENCY",
+        } if diag_mode == "CTA" else {"GATE", "BASIC EVENT"}
+        if event_upper not in allowed:
+            messagebox.showwarning(
+                "Invalid",
+                f"Node type '{event_type}' is not allowed in {diag_mode} diagrams.",
+            )
+            return
+    if app.selected_node:
+        if not app.selected_node.is_primary_instance:
+            messagebox.showwarning(
+                "Invalid Operation",
+                "Cannot add new elements to a clone node.\nPlease select the original node instead.",
+            )
+            return
+        parent_node = app.selected_node
+    else:
+        sel = app.analysis_tree.selection()
+        if sel:
+            try:
+                node_id = int(app.analysis_tree.item(sel[0], "tags")[0])
             except (IndexError, ValueError):
                 messagebox.showwarning(
                     "No selection", "Select a parent node from the tree."
