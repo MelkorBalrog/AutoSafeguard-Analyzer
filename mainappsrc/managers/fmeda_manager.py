@@ -69,6 +69,16 @@ class FMEDAManager:
         self.app.touch_doc(doc)
         self.app.update_views()
 
+    def propagate_failure_mode_attributes(self, fm_node):
+        """Update basic events referencing ``fm_node`` and recompute probability."""
+        for be in self.app.get_all_basic_events():
+            if getattr(be, "failure_mode_ref", None) == fm_node.unique_id:
+                be.fmeda_fit = fm_node.fmeda_fit
+                be.fmeda_diag_cov = fm_node.fmeda_diag_cov
+                # Always propagate the formula so edits take effect
+                be.prob_formula = fm_node.prob_formula
+                be.failure_prob = self.app.compute_failure_prob(be)
+
     def show_fmeda_list(self):
         """Display the FMEDA list management window."""
         if self._fmeda_tab is not None and self._fmeda_tab.winfo_exists():
