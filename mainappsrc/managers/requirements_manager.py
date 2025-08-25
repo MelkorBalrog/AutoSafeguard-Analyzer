@@ -30,6 +30,7 @@ from tkinter import ttk, simpledialog
 from gui.controls import messagebox
 from config.automl_constants import PMHF_TARGETS
 from mainappsrc.models.fta.fault_tree_node import FaultTreeNode
+from analysis.models import ASIL_ORDER
 
 try:  # pragma: no cover - optional dependency
     from mainappsrc.models.sysml.sysml_repository import SysMLRepository
@@ -117,6 +118,17 @@ class RequirementsManagerSubApp:
                     if node:
                         self._collect_goal_names(node, goals)
         return sorted(goals)
+
+    # ------------------------------------------------------------------
+    def compute_requirement_asil(self, req_id: str) -> str:
+        """Return highest ASIL across all safety goals linked to the requirement."""
+
+        asil = "QM"
+        for g in self.get_requirement_goal_names(req_id):
+            a = self.app.get_safety_goal_asil(g)
+            if ASIL_ORDER.get(a, 0) > ASIL_ORDER.get(asil, 0):
+                asil = a
+        return asil
 
     # ------------------------------------------------------------------
     def format_requirement(self, req: Dict[str, Any], include_id: bool = True) -> str:

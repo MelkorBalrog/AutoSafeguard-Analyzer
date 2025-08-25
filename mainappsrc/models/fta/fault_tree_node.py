@@ -381,20 +381,8 @@ class FaultTreeNode:
                 return
             try:
                 node_id = int(core.analysis_tree.item(sel[0], "tags")[0])
-            except (IndexError, ValueError):
-                messagebox.showwarning(
-                    "No selection", "Select a parent node to paste into."
-                )
+            except Exception:
                 return
-            parent_node = core.find_node_by_id_all(node_id)
-        if parent_node.node_type.upper() == "BASIC EVENT":
-            messagebox.showwarning(
-                "Invalid Operation",
-                "Cannot add to a basic event. Select a gate node instead.",
-            )
-            return
-        FaultTreeNode.create_basic_event_from_fmea(parent_node, selected)
-        refresh_tree(core, core.analysis_tree)
 
 def add_failure_mode(
     core,
