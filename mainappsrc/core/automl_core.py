@@ -20,7 +20,6 @@
 import math
 import sys
 import json
-from concurrent.futures import ThreadPoolExecutor
 import tkinter as tk
 import os, sys
 base = os.path.dirname(__file__)
@@ -34,7 +33,6 @@ from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui.dialogs.dialog_utils import askstring_fixed
 from gui.controls import messagebox
 from gui.utils import logger, add_treeview_scrollbars
-from gui.controls.button_utils import enable_listbox_hover_highlight
 from gui.utils.tooltip import ToolTip
 from gui.styles.style_manager import StyleManager
 from gui.toolboxes.review_toolbox import ReviewData, ReviewParticipant, ReviewComment
@@ -53,7 +51,6 @@ from gui.controls.mac_button_style import (
     apply_translucid_button_style,
     apply_purplish_button_style,
 )
-from gui.dialogs.user_select_dialog import UserSelectDialog
 from gui.dialogs.decomposition_dialog import DecompositionDialog
 from dataclasses import asdict
 from pathlib import Path
@@ -86,15 +83,6 @@ from .validation_consistency import Validation_Consistency
 from .reporting_export import Reporting_Export
 from .node_clone_service import NodeCloneService
 from .view_updater import ViewUpdater
-from analysis.user_config import (
-    load_user_config,
-    save_user_config,
-    set_current_user,
-    load_all_users,
-    set_last_user,
-    CURRENT_USER_NAME,
-    CURRENT_USER_EMAIL,
-)
 from analysis.risk_assessment import (
     DERIVED_MATURITY_TABLE,
     ASSURANCE_AGGREGATION_AND,
@@ -255,7 +243,6 @@ from gui.toolboxes import (
 
 
 from pathlib import Path
-from gui.dialogs.user_info_dialog import UserInfoDialog
 
 from . import config_utils
 from .config_utils import _reload_local_config
@@ -3000,59 +2987,3 @@ class AutoMLApp(
 
     def get_review_targets(self):
         return self.versioning_review.get_review_targets()
-
-
-def load_user_data() -> tuple[dict, tuple[str, str]]:
-    """Load cached users and last user config concurrently."""
-    with ThreadPoolExecutor() as executor:
-        users_future = executor.submit(load_all_users)
-        config_future = executor.submit(load_user_config)
-        return users_future.result(), config_future.result()
-
-
-def main():
-    root = tk.Tk()
-    # Prevent the main window from being resized so small that
-    # widgets and toolbars become unusable.
-    root.minsize(1200, 700)
-    enable_listbox_hover_highlight(root)
-    # Hide the main window while prompting for user info
-    root.withdraw()
-    users, (last_name, last_email) = load_user_data()
-    if users:
-        dlg = UserSelectDialog(root, users, last_name)
-        if dlg.result:
-            name, email = dlg.result
-            if name == "New User...":
-                info = UserInfoDialog(root, "", "").result
-                if info:
-                    name, email = info
-                    save_user_config(name, email)
-            else:
-                email = users.get(name, email)
-                set_last_user(name)
-    else:
-        dlg = UserInfoDialog(root, last_name, last_email)
-        if dlg.result:
-            name, email = dlg.result
-            save_user_config(name, email)
-    set_current_user(name, email)
-    # Create a fresh helper each session:
-    global AutoML_Helper
-    AutoML_Helper = config_utils.AutoML_Helper = AutoMLHelper()
-
-    # Show and maximize the main window after login
-    root.deiconify()
-    try:
-        root.state("zoomed")
-    except tk.TclError:
-        try:
-            root.attributes("-zoomed", True)
-        except tk.TclError:
-            pass
-
-    app = AutoMLApp(root)
-    root.mainloop()
-
-if __name__ == "__main__":
-    main()

@@ -21,8 +21,8 @@ import time
 import importlib
 
 
-# Import AutoML module for testing
-automl = importlib.import_module("mainappsrc.automl_core")
+# Import core package for testing user data utilities
+automl = importlib.import_module("mainappsrc.core")
 
 
 def test_load_user_data_parallel(monkeypatch):
