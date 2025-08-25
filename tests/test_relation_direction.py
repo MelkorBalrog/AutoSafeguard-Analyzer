@@ -5,7 +5,12 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from config import load_diagram_rules
 
 def _safety_ai_rules():
-    cfg_path = Path(__file__).resolve().parents[1] / 'config' / 'diagram_rules.json'
+    cfg_path = (
+        Path(__file__).resolve().parents[1]
+        / "config"
+        / "rules"
+        / "diagram_rules.json"
+    )
     cfg = load_diagram_rules(cfg_path)
     return cfg.get('connection_rules', {}).get('Governance Diagram', {})
 

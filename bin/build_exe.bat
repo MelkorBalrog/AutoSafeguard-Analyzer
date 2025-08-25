@@ -43,7 +43,7 @@ pyinstaller --noconfirm --onefile --windowed --name AutoML ^
     --hidden-import=tkinter.simpledialog ^
     --hidden-import=tkinter.scrolledtext ^
     --hidden-import=tkinter.ttk ^
-    --add-data "styles;styles" ^
+    --add-data "config/styles;config/styles" ^
     --add-data "main\automl_core.py;main" ^
     --icon "%BIN_DIR%AutoML.ico" automl.py
 if errorlevel 1 (

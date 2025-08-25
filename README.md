@@ -1,4 +1,4 @@
-version: 0.2.32
+version: 0.2.33
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1601,7 +1601,7 @@ projects will show blank charts until information is added.
 
 ## Diagram Styles
 
-Several XML files in the `styles` directory control the colors used for
+Several XML files in the `config/styles` directory control the colors used for
 diagram elements. The default style `pastel.xml` provides softer tones like
 peach actions and steel-blue nodes. `modern.xml` offers a Material-inspired
 palette for a different look. Open the Style Editor via **View → Style Editor**, click **Load** and choose

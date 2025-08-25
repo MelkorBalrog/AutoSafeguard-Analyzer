@@ -9,7 +9,7 @@ from analysis.safety_case import SafetyCase
 BASE_DIR = Path(__file__).resolve().parents[1]
 
 def _load(name: str):
-    path = BASE_DIR / "config" / name
+    path = BASE_DIR / "config" / "templates" / name
     return load_report_template(path)
 
 
@@ -162,7 +162,7 @@ def test_safety_security_management_template_valid():
 
 
 def test_diagram_rules_include_lifecycle_requirements():
-    path = BASE_DIR / "config" / "diagram_rules.json"
+    path = BASE_DIR / "config" / "rules" / "diagram_rules.json"
     with path.open() as fh:
         data = json.load(fh)
     sequences = set(data.get("requirement_sequences", {}))

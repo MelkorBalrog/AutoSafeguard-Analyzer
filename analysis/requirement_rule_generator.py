@@ -15,10 +15,10 @@ ISO/IEC/IEEE 29148 structure
     [<span style="color:#c0392b;font-weight:bold">&lt;constraint&gt;</span>].
 
 The main entry point :func:`regenerate_requirement_patterns` reloads the
-``config/diagram_rules.json`` file, regenerates all patterns and writes the
-result to ``config/requirement_patterns.json``.  This helper is invoked by the
-application whenever the model changes so requirement patterns stay in sync
-with diagram rule updates and governance diagram creation.
+``config/rules/diagram_rules.json`` file, regenerates all patterns and writes
+the result to ``config/patterns/requirement_patterns.json``.  This helper is
+invoked by the application whenever the model changes so requirement patterns
+stay in sync with diagram rule updates and governance diagram creation.
 """
 
 from __future__ import annotations
@@ -627,11 +627,17 @@ def regenerate_requirement_patterns(
 
     diag_path = Path(
         diagram_rules_path
-        or Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
+        or Path(__file__).resolve().parents[1]
+        / "config"
+        / "rules"
+        / "diagram_rules.json"
     )
     out_path = Path(
         out_path
-        or Path(__file__).resolve().parents[1] / "config/requirement_patterns.json"
+        or Path(__file__).resolve().parents[1]
+        / "config"
+        / "patterns"
+        / "requirement_patterns.json"
     )
     rules = clean_and_load_json(str(diag_path), quiet=True)
     patterns = generate_patterns_from_config(rules)

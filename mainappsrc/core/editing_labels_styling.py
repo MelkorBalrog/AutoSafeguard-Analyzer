@@ -187,7 +187,12 @@ class Editing_Labels_Styling:
         return self.risk_app.rename_triggering_condition(self, old, new)
 
     def apply_style(self, filename: str) -> None:
-        path = Path(__file__).resolve().parent / "styles" / filename
+        path = (
+            Path(__file__).resolve().parents[2]
+            / "config"
+            / "styles"
+            / filename
+        )
         StyleManager.get_instance().load_style(path)
         self.root.event_generate("<<StyleChanged>>", when="tail")
 

@@ -58,7 +58,11 @@ class DiagramRulesEditor(tk.Frame):
         apply_translucid_button_style()
         self.app = app
         self.config_path = Path(
-            config_path or Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
+            config_path
+            or Path(__file__).resolve().parents[1]
+            / "config"
+            / "rules"
+            / "diagram_rules.json"
         )
         try:
             self.data = load_diagram_rules(self.config_path)

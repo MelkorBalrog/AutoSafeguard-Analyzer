@@ -10,7 +10,12 @@ from .requirement_rule_generator import generate_patterns_from_config
 import networkx as nx
 import re
 
-_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
+_CONFIG_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "config"
+    / "rules"
+    / "diagram_rules.json"
+)
 _CONFIG = load_diagram_rules(_CONFIG_PATH)
 
 # Element and relationship types associated with AI & safety lifecycle nodes.
@@ -46,9 +51,14 @@ _NODE_ROLES = _CONFIG.get("node_roles", {})
 # Optional requirement pattern definitions allowing users to customise
 # requirement text based on specific relationship triggers.  Each pattern
 # entry is keyed by ``(source_type, label, dest_type)`` so that users can
-# modify or extend the patterns in ``config/requirement_patterns.json``
+# modify or extend the patterns in ``config/patterns/requirement_patterns.json``
 # without touching the code.
-_PATTERN_PATH = Path(__file__).resolve().parents[1] / "config/requirement_patterns.json"
+_PATTERN_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "config"
+    / "patterns"
+    / "requirement_patterns.json"
+)
 try:
     _PATTERN_DEFS = load_json_with_comments(_PATTERN_PATH)
     # ``requirement_patterns.json`` is optional and may contain an object when

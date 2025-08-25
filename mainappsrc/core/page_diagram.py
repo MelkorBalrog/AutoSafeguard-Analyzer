@@ -10,7 +10,12 @@ from config import load_diagram_rules
 from gui.utils.drawing_helper import fta_drawing_helper
 
 # Node types treated as gates when rendering and editing
-_CONFIG_PATH = Path(__file__).resolve().parent / "config/diagram_rules.json"
+_CONFIG_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "config"
+    / "rules"
+    / "diagram_rules.json"
+)
 _CONFIG = load_diagram_rules(_CONFIG_PATH)
 GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
