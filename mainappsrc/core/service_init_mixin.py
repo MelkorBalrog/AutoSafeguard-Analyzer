@@ -50,6 +50,7 @@ from .versioning_review import Versioning_Review
 from .data_access_queries import DataAccess_Queries
 from .validation_consistency import Validation_Consistency
 from .reporting_export import Reporting_Export
+from .editors import Editors
 
 
 class ServiceInitMixin:
@@ -114,3 +115,4 @@ class ServiceInitMixin:
         self.data_access_queries = DataAccess_Queries(self)
         self.validation_consistency = Validation_Consistency(self)
         self.reporting_export = Reporting_Export(self)
+        self.editors = Editors(self)
