@@ -96,6 +96,7 @@ from .versioning_review import Versioning_Review
 from .validation_consistency import Validation_Consistency
 from .reporting_export import Reporting_Export
 from .node_clone_service import NodeCloneService
+from .view_updater import ViewUpdater
 from analysis.user_config import (
     load_user_config,
     save_user_config,
@@ -174,6 +175,7 @@ import tkinter.font as tkFont
 import builtins
 from mainappsrc.managers.user_manager import UserManager
 from mainappsrc.managers.project_manager import ProjectManager
+from mainappsrc.managers.product_goal_manager import ProductGoalManager
 from mainappsrc.ui.project_properties_dialog import ProjectPropertiesDialog
 from mainappsrc.managers.sotif_manager import SOTIFManager
 from mainappsrc.managers.cyber_manager import CyberSecurityManager
@@ -246,13 +248,13 @@ except Exception:  # pragma: no cover
     from mainappsrc.core.probability_reliability import Probability_Reliability
     from mainappsrc.version import VERSION
 try:  # pragma: no cover
-    from .models.fta.fault_tree_node import FaultTreeNode, refresh_tree as fault_tree_refresh
+    from .models.fta.fault_tree_node import FaultTreeNode, refresh_tree as fault_tree_refresh, add_node_of_type as _add_node_of_type
 except Exception:  # pragma: no cover
     import os, sys
     base = os.path.dirname(__file__)
     sys.path.append(base)
     sys.path.append(os.path.dirname(base))
-    from models.fta.fault_tree_node import FaultTreeNode, refresh_tree as fault_tree_refresh
+    from models.fta.fault_tree_node import FaultTreeNode, refresh_tree as fault_tree_refresh, add_node_of_type as _add_node_of_type
 
 from .structure_tree_operations import Structure_Tree_Operations
 
@@ -402,6 +404,7 @@ class AutoMLApp(
         self.selected_node = None
         self.clone_offset_counter = {}
         self.node_clone_service = NodeCloneService()
+        self.view_updater = ViewUpdater(self)
         self._loaded_model_paths = []
         self.root.title("AutoML-Analyzer")
         self.messagebox = messagebox
@@ -1902,391 +1905,8 @@ class AutoMLApp(
         return self.safety_analysis.get_fit_for_fault(fault_name)
 
     def update_views(self):
-        self.refresh_model()
-        # Compute occurrence counts from the current tree
-        self.occurrence_counts = self.compute_occurrence_counts()
-
-        if hasattr(self, "analysis_tree"):
-            tree = self.analysis_tree
-            tree.delete(*tree.get_children())
-
-            repo = SysMLRepository.get_instance()
-            global_enabled = getattr(self, "enabled_work_products", set())
-            smt = getattr(self, "safety_mgmt_toolbox", None)
-            if smt and getattr(smt, "work_products", None):
-                phase_enabled = smt.enabled_products()
-            else:
-                phase_enabled = global_enabled
-            enabled = global_enabled & phase_enabled
-
-            # --- Safety & Security Management Section ---
-            self.management_diagrams = sorted(
-                [
-                    d
-                    for d in repo.visible_diagrams().values()
-                    if "safety-management" in getattr(d, "tags", [])
-                ],
-                key=lambda d: d.name or d.diag_id,
-            )
-            mgmt_root = tree.insert("", "end", text="Safety & Security Management", open=True)
-            gov_root = tree.insert(
-                mgmt_root,
-                "end",
-                text="Safety & Security Governance Diagrams",
-                open=True,
-            )
-            self.safety_mgmt_toolbox = getattr(
-                self, "safety_mgmt_toolbox", SafetyManagementToolbox()
-            )
-            toolbox = self.safety_mgmt_toolbox
-            self.governance_manager.attach_toolbox(toolbox)
-            toolbox.list_diagrams()
-            self.update_lifecycle_cb()
-            self.refresh_tool_enablement()
-
-            def _visible(analysis_name: str, doc_name: str) -> bool:
-                return toolbox.document_visible(analysis_name, doc_name)
-
-            index_map = {
-                (d.name or d.diag_id): idx
-                for idx, d in enumerate(self.management_diagrams)
-            }
-
-            def _in_any_module(name, modules):
-                for mod in modules:
-                    if name in mod.diagrams or _in_any_module(name, mod.modules):
-                        return True
-                return False
-
-            def _add_module(mod, parent):
-                node = tree.insert(
-                    parent,
-                    "end",
-                    text=mod.name,
-                    open=True,
-                    image=getattr(self, "pkg_icon", None),
-                )
-                for sub in sorted(mod.modules, key=lambda m: m.name):
-                    _add_module(sub, node)
-                for name in sorted(mod.diagrams):
-                    idx = index_map.get(name)
-                    if idx is not None:
-                        tree.insert(
-                            node,
-                            "end",
-                            text=name,
-                            tags=("gov", str(idx)),
-                            image=getattr(self, "gsn_diagram_icon", None),
-                        )
-
-            for mod in sorted(toolbox.modules, key=lambda m: m.name):
-                _add_module(mod, gov_root)
-
-            for name in sorted(toolbox.diagrams.keys()):
-                if not _in_any_module(name, toolbox.modules):
-                    idx = index_map.get(name)
-                    if idx is not None:
-                        tree.insert(
-                            gov_root,
-                            "end",
-                            text=name,
-                            tags=("gov", str(idx)),
-                            image=getattr(self, "gsn_diagram_icon", None),
-                        )
-
-            # --- GSN Diagrams Section ---
-            def _collect_gsn_diagrams(module):
-                diagrams = list(module.diagrams)
-                for sub in module.modules:
-                    diagrams.extend(_collect_gsn_diagrams(sub))
-                return diagrams
-
-            self.all_gsn_diagrams = sorted(
-                list(getattr(self, "gsn_diagrams", []))
-                + [
-                    d
-                    for m in getattr(self, "gsn_modules", [])
-                    for d in _collect_gsn_diagrams(m)
-                ],
-                key=lambda d: d.root.user_name or d.diag_id,
-            )
-            self.gsn_diagram_map = {d.diag_id: d for d in self.all_gsn_diagrams}
-            self.gsn_module_map = {}
-
-            gsn_root = tree.insert(mgmt_root, "end", text="GSN Diagrams", open=True)
-
-            def add_gsn_module(module, parent):
-                mid = str(id(module))
-                node = tree.insert(
-                    parent,
-                    "end",
-                    text=module.name,
-                    open=True,
-                    tags=("gsnmod", mid),
-                    image=getattr(self, "gsn_module_icon", None),
-                )
-                self.gsn_module_map[mid] = module
-                for sub in sorted(module.modules, key=lambda m: m.name):
-                    add_gsn_module(sub, node)
-                for diag in sorted(
-                    module.diagrams, key=lambda d: d.root.user_name or d.diag_id
-                ):
-                    add_gsn_diagram(diag, node)
-
-            def add_gsn_diagram(diag, parent):
-                tree.insert(
-                    parent,
-                    "end",
-                    text=diag.root.user_name or diag.diag_id,
-                    tags=("gsn", diag.diag_id),
-                    image=getattr(self, "gsn_diagram_icon", None),
-                )
-
-            for mod in sorted(getattr(self, "gsn_modules", []), key=lambda m: m.name):
-                add_gsn_module(mod, gsn_root)
-            for diag in sorted(
-                getattr(self, "gsn_diagrams", []), key=lambda d: d.root.user_name or d.diag_id
-            ):
-                add_gsn_diagram(diag, gsn_root)
-
-            tree.insert(
-                mgmt_root,
-                "end",
-                text="Safety & Security Case Explorer",
-                tags=("safetycase", "0"),
-            )
-
-            # --- Verification Reviews Section ---
-            self.joint_reviews = [r for r in getattr(self, "reviews", []) if getattr(r, "mode", "") == "joint"]
-            rev_root = tree.insert(mgmt_root, "end", text="Verification Reviews", open=True)
-            for idx, review in enumerate(self.joint_reviews):
-                tree.insert(
-                    rev_root,
-                    "end",
-                    text=review.name,
-                    tags=("jrev", str(idx)),
-                )
-
-            # --- System Design (Item Definition) Section ---
-            sys_root = tree.insert(
-                "",
-                "end",
-                text="System Design (Item Definition)",
-                open=True,
-                tags=("itemdef", "0"),
-            )
-            self.arch_diagrams = sorted(
-                [
-                    d
-                    for d in repo.visible_diagrams().values()
-                    if "safety-management" not in getattr(d, "tags", [])
-                ],
-                key=lambda d: d.name or d.diag_id,
-            )
-            arch_root = None
-            if "Architecture Diagram" in enabled or getattr(self, "arch_diagrams", []):
-                arch_root = tree.insert(sys_root, "end", text="Architecture Diagrams", open=True)
-
-            def add_pkg(pkg_id: str, parent: str) -> None:
-                pkg = repo.elements.get(pkg_id)
-                if not pkg or pkg.elem_type != "Package":
-                    return
-                node = parent
-                if pkg_id != repo.root_package.elem_id:
-                    node = tree.insert(
-                        parent,
-                        "end",
-                        text=pkg.name or pkg_id,
-                        open=True,
-                        tags=("pkg", pkg_id),
-                        image=getattr(self, "pkg_icon", None),
-                    )
-                # add subpackages
-                sub_pkgs = sorted(
-                    [e.elem_id for e in repo.elements.values() if e.elem_type == "Package" and e.owner == pkg_id],
-                    key=lambda i: repo.elements[i].name or i,
-                )
-                for child_id in sub_pkgs:
-                    add_pkg(child_id, node)
-                # add diagrams within this package
-                diags = sorted(
-                    [
-                        d
-                        for d in repo.visible_diagrams().values()
-                        if d.package == pkg_id
-                        and "safety-management" not in getattr(d, "tags", [])
-                    ],
-                    key=lambda d: d.name or d.diag_id,
-                )
-                for diag in diags:
-                    icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
-                    tree.insert(
-                        node,
-                        "end",
-                        text=diag.name or diag.diag_id,
-                        tags=("arch", diag.diag_id),
-                        image=icon,
-                    )
-
-            root_pkg = getattr(repo, "root_package", None)
-            if root_pkg is not None:
-                add_pkg(root_pkg.elem_id, arch_root)
-            else:
-                for diag in self.arch_diagrams:
-                    icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
-                    tree.insert(
-                        arch_root,
-                        "end",
-                        text=diag.name or diag.diag_id,
-                        tags=("arch", diag.diag_id),
-                        image=icon,
-                    )
-
-            # --- Safety & Security Concept and Requirements Tools ---
-            if "Safety & Security Concept" in enabled:
-                tree.insert(
-                    sys_root,
-                    "end",
-                    text="Safety & Security Concept",
-                    tags=("safetyconcept", "0"),
-                )
-            if any(wp in enabled for wp in REQUIREMENT_WORK_PRODUCTS):
-                tree.insert(sys_root, "end", text="Requirements Editor", tags=("reqs", "0"))
-                tree.insert(
-                    sys_root,
-                    "end",
-                    text="Requirements Explorer",
-                    tags=("reqexp", "0"),
-                )
-
-            # --- Hazard & Threat Analysis Section ---
-            haz_root = None
-            def _ensure_haz_root():
-                nonlocal haz_root
-                if haz_root is None:
-                    haz_root = tree.insert("", "end", text="Hazard & Threat Analysis", open=True)
-            if "HAZOP" in enabled or getattr(self, "hazop_docs", []):
-                _ensure_haz_root()
-                hazop_root = tree.insert(haz_root, "end", text="HAZOPs", open=True)
-                for idx, doc in enumerate(self.hazop_docs):
-                    if not _visible("HAZOP", doc.name):
-                        continue
-                    tree.insert(hazop_root, "end", text=doc.name, tags=("hazop", str(idx)))
-            if "STPA" in enabled or getattr(self, "stpa_docs", []):
-                _ensure_haz_root()
-                stpa_root = tree.insert(haz_root, "end", text="STPA Analyses", open=True)
-                for idx, doc in enumerate(self.stpa_docs):
-                    if not _visible("STPA", doc.name):
-                        continue
-                    tree.insert(stpa_root, "end", text=doc.name, tags=("stpa", str(idx)))
-            if "Threat Analysis" in enabled or getattr(self, "threat_docs", []):
-                _ensure_haz_root()
-                threat_root = tree.insert(haz_root, "end", text="Threat Analyses", open=True)
-                for idx, doc in enumerate(self.threat_docs):
-                    if not _visible("Threat Analysis", doc.name):
-                        continue
-                    tree.insert(threat_root, "end", text=doc.name, tags=("threat", str(idx)))
-            if "FI2TC" in enabled or getattr(self, "fi2tc_docs", []):
-                _ensure_haz_root()
-                fi2tc_root = tree.insert(haz_root, "end", text="FI2TC Analyses", open=True)
-                for idx, doc in enumerate(self.fi2tc_docs):
-                    if not _visible("FI2TC", doc.name):
-                        continue
-                    tree.insert(fi2tc_root, "end", text=doc.name, tags=("fi2tc", str(idx)))
-            if "TC2FI" in enabled or getattr(self, "tc2fi_docs", []):
-                _ensure_haz_root()
-                tc2fi_root = tree.insert(haz_root, "end", text="TC2FI Analyses", open=True)
-                for idx, doc in enumerate(self.tc2fi_docs):
-                    if not _visible("TC2FI", doc.name):
-                        continue
-                    tree.insert(tc2fi_root, "end", text=doc.name, tags=("tc2fi", str(idx)))
-
-            # --- Risk Assessment Section ---
-            risk_root = None
-            def _ensure_risk_root():
-                nonlocal risk_root
-                if risk_root is None:
-                    risk_root = tree.insert("", "end", text="Risk Assessment", open=True)
-            if "Risk Assessment" in enabled or getattr(self, "hara_docs", []):
-                _ensure_risk_root()
-                assessment_root = tree.insert(risk_root, "end", text="Risk Assessments", open=True)
-                for idx, doc in enumerate(self.hara_docs):
-                    if not _visible("Risk Assessment", doc.name):
-                        continue
-                    tree.insert(assessment_root, "end", text=doc.name, tags=("hara", str(idx)))
-            if "Product Goal Specification" in enabled:
-                _ensure_risk_root()
-                tree.insert(risk_root, "end", text="Product Goals", tags=("sg", "0"))
-
-            # --- Safety Analysis Section ---
-            safety_root = None
-            def _ensure_safety_root():
-                nonlocal safety_root
-                if safety_root is None:
-                    safety_root = tree.insert("", "end", text="Safety Analysis", open=True)
-
-            paa_events = [
-                te for te in getattr(self, "top_events", [])
-                if getattr(te, "analysis_mode", "FTA") == "PAA"
-            ] + list(getattr(self, "paa_events", []))
-            fta_events = [
-                te for te in getattr(self, "top_events", [])
-                if getattr(te, "analysis_mode", "FTA") != "PAA"
-            ]
-
-            if "Prototype Assurance Analysis" in enabled or paa_events:
-                _ensure_safety_root()
-                paa_root = tree.insert(safety_root, "end", text="PAAs", open=True)
-                seen_ids = set()
-                for idx, te in enumerate(paa_events):
-                    if te.unique_id in seen_ids:
-                        continue
-                    seen_ids.add(te.unique_id)
-                    if not _visible("Prototype Assurance Analysis", te.name):
-                        continue
-                    tree.insert(paa_root, "end", text=te.name, tags=("paa", str(te.unique_id)))
-
-            if "FTA" in enabled or fta_events:
-                _ensure_safety_root()
-                fta_root = tree.insert(safety_root, "end", text="FTAs", open=True)
-                for idx, te in enumerate(fta_events):
-                    if not _visible("FTA", te.name):
-                        continue
-                    tree.insert(fta_root, "end", text=te.name, tags=("fta", str(te.unique_id)))
-            if "CTA" in enabled or getattr(self, "cta_events", []):
-                _ensure_safety_root()
-                cta_root = tree.insert(safety_root, "end", text="CTAs", open=True)
-                for idx, te in enumerate(getattr(self, "cta_events", [])):
-                    if not _visible("CTA", te.name):
-                        continue
-                    tree.insert(cta_root, "end", text=te.name, tags=("cta", str(te.unique_id)))
-            if "FMEA" in enabled or getattr(self, "fmeas", []):
-                _ensure_safety_root()
-                fmea_root = tree.insert(safety_root, "end", text="FMEAs", open=True)
-                for idx, fmea in enumerate(self.fmeas):
-                    name = fmea['name']
-                    if not _visible("FMEA", name):
-                        continue
-                    tree.insert(fmea_root, "end", text=name, tags=("fmea", str(idx)))
-            if "FMEDA" in enabled or getattr(self, "fmedas", []):
-                _ensure_safety_root()
-                fmeda_root = tree.insert(safety_root, "end", text="FMEDAs", open=True)
-                for idx, doc in enumerate(self.fmedas):
-                    name = doc['name']
-                    if not _visible("FMEDA", name):
-                        continue
-                    tree.insert(fmeda_root, "end", text=name, tags=("fmeda", str(idx)))
-
-        if hasattr(self, "page_diagram") and self.page_diagram is not None:
-            if self.page_diagram.canvas.winfo_exists():
-                self.page_diagram.redraw_canvas()
-            else:
-                self.page_diagram = None
-        elif hasattr(self, "canvas") and self.canvas is not None and self.canvas.winfo_exists():
-            if self.selected_node is not None:
-                self.redraw_canvas()
-            else:
-                self.canvas.delete("all")
+        """Refresh project views via the dedicated :class:`ViewUpdater`."""
+        self.view_updater.update_views()
 
     def update_basic_event_probabilities(self):
         return self.safety_analysis.update_basic_event_probabilities()
@@ -2326,13 +1946,7 @@ class AutoMLApp(
 
     def propagate_failure_mode_attributes(self, fm_node):
         """Update basic events referencing ``fm_node`` and recompute probability."""
-        for be in self.get_all_basic_events():
-            if getattr(be, "failure_mode_ref", None) == fm_node.unique_id:
-                be.fmeda_fit = fm_node.fmeda_fit
-                be.fmeda_diag_cov = fm_node.fmeda_diag_cov
-                # Always propagate the formula so edits take effect
-                be.prob_formula = fm_node.prob_formula
-                be.failure_prob = self.compute_failure_prob(be)
+        return self.fmeda_manager.propagate_failure_mode_attributes(fm_node)
 
 
     def refresh_model(self):
@@ -2363,80 +1977,8 @@ class AutoMLApp(
         return self.structure_tree_operations.is_descendant(node, possible_ancestor)
 
     def add_node_of_type(self, event_type):
-        self.push_undo_state()
-        diag_mode = getattr(self, "diagram_mode", "FTA")
-        if diag_mode == "PAA":
-            allowed = {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"}
-            if event_type.upper() not in allowed:
-                messagebox.showwarning(
-                    "Invalid",
-                    "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis.",
-                )
-                return
-        else:
-            if diag_mode == "CTA":
-                allowed = {"TRIGGERING CONDITION", "FUNCTIONAL INSUFFICIENCY"}
-            else:
-                allowed = {"GATE", "BASIC EVENT"}
-            if event_type.upper() not in allowed:
-                messagebox.showwarning(
-                    "Invalid",
-                    f"Node type '{event_type}' is not allowed in {diag_mode} diagrams.",
-                )
-                return
-        # If a node is selected, ensure it is a primary instance.
-        if self.selected_node:
-            if not self.selected_node.is_primary_instance:
-                messagebox.showwarning("Invalid Operation",
-                    "Cannot add new elements to a clone node.\nPlease select the original node instead.")
-                return
-            parent_node = self.selected_node
-        else:
-            sel = self.analysis_tree.selection()
-            if sel:
-                try:
-                    node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
-                except (IndexError, ValueError):
-                    messagebox.showwarning("No selection", "Select a parent node from the tree.")
-                    return
-                parent_node = self.find_node_by_id_all(node_id)
-            else:
-                messagebox.showwarning("No selection", "Select a parent node to paste into.")
-                return
-
-        # Prevent adding to base events.
-        if parent_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"]:
-            messagebox.showwarning("Invalid", "Base events cannot have children.")
-            return
-
-        # Now create the new node.
-        if event_type.upper() == "CONFIDENCE LEVEL":
-            new_node = FaultTreeNode("", "Confidence Level", parent=parent_node)
-            new_node.quant_value = 1
-        elif event_type.upper() == "ROBUSTNESS SCORE":
-            new_node = FaultTreeNode("", "Robustness Score", parent=parent_node)
-            new_node.quant_value = 1
-        elif event_type.upper() == "GATE":
-            new_node = FaultTreeNode("", "GATE", parent=parent_node)
-            new_node.gate_type = "AND"
-        elif event_type.upper() == "BASIC EVENT":
-            new_node = FaultTreeNode("", "Basic Event", parent=parent_node)
-            new_node.failure_prob = 0.0
-        elif event_type.upper() == "TRIGGERING CONDITION":
-            new_node = FaultTreeNode("", "Triggering Condition", parent=parent_node)
-        elif event_type.upper() == "FUNCTIONAL INSUFFICIENCY":
-            new_node = FaultTreeNode("", "Functional Insufficiency", parent=parent_node)
-            new_node.gate_type = "AND"
-        else:
-            new_node = FaultTreeNode("", event_type, parent=parent_node)
-        new_node.x = parent_node.x + 100
-        new_node.y = parent_node.y + 100
-        parent_node.children.append(new_node)
-        new_node.parents.append(parent_node)
-        self.update_views()
-        # Capture the post-addition state so future moves can be undone back
-        # to this initial location.
-        self.push_undo_state()
+        """Delegate creation of a node of ``event_type`` to model helper."""
+        return _add_node_of_type(self, event_type)
 
     def add_basic_event_from_fmea(self):
         self.push_undo_state()
@@ -2471,100 +2013,7 @@ class AutoMLApp(
         if parent_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"]:
             messagebox.showwarning("Invalid", "Base events cannot have children.")
             return
-        data = selected.to_dict()
-        data.pop("unique_id", None)
-        data["children"] = []
-        new_node = FaultTreeNode.from_dict(data, parent_node)
-        if hasattr(selected, "unique_id"):
-            new_node.failure_mode_ref = selected.unique_id
-        parent_node.children.append(new_node)
-        new_node.parents.append(parent_node)
-        self.update_views()
-
-    def add_basic_event_from_fmea(self):
-        self.push_undo_state()
-        events = list(self.fmea_entries)
-        for doc in self.fmeas:
-            events.extend(doc.get("entries", []))
-        for doc in self.fmedas:
-            events.extend(doc.get("entries", []))
-        if not events:
-            messagebox.showinfo("No Failure Modes", "No FMEA or FMEDA failure modes available.")
-            return
-        dialog = SelectBaseEventDialog(self.root, events)
-        selected = dialog.selected
-        if not selected:
-            return
-        if self.selected_node:
-            parent_node = self.selected_node
-            if not parent_node.is_primary_instance:
-                messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
-                return
-        else:
-            sel = self.analysis_tree.selection()
-            if not sel:
-                messagebox.showwarning("No selection", "Select a parent node to paste into.")
-                return
-            try:
-                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
-            except (IndexError, ValueError):
-                messagebox.showwarning("No selection", "Select a parent node from the tree.")
-                return
-            parent_node = self.find_node_by_id_all(node_id)
-        if parent_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"]:
-            messagebox.showwarning("Invalid", "Base events cannot have children.")
-            return
-        data = selected.to_dict()
-        data.pop("unique_id", None)
-        data["children"] = []
-        new_node = FaultTreeNode.from_dict(data, parent_node)
-        if hasattr(selected, "unique_id"):
-            new_node.failure_mode_ref = selected.unique_id
-        parent_node.children.append(new_node)
-        new_node.parents.append(parent_node)
-        self.update_views()
-
-    def add_basic_event_from_fmea(self):
-        self.push_undo_state()
-        events = list(self.fmea_entries)
-        for doc in self.fmeas:
-            events.extend(doc.get("entries", []))
-        for doc in self.fmedas:
-            events.extend(doc.get("entries", []))
-        if not events:
-            messagebox.showinfo("No Failure Modes", "No FMEA or FMEDA failure modes available.")
-            return
-        dialog = SelectBaseEventDialog(self.root, events)
-        selected = dialog.selected
-        if not selected:
-            return
-        if self.selected_node:
-            parent_node = self.selected_node
-            if not parent_node.is_primary_instance:
-                messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
-                return
-        else:
-            sel = self.analysis_tree.selection()
-            if not sel:
-                messagebox.showwarning("No selection", "Select a parent node to paste into.")
-                return
-            try:
-                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
-            except (IndexError, ValueError):
-                messagebox.showwarning("No selection", "Select a parent node from the tree.")
-                return
-            parent_node = self.find_node_by_id_all(node_id)
-        if parent_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"]:
-            messagebox.showwarning("Invalid", "Base events cannot have children.")
-            return
-        data = selected.to_dict()
-        data.pop("unique_id", None)
-        data["children"] = []
-        new_node = FaultTreeNode.from_dict(data, parent_node)
-        if hasattr(selected, "unique_id"):
-            new_node.failure_mode_ref = selected.unique_id
-        parent_node.children.append(new_node)
-        new_node.parents.append(parent_node)
+        FaultTreeNode.add_basic_event_from_fmea(parent_node, selected)
         self.update_views()
 
 

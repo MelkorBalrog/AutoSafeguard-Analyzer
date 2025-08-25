@@ -25,6 +25,7 @@ from analysis.utils import (
 )
 from analysis.risk_assessment import boolify
 from analysis.user_config import CURRENT_USER_NAME
+from gui.controls import messagebox
 
 
 class FaultTreeNode:
@@ -295,6 +296,35 @@ class FaultTreeNode:
             node._original_id = None
         return node
 
+    @classmethod
+    def add_basic_event_from_fmea(cls, parent_node, selected):
+        """Create and attach a basic event node from an FMEA/FMEDA entry.
+
+        Parameters
+        ----------
+        parent_node:
+            The :class:`FaultTreeNode` under which the new event will be
+            attached.
+        selected:
+            An object exposing a ``to_dict`` method and optional
+            ``unique_id`` attribute representing the failure mode.
+
+        Returns
+        -------
+        FaultTreeNode
+            The newly created node.
+        """
+
+        data = selected.to_dict()
+        data.pop("unique_id", None)
+        data["children"] = []
+        new_node = cls.from_dict(data, parent_node)
+        if hasattr(selected, "unique_id"):
+            new_node.failure_mode_ref = selected.unique_id
+        parent_node.children.append(new_node)
+        new_node.parents.append(parent_node)
+        return new_node
+
     # ------------------------------------------------------------------
     def clone(self, parent=None):
         """Return a copy of this node referencing the same original."""
@@ -342,3 +372,78 @@ def refresh_tree(app, tree):
             ],
         )
 
+def add_node_of_type(app, event_type):
+    """Create and attach a node of ``event_type`` to the current selection."""
+    app.push_undo_state()
+    diag_mode = getattr(app, "diagram_mode", "FTA")
+    event_upper = event_type.upper()
+    if diag_mode == "PAA":
+        allowed = {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"}
+        if event_upper not in allowed:
+            messagebox.showwarning(
+                "Invalid",
+                "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis.",
+            )
+            return
+    else:
+        allowed = {
+            "TRIGGERING CONDITION",
+            "FUNCTIONAL INSUFFICIENCY",
+        } if diag_mode == "CTA" else {"GATE", "BASIC EVENT"}
+        if event_upper not in allowed:
+            messagebox.showwarning(
+                "Invalid",
+                f"Node type '{event_type}' is not allowed in {diag_mode} diagrams.",
+            )
+            return
+    if app.selected_node:
+        if not app.selected_node.is_primary_instance:
+            messagebox.showwarning(
+                "Invalid Operation",
+                "Cannot add new elements to a clone node.\nPlease select the original node instead.",
+            )
+            return
+        parent_node = app.selected_node
+    else:
+        sel = app.analysis_tree.selection()
+        if sel:
+            try:
+                node_id = int(app.analysis_tree.item(sel[0], "tags")[0])
+            except (IndexError, ValueError):
+                messagebox.showwarning(
+                    "No selection", "Select a parent node from the tree."
+                )
+                return
+            parent_node = app.find_node_by_id_all(node_id)
+        else:
+            messagebox.showwarning(
+                "No selection", "Select a parent node to paste into."
+            )
+            return
+    if parent_node.node_type.upper() in {
+        "CONFIDENCE LEVEL",
+        "ROBUSTNESS SCORE",
+        "BASIC EVENT",
+    }:
+        messagebox.showwarning(
+            "Invalid", "Base events cannot have children."
+        )
+        return
+    templates = {
+        "CONFIDENCE LEVEL": ("Confidence Level", {"quant_value": 1}),
+        "ROBUSTNESS SCORE": ("Robustness Score", {"quant_value": 1}),
+        "GATE": ("GATE", {"gate_type": "AND"}),
+        "BASIC EVENT": ("Basic Event", {"failure_prob": 0.0}),
+        "TRIGGERING CONDITION": ("Triggering Condition", {}),
+        "FUNCTIONAL INSUFFICIENCY": ("Functional Insufficiency", {"gate_type": "AND"}),
+    }
+    node_type, attrs = templates.get(event_upper, (event_type, {}))
+    new_node = FaultTreeNode("", node_type, parent=parent_node)
+    for attr, val in attrs.items():
+        setattr(new_node, attr, val)
+    new_node.x = parent_node.x + 100
+    new_node.y = parent_node.y + 100
+    parent_node.children.append(new_node)
+    new_node.parents.append(parent_node)
+    app.update_views()
+    app.push_undo_state()
