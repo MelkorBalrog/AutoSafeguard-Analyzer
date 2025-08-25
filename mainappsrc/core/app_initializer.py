@@ -42,6 +42,7 @@ from mainappsrc.core.structure_tree_operations import Structure_Tree_Operations
 from mainappsrc.core.probability_reliability import Probability_Reliability
 from gui.utils.drawing_helper import fta_drawing_helper
 from .project_properties_manager import ProjectPropertiesManager
+from .diagram_clipboard_manager import DiagramClipboardManager
 
 if TYPE_CHECKING:  # pragma: no cover - for type checkers only
     from .automl_core import AutoMLApp
@@ -75,8 +76,7 @@ class AppInitializer:
         app._loaded_model_paths = []
 
         app.clipboard_node = None
-        app.diagram_clipboard = None
-        app.diagram_clipboard_type = None
+        app.diagram_clipboard = DiagramClipboardManager(app)
         app.active_arch_window = None
         app.cut_mode = False
         app.page_history = []
