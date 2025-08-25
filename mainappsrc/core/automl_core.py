@@ -295,6 +295,7 @@ except Exception:  # pragma: no cover
 from mainappsrc.core.event_dispatcher import EventDispatcher
 from mainappsrc.core.page_diagram import PageDiagram
 from mainappsrc.core.window_controllers import WindowControllers
+from mainappsrc.core.top_event_workflows import Top_Event_Workflows
 from mainappsrc.managers.review_manager import ReviewManager
 from mainappsrc.core.diagram_renderer import DiagramRenderer
 from analysis.user_config import (
@@ -595,6 +596,12 @@ class AutoMLApp:
         if not hasattr(self, "_window_controllers"):
             self._window_controllers = WindowControllers(self)
         return self._window_controllers
+
+    @property
+    def top_event_workflows(self) -> Top_Event_Workflows:
+        if not hasattr(self, "_top_event_workflows"):
+            self._top_event_workflows = Top_Event_Workflows(self)
+        return self._top_event_workflows
 
     def __getattr__(self, name):  # pragma: no cover - simple delegation
         """Delegate missing attributes to the lifecycle UI helper.
@@ -1635,13 +1642,13 @@ class AutoMLApp:
         return self.fta_app.get_combined_safety_requirements(self, node)
 
     def get_top_event(self, node):
-        return self.fta_app.get_top_event(self, node)
+        return self.top_event_workflows.get_top_event(node)
 
     def aggregate_safety_requirements(self, node, all_nodes):
         return self.fta_app.aggregate_safety_requirements(self, node, all_nodes)
 
     def generate_top_event_summary(self, top_event):
-        return self.fta_app.generate_top_event_summary(self, top_event)
+        return self.top_event_workflows.generate_top_event_summary(top_event)
 
     def get_all_nodes(self, node=None):
         return self.fta_app.get_all_nodes(self, node)
@@ -4676,22 +4683,7 @@ class AutoMLApp:
     # Helpers for malfunctions and failure modes
     # ------------------------------------------------------------------
     def create_top_event_for_malfunction(self, name: str) -> None:
-        """Create a new top level event linked to the given malfunction."""
-        self.push_undo_state()
-        new_event = FaultTreeNode("", "TOP EVENT")
-        new_event.x, new_event.y = 300, 200
-        new_event.is_top_event = True
-        new_event.malfunction = name
-        self.top_events.append(new_event)
-        self.root_node = new_event
-        if hasattr(self, "safety_mgmt_toolbox"):
-            analysis = (
-                "Prototype Assurance Analysis"
-                if getattr(self, "diagram_mode", "") == "PAA"
-                else "FTA"
-            )
-            self.safety_mgmt_toolbox.register_created_work_product(analysis, new_event.name)
-        self.update_views()
+        return self.top_event_workflows.create_top_event_for_malfunction(name)
 
     def delete_top_events_for_malfunction(self, name: str) -> None:
         """Remove all FTAs tied to the malfunction ``name``."""
@@ -4717,48 +4709,7 @@ class AutoMLApp:
         self.update_views()
 
     def add_gate_from_failure_mode(self):
-        self.push_undo_state()
-        modes = self.get_available_failure_modes_for_gates()
-        if not modes:
-            messagebox.showinfo("No Failure Modes", "No failure modes available.")
-            return
-        dialog = self.SelectFailureModeDialog(self.root, self, modes)
-        selected = dialog.selected
-        if not selected:
-            return
-        if self.selected_node:
-            parent_node = self.selected_node
-            if not parent_node.is_primary_instance:
-                messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
-                return
-        else:
-            sel = self.analysis_tree.selection()
-            if not sel:
-                messagebox.showwarning("No selection", "Select a parent node to paste into.")
-                return
-            try:
-                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
-            except (IndexError, ValueError):
-                messagebox.showwarning("No selection", "Select a parent node from the tree.")
-                return
-            parent_node = self.find_node_by_id_all(node_id)
-        if parent_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"]:
-            messagebox.showwarning("Invalid", "Base events cannot have children.")
-            return
-        new_node = FaultTreeNode("", "GATE", parent=parent_node)
-        new_node.gate_type = "AND"
-        if hasattr(selected, "unique_id"):
-            new_node.failure_mode_ref = selected.unique_id
-            new_node.description = getattr(selected, "description", "")
-            new_node.user_name = getattr(selected, "user_name", "")
-        else:
-            new_node.description = self.get_entry_field(selected, "description", "")
-            new_node.user_name = self.get_entry_field(selected, "user_name", "")
-        new_node.x = parent_node.x + 100
-        new_node.y = parent_node.y + 100
-        parent_node.children.append(new_node)
-        new_node.parents.append(parent_node)
-        self.update_views()
+        return self.top_event_workflows.add_gate_from_failure_mode()
 
     def add_fault_event(self):
         self.push_undo_state()
