@@ -18,6 +18,17 @@ class RequirementsManagerSubApp:
         self.app = app
 
     # ------------------------------------------------------------------
+    def export_state(self) -> Dict[str, Any]:
+        """Serialize requirement editor state for project export.
+
+        The requirements manager currently stores no mutable state beyond what
+        is held in the main application model. The export therefore returns an
+        empty mapping, acting as a placeholder for future requirement editor
+        data.
+        """
+        return {}
+
+    # ------------------------------------------------------------------
     def get_requirement_allocation_names(self, req_id: str) -> list[str]:
         """Return names of model elements linked to ``req_id``."""
         names: list[str] = []
