@@ -12586,7 +12586,13 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             except Exception:
                 pass
             return
-        super().on_left_press(event)
+        orig_tool = self.current_tool
+        if orig_tool == "Task":
+            self.current_tool = "Action"
+        try:
+            super().on_left_press(event)
+        finally:
+            self.current_tool = orig_tool
 
     def add_lifecycle_phase(self):  # pragma: no cover - requires tkinter
         toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
