@@ -238,8 +238,9 @@ if parent not in sys.path:
 from typing import Any, Optional
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui.dialog_utils import askstring_fixed
-from gui import messagebox, logger, add_treeview_scrollbars
-from gui.button_utils import enable_listbox_hover_highlight
+from gui.controls import messagebox
+from gui import logger, add_treeview_scrollbars
+from gui.controls.button_utils import enable_listbox_hover_highlight
 from gui.tooltip import ToolTip
 from gui.style_manager import StyleManager
 from gui.review_toolbox import ReviewData, ReviewParticipant, ReviewComment
@@ -262,7 +263,7 @@ except ImportError:  # pragma: no cover
 from mainappsrc.models.gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
-from gui.mac_button_style import (
+from gui.controls.mac_button_style import (
     apply_translucid_button_style,
     apply_purplish_button_style,
 )

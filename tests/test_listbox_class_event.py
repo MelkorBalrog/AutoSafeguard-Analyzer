@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from gui.button_utils import enable_listbox_hover_highlight, _blend_with
+from gui.controls.button_utils import enable_listbox_hover_highlight, _blend_with
 
 
 class DummyListbox:

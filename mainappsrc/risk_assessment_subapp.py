@@ -5,7 +5,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, simpledialog
 
-from gui import messagebox
+from gui.controls import messagebox
 from gui.toolboxes import (
     HazopWindow,
     RiskAssessmentWindow,

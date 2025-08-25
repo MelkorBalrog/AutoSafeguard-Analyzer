@@ -7,8 +7,8 @@ import tkinter.font as tkFont
 from typing import Any
 
 from config import load_report_template, validate_report_template
-from gui import messagebox
-from gui.mac_button_style import apply_translucid_button_style
+from gui.controls import messagebox
+from gui.controls.mac_button_style import apply_translucid_button_style
 
 
 def layout_report_template(

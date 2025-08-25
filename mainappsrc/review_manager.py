@@ -10,7 +10,7 @@ import socket
 from io import BytesIO, StringIO
 import tkinter as tk
 from tkinter import simpledialog, filedialog
-from gui import messagebox
+from gui.controls import messagebox
 from gui.review_toolbox import (
     ReviewToolbox,
     ReviewData,

@@ -3,7 +3,8 @@ import tkinter as tk
 import tkinter.font as tkFont
 import textwrap
 from tkinter import ttk, simpledialog
-from gui import messagebox, format_name_with_phase, add_treeview_scrollbars, TranslucidButton
+from gui.controls import messagebox
+from gui import format_name_with_phase, add_treeview_scrollbars, TranslucidButton
 try:  # Guard against environments where the tooltip module is unavailable
     from gui.tooltip import ToolTip
 except Exception:  # pragma: no cover - fallback for minimal installs
@@ -23,7 +24,7 @@ from gui.drawing_helper import fta_drawing_helper
 from config import load_diagram_rules, load_json_with_comments
 import json
 from gui.icon_factory import create_icon
-from gui.button_utils import set_uniform_button_width
+from gui.controls.button_utils import set_uniform_button_width
 
 from mainappsrc.models.sysml.sysml_spec import SYSML_PROPERTIES
 from analysis.models import (

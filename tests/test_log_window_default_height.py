@@ -6,7 +6,8 @@ import pytest
 
 # Ensure repository root in path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from gui import logger, messagebox  # noqa: E402
+from gui import logger  # noqa: E402
+from gui.controls import messagebox  # noqa: E402
 from AutoML import AutoMLApp  # noqa: E402
 
 

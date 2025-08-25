@@ -4,7 +4,7 @@ from tkinter import simpledialog
 from mainappsrc.models.gsn import GSNNode, GSNDiagram, GSNModule
 from analysis.safety_case import SafetyCaseLibrary
 import gui.safety_case_explorer as safety_case_explorer
-from gui import messagebox
+from gui.controls import messagebox
 from gui.safety_case_table import SafetyCaseTable
 
 class DummyTree:
