@@ -23,6 +23,7 @@ import inspect
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from gui.toolboxes import TC2FIWindow, RiskAssessmentWindow
 from AutoML import AutoMLApp
+from mainappsrc.managers.requirements_manager import RequirementsManagerSubApp
 try:
     from gui.faults_gui import FaultsWindow
 except Exception:  # pragma: no cover - optional dependency
@@ -45,13 +46,13 @@ class DoubleClickBindingTests(unittest.TestCase):
         self.assertIn('bind("<Double-1>"', src)
 
     def test_product_goals_editor_double_click_binding(self):
-        src = inspect.getsource(AutoMLApp.show_product_goals_editor)
+        src = inspect.getsource(RequirementsManagerSubApp.show_product_goals_editor)
         self.assertIn('bind("<Double-1>"', src)
 
 
 class ProductGoalsMatrixTests(unittest.TestCase):
     def test_matrix_has_all_columns_and_scrollbars(self):
-        src = inspect.getsource(AutoMLApp.show_safety_goals_matrix)
+        src = inspect.getsource(RequirementsManagerSubApp.show_safety_goals_matrix)
         for col in [
             'FTTI',
             'Acc Rate',
