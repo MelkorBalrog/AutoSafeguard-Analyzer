@@ -48,19 +48,27 @@ class SplashLauncher:
         else:
             self._module = importlib.import_module(self.module_name)
         # Once loading is complete, close the splash screen on the main thread
-        self._root.after(self.post_delay, self._root.destroy)
+        self._root.after(self.post_delay, self._splash.close)
 
     def launch(self) -> None:
         """Display the splash screen and run the application's main function."""
-        self._root = tk.Tk()
+        try:
+            self._root = tk.Tk()
+        except tk.TclError:
+            # Headless environment; load module directly without splash
+            module = self.loader() if self.loader else importlib.import_module(self.module_name)
+            if module and hasattr(module, "main"):
+                module.main()
+            return
         self._root.withdraw()
-        SplashScreen(
+        self._splash = SplashScreen(
             self._root,
             version=VERSION,
             author=AUTHOR,
             email=AUTHOR_EMAIL,
             linkedin=AUTHOR_LINKEDIN,
             duration=0,
+            on_close=self._root.destroy,
         )
         threading.Thread(target=self._load_module, daemon=True).start()
         self._root.mainloop()

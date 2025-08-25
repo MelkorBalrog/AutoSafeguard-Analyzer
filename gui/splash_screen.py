@@ -13,10 +13,12 @@ class SplashScreen(tk.Toplevel):
         email: str = "email@example.com",
         linkedin: str = "https://www.linkedin.com/in/yourprofile",
         duration: int = 3000,
+        on_close=None,
     ):
         super().__init__(master)
         self.duration = duration
         self.overrideredirect(True)
+        self._on_close = on_close
 
         # Track whether transparency is supported
         try:
@@ -90,6 +92,13 @@ class SplashScreen(tk.Toplevel):
         # Start animation and fade-in effect
         self.after(10, self._animate)
         self.after(10, self._fade_in)
+
+    def close(self):
+        """Begin fade-out sequence and invoke on_close callback when done."""
+        if getattr(self, "_alpha_supported", False):
+            self._fade_out()
+        else:
+            self._close()
 
     def _fade_in(self):
         if not getattr(self, "_alpha_supported", False):
@@ -399,4 +408,6 @@ class SplashScreen(tk.Toplevel):
             self.shadow.destroy()
         except Exception:
             pass
-        self.destroy()
+        super().destroy()
+        if self._on_close:
+            self._on_close()
