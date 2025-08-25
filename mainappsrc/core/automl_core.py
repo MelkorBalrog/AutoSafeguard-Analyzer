@@ -246,13 +246,13 @@ except Exception:  # pragma: no cover
     from mainappsrc.core.probability_reliability import Probability_Reliability
     from mainappsrc.version import VERSION
 try:  # pragma: no cover
-    from .models.fta.fault_tree_node import FaultTreeNode
+    from .models.fta.fault_tree_node import FaultTreeNode, add_node_of_type as _add_node_of_type
 except Exception:  # pragma: no cover
     import os, sys
     base = os.path.dirname(__file__)
     sys.path.append(base)
     sys.path.append(os.path.dirname(base))
-    from models.fta.fault_tree_node import FaultTreeNode
+    from models.fta.fault_tree_node import FaultTreeNode, add_node_of_type as _add_node_of_type
 
 from .structure_tree_operations import Structure_Tree_Operations
 
@@ -2363,80 +2363,8 @@ class AutoMLApp(
         return self.structure_tree_operations.is_descendant(node, possible_ancestor)
 
     def add_node_of_type(self, event_type):
-        self.push_undo_state()
-        diag_mode = getattr(self, "diagram_mode", "FTA")
-        if diag_mode == "PAA":
-            allowed = {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"}
-            if event_type.upper() not in allowed:
-                messagebox.showwarning(
-                    "Invalid",
-                    "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis.",
-                )
-                return
-        else:
-            if diag_mode == "CTA":
-                allowed = {"TRIGGERING CONDITION", "FUNCTIONAL INSUFFICIENCY"}
-            else:
-                allowed = {"GATE", "BASIC EVENT"}
-            if event_type.upper() not in allowed:
-                messagebox.showwarning(
-                    "Invalid",
-                    f"Node type '{event_type}' is not allowed in {diag_mode} diagrams.",
-                )
-                return
-        # If a node is selected, ensure it is a primary instance.
-        if self.selected_node:
-            if not self.selected_node.is_primary_instance:
-                messagebox.showwarning("Invalid Operation",
-                    "Cannot add new elements to a clone node.\nPlease select the original node instead.")
-                return
-            parent_node = self.selected_node
-        else:
-            sel = self.analysis_tree.selection()
-            if sel:
-                try:
-                    node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
-                except (IndexError, ValueError):
-                    messagebox.showwarning("No selection", "Select a parent node from the tree.")
-                    return
-                parent_node = self.find_node_by_id_all(node_id)
-            else:
-                messagebox.showwarning("No selection", "Select a parent node to paste into.")
-                return
-
-        # Prevent adding to base events.
-        if parent_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"]:
-            messagebox.showwarning("Invalid", "Base events cannot have children.")
-            return
-
-        # Now create the new node.
-        if event_type.upper() == "CONFIDENCE LEVEL":
-            new_node = FaultTreeNode("", "Confidence Level", parent=parent_node)
-            new_node.quant_value = 1
-        elif event_type.upper() == "ROBUSTNESS SCORE":
-            new_node = FaultTreeNode("", "Robustness Score", parent=parent_node)
-            new_node.quant_value = 1
-        elif event_type.upper() == "GATE":
-            new_node = FaultTreeNode("", "GATE", parent=parent_node)
-            new_node.gate_type = "AND"
-        elif event_type.upper() == "BASIC EVENT":
-            new_node = FaultTreeNode("", "Basic Event", parent=parent_node)
-            new_node.failure_prob = 0.0
-        elif event_type.upper() == "TRIGGERING CONDITION":
-            new_node = FaultTreeNode("", "Triggering Condition", parent=parent_node)
-        elif event_type.upper() == "FUNCTIONAL INSUFFICIENCY":
-            new_node = FaultTreeNode("", "Functional Insufficiency", parent=parent_node)
-            new_node.gate_type = "AND"
-        else:
-            new_node = FaultTreeNode("", event_type, parent=parent_node)
-        new_node.x = parent_node.x + 100
-        new_node.y = parent_node.y + 100
-        parent_node.children.append(new_node)
-        new_node.parents.append(parent_node)
-        self.update_views()
-        # Capture the post-addition state so future moves can be undone back
-        # to this initial location.
-        self.push_undo_state()
+        """Delegate creation of a node of ``event_type`` to model helper."""
+        return _add_node_of_type(self, event_type)
 
     def add_basic_event_from_fmea(self):
         self.push_undo_state()
