@@ -1814,40 +1814,12 @@ class AutoMLApp(
 
     def on_lifecycle_selected(self, _event=None) -> None:
         phase = self.lifecycle_var.get()
-        if hasattr(self, "active_phase_lbl"):
-            self.active_phase_lbl.config(
-                text=f"Active phase: {phase or 'None'}"
-            )
-        if not phase:
-            self.governance_manager.set_active_module(None)
-        else:
-            self.governance_manager.set_active_module(phase)
-        self.update_views()
-        if hasattr(self, "refresh_tool_enablement"):
-            try:
-                self.refresh_tool_enablement()
-            except Exception:
-                pass
-        for name in (
-            "_hazop_window",
-            "_risk_window",
-            "_stpa_window",
-            "_threat_window",
-            "_fi2tc_window",
-            "_tc2fi_window",
-        ):
-            win = getattr(self, name, None)
-            if win and getattr(win, "refresh_docs", None) and win.winfo_exists():
-                win.refresh_docs()
-
-        def _refresh_children(widget):
-            if hasattr(widget, "refresh_from_repository"):
-                widget.refresh_from_repository()
-            for ch in getattr(widget, "winfo_children", lambda: [])():
-                _refresh_children(ch)
-
-        for tab in getattr(self, "diagram_tabs", {}).values():
-            _refresh_children(tab)
+        gm = getattr(self, "governance_manager", None)
+        if gm is None:
+            gm = GovernanceManager(self)
+            self.governance_manager = gm
+            gm.attach_toolbox(getattr(self, "safety_mgmt_toolbox", None))
+        gm.on_lifecycle_selected(phase)
 
 
     def enable_process_area(self, area: str) -> None:  # pragma: no cover - delegation
