@@ -1476,6 +1476,111 @@ class AutoMLApp:
         self.block_windows = []
         self.ibd_windows = []
 
+    # ------------------------------------------------------------------
+    # UI lifecycle helper wrappers
+    # ------------------------------------------------------------------
+    def show_properties(self, *args, **kwargs):
+        return self.lifecycle_ui.show_properties(*args, **kwargs)
+
+    def _add_tool_category(self, *args, **kwargs):
+        return self.lifecycle_ui._add_tool_category(*args, **kwargs)
+
+    def _add_lifecycle_requirements_menu(self, *args, **kwargs):
+        return self.lifecycle_ui._add_lifecycle_requirements_menu(*args, **kwargs)
+
+    def _init_nav_button_style(self, *args, **kwargs):
+        return self.lifecycle_ui._init_nav_button_style(*args, **kwargs)
+
+    def _limit_explorer_size(self, *args, **kwargs):
+        return self.lifecycle_ui._limit_explorer_size(*args, **kwargs)
+
+    def _animate_explorer_show(self, *args, **kwargs):
+        return self.lifecycle_ui._animate_explorer_show(*args, **kwargs)
+
+    def _animate_explorer_hide(self, *args, **kwargs):
+        return self.lifecycle_ui._animate_explorer_hide(*args, **kwargs)
+
+    def _schedule_explorer_hide(self, *args, **kwargs):
+        return self.lifecycle_ui._schedule_explorer_hide(*args, **kwargs)
+
+    def _cancel_explorer_hide(self, *args, **kwargs):
+        return self.lifecycle_ui._cancel_explorer_hide(*args, **kwargs)
+
+    def show_explorer(self, *args, **kwargs):
+        return self.lifecycle_ui.show_explorer(*args, **kwargs)
+
+    def hide_explorer(self, *args, **kwargs):
+        return self.lifecycle_ui.hide_explorer(*args, **kwargs)
+
+    def toggle_explorer_pin(self, *args, **kwargs):
+        return self.lifecycle_ui.toggle_explorer_pin(*args, **kwargs)
+
+    def toggle_logs(self, *args, **kwargs):
+        return self.lifecycle_ui.toggle_logs(*args, **kwargs)
+
+    def open_metrics_tab(self, *args, **kwargs):
+        return self.lifecycle_ui.open_metrics_tab(*args, **kwargs)
+
+    def open_management_window(self, *args, **kwargs):
+        return self.lifecycle_ui.open_management_window(*args, **kwargs)
+
+    def _register_close(self, *args, **kwargs):
+        return self.lifecycle_ui._register_close(*args, **kwargs)
+
+    def _reregister_document(self, *args, **kwargs):
+        return self.lifecycle_ui._reregister_document(*args, **kwargs)
+
+    def touch_doc(self, *args, **kwargs):
+        return self.lifecycle_ui.touch_doc(*args, **kwargs)
+
+    def show_about(self, *args, **kwargs):
+        return self.lifecycle_ui.show_about(*args, **kwargs)
+
+    def _window_has_focus(self, *args, **kwargs):
+        return self.lifecycle_ui._window_has_focus(*args, **kwargs)
+
+    def _window_in_selected_tab(self, *args, **kwargs):
+        return self.lifecycle_ui._window_in_selected_tab(*args, **kwargs)
+
+    def _on_tab_change(self, *args, **kwargs):
+        return self.lifecycle_ui._on_tab_change(*args, **kwargs)
+
+    def _on_tab_close(self, *args, **kwargs):
+        return self.lifecycle_ui._on_tab_close(*args, **kwargs)
+
+    def _on_doc_tab_motion(self, *args, **kwargs):
+        return self.lifecycle_ui._on_doc_tab_motion(*args, **kwargs)
+
+    def _on_tool_tab_motion(self, *args, **kwargs):
+        return self.lifecycle_ui._on_tool_tab_motion(*args, **kwargs)
+
+    def _make_doc_tab_visible(self, *args, **kwargs):
+        return self.lifecycle_ui._make_doc_tab_visible(*args, **kwargs)
+
+    def _update_doc_tab_visibility(self, *args, **kwargs):
+        return self.lifecycle_ui._update_doc_tab_visibility(*args, **kwargs)
+
+    def _update_tool_tab_visibility(self, *args, **kwargs):
+        return self.lifecycle_ui._update_tool_tab_visibility(*args, **kwargs)
+
+    def _truncate_tab_title(self, *args, **kwargs):
+        return self.lifecycle_ui._truncate_tab_title(*args, **kwargs)
+
+    def _select_next_tab(self, *args, **kwargs):
+        return self.lifecycle_ui._select_next_tab(*args, **kwargs)
+
+    def _select_prev_tab(self, *args, **kwargs):
+        return self.lifecycle_ui._select_prev_tab(*args, **kwargs)
+
+    def _select_next_tool_tab(self, *args, **kwargs):
+        return self.lifecycle_ui._select_next_tool_tab(*args, **kwargs)
+
+    def _select_prev_tool_tab(self, *args, **kwargs):
+        return self.lifecycle_ui._select_prev_tool_tab(*args, **kwargs)
+
+    def _new_tab(self, *args, **kwargs):
+        return self.lifecycle_ui._new_tab(*args, **kwargs)
+
     @property
     def fmeas(self):
         service = getattr(self, "fmea_service", None) or self.safety_analysis
