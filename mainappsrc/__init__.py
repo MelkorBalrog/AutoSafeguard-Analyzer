@@ -50,6 +50,15 @@ from .managers.fmeda_manager import FMEDAManager
 from .core.diagram_renderer import DiagramRenderer
 import importlib as _importlib
 
-AutoML = _importlib.import_module("AutoML")
+# Avoid importing the main AutoML launcher during package initialisation
+# to prevent circular dependencies when :mod:`AutoML` itself imports
+# modules from ``mainappsrc``.  If the launcher is already being imported,
+# use the existing module reference instead of importing again.
+AutoML = sys.modules.get("AutoML")
+if AutoML is None:  # pragma: no cover - import only when needed externally
+    try:
+        AutoML = _importlib.import_module("AutoML")
+    except Exception:  # pragma: no cover - safety net for optional dependency
+        AutoML = None
 
 __all__ = ["AutoMLApp", "PageDiagram", "FMEDAManager", "DiagramRenderer", "AutoML"]
