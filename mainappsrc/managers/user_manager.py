@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from tkinter import simpledialog
-from gui.review_toolbox import UserSelectDialog as ReviewUserSelectDialog
+from gui.toolboxes.review_toolbox import UserSelectDialog as ReviewUserSelectDialog
 
 
 class UserManager:
