@@ -913,6 +913,35 @@ class FTADrawingHelper:
 # Create a single FTADrawingHelper object that can be used by other classes
 fta_drawing_helper = FTADrawingHelper()
 
+
+def draw_90_connection(
+    canvas,
+    parent_pt,
+    child_pt,
+    outline_color=None,
+    line_width: int = 1,
+    fixed_length: int = 40,
+    parent_shape=None,
+    child_shape=None,
+):
+    """Backward-compatible wrapper around :meth:`FTADrawingHelper.draw_90_connection`.
+
+    Older modules expect a stand-alone ``draw_90_connection`` function. Providing
+    this thin wrapper keeps that API intact while delegating to the shared
+    :data:`fta_drawing_helper` instance.
+    """
+
+    return fta_drawing_helper.draw_90_connection(
+        canvas,
+        parent_pt,
+        child_pt,
+        outline_color=outline_color,
+        line_width=line_width,
+        fixed_length=fixed_length,
+        parent_shape=parent_shape,
+        child_shape=child_shape,
+    )
+
 class GSNDrawingHelper(FTADrawingHelper):
     """Drawing helper providing shapes for GSN argumentation diagrams."""
 
