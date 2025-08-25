@@ -1147,10 +1147,16 @@ class AutoMLApp(
         return self.lifecycle_ui.show_about(*args, **kwargs)
 
     def _window_has_focus(self, *args, **kwargs):
-        return self.lifecycle_ui._window_has_focus(*args, **kwargs)
+        ui = getattr(self, "lifecycle_ui", None)
+        if ui:
+            return ui._window_has_focus(*args, **kwargs)
+        return True
 
     def _window_in_selected_tab(self, *args, **kwargs):
-        return self.lifecycle_ui._window_in_selected_tab(*args, **kwargs)
+        ui = getattr(self, "lifecycle_ui", None)
+        if ui:
+            return ui._window_in_selected_tab(*args, **kwargs)
+        return True
 
     def _on_tab_change(self, *args, **kwargs):
         return self.lifecycle_ui._on_tab_change(*args, **kwargs)
