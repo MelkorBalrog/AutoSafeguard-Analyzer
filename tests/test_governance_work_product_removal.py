@@ -1,4 +1,4 @@
-from gui import messagebox
+from gui.controls import messagebox
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from analysis import SafetyManagementToolbox
 from analysis.safety_management import GovernanceModule

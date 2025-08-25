@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from gui import messagebox
+from gui.controls import messagebox
 from gui.architecture import GovernanceDiagramWindow
 from analysis import SafetyManagementToolbox
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository

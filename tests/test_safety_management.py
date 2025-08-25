@@ -1666,7 +1666,7 @@ def test_explorer_prevents_diagrams_outside_folders(monkeypatch):
     explorer.diagram_icon = None
 
     monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Diag")
-    from gui import messagebox as gui_messagebox
+    from gui.controls import messagebox as gui_messagebox
     called = {"count": 0}
 
     def fake_error(*args, **kwargs):

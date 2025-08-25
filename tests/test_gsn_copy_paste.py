@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from AutoML import AutoMLApp, FaultTreeNode
 from mainappsrc.models.gsn import GSNNode, GSNDiagram
-from gui import messagebox
+from gui.controls import messagebox
 
 
 class DummyTree:

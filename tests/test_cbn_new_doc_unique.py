@@ -1,7 +1,7 @@
 import types
 
 from tkinter import simpledialog
-from gui import messagebox
+from gui.controls import messagebox
 from gui.causal_bayesian_network_window import CausalBayesianNetworkWindow
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 

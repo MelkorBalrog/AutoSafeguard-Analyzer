@@ -1,6 +1,6 @@
 import sys, pathlib
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from gui import messagebox as mb
+from gui.controls import messagebox as mb
 
 
 def test_askyesno_uses_custom_dialog(monkeypatch):

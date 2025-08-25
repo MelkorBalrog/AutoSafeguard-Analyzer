@@ -17,10 +17,10 @@ from typing import Optional
 from mainappsrc.models.gsn import GSNNode, GSNDiagram
 from .gsn_config_window import GSNElementConfig
 from .gsn_connection_config import GSNConnectionConfig
-from . import messagebox
+from .controls import messagebox
 from .style_manager import StyleManager
 from .icon_factory import create_icon
-from .button_utils import set_uniform_button_width
+from .controls.button_utils import set_uniform_button_width
 from . import TranslucidButton
 
 GSN_WINDOWS: set[weakref.ReferenceType] = set()

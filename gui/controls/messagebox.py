@@ -11,8 +11,7 @@ from tkinter import TclError
 import tkinter as tk
 from tkinter import ttk
 
-from . import logger, DIALOG_BG_COLOR
-from . import PurpleButton
+from .. import logger, DIALOG_BG_COLOR, PurpleButton
 
 
 def _log_and_return(title: str | None, message: str | None, level: str) -> str:

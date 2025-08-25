@@ -18,8 +18,8 @@
 
 import tkinter as tk
 from tkinter import simpledialog, ttk
-from gui import messagebox
-from gui.mac_button_style import apply_translucid_button_style
+from gui.controls import messagebox
+from gui.controls.mac_button_style import apply_translucid_button_style
 from gui.style_manager import StyleManager
 from gui.dialog_utils import askstring_fixed
 from dataclasses import dataclass, field

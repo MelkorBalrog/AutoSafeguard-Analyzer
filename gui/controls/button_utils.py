@@ -5,7 +5,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from .controls.capsule_button import _lighten
+from .capsule_button import _lighten
 
 
 def set_uniform_button_width(widget: tk.Misc) -> None:

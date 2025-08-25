@@ -7,7 +7,7 @@ from tkinter import simpledialog
 
 from analysis.constants import CHECK_MARK
 from analysis.safety_case import SafetyCase
-from gui import messagebox
+from gui.controls import messagebox
 from gui.toolboxes import _wrap_val
 from gui.table_controller import TableController
 from config.automl_constants import PMHF_TARGETS

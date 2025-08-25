@@ -2,7 +2,8 @@
 import tkinter as tk
 from tkinter import ttk, simpledialog
 
-from gui import messagebox, TranslucidButton
+from gui.controls import messagebox
+from gui import TranslucidButton
 from gui.toolboxes import (
     configure_table_style,
     _RequirementDialog,

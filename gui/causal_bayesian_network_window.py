@@ -9,12 +9,13 @@ import weakref
 
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from .name_utils import collect_work_product_names, unique_name_v4
-from gui import messagebox, TranslucidButton
+from gui.controls import messagebox
+from gui import TranslucidButton
 from gui.tooltip import ToolTip
 from gui.drawing_helper import FTADrawingHelper
 from gui.style_manager import StyleManager
 from gui.icon_factory import create_icon as draw_icon
-from gui.button_utils import set_uniform_button_width
+from gui.controls.button_utils import set_uniform_button_width
 
 
 CBN_WINDOWS: set[weakref.ReferenceType] = set()

@@ -4,7 +4,8 @@ import unittest
 from unittest.mock import patch
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from gui import search_toolbox, messagebox  # noqa: E402
+from gui import search_toolbox  # noqa: E402
+from gui.controls import messagebox  # noqa: E402
 
 
 class DummyVar:
