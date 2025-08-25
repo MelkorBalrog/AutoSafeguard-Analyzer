@@ -272,6 +272,9 @@ from .ui_setup import UISetupMixin
 from .event_handlers import EventHandlersMixin
 from .persistence_wrappers import PersistenceWrappersMixin
 from .analysis_utils import AnalysisUtilsMixin
+from .style_setup_mixin import StyleSetupMixin
+from .service_init_mixin import ServiceInitMixin
+from .icon_setup_mixin import IconSetupMixin
 from .editors import (
     ItemDefinitionEditorMixin,
     SafetyConceptEditorMixin,
@@ -447,39 +450,11 @@ from analysis.utils import (
 from analysis.safety_management import SafetyManagementToolbox, ACTIVE_TOOLBOX
 from analysis.causal_bayesian_network import CausalBayesianNetwork, CausalBayesianNetworkDoc
 try:  # pragma: no cover - support direct module import
-    from .style_subapp import StyleSubApp
-    from .tree_subapp import TreeSubApp
-    from .diagram_export_subapp import DiagramExportSubApp
-    from .requirements_manager import RequirementsManagerSubApp
-    from .use_case_diagram_subapp import UseCaseDiagramSubApp
-    from .activity_diagram_subapp import ActivityDiagramSubApp
-    from .block_diagram_subapp import BlockDiagramSubApp
-    from .internal_block_diagram_subapp import InternalBlockDiagramSubApp
-    from .control_flow_diagram_subapp import ControlFlowDiagramSubApp
-    from .safety_analysis import SafetyAnalysis_FTA_FMEA
-    from .project_editor_subapp import ProjectEditorSubApp
-    from .risk_assessment_subapp import RiskAssessmentSubApp
-    from .reliability_subapp import ReliabilitySubApp
     from .probability_reliability import Probability_Reliability
-    from .syncing_and_ids import Syncing_And_IDs
     from .version import VERSION
 except Exception:  # pragma: no cover
-        from mainappsrc.subapps.style_subapp import StyleSubApp
-        from mainappsrc.subapps.tree_subapp import TreeSubApp
-        from mainappsrc.subapps.diagram_export_subapp import DiagramExportSubApp
-        from mainappsrc.managers.requirements_manager import RequirementsManagerSubApp
-        from mainappsrc.subapps.use_case_diagram_subapp import UseCaseDiagramSubApp
-        from mainappsrc.subapps.activity_diagram_subapp import ActivityDiagramSubApp
-        from mainappsrc.subapps.block_diagram_subapp import BlockDiagramSubApp
-        from mainappsrc.subapps.internal_block_diagram_subapp import InternalBlockDiagramSubApp
-        from mainappsrc.subapps.control_flow_diagram_subapp import ControlFlowDiagramSubApp
-        from mainappsrc.core.safety_analysis import SafetyAnalysis_FTA_FMEA
-        from mainappsrc.subapps.project_editor_subapp import ProjectEditorSubApp
-        from mainappsrc.subapps.risk_assessment_subapp import RiskAssessmentSubApp
-        from mainappsrc.subapps.reliability_subapp import ReliabilitySubApp
-        from mainappsrc.core.probability_reliability import Probability_Reliability
-        from mainappsrc.core.syncing_and_ids import Syncing_And_IDs
-        from mainappsrc.version import VERSION
+    from mainappsrc.core.probability_reliability import Probability_Reliability
+    from mainappsrc.version import VERSION
 try:  # pragma: no cover
     from .models.fta.fault_tree_node import FaultTreeNode
 except Exception:  # pragma: no cover
@@ -659,72 +634,9 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         self.zoom = 1.0
         self.rc_dragged = False
         self.diagram_font = tkFont.Font(family="Arial", size=int(8 * self.zoom))
-        self.style = ttk.Style()
-        self.style_app = StyleSubApp(root, self.style)
-        self.style_app.apply()
-        self._btn_imgs = self.style_app.btn_images
-        self.lifecycle_ui._init_nav_button_style()
-        self.tree_app = TreeSubApp()
-        self.project_editor_app = ProjectEditorSubApp()
-        self.risk_app = RiskAssessmentSubApp()
-        self.reliability_app = ReliabilitySubApp()
-        self.open_windows_features = Open_Windows_Features(self)
-        # Unified FTA/FMEA/FMEMA helper
-        self.safety_analysis = SafetyAnalysis_FTA_FMEA(self)
-        # Backwards compatible aliases
-        self.fta_app = self.safety_analysis
-        self.fmea_service = self.safety_analysis
-        self.fmeda_manager = self.safety_analysis
-        # Risk assessment helpers also provide FMEDA metric calculations,
-        # expose through ``fmeda`` pointing at the combined safety helper.
-        self.fmeda = self.safety_analysis
-        self.helper = AutoML_Helper
-        self.syncing_and_ids = Syncing_And_IDs(self)
-        # Dedicated renderer for all diagram-related operations.
-        self.diagram_renderer = DiagramRenderer(self)
-        # Delegate navigation and selection input handling
-        self.nav_input = Navigation_Selection_Input(self)
-        for _name in (
-            "go_back",
-            "back_all_pages",
-            "focus_on_node",
-            "on_canvas_click",
-            "on_canvas_double_click",
-            "on_canvas_drag",
-            "on_canvas_release",
-            "on_analysis_tree_double_click",
-            "on_analysis_tree_right_click",
-            "on_analysis_tree_select",
-            "on_ctrl_mousewheel",
-            "on_ctrl_mousewheel_page",
-            "on_right_mouse_press",
-            "on_right_mouse_drag",
-            "on_right_mouse_release",
-            "on_tool_list_double_click",
-            "on_treeview_click",
-            "show_context_menu",
-            "open_search_toolbox",
-        ):
-            setattr(self, _name, getattr(self.nav_input, _name))
-        # style-aware icons used across tree views
-        style_mgr = StyleManager.get_instance()
-
-        def _color(name: str, fallback: str = "black") -> str:
-            c = style_mgr.get_color(name)
-            return fallback if c == "#FFFFFF" else c
-
-        self.pkg_icon = self._create_icon("folder", _color("Lifecycle Phase", "#b8860b"))
-        self.gsn_module_icon = self.pkg_icon
-        self.gsn_diagram_icon = self._create_icon("rect", "#4682b4")
-        # small icons for diagram types shown in explorers
-        self.diagram_icons = {
-            "Use Case Diagram": self._create_icon("usecase_diag", _color("Use Case Diagram", "blue")),
-            "Activity Diagram": self._create_icon("activity_diag", _color("Activity Diagram", "green")),
-            "Governance Diagram": self._create_icon("activity_diag", _color("Governance Diagram", "green")),
-            "Block Diagram": self._create_icon("block_diag", _color("Block Diagram", "orange")),
-            "Internal Block Diagram": self._create_icon("ibd_diag", _color("Internal Block Diagram", "purple")),
-            "Control Flow Diagram": self._create_icon("activity_diag", _color("Control Flow Diagram", "red")),
-        }
+        self.setup_style(root)
+        self.setup_services()
+        self.setup_icons()
         self.clipboard_node = None
         self.diagram_clipboard = None
         self.diagram_clipboard_type = None

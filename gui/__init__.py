@@ -7,11 +7,17 @@ import sys
 import tkinter as tk
 from tkinter import ttk, simpledialog
 from .utils import DIALOG_BG_COLOR, logger, drawing_helper
+from pathlib import Path
+
+# Allow importing modules from subpackages via ``gui.<module>``
+for _sub in ("windows", "toolboxes", "explorers", "utils", "styles", "dialogs"):
+    __path__.append(str(Path(__file__).resolve().parent / _sub))
 
 # Re-export selected utilities for backward-compatible import paths such as
 # ``from gui import logger`` or ``from gui import drawing_helper``.
 sys.modules[f"{__name__}.logger"] = logger
 sys.modules[f"{__name__}.drawing_helper"] = drawing_helper
+# Historic modules expected at package level
 
 
 _orig_dialog_init = simpledialog.Dialog.__init__
@@ -206,4 +212,6 @@ def _sortable_heading(self, column, option=None, **kw):
 
 
 ttk.Treeview.heading = _sortable_heading
+
+
 
