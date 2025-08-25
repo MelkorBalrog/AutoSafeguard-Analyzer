@@ -254,7 +254,6 @@ from gui.explorers.safety_case_explorer import SafetyCaseExplorer
 from gui.windows.gsn_diagram_window import GSN_WINDOWS
 from gui.windows.causal_bayesian_network_window import CBN_WINDOWS
 from gui.windows.gsn_config_window import GSNElementConfig
-from gui.toolboxes.search_toolbox import SearchToolbox
 from mainappsrc.models.gsn import GSNDiagram, GSNModule
 from mainappsrc.managers.gsn_manager import GSNManager
 from mainappsrc.models.gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
@@ -295,7 +294,7 @@ except Exception:  # pragma: no cover
 from mainappsrc.core.event_dispatcher import EventDispatcher
 from mainappsrc.core.page_diagram import PageDiagram
 from mainappsrc.core.window_controllers import WindowControllers
-from mainappsrc.core.top_event_workflows import Top_Event_Workflows
+from mainappsrc.core.navigation_selection_input import Navigation_Selection_Input
 from mainappsrc.managers.review_manager import ReviewManager
 from mainappsrc.core.diagram_renderer import DiagramRenderer
 from .validation_consistency import Validation_Consistency
@@ -667,8 +666,30 @@ class AutoMLApp:
         self.helper = AutoML_Helper
         # Dedicated renderer for all diagram-related operations.
         self.diagram_renderer = DiagramRenderer(self)
-        # Validation and consistency helpers
-        self.validation_consistency = Validation_Consistency(self)
+        # Delegate navigation and selection input handling
+        self.nav_input = Navigation_Selection_Input(self)
+        for _name in (
+            "go_back",
+            "back_all_pages",
+            "focus_on_node",
+            "on_canvas_click",
+            "on_canvas_double_click",
+            "on_canvas_drag",
+            "on_canvas_release",
+            "on_analysis_tree_double_click",
+            "on_analysis_tree_right_click",
+            "on_analysis_tree_select",
+            "on_ctrl_mousewheel",
+            "on_ctrl_mousewheel_page",
+            "on_right_mouse_press",
+            "on_right_mouse_drag",
+            "on_right_mouse_release",
+            "on_tool_list_double_click",
+            "on_treeview_click",
+            "show_context_menu",
+            "open_search_toolbox",
+        ):
+            setattr(self, _name, getattr(self.nav_input, _name))
         # style-aware icons used across tree views
         style_mgr = StyleManager.get_instance()
 
@@ -1625,7 +1646,7 @@ class AutoMLApp:
         return self.fta_app.generate_recommendations_for_top_event(self, node)
 
     def back_all_pages(self):
-        return self.fta_app.back_all_pages(self)
+        return self.nav_input.back_all_pages()
 
     def move_top_event_up(self):
         return self.fta_app.move_top_event_up(self)
@@ -2409,47 +2430,23 @@ class AutoMLApp:
         self.diagram_export_app.save_diagram_png()
 
     def on_treeview_click(self, event):
-        self.tree_app.on_treeview_click(self, event)
+        return self.nav_input.on_treeview_click(event)
 
     def on_analysis_tree_double_click(self, event):
-        self.tree_app.on_analysis_tree_double_click(self, event)
+        return self.nav_input.on_analysis_tree_double_click(event)
 
     def on_analysis_tree_right_click(self, event):
-        self.tree_app.on_analysis_tree_right_click(self, event)
+        return self.nav_input.on_analysis_tree_right_click(event)
 
     def on_analysis_tree_select(self, _event):
-        """Update property view when a tree item is selected."""
-        self.tree_app.on_analysis_tree_select(self, _event)
+        return self.nav_input.on_analysis_tree_select(_event)
 
 
     def rename_selected_tree_item(self):
         self.tree_app.rename_selected_tree_item(self)
 
     def on_tool_list_double_click(self, event):
-        lb = event.widget
-        sel = lb.curselection()
-        if not sel:
-            # Tk may trigger a double-click event before updating the
-            # selection, so determine the item from the pointer location.
-            index = lb.nearest(getattr(event, "y", 0))
-            if index is None or index < 0:
-                return
-            lb.selection_clear(0, tk.END)
-            lb.selection_set(index)
-            sel = (index,)
-        name = lb.get(sel[0])
-        analysis_names = self.tool_to_work_product.get(name, set())
-        if isinstance(analysis_names, str):
-            analysis_names = {analysis_names}
-        if analysis_names:
-            enabled = set(getattr(self, "enabled_work_products", set()))
-            if self.safety_mgmt_toolbox:
-                enabled.update(self.safety_mgmt_toolbox.enabled_products())
-            if not any(n in enabled for n in analysis_names):
-                return
-        action = self.tool_actions.get(name)
-        if action:
-            action()
+        return self.nav_input.on_tool_list_double_click(event)
 
     def _on_toolbox_change(self) -> None:
         self.governance_manager._on_toolbox_change()
@@ -2584,10 +2581,7 @@ class AutoMLApp:
 
 
     def on_ctrl_mousewheel(self, event):
-        if event.delta > 0:
-            self.zoom_in()
-        else:
-            self.zoom_out()
+        return self.nav_input.on_ctrl_mousewheel(event)
 
     def new_model(self):
         self.project_manager.new_model()
@@ -2631,126 +2625,28 @@ class AutoMLApp:
         return "#FAD7A0"
 
     def on_right_mouse_press(self, event):
-        self.rc_dragged = False
-        self.canvas.scan_mark(event.x, event.y)
+        return self.nav_input.on_right_mouse_press(event)
 
     def on_right_mouse_drag(self, event):
-        self.rc_dragged = True
-        self.canvas.scan_dragto(event.x, event.y, gain=1)
+        return self.nav_input.on_right_mouse_drag(event)
 
     def on_right_mouse_release(self, event):
-        # Use getattr to avoid attribute errors if the press event was not
-        # processed (e.g. when the canvas loses focus).  Also reset the flag so
-        # a stale ``True`` value from a previous drag does not suppress future
-        # context menus.
-        if not getattr(self, "rc_dragged", False):
-            self.show_context_menu(event)
-        self.rc_dragged = False
+        return self.nav_input.on_right_mouse_release(event)
 
     def show_context_menu(self, event):
-        x = self.canvas.canvasx(event.x) / self.zoom
-        y = self.canvas.canvasy(event.y) / self.zoom
-        clicked_node = None
-        for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
-            if (x - n.x)**2 + (y - n.y)**2 < radius**2:
-                clicked_node = n
-                break
-        if not clicked_node:
-            return
-        self.selected_node = clicked_node
-        menu = tk.Menu(self.root, tearoff=0)
-        menu.add_command(label="Edit", command=lambda: self.edit_selected())
-        menu.add_command(label="Remove Connection", command=lambda: self.remove_connection(clicked_node))
-        menu.add_command(label="Delete Node", command=lambda: self.delete_node_and_subtree(clicked_node))
-        menu.add_command(label="Remove Node", command=lambda: self.remove_node())
-        menu.add_command(label="Copy", command=lambda: self.copy_node())
-        menu.add_command(label="Cut", command=lambda: self.cut_node())
-        menu.add_command(label="Paste", command=lambda: self.paste_node())
-        menu.add_separator()
-        menu.add_command(label="Edit User Name", command=lambda: self.user_manager.edit_user_name())
-        menu.add_command(label="Edit Description", command=lambda: self.edit_description())
-        menu.add_command(label="Edit Rationale", command=lambda: self.edit_rationale())
-        menu.add_command(label="Edit Value", command=lambda: self.edit_value())
-        menu.add_command(label="Edit Gate Type", command=lambda: self.edit_gate_type())
-        menu.add_command(label="Edit Severity", command=lambda: self.edit_severity())
-        menu.add_command(label="Edit Controllability", command=lambda: self.edit_controllability())
-        menu.add_command(label="Edit Page Flag", command=lambda: self.edit_page_flag())
-        menu.add_separator()
-        diag_mode = getattr(self.canvas, "diagram_mode", "FTA")
-        if diag_mode == "PAA":
-            menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"))
-            menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"))
-        elif diag_mode == "CTA":
-            menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
-            menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
-        else:
-            menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"))
-            menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"))
-            menu.add_command(label="Add Gate from Failure Mode", command=self.add_gate_from_failure_mode)
-            menu.add_command(label="Add Fault Event", command=self.add_fault_event)
-        menu.tk_popup(event.x_root, event.y_root)
+        return self.nav_input.show_context_menu(event)
 
     def on_canvas_click(self, event):
-        x = self.canvas.canvasx(event.x) / self.zoom
-        y = self.canvas.canvasy(event.y) / self.zoom
-        clicked_node = None
-        for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
-            if (x - n.x)**2 + (y - n.y)**2 < radius**2:
-                clicked_node = n
-                break
-        self.selected_node = clicked_node
-        if clicked_node:
-            self.push_undo_state()
-            self.dragging_node = clicked_node
-            self.drag_offset_x = x - clicked_node.x
-            self.drag_offset_y = y - clicked_node.y
-        else:
-            self.dragging_node = None
-        self.redraw_canvas()
+        return self.nav_input.on_canvas_click(event)
 
     def on_canvas_double_click(self, event):
-        x = self.canvas.canvasx(event.x) / self.zoom
-        y = self.canvas.canvasy(event.y) / self.zoom
-        clicked_node = None
-        for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
-            if (x - n.x)**2 + (y - n.y)**2 < radius**2:
-                clicked_node = n
-                break
-        if clicked_node:
-            if not clicked_node.is_primary_instance:
-                self.window_controllers.open_page_diagram(getattr(clicked_node, "original", clicked_node))
-            else:
-                if clicked_node.is_page:
-                    self.window_controllers.open_page_diagram(clicked_node)
-                else:
-                    EditNodeDialog(self.root, clicked_node, self)
-            self.update_views()
+        return self.nav_input.on_canvas_double_click(event)
 
     def on_canvas_drag(self, event):
-        if self.dragging_node:
-            x = self.canvas.canvasx(event.x) / self.zoom
-            y = self.canvas.canvasy(event.y) / self.zoom
-            new_x = x - self.drag_offset_x
-            new_y = y - self.drag_offset_y
-            dx = new_x - self.dragging_node.x
-            dy = new_y - self.dragging_node.y
-            self.dragging_node.x = new_x
-            self.dragging_node.y = new_y
-            if self.dragging_node.is_primary_instance:
-                self.move_subtree(self.dragging_node, dx, dy)
-            self.redraw_canvas()
+        return self.nav_input.on_canvas_drag(event)
 
     def on_canvas_release(self, event):
-        if self.dragging_node:
-            self.dragging_node.x = round(self.dragging_node.x/self.grid_size)*self.grid_size
-            self.dragging_node.y = round(self.dragging_node.y/self.grid_size)*self.grid_size
-            self.push_undo_state()
-        self.dragging_node = None
-        self.drag_offset_x = 0
-        self.drag_offset_y = 0
+        return self.nav_input.on_canvas_release(event)
 
     def _move_subtree_strategy1(self, node, dx, dy):
         for child in getattr(node, "children", []):
@@ -9835,13 +9731,7 @@ class AutoMLApp:
             pd.redraw_canvas()
 
     def open_search_toolbox(self):
-        """Open the search toolbox in a new working-area tab."""
-        if getattr(self, "search_tab", None) and self.search_tab.winfo_exists():
-            self.doc_nb.select(self.search_tab)
-            return
-        self.search_tab = SearchToolbox(self.doc_nb, self)
-        self.doc_nb.add(self.search_tab, text="Search")
-        self.doc_nb.select(self.search_tab)
+        return self.nav_input.open_search_toolbox()
 
     def open_style_editor(self):
         """Open the diagram style editor window."""
@@ -11827,13 +11717,7 @@ class AutoMLApp:
         return node
 
     def go_back(self):
-        if self.page_history:
-            # Pop one page off the history and open it without pushing the current page again.
-            previous_page = self.page_history.pop()
-            self.window_controllers.open_page_diagram(previous_page, push_history=False)
-        #else:
-            # If history is empty, remain on the current (root) page.
-            #messagebox.showinfo("Back", "You are already at the root page.")
+        return self.nav_input.go_back()
 
     def draw_page_subtree(self, page_root):
         self.page_canvas.delete("all")
@@ -11986,10 +11870,7 @@ class AutoMLApp:
                 )
 
     def on_ctrl_mousewheel_page(self, event):
-        if event.delta > 0:
-            self.page_diagram.zoom_in()
-        else:
-            self.page_diagram.zoom_out()
+        return self.nav_input.on_ctrl_mousewheel_page(event)
 
     def close_page_diagram(self):
         if self.page_history:
@@ -12173,16 +12054,7 @@ class AutoMLApp:
         return self.user_manager.get_current_user_role()
 
     def focus_on_node(self, node):
-        self.selected_node = node
-        try:
-            if hasattr(self, "canvas") and self.canvas is not None and self.canvas.winfo_exists():
-                self.redraw_canvas()
-                bbox = self.canvas.bbox("all")
-                if bbox:
-                    self.canvas.xview_moveto(max(0, (node.x * self.zoom - self.canvas.winfo_width()/2) / bbox[2]))
-                    self.canvas.yview_moveto(max(0, (node.y * self.zoom - self.canvas.winfo_height()/2) / bbox[3]))
-        except tk.TclError:
-            pass
+        return self.nav_input.focus_on_node(node)
 
     def get_review_targets(self):
         return self.review_manager.get_review_targets()
