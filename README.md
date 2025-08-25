@@ -1,4 +1,4 @@
-version: 0.2.32
+version: 0.2.33
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1642,6 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.33 - Instantiate structure tree operations helper during application start-up.
 - 0.2.32 - Provide SysML repository export placeholder to prevent export error.
 - 0.2.31 - Provide requirements editor export placeholder to prevent export error.
 - 0.2.30 - Instantiate reporting export helper during application start-up.
