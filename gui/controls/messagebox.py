@@ -11,25 +11,7 @@ from tkinter import TclError
 import tkinter as tk
 from tkinter import ttk
 
-from .. import logger, DIALOG_BG_COLOR
-
-
-def _button_class():
-    """Return the button widget class used in dialogs.
-
-    ``PurpleButton`` lives in :mod:`gui.__init__` which imports this module
-    lazily.  Importing it here at module load time would therefore create a
-    circular dependency.  Fetch it only when needed and fall back to the
-    standard ``ttk.Button`` if the import fails (e.g. during early start-up or
-    in headless test environments).
-    """
-
-    try:  # pragma: no cover - exercised indirectly in GUI sessions
-        from .. import PurpleButton  # type: ignore
-
-        return PurpleButton  # pragma: no cover
-    except Exception:  # pragma: no cover - defensive
-        return ttk.Button
+from .. import logger, DIALOG_BG_COLOR, PurpleButton
 
 
 def _log_and_return(title: str | None, message: str | None, level: str) -> str:
@@ -106,9 +88,8 @@ def _create_dialog(
         result = value
         dialog.destroy()
 
-    Button = _button_class()
     for text, value in buttons:
-        Button(frame, text=text, command=lambda v=value: _set(v)).pack(
+        PurpleButton(frame, text=text, command=lambda v=value: _set(v)).pack(
             side="left", padx=5
         )
 
