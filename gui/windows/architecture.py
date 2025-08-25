@@ -11984,7 +11984,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Control Nodes": ["Initial", "Final", "Decision", "Merge"],
             "Boundary": ["System Boundary"],
         }
-        tools = [t for group in tool_groups.values() for t in group]
+        tools = ["Select"] + [t for group in tool_groups.values() for t in group]
         # Include flow connections in the left-hand governance relationships
         # toolbox so users can create them alongside other governance tools.
         rel_tools: list[str] = ["Flow"]
@@ -12012,13 +12012,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             self.tools_frame = self.toolbox
 
         tool_buttons = getattr(self, "tool_buttons", None)
-        if tool_buttons and "Select" in tool_buttons:
-            btn = tool_buttons.pop("Select")
-            try:
-                btn.destroy()
-            except Exception:  # pragma: no cover - headless tests
-                pass
-
         btn = tool_buttons.get("Action") if tool_buttons else None
         if btn:
             btn.configure(text="Task")
@@ -12073,6 +12066,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         self._activate_parent_phase()
         self.refresh_from_repository()
+        self.select_tool("Select")
         self._pending_wp_name: str | None = None
         self._pending_wp_step: str = ""
         self._pending_wp_lock: bool = True
