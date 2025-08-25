@@ -55,3 +55,47 @@ def test_add_gate_and_basic_event():
     app.add_node_of_type("Basic Event")
     assert len(root.children) == 2
     assert root.children[1].node_type.upper() == "BASIC EVENT"
+
+
+def test_add_gate_when_app_mode_paa():
+    root = FaultTreeNode("Root", "TOP EVENT")
+    app = _make_app(root)
+    app.diagram_mode = "PAA"
+
+    app.add_node_of_type("Gate")
+
+    assert len(root.children) == 1
+    assert root.children[0].node_type.upper() == "GATE"
+
+
+def test_add_triggering_condition_when_app_mode_paa():
+    root = FaultTreeNode("Root", "TOP EVENT")
+    app = _make_app(root)
+    app.diagram_mode = "PAA"
+
+    app.add_node_of_type("Triggering Condition")
+
+    assert len(root.children) == 1
+    assert root.children[0].node_type.upper() == "TRIGGERING CONDITION"
+
+
+def test_invalid_selection_returns_none(monkeypatch):
+    """Gracefully warn and abort when the tree selection is malformed."""
+
+    root = FaultTreeNode("Root", "TOP EVENT")
+    app = _make_app(root)
+    app.selected_node = None
+    app.analysis_tree = types.SimpleNamespace(
+        selection=lambda: ("bad",),
+        item=lambda *a, **k: {},
+    )
+
+    warnings = []
+    monkeypatch.setattr(
+        AutoML.messagebox, "showwarning", lambda *a, **k: warnings.append(a)
+    )
+
+    app.add_node_of_type("Gate")
+
+    assert warnings
+    assert len(root.children) == 0

@@ -521,27 +521,40 @@ def _resolve_parent_node(app, parent_node):
             return None
         try:
             node_id = int(app.analysis_tree.item(sel[0], "tags")[0])
-        except (IndexError, ValueError):
+        except Exception:  # noqa: BLE001 - broad to guard against malformed selections
             messagebox.showwarning("No selection", "Select a parent node from the tree.")
             return None
         parent_node = app.find_node_by_id_all(node_id)
     return parent_node
 
+ALLOWED_NODE_TYPES = {
+    "FTA": {"GATE", "BASIC EVENT"},
+    "CTA": {"TRIGGERING CONDITION", "FUNCTIONAL INSUFFICIENCY"},
+    "PAA": {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"},
+}
+
+
+def _infer_diagram_mode(app, event_upper: str) -> str:
+    """Infer diagram mode, allowing FTA/CTA nodes when active mode is PAA."""
+
+    canvas_mode = getattr(getattr(app, "canvas", None), "diagram_mode", None)
+    mode = (canvas_mode or getattr(app, "diagram_mode", "FTA")).upper()
+    if mode != "PAA":  # enforce gating when not in PAA mode
+        return mode
+    for candidate, types in ALLOWED_NODE_TYPES.items():
+        if candidate != "PAA" and event_upper in types:
+            return candidate
+    return mode
+
+
 def add_node_of_type(app, event_type):
     """Attach a new ``FaultTreeNode`` of ``event_type`` under the current selection."""
 
     app.push_undo_state()
-    canvas_mode = getattr(getattr(app, "canvas", None), "diagram_mode", None)
-    diag_mode = (canvas_mode or getattr(app, "diagram_mode", "FTA")).upper()
     event_upper = event_type.upper()
+    diag_mode = _infer_diagram_mode(app, event_upper)
 
-    allowed = {
-        "FTA": {"GATE", "BASIC EVENT"},
-        "CTA": {"TRIGGERING CONDITION", "FUNCTIONAL INSUFFICIENCY"},
-        "PAA": {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"},
-    }
-
-    if event_upper not in allowed.get(diag_mode, set()):
+    if event_upper not in ALLOWED_NODE_TYPES.get(diag_mode, set()):
         msg = (
             "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis."
             if diag_mode == "PAA"
