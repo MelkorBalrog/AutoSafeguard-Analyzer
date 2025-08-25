@@ -1642,6 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.36 - Correct AutoML_Helper import for drawing manager.
 - 0.2.35 - Wrap update routines within safety analysis facade.
 - 0.2.34 - Centralise safety analysis helpers into facade and delegate from core.
 - 0.2.33 - Extract dialog classes into dedicated modules and update mixins.
