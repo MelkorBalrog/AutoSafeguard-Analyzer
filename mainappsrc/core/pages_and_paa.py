@@ -43,10 +43,6 @@ class Pages_and_PAA:
     # ------------------------------------------------------------------
     # Page diagram helpers
     # ------------------------------------------------------------------
-    def open_page_diagram(self, node, push_history: bool = True):
-        """Open a page diagram for *node* via window controllers."""
-        self.window_controllers.open_page_diagram(node, push_history)
-
     def draw_page_subtree(self, page_root):
         self.page_canvas.delete("all")
         self.draw_page_grid()

@@ -342,11 +342,24 @@ def load_json_with_comments(path: str | Path) -> Any:
             continue
     if text is None:
         # When running from a bundled executable the configuration files may be
-        # packaged as importlib resources.  Attempt to load the file from the
+        # packaged as importlib resources. Attempt to load the file from the
         # corresponding package if it is not found on disk.
-        pkg = p.parent.name
-        with resources.as_file(resources.files(pkg) / p.name) as res:
-            text = _strip_comments(res.read_text())
+
+        # Determine the package containing the resource.  The configuration
+        # files reside within a ``config`` package somewhere in the path.  By
+        # locating this segment we can construct the fully-qualified package
+        # name without relying on the current working directory.
+        try:
+            idx = p.parts.index("config")
+            pkg = ".".join(p.parts[idx:-1])
+        except ValueError:
+            pkg = p.parent.name
+
+        try:
+            with resources.as_file(resources.files(pkg) / p.name) as res:
+                text = _strip_comments(res.read_text())
+        except ModuleNotFoundError as exc:  # pragma: no cover - resources missing
+            raise FileNotFoundError(f"Unable to locate resource for {p}") from exc
     # Remove trailing commas left after comment stripping
     text = re.sub(r",\s*(?=[}\]])", "", text)
     return json.loads(text)
