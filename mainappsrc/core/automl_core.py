@@ -601,6 +601,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
     def __init__(self, root):
         AutoMLApp._instance = self
         self.root = root
+        self.setup_style(root)
         self.lifecycle_ui = AppLifecycleUI(self, root)
         self.labels_styling = Editing_Labels_Styling(self)
         self.top_events = []
@@ -620,6 +621,68 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         self.zoom = 1.0
         self.rc_dragged = False
         self.diagram_font = tkFont.Font(family="Arial", size=int(8 * self.zoom))
+        self.lifecycle_ui._init_nav_button_style()
+        self.tree_app = TreeSubApp()
+        self.project_editor_app = ProjectEditorSubApp()
+        self.risk_app = RiskAssessmentSubApp()
+        self.reliability_app = ReliabilitySubApp()
+        self.open_windows_features = Open_Windows_Features(self)
+        # Unified FTA/FMEA/FMEMA helper
+        self.safety_analysis = SafetyAnalysis_FTA_FMEA(self)
+        # Backwards compatible aliases
+        self.fta_app = self.safety_analysis
+        self.fmea_service = self.safety_analysis
+        self.fmeda_manager = self.safety_analysis
+        # Risk assessment helpers also provide FMEDA metric calculations,
+        # expose through ``fmeda`` pointing at the combined safety helper.
+        self.fmeda = self.safety_analysis
+        self.helper = AutoML_Helper
+        self.syncing_and_ids = Syncing_And_IDs(self)
+        # Dedicated renderer for all diagram-related operations.
+        self.diagram_renderer = DiagramRenderer(self)
+        # Delegate navigation and selection input handling
+        self.nav_input = Navigation_Selection_Input(self)
+        for _name in (
+            "go_back",
+            "back_all_pages",
+            "focus_on_node",
+            "on_canvas_click",
+            "on_canvas_double_click",
+            "on_canvas_drag",
+            "on_canvas_release",
+            "on_analysis_tree_double_click",
+            "on_analysis_tree_right_click",
+            "on_analysis_tree_select",
+            "on_ctrl_mousewheel",
+            "on_ctrl_mousewheel_page",
+            "on_right_mouse_press",
+            "on_right_mouse_drag",
+            "on_right_mouse_release",
+            "on_tool_list_double_click",
+            "on_treeview_click",
+            "show_context_menu",
+            "open_search_toolbox",
+        ):
+            setattr(self, _name, getattr(self.nav_input, _name))
+        # style-aware icons used across tree views
+        style_mgr = StyleManager.get_instance()
+
+        def _color(name: str, fallback: str = "black") -> str:
+            c = style_mgr.get_color(name)
+            return fallback if c == "#FFFFFF" else c
+
+        self.pkg_icon = self._create_icon("folder", _color("Lifecycle Phase", "#b8860b"))
+        self.gsn_module_icon = self.pkg_icon
+        self.gsn_diagram_icon = self._create_icon("rect", "#4682b4")
+        # small icons for diagram types shown in explorers
+        self.diagram_icons = {
+            "Use Case Diagram": self._create_icon("usecase_diag", _color("Use Case Diagram", "blue")),
+            "Activity Diagram": self._create_icon("activity_diag", _color("Activity Diagram", "green")),
+            "Governance Diagram": self._create_icon("activity_diag", _color("Governance Diagram", "green")),
+            "Block Diagram": self._create_icon("block_diag", _color("Block Diagram", "orange")),
+            "Internal Block Diagram": self._create_icon("ibd_diag", _color("Internal Block Diagram", "purple")),
+            "Control Flow Diagram": self._create_icon("activity_diag", _color("Control Flow Diagram", "red")),
+        }
         self.setup_style(root)
         self.setup_services()
         self.setup_icons()
