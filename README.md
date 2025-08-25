@@ -1,4 +1,4 @@
-version: 0.2.51
+version: 0.2.52
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1644,6 +1644,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.52 - Import ProductGoalManager in core to prevent startup NameError.
 - 0.2.51 - Extract clone-chain resolution into reusable utility.
 - 0.2.50 - Extract shared product goal updates into ProductGoalManager.
 - 0.2.49 - Move ``from __future__`` annotations imports to top-level of modules.
