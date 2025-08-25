@@ -498,18 +498,19 @@ class PageDiagram:
                     font_obj=font_obj,
                 )
             else:
-                fta_drawing_helper.draw_circle_event_shape(
-                    self.canvas,
-                    eff_x,
-                    eff_y,
-                    45 * self.zoom,
-                    top_text=top_text,
-                    bottom_text=bottom_text,
-                    fill=fill_color,
-                    outline_color=outline_color,
-                    line_width=line_width,
-                    font_obj=font_obj,
-                )
+                if hasattr(self.canvas, "create_line"):
+                    fta_drawing_helper.draw_circle_event_shape(
+                        self.canvas,
+                        eff_x,
+                        eff_y,
+                        45 * self.zoom,
+                        top_text=top_text,
+                        bottom_text=bottom_text,
+                        fill=fill_color,
+                        outline_color=outline_color,
+                        line_width=line_width,
+                        font_obj=font_obj,
+                    )
 
         # Draw any additional text (such as equations) from the source.
         if source.equation:
