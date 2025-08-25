@@ -538,12 +538,15 @@ def add_node_of_type(app, event_type):
     allowed = {
         "FTA": {"GATE", "BASIC EVENT"},
         "CTA": {"TRIGGERING CONDITION", "FUNCTIONAL INSUFFICIENCY"},
-        "PAA": {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"},
+        "PAA": {"GATE", "CONFIDENCE LEVEL", "ROBUSTNESS SCORE"},
     }
 
     if event_upper not in allowed.get(diag_mode, set()):
+        allowed_nodes = ", ".join(
+            sorted(name.title() for name in allowed.get(diag_mode, []))
+        )
         msg = (
-            "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis."
+            f"Only {allowed_nodes} nodes are allowed in Prototype Assurance Analysis."
             if diag_mode == "PAA"
             else f"Node type '{event_type}' is not allowed in {diag_mode} diagrams."
         )
