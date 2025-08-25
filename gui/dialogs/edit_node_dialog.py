@@ -63,6 +63,49 @@ class EditNodeDialog(simpledialog.Dialog):
         self.app = app
         super().__init__(parent, title="Edit Node")
 
+    def _build_safety_requirements(self, safety_frame, row):
+        """Populate safety requirement controls at the given row."""
+        if not hasattr(self.node, "safety_requirements"):
+            self.node.safety_requirements = []
+        ttk.Label(safety_frame, text="Safety Requirements:").grid(
+            row=row, column=0, padx=5, pady=5, sticky="ne"
+        )
+        self.safety_req_frame = ttk.Frame(safety_frame)
+        self.safety_req_frame.grid(row=row, column=1, padx=5, pady=5, sticky="w")
+        self.safety_req_listbox = tk.Listbox(self.safety_req_frame, height=4, width=50)
+        self.safety_req_listbox.grid(row=0, column=0, columnspan=3, sticky="w")
+        for req in self.node.safety_requirements:
+            self.safety_req_listbox.insert(tk.END, format_requirement(req))
+        self.add_req_button = ttk.Button(
+            self.safety_req_frame, text="Add New", command=self.add_safety_requirement
+        )
+        self.add_req_button.grid(row=1, column=0, padx=2, pady=2)
+        self.edit_req_button = ttk.Button(
+            self.safety_req_frame, text="Edit", command=self.edit_safety_requirement
+        )
+        self.edit_req_button.grid(row=1, column=1, padx=2, pady=2)
+        self.delete_req_button = ttk.Button(
+            self.safety_req_frame, text="Delete", command=self.delete_safety_requirement
+        )
+        self.delete_req_button.grid(row=1, column=2, padx=2, pady=2)
+        self.add_existing_req_button = ttk.Button(
+            self.safety_req_frame,
+            text="Add Existing",
+            command=self.add_existing_requirement,
+        )
+        self.add_existing_req_button.grid(row=1, column=3, padx=2, pady=2)
+        self.decomp_req_button = ttk.Button(
+            self.safety_req_frame, text="Decompose", command=self.decompose_safety_requirement
+        )
+        self.decomp_req_button.grid(row=1, column=4, padx=2, pady=2)
+        self.update_decomp_button = ttk.Button(
+            self.safety_req_frame,
+            text="Update Scheme",
+            command=self.update_decomposition_scheme,
+        )
+        self.update_decomp_button.grid(row=1, column=5, padx=2, pady=2)
+        return row + 1
+
     def body(self, master):
         self.resizable(False, False)
         dialog_font = tkFont.Font(family="Arial", size=10)
@@ -71,6 +114,7 @@ class EditNodeDialog(simpledialog.Dialog):
         nb.pack(fill=tk.BOTH, expand=True)
         general_frame = ttk.Frame(nb)
         safety_frame = ttk.Frame(nb)
+        self.safety_frame = safety_frame
         adv_frame = ttk.Frame(nb)
         nb.add(general_frame, text="General")
         nb.add(safety_frame, text="Safety")
@@ -107,39 +151,7 @@ class EditNodeDialog(simpledialog.Dialog):
             self.value_combo.set(str(int(current_val)))
             self.value_combo.grid(row=row_next, column=1, padx=5, pady=5)
             row_next += 1
-
-            # NEW: Safety Requirements Section for base nodes.
-            # Ensure the node has the attribute.
-            if not hasattr(self.node, "safety_requirements"):
-                self.node.safety_requirements = []
-            ttk.Label(safety_frame, text="Safety Requirements:").grid(row=row_next, column=0, padx=5, pady=5, sticky="ne")
-            self.safety_req_frame = ttk.Frame(safety_frame)
-            self.safety_req_frame.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
-            row_next += 1
-
-            # Create a listbox to display safety requirements.
-            self.safety_req_listbox = tk.Listbox(self.safety_req_frame, height=4, width=50)
-            self.safety_req_listbox.grid(row=0, column=0, columnspan=3, sticky="w")
-            # Populate listbox with existing requirements.
-            for req in self.node.safety_requirements:
-                self.safety_req_listbox.insert(
-                    tk.END,
-                    format_requirement(req),
-                )
-
-            # Buttons for Add, Edit, and Delete.
-            self.add_req_button = ttk.Button(self.safety_req_frame, text="Add New", command=self.add_safety_requirement)
-            self.add_req_button.grid(row=1, column=0, padx=2, pady=2)
-            self.edit_req_button = ttk.Button(self.safety_req_frame, text="Edit", command=self.edit_safety_requirement)
-            self.edit_req_button.grid(row=1, column=1, padx=2, pady=2)
-            self.delete_req_button = ttk.Button(self.safety_req_frame, text="Delete", command=self.delete_safety_requirement)
-            self.delete_req_button.grid(row=1, column=2, padx=2, pady=2)
-            self.add_existing_req_button = ttk.Button(self.safety_req_frame, text="Add Existing", command=self.add_existing_requirement)
-            self.add_existing_req_button.grid(row=1, column=3, padx=2, pady=2)
-            self.decomp_req_button = ttk.Button(self.safety_req_frame, text="Decompose", command=self.decompose_safety_requirement)
-            self.decomp_req_button.grid(row=1, column=4, padx=2, pady=2)
-            self.update_decomp_button = ttk.Button(self.safety_req_frame, text="Update Scheme", command=self.update_decomposition_scheme)
-            self.update_decomp_button.grid(row=1, column=5, padx=2, pady=2)
+            row_next = self._build_safety_requirements(safety_frame, row_next)
 
         elif self.node.node_type.upper() == "BASIC EVENT":
             ttk.Label(safety_frame, text="Failure Probability:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
@@ -164,33 +176,7 @@ class EditNodeDialog(simpledialog.Dialog):
             row_next += 1
 
             self.update_probability()
-
-            if not hasattr(self.node, "safety_requirements"):
-                self.node.safety_requirements = []
-            ttk.Label(safety_frame, text="Safety Requirements:").grid(row=row_next, column=0, padx=5, pady=5, sticky="ne")
-            self.safety_req_frame = ttk.Frame(safety_frame)
-            self.safety_req_frame.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
-            row_next += 1
-
-            self.safety_req_listbox = tk.Listbox(self.safety_req_frame, height=4, width=50)
-            self.safety_req_listbox.grid(row=0, column=0, columnspan=3, sticky="w")
-            for req in self.node.safety_requirements:
-                self.safety_req_listbox.insert(
-                    tk.END,
-                    format_requirement(req),
-                )
-            self.add_req_button = ttk.Button(self.safety_req_frame, text="Add New", command=self.add_safety_requirement)
-            self.add_req_button.grid(row=1, column=0, padx=2, pady=2)
-            self.edit_req_button = ttk.Button(self.safety_req_frame, text="Edit", command=self.edit_safety_requirement)
-            self.edit_req_button.grid(row=1, column=1, padx=2, pady=2)
-            self.delete_req_button = ttk.Button(self.safety_req_frame, text="Delete", command=self.delete_safety_requirement)
-            self.delete_req_button.grid(row=1, column=2, padx=2, pady=2)
-            self.add_existing_req_button = ttk.Button(self.safety_req_frame, text="Add Existing", command=self.add_existing_requirement)
-            self.add_existing_req_button.grid(row=1, column=3, padx=2, pady=2)
-            self.decomp_req_button = ttk.Button(self.safety_req_frame, text="Decompose", command=self.decompose_safety_requirement)
-            self.decomp_req_button.grid(row=1, column=4, padx=2, pady=2)
-            self.update_decomp_button = ttk.Button(self.safety_req_frame, text="Update Scheme", command=self.update_decomposition_scheme)
-            self.update_decomp_button.grid(row=1, column=5, padx=2, pady=2)
+            row_next = self._build_safety_requirements(safety_frame, row_next)
 
         elif self.node.node_type.upper() in GATE_NODE_TYPES:
             ttk.Label(general_frame, text="Gate Type:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
@@ -303,6 +289,9 @@ class EditNodeDialog(simpledialog.Dialog):
                 self.ac_text.bind("<Return>", self.on_enter_pressed)
                 row_next += 1
 
+        # Provide a default safety requirement section if the tab is empty.
+        if not safety_frame.winfo_children():
+            self._build_safety_requirements(safety_frame, 0)
 
         if self.node.node_type.upper() not in ["TOP EVENT", "BASIC EVENT"]:
             self.is_page_var = tk.BooleanVar(value=self.node.is_page)
