@@ -1642,6 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.47 - Delegate basic event probability updates to probability service to avoid missing risk module method.
 - 0.2.46 - Delegate basic event retrieval to FTASubApp to fix invocation mismatch.
 - 0.2.45 - Guard AutoML import in package initialisation to avoid circular reference on startup.
 - 0.2.44 - Import StyleSetupMixin to prevent startup NameError in AutoMLApp.

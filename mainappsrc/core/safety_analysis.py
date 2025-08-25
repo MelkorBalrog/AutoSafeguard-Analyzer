@@ -122,7 +122,7 @@ class SafetyAnalysis_FTA_FMEA(FTASubApp, FMEAService, FMEDAManager):
         return self.app.risk_app.update_fta_statuses(self.app)
 
     def update_basic_event_probabilities(self):
-        return self.app.risk_app.update_basic_event_probabilities(self.app)
+        return self.app.probability_reliability.update_basic_event_probabilities()
 
     def update_base_event_requirement_asil(self):
         return self.app.risk_app.update_base_event_requirement_asil(self.app)
