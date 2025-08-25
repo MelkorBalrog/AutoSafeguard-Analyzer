@@ -1,4 +1,4 @@
-version: 0.2.40
+version: 0.2.41
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1642,6 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.41 - Guard RoundedButton creation to prevent duplicate element errors.
 - 0.2.40 - Import Syncing_And_IDs during core initialization to prevent startup NameError.
 - 0.2.39 - Import SafetyAnalysis_FTA_FMEA during core initialization to prevent startup NameError.
 - 0.2.38 - Import ProjectEditorSubApp, RiskAssessmentSubApp and ReliabilitySubApp to prevent startup NameError.

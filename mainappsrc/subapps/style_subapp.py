@@ -187,15 +187,17 @@ class StyleSubApp:
             "active": _build_pill("#eaeaea", "#c8c8c8"),
             "pressed": _build_pill("#d0d0d0", "#a5a5a5"),
         }
-        self.style.element_create(
-            "RoundedButton",
-            "image",
-            self.btn_images["normal"],
-            ("active", self.btn_images["active"]),
-            ("pressed", self.btn_images["pressed"]),
-            border=10,
-            sticky="nsew",
-        )
+        # Avoid creating the element more than once to prevent TclError
+        if "RoundedButton" not in self.style.element_names():
+            self.style.element_create(
+                "RoundedButton",
+                "image",
+                self.btn_images["normal"],
+                ("active", self.btn_images["active"]),
+                ("pressed", self.btn_images["pressed"]),
+                border=10,
+                sticky="nsew",
+            )
         self.style.map(
             "TButton",
             relief=[("pressed", "sunken"), ("!pressed", "raised")],
