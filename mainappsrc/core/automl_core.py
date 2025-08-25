@@ -272,6 +272,7 @@ from .ui_setup import UISetupMixin
 from .event_handlers import EventHandlersMixin
 from .persistence_wrappers import PersistenceWrappersMixin
 from .analysis_utils import AnalysisUtilsMixin
+from .data_access_queries import DataAccess_Queries
 from analysis.mechanisms import (
     DiagnosticMechanism,
     MechanismLibrary,
