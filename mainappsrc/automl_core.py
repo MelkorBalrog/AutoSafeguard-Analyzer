@@ -235,6 +235,8 @@ if base not in sys.path:
 parent = os.path.dirname(base)
 if parent not in sys.path:
     sys.path.append(parent)
+if __package__ in {None, ""}:  # pragma: no cover - allow direct execution
+    __package__ = "mainappsrc"
 from typing import Any, Optional
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui.dialog_utils import askstring_fixed
@@ -371,7 +373,14 @@ from gui.architecture import (
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.scenario_description import template_phrases
-from .app_lifecycle_ui import AppLifecycleUI
+try:
+    # When imported as part of the ``mainappsrc`` package use the relative
+    # import.  Some tests load this module via ``spec_from_file_location`` which
+    # sets ``__package__`` to ``None``; fallback to an absolute import so the
+    # module can be executed standalone.
+    from .app_lifecycle_ui import AppLifecycleUI
+except ImportError:  # pragma: no cover - executed in tests
+    from app_lifecycle_ui import AppLifecycleUI  # type: ignore
 import copy
 import tkinter.font as tkFont
 import builtins
@@ -10129,7 +10138,8 @@ class AutoMLApp:
         if mode is None:
             mode = getattr(self, "diagram_mode", "FTA")
         self.enable_fta_actions(mode == "FTA")
-        self.cta_manager.enable_actions(mode == "CTA")
+        if hasattr(self, "cta_manager"):
+            self.cta_manager.enable_actions(mode == "CTA")
         self.enable_paa_actions(mode == "PAA")
 
     def _create_paa_tab(self) -> None:

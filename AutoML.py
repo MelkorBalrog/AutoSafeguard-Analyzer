@@ -17,7 +17,13 @@ from tools.crash_report_logger import install_best
 from tools.memory_manager import manager as memory_manager
 from tools.splash_launcher import SplashLauncher
 from mainappsrc.version import VERSION
-from mainappsrc.automl_core import AutoMLApp
+from mainappsrc.automl_core import (
+    AutoMLApp,
+    FaultTreeNode,
+    AutoML_Helper,
+    messagebox,
+    GATE_NODE_TYPES,
+)
 
 # Hint PyInstaller to bundle AutoML and its dependencies (e.g. gui package)
 if False:  # pragma: no cover
@@ -181,3 +187,12 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+__all__ = [
+    "AutoMLApp",
+    "FaultTreeNode",
+    "AutoML_Helper",
+    "messagebox",
+    "GATE_NODE_TYPES",
+]

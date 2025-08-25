@@ -1,4 +1,4 @@
-version: 0.2.15
+version: 0.2.16
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -16,7 +16,7 @@ Diagram drawing is centralised in a dedicated :class:`DiagramRenderer`, providin
    ```
 2. **Launch AutoML**
    ```bash
-   python automl.py
+   python AutoML.py
    ```
 3. **Create a new project**
    - Choose **File → New Project** from the menu.
