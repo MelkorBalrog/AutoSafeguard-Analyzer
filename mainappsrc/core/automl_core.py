@@ -369,6 +369,7 @@ from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.scenario_description import template_phrases
 from mainappsrc.core.app_lifecycle_ui import AppLifecycleUI
+from mainappsrc.core.refresh_update import Refresh_Update
 import copy
 import tkinter.font as tkFont
 import builtins
@@ -608,6 +609,12 @@ class AutoMLApp:
         numerous wrapper methods.
         """
 
+        ru = self.__dict__.get("refresh_update")
+        if ru and (
+            name in ru.__dict__
+            or any(name in cls.__dict__ for cls in ru.__class__.mro())
+        ):
+            return getattr(ru, name)
         ui = self.__dict__.get("lifecycle_ui")
         if ui and (
             name in ui.__dict__
@@ -620,6 +627,7 @@ class AutoMLApp:
         AutoMLApp._instance = self
         self.root = root
         self.lifecycle_ui = AppLifecycleUI(self, root)
+        self.refresh_update = Refresh_Update(self)
         self.top_events = []
         self.cta_events = []
         self.paa_events = []
@@ -1467,7 +1475,7 @@ class AutoMLApp:
         self.drag_offset_x = 0
         self.drag_offset_y = 0
         self.grid_size = 20
-        self.update_views()
+        self.refresh_update.update_views()
         # Track the last saved state so we can prompt on exit
         self.last_saved_state = json.dumps(self.export_model_data(), sort_keys=True)
         root.protocol("WM_DELETE_WINDOW", self.confirm_close)
@@ -1739,7 +1747,7 @@ class AutoMLApp:
         return self.risk_app.get_hara_by_name(self, name)
 
     def update_hara_statuses(self):
-        return self.risk_app.update_hara_statuses(self)
+        return self.refresh_update.update_hara_statuses()
 
     def update_fta_statuses(self):
         return self.risk_app.update_fta_statuses(self)
@@ -1884,7 +1892,7 @@ class AutoMLApp:
             target = target.original
 
         EditNodeDialog(self.root, target, self)
-        self.update_views()
+        self.refresh_update.update_views()
 
     def add_top_level_event(self):
         new_event = FaultTreeNode("", "TOP EVENT")
@@ -1907,7 +1915,7 @@ class AutoMLApp:
         if hasattr(self, "safety_mgmt_toolbox"):
             self.safety_mgmt_toolbox.register_created_work_product(wp, new_event.user_name)
         self._update_shared_product_goals()
-        self.update_views()
+        self.refresh_update.update_views()
 
     def _build_probability_frame(
         self,
@@ -2449,10 +2457,10 @@ class AutoMLApp:
         self.governance_manager.apply_governance_rules()
 
     def refresh_tool_enablement(self) -> None:
-        self.governance_manager.refresh_tool_enablement()
+        return self.refresh_update.refresh_tool_enablement()
 
     def update_lifecycle_cb(self) -> None:
-        self.governance_manager.update_lifecycle_cb()
+        return self.refresh_update.update_lifecycle_cb()
 
     def _export_toolbox_dict(self) -> dict:
         toolbox = getattr(self, "safety_mgmt_toolbox", None)
@@ -2472,10 +2480,10 @@ class AutoMLApp:
             self.governance_manager.set_active_module(None)
         else:
             self.governance_manager.set_active_module(phase)
-        self.update_views()
-        if hasattr(self, "refresh_tool_enablement"):
+        self.refresh_update.update_views()
+        if hasattr(self.refresh_update, "refresh_tool_enablement"):
             try:
-                self.refresh_tool_enablement()
+                self.refresh_update.refresh_tool_enablement()
             except Exception:
                 pass
         for name in (
@@ -2538,7 +2546,7 @@ class AutoMLApp:
             self.enable_work_product(parent, refresh=False)
         if refresh and hasattr(self, "update_views"):
             try:
-                self.update_views()
+                self.refresh_update.update_views()
             except Exception:
                 pass
 
@@ -2647,7 +2655,7 @@ class AutoMLApp:
                 self.disable_work_product(parent, force=True, refresh=False)
         if refresh and hasattr(self, "update_views"):
             try:
-                self.update_views()
+                self.refresh_update.update_views()
             except Exception:
                 pass
         return True
@@ -2857,7 +2865,7 @@ class AutoMLApp:
                     self.window_controllers.open_page_diagram(clicked_node)
                 else:
                     EditNodeDialog(self.root, clicked_node, self)
-            self.update_views()
+            self.refresh_update.update_views()
 
     def on_canvas_drag(self, event):
         if self.dragging_node:
@@ -2968,7 +2976,7 @@ class AutoMLApp:
             offset = (canvas_width / self.zoom - diagram_width) / 2 - min_x
             for n in all_nodes:
                 n.x += offset
-        self.update_views()
+        self.refresh_update.update_views()
 
 
     def get_all_triggering_conditions(self):
@@ -3274,94 +3282,16 @@ class AutoMLApp:
             self.odd_elements.extend(lib.get("elements", []))
 
     def update_hazard_list(self):
-        """Aggregate hazards from risk assessment and HAZOP documents."""
-        hazards: list[str] = []
-        # Track severities found in analysis documents so the hazard editor
-        # can restore previously entered values.  Previously, only the hazard
-        # names were collected and any severity information was discarded,
-        # causing all hazards to default to severity 1 when the list was
-        # rebuilt.
-        severity_map: dict[str, int] = {}
-
-        for doc in self.hara_docs:
-            for e in doc.entries:
-                h = getattr(e, "hazard", "").strip()
-                if not h:
-                    continue
-                if h not in hazards:
-                    hazards.append(h)
-                # HARA entries store severity as an integer attribute
-                sev = getattr(e, "severity", None)
-                if sev is not None:
-                    try:
-                        severity_map[h] = int(sev)
-                    except Exception:
-                        severity_map[h] = 1
-
-        for doc in self.hazop_docs:
-            for e in doc.entries:
-                h = getattr(e, "hazard", "").strip()
-                if not h:
-                    continue
-                if h not in hazards:
-                    hazards.append(h)
-                # HAZOP entries currently do not have severities, but if they
-                # ever do, attempt to capture them as well.
-                sev = getattr(e, "severity", None)
-                if sev is not None and h not in severity_map:
-                    try:
-                        severity_map[h] = int(sev)
-                    except Exception:
-                        severity_map[h] = 1
-
-        for h in hazards:
-            if h in severity_map:
-                self.hazard_severity[h] = severity_map[h]
-            elif h not in self.hazard_severity:
-                self.hazard_severity[h] = 1
-
-        self.hazards = hazards
+        return self.refresh_update.update_hazard_list()
 
     def update_failure_list(self):
-        """Aggregate failure effects from FMEA and FMEDA entries."""
-        failures: list[str] = []
-        for entry in self.get_all_fmea_entries():
-            eff = getattr(entry, "fmea_effect", "").strip()
-            if eff and eff not in failures:
-                failures.append(eff)
-        self.failures = failures
+        return self.refresh_update.update_failure_list()
 
     def update_triggering_condition_list(self):
-        """Aggregate triggering conditions from docs and FTAs."""
-        names: list[str] = []
-        for n in self.get_all_triggering_conditions():
-            nm = n.user_name or f"TC {n.unique_id}"
-            if nm not in names:
-                names.append(nm)
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                val = e.get("triggering_conditions", "")
-                for part in val.split(";"):
-                    p = part.strip()
-                    if p and p not in names:
-                        names.append(p)
-        self.triggering_conditions = names
+        return self.refresh_update.update_triggering_condition_list()
 
     def update_functional_insufficiency_list(self):
-        """Aggregate functional insufficiencies from docs and FTAs."""
-        names: list[str] = []
-        for n in self.get_all_functional_insufficiencies():
-            nm = n.user_name or f"FI {n.unique_id}"
-            if nm not in names:
-                names.append(nm)
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                val = e.get("functional_insufficiencies", "")
-                for part in val.split(";"):
-                    p = part.strip()
-                    if p and p not in names:
-                        names.append(p)
-        self.functional_insufficiencies = names
+        return self.refresh_update.update_functional_insufficiency_list()
 
     def get_entry_field(self, entry, field, default=""):
         """Retrieve attribute or dict value from an entry."""
@@ -3511,391 +3441,7 @@ class AutoMLApp:
         return rec(node)
 
     def update_views(self):
-        self.refresh_model()
-        # Compute occurrence counts from the current tree
-        self.occurrence_counts = self.compute_occurrence_counts()
-
-        if hasattr(self, "analysis_tree"):
-            tree = self.analysis_tree
-            tree.delete(*tree.get_children())
-
-            repo = SysMLRepository.get_instance()
-            global_enabled = getattr(self, "enabled_work_products", set())
-            smt = getattr(self, "safety_mgmt_toolbox", None)
-            if smt and getattr(smt, "work_products", None):
-                phase_enabled = smt.enabled_products()
-            else:
-                phase_enabled = global_enabled
-            enabled = global_enabled & phase_enabled
-
-            # --- Safety & Security Management Section ---
-            self.management_diagrams = sorted(
-                [
-                    d
-                    for d in repo.visible_diagrams().values()
-                    if "safety-management" in getattr(d, "tags", [])
-                ],
-                key=lambda d: d.name or d.diag_id,
-            )
-            mgmt_root = tree.insert("", "end", text="Safety & Security Management", open=True)
-            gov_root = tree.insert(
-                mgmt_root,
-                "end",
-                text="Safety & Security Governance Diagrams",
-                open=True,
-            )
-            self.safety_mgmt_toolbox = getattr(
-                self, "safety_mgmt_toolbox", SafetyManagementToolbox()
-            )
-            toolbox = self.safety_mgmt_toolbox
-            self.governance_manager.attach_toolbox(toolbox)
-            toolbox.list_diagrams()
-            self.update_lifecycle_cb()
-            self.refresh_tool_enablement()
-
-            def _visible(analysis_name: str, doc_name: str) -> bool:
-                return toolbox.document_visible(analysis_name, doc_name)
-
-            index_map = {
-                (d.name or d.diag_id): idx
-                for idx, d in enumerate(self.management_diagrams)
-            }
-
-            def _in_any_module(name, modules):
-                for mod in modules:
-                    if name in mod.diagrams or _in_any_module(name, mod.modules):
-                        return True
-                return False
-
-            def _add_module(mod, parent):
-                node = tree.insert(
-                    parent,
-                    "end",
-                    text=mod.name,
-                    open=True,
-                    image=getattr(self, "pkg_icon", None),
-                )
-                for sub in sorted(mod.modules, key=lambda m: m.name):
-                    _add_module(sub, node)
-                for name in sorted(mod.diagrams):
-                    idx = index_map.get(name)
-                    if idx is not None:
-                        tree.insert(
-                            node,
-                            "end",
-                            text=name,
-                            tags=("gov", str(idx)),
-                            image=getattr(self, "gsn_diagram_icon", None),
-                        )
-
-            for mod in sorted(toolbox.modules, key=lambda m: m.name):
-                _add_module(mod, gov_root)
-
-            for name in sorted(toolbox.diagrams.keys()):
-                if not _in_any_module(name, toolbox.modules):
-                    idx = index_map.get(name)
-                    if idx is not None:
-                        tree.insert(
-                            gov_root,
-                            "end",
-                            text=name,
-                            tags=("gov", str(idx)),
-                            image=getattr(self, "gsn_diagram_icon", None),
-                        )
-
-            # --- GSN Diagrams Section ---
-            def _collect_gsn_diagrams(module):
-                diagrams = list(module.diagrams)
-                for sub in module.modules:
-                    diagrams.extend(_collect_gsn_diagrams(sub))
-                return diagrams
-
-            self.all_gsn_diagrams = sorted(
-                list(getattr(self, "gsn_diagrams", []))
-                + [
-                    d
-                    for m in getattr(self, "gsn_modules", [])
-                    for d in _collect_gsn_diagrams(m)
-                ],
-                key=lambda d: d.root.user_name or d.diag_id,
-            )
-            self.gsn_diagram_map = {d.diag_id: d for d in self.all_gsn_diagrams}
-            self.gsn_module_map = {}
-
-            gsn_root = tree.insert(mgmt_root, "end", text="GSN Diagrams", open=True)
-
-            def add_gsn_module(module, parent):
-                mid = str(id(module))
-                node = tree.insert(
-                    parent,
-                    "end",
-                    text=module.name,
-                    open=True,
-                    tags=("gsnmod", mid),
-                    image=getattr(self, "gsn_module_icon", None),
-                )
-                self.gsn_module_map[mid] = module
-                for sub in sorted(module.modules, key=lambda m: m.name):
-                    add_gsn_module(sub, node)
-                for diag in sorted(
-                    module.diagrams, key=lambda d: d.root.user_name or d.diag_id
-                ):
-                    add_gsn_diagram(diag, node)
-
-            def add_gsn_diagram(diag, parent):
-                tree.insert(
-                    parent,
-                    "end",
-                    text=diag.root.user_name or diag.diag_id,
-                    tags=("gsn", diag.diag_id),
-                    image=getattr(self, "gsn_diagram_icon", None),
-                )
-
-            for mod in sorted(getattr(self, "gsn_modules", []), key=lambda m: m.name):
-                add_gsn_module(mod, gsn_root)
-            for diag in sorted(
-                getattr(self, "gsn_diagrams", []), key=lambda d: d.root.user_name or d.diag_id
-            ):
-                add_gsn_diagram(diag, gsn_root)
-
-            tree.insert(
-                mgmt_root,
-                "end",
-                text="Safety & Security Case Explorer",
-                tags=("safetycase", "0"),
-            )
-
-            # --- Verification Reviews Section ---
-            self.joint_reviews = [r for r in getattr(self, "reviews", []) if getattr(r, "mode", "") == "joint"]
-            rev_root = tree.insert(mgmt_root, "end", text="Verification Reviews", open=True)
-            for idx, review in enumerate(self.joint_reviews):
-                tree.insert(
-                    rev_root,
-                    "end",
-                    text=review.name,
-                    tags=("jrev", str(idx)),
-                )
-
-            # --- System Design (Item Definition) Section ---
-            sys_root = tree.insert(
-                "",
-                "end",
-                text="System Design (Item Definition)",
-                open=True,
-                tags=("itemdef", "0"),
-            )
-            self.arch_diagrams = sorted(
-                [
-                    d
-                    for d in repo.visible_diagrams().values()
-                    if "safety-management" not in getattr(d, "tags", [])
-                ],
-                key=lambda d: d.name or d.diag_id,
-            )
-            arch_root = None
-            if "Architecture Diagram" in enabled or getattr(self, "arch_diagrams", []):
-                arch_root = tree.insert(sys_root, "end", text="Architecture Diagrams", open=True)
-
-            def add_pkg(pkg_id: str, parent: str) -> None:
-                pkg = repo.elements.get(pkg_id)
-                if not pkg or pkg.elem_type != "Package":
-                    return
-                node = parent
-                if pkg_id != repo.root_package.elem_id:
-                    node = tree.insert(
-                        parent,
-                        "end",
-                        text=pkg.name or pkg_id,
-                        open=True,
-                        tags=("pkg", pkg_id),
-                        image=getattr(self, "pkg_icon", None),
-                    )
-                # add subpackages
-                sub_pkgs = sorted(
-                    [e.elem_id for e in repo.elements.values() if e.elem_type == "Package" and e.owner == pkg_id],
-                    key=lambda i: repo.elements[i].name or i,
-                )
-                for child_id in sub_pkgs:
-                    add_pkg(child_id, node)
-                # add diagrams within this package
-                diags = sorted(
-                    [
-                        d
-                        for d in repo.visible_diagrams().values()
-                        if d.package == pkg_id
-                        and "safety-management" not in getattr(d, "tags", [])
-                    ],
-                    key=lambda d: d.name or d.diag_id,
-                )
-                for diag in diags:
-                    icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
-                    tree.insert(
-                        node,
-                        "end",
-                        text=diag.name or diag.diag_id,
-                        tags=("arch", diag.diag_id),
-                        image=icon,
-                    )
-
-            root_pkg = getattr(repo, "root_package", None)
-            if root_pkg is not None:
-                add_pkg(root_pkg.elem_id, arch_root)
-            else:
-                for diag in self.arch_diagrams:
-                    icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
-                    tree.insert(
-                        arch_root,
-                        "end",
-                        text=diag.name or diag.diag_id,
-                        tags=("arch", diag.diag_id),
-                        image=icon,
-                    )
-
-            # --- Safety & Security Concept and Requirements Tools ---
-            if "Safety & Security Concept" in enabled:
-                tree.insert(
-                    sys_root,
-                    "end",
-                    text="Safety & Security Concept",
-                    tags=("safetyconcept", "0"),
-                )
-            if any(wp in enabled for wp in REQUIREMENT_WORK_PRODUCTS):
-                tree.insert(sys_root, "end", text="Requirements Editor", tags=("reqs", "0"))
-                tree.insert(
-                    sys_root,
-                    "end",
-                    text="Requirements Explorer",
-                    tags=("reqexp", "0"),
-                )
-
-            # --- Hazard & Threat Analysis Section ---
-            haz_root = None
-            def _ensure_haz_root():
-                nonlocal haz_root
-                if haz_root is None:
-                    haz_root = tree.insert("", "end", text="Hazard & Threat Analysis", open=True)
-            if "HAZOP" in enabled or getattr(self, "hazop_docs", []):
-                _ensure_haz_root()
-                hazop_root = tree.insert(haz_root, "end", text="HAZOPs", open=True)
-                for idx, doc in enumerate(self.hazop_docs):
-                    if not _visible("HAZOP", doc.name):
-                        continue
-                    tree.insert(hazop_root, "end", text=doc.name, tags=("hazop", str(idx)))
-            if "STPA" in enabled or getattr(self, "stpa_docs", []):
-                _ensure_haz_root()
-                stpa_root = tree.insert(haz_root, "end", text="STPA Analyses", open=True)
-                for idx, doc in enumerate(self.stpa_docs):
-                    if not _visible("STPA", doc.name):
-                        continue
-                    tree.insert(stpa_root, "end", text=doc.name, tags=("stpa", str(idx)))
-            if "Threat Analysis" in enabled or getattr(self, "threat_docs", []):
-                _ensure_haz_root()
-                threat_root = tree.insert(haz_root, "end", text="Threat Analyses", open=True)
-                for idx, doc in enumerate(self.threat_docs):
-                    if not _visible("Threat Analysis", doc.name):
-                        continue
-                    tree.insert(threat_root, "end", text=doc.name, tags=("threat", str(idx)))
-            if "FI2TC" in enabled or getattr(self, "fi2tc_docs", []):
-                _ensure_haz_root()
-                fi2tc_root = tree.insert(haz_root, "end", text="FI2TC Analyses", open=True)
-                for idx, doc in enumerate(self.fi2tc_docs):
-                    if not _visible("FI2TC", doc.name):
-                        continue
-                    tree.insert(fi2tc_root, "end", text=doc.name, tags=("fi2tc", str(idx)))
-            if "TC2FI" in enabled or getattr(self, "tc2fi_docs", []):
-                _ensure_haz_root()
-                tc2fi_root = tree.insert(haz_root, "end", text="TC2FI Analyses", open=True)
-                for idx, doc in enumerate(self.tc2fi_docs):
-                    if not _visible("TC2FI", doc.name):
-                        continue
-                    tree.insert(tc2fi_root, "end", text=doc.name, tags=("tc2fi", str(idx)))
-
-            # --- Risk Assessment Section ---
-            risk_root = None
-            def _ensure_risk_root():
-                nonlocal risk_root
-                if risk_root is None:
-                    risk_root = tree.insert("", "end", text="Risk Assessment", open=True)
-            if "Risk Assessment" in enabled or getattr(self, "hara_docs", []):
-                _ensure_risk_root()
-                assessment_root = tree.insert(risk_root, "end", text="Risk Assessments", open=True)
-                for idx, doc in enumerate(self.hara_docs):
-                    if not _visible("Risk Assessment", doc.name):
-                        continue
-                    tree.insert(assessment_root, "end", text=doc.name, tags=("hara", str(idx)))
-            if "Product Goal Specification" in enabled:
-                _ensure_risk_root()
-                tree.insert(risk_root, "end", text="Product Goals", tags=("sg", "0"))
-
-            # --- Safety Analysis Section ---
-            safety_root = None
-            def _ensure_safety_root():
-                nonlocal safety_root
-                if safety_root is None:
-                    safety_root = tree.insert("", "end", text="Safety Analysis", open=True)
-
-            paa_events = [
-                te for te in getattr(self, "top_events", [])
-                if getattr(te, "analysis_mode", "FTA") == "PAA"
-            ] + list(getattr(self, "paa_events", []))
-            fta_events = [
-                te for te in getattr(self, "top_events", [])
-                if getattr(te, "analysis_mode", "FTA") != "PAA"
-            ]
-
-            if "Prototype Assurance Analysis" in enabled or paa_events:
-                _ensure_safety_root()
-                paa_root = tree.insert(safety_root, "end", text="PAAs", open=True)
-                seen_ids = set()
-                for idx, te in enumerate(paa_events):
-                    if te.unique_id in seen_ids:
-                        continue
-                    seen_ids.add(te.unique_id)
-                    if not _visible("Prototype Assurance Analysis", te.name):
-                        continue
-                    tree.insert(paa_root, "end", text=te.name, tags=("paa", str(te.unique_id)))
-
-            if "FTA" in enabled or fta_events:
-                _ensure_safety_root()
-                fta_root = tree.insert(safety_root, "end", text="FTAs", open=True)
-                for idx, te in enumerate(fta_events):
-                    if not _visible("FTA", te.name):
-                        continue
-                    tree.insert(fta_root, "end", text=te.name, tags=("fta", str(te.unique_id)))
-            if "CTA" in enabled or getattr(self, "cta_events", []):
-                _ensure_safety_root()
-                cta_root = tree.insert(safety_root, "end", text="CTAs", open=True)
-                for idx, te in enumerate(getattr(self, "cta_events", [])):
-                    if not _visible("CTA", te.name):
-                        continue
-                    tree.insert(cta_root, "end", text=te.name, tags=("cta", str(te.unique_id)))
-            if "FMEA" in enabled or getattr(self, "fmeas", []):
-                _ensure_safety_root()
-                fmea_root = tree.insert(safety_root, "end", text="FMEAs", open=True)
-                for idx, fmea in enumerate(self.fmeas):
-                    name = fmea['name']
-                    if not _visible("FMEA", name):
-                        continue
-                    tree.insert(fmea_root, "end", text=name, tags=("fmea", str(idx)))
-            if "FMEDA" in enabled or getattr(self, "fmedas", []):
-                _ensure_safety_root()
-                fmeda_root = tree.insert(safety_root, "end", text="FMEDAs", open=True)
-                for idx, doc in enumerate(self.fmedas):
-                    name = doc['name']
-                    if not _visible("FMEDA", name):
-                        continue
-                    tree.insert(fmeda_root, "end", text=name, tags=("fmeda", str(idx)))
-
-        if hasattr(self, "page_diagram") and self.page_diagram is not None:
-            if self.page_diagram.canvas.winfo_exists():
-                self.page_diagram.redraw_canvas()
-            else:
-                self.page_diagram = None
-        elif hasattr(self, "canvas") and self.canvas is not None and self.canvas.winfo_exists():
-            if self.selected_node is not None:
-                self.redraw_canvas()
-            else:
-                self.canvas.delete("all")
+        return self.refresh_update.update_views()
 
     def update_basic_event_probabilities(self):
         """Update failure probabilities for all basic events.
@@ -3987,72 +3533,10 @@ class AutoMLApp:
 
 
     def refresh_model(self):
-        """Recalculate derived values across the entire model.
-
-        This recomputes ASIL assignments, basic-event probabilities and
-        cybersecurity CAL levels so that edits in one analysis propagate
-        throughout the full input→output flow.
-        """
-
-        # Ensure safety-related data is consistent first
-        self.ensure_asil_consistency()
-
-        # Propagate FMEDA attributes to any linked basic events
-        for fm in self.get_all_failure_modes():
-            self.propagate_failure_mode_attributes(fm)
-
-        def iter_analysis_events():
-            for be in self.get_all_basic_events():
-                yield be
-            for e in self.fmea_entries:
-                yield e
-            for doc in self.fmeas:
-                for e in doc.get("entries", []):
-                    yield e
-            for doc in self.fmedas:
-                for e in doc.get("entries", []):
-                    yield e
-
-        for entry in iter_analysis_events():
-            mals = [m.strip() for m in getattr(entry, "fmeda_malfunction", "").split(";") if m.strip()]
-            goals = self.get_safety_goals_for_malfunctions(mals) or self.get_top_event_safety_goals(entry)
-            if goals:
-                sg = ", ".join(goals)
-                entry.fmeda_safety_goal = sg
-                first = goals[0]
-                te = next((t for t in self.top_events if first in [t.user_name, t.safety_goal_description]), None)
-                if te:
-                    entry.fmeda_dc_target = getattr(te, "sg_dc_target", 0.0)
-                    entry.fmeda_spfm_target = getattr(te, "sg_spfm_target", 0.0)
-                    entry.fmeda_lpfm_target = getattr(te, "sg_lpfm_target", 0.0)
-
-        # Recalculate probabilities for all basic events
-        self.update_basic_event_probabilities()
-
-        # Synchronize cybersecurity risk assessments with goal CAL values
-        self.sync_cyber_risk_to_goals()
+        return self.refresh_update.refresh_model()
 
     def refresh_all(self):
-        """Synchronize model elements and refresh all open views.
-
-        This is invoked whenever the user opens, closes or edits content so
-        analyses and diagrams remain consistent with the underlying data.
-        """
-        # Update the main explorer and propagate model changes
-        self.update_views()
-        # Regenerate requirement patterns for any model change
-        regenerate_requirement_patterns()
-        # Refresh GSN views separately via the manager
-        self.gsn_manager.refresh()
-        # Refresh any secondary windows that may be open
-        for attr in dir(self):
-            if attr.endswith("_window"):
-                win = getattr(self, attr)
-                if hasattr(win, "winfo_exists") and win.winfo_exists():
-                    if hasattr(win, "refresh_docs"):
-                        win.refresh_docs()
-                    if hasattr(win, "refresh"):
-                        win.refresh()
+        return self.refresh_update.refresh_all()
 
     def insert_node_in_tree(self, parent_item, node):
         # If the node has no parent (i.e. it's a top-level event), display it.
@@ -4485,7 +3969,7 @@ class AutoMLApp:
         new_node.y = parent_node.y + 100
         parent_node.children.append(new_node)
         new_node.parents.append(parent_node)
-        self.update_views()
+        self.refresh_update.update_views()
         # Capture the post-addition state so future moves can be undone back
         # to this initial location.
         self.push_undo_state()
@@ -4531,7 +4015,7 @@ class AutoMLApp:
             new_node.failure_mode_ref = selected.unique_id
         parent_node.children.append(new_node)
         new_node.parents.append(parent_node)
-        self.update_views()
+        self.refresh_update.update_views()
 
     def add_basic_event_from_fmea(self):
         self.push_undo_state()
@@ -4574,7 +4058,7 @@ class AutoMLApp:
             new_node.failure_mode_ref = selected.unique_id
         parent_node.children.append(new_node)
         new_node.parents.append(parent_node)
-        self.update_views()
+        self.refresh_update.update_views()
 
     def add_basic_event_from_fmea(self):
         self.push_undo_state()
@@ -4617,7 +4101,7 @@ class AutoMLApp:
             new_node.failure_mode_ref = selected.unique_id
         parent_node.children.append(new_node)
         new_node.parents.append(parent_node)
-        self.update_views()
+        self.refresh_update.update_views()
 
 
     def remove_node(self):
@@ -4635,7 +4119,7 @@ class AutoMLApp:
                     if target in p.children:
                         p.children.remove(target)
                 target.parents = []
-            self.update_views()
+            self.refresh_update.update_views()
         else:
             messagebox.showwarning("Invalid", "Cannot remove the root node.")
 
@@ -4649,7 +4133,7 @@ class AutoMLApp:
                 node.parents = []
                 if node not in self.top_events:
                     self.top_events.append(node)
-                self.update_views()
+                self.refresh_update.update_views()
                 messagebox.showinfo("Remove Connection",
                                     f"Disconnected {node.name} from its parent(s) and made it a top-level event.")
             else:
@@ -4667,7 +4151,7 @@ class AutoMLApp:
                     if node in p.children:
                         p.children.remove(node)
                 node.parents = []
-            self.update_views()
+            self.refresh_update.update_views()
             messagebox.showinfo("Delete Node", f"Deleted {node.name} and its subtree.")
         else:
             messagebox.showwarning("Delete Node", "Select a node to delete.")
@@ -4691,7 +4175,7 @@ class AutoMLApp:
                 else "FTA"
             )
             self.safety_mgmt_toolbox.register_created_work_product(analysis, new_event.name)
-        self.update_views()
+        self.refresh_update.update_views()
 
     def delete_top_events_for_malfunction(self, name: str) -> None:
         """Remove all FTAs tied to the malfunction ``name``."""
@@ -4714,7 +4198,7 @@ class AutoMLApp:
                 )
         if self.root_node in removed:
             self.root_node = self.top_events[0] if self.top_events else FaultTreeNode("", "TOP EVENT")
-        self.update_views()
+        self.refresh_update.update_views()
 
     def add_gate_from_failure_mode(self):
         self.push_undo_state()
@@ -4758,7 +4242,7 @@ class AutoMLApp:
         new_node.y = parent_node.y + 100
         parent_node.children.append(new_node)
         new_node.parents.append(parent_node)
-        self.update_views()
+        self.refresh_update.update_views()
 
     def add_fault_event(self):
         self.push_undo_state()
@@ -4812,12 +4296,12 @@ class AutoMLApp:
         new_node.y = parent_node.y + 100
         parent_node.children.append(new_node)
         new_node.parents.append(parent_node)
-        self.update_views()
+        self.refresh_update.update_views()
 
     def calculate_overall(self):
         for top_event in self.top_events:
             AutoML_Helper.calculate_assurance_recursive(top_event, self.top_events)
-        self.update_views()
+        self.refresh_update.update_views()
         results = ""
         for top_event in self.top_events:
             if top_event.quant_value is not None:
@@ -4857,7 +4341,7 @@ class AutoMLApp:
                 te.probability = prob
                 pmhf += prob
 
-        self.update_views()
+        self.refresh_update.update_views()
         lines = [f"Total PMHF: {pmhf:.2e}"]
         overall_ok = True
         for te in self.top_events:
@@ -4878,8 +4362,8 @@ class AutoMLApp:
         )
 
         # Update any open tables showing safety performance information
-        self.refresh_safety_case_table()
-        self.refresh_safety_performance_indicators()
+        self.refresh_update.refresh_safety_case_table()
+        self.refresh_update.refresh_safety_performance_indicators()
 
     def show_requirements_matrix(self):
         """Display a matrix table of requirements vs. basic events."""
@@ -5515,7 +4999,7 @@ class AutoMLApp:
 
         def refresh():
             lb.delete(0, tk.END)
-            self.update_triggering_condition_list()
+            self.refresh_update.update_triggering_condition_list()
             for tc in self.triggering_conditions:
                 lb.insert(tk.END, tc)
         win.refresh_from_repository = refresh
@@ -5774,7 +5258,7 @@ class AutoMLApp:
 
         def refresh():
             lb.delete(0, tk.END)
-            self.update_functional_insufficiency_list()
+            self.refresh_update.update_functional_insufficiency_list()
             for fi in self.functional_insufficiencies:
                 lb.insert(tk.END, fi)
         win.refresh_from_repository = refresh
@@ -5866,7 +5350,7 @@ class AutoMLApp:
             lb.delete(idx)
             lb.insert(idx, name)
             lb.select_set(idx)
-            self.update_views()
+            self.refresh_update.update_views()
 
         def del_mal():
             sel = lb.curselection()
@@ -5879,7 +5363,7 @@ class AutoMLApp:
             self.delete_top_events_for_malfunction(name)
             del self.malfunctions[idx]
             lb.delete(idx)
-            self.update_views()
+            self.refresh_update.update_views()
 
         btn = ttk.Frame(win)
         btn.pack(side=tk.RIGHT, fill=tk.Y)
@@ -7380,7 +6864,7 @@ class AutoMLApp:
                 node.safety_goal_description = dlg.result["desc"]
                 self.top_events.append(node)
                 refresh_tree()
-                self.update_views()
+                self.refresh_update.update_views()
 
         def edit_sg():
             sel = tree.selection()
@@ -7402,7 +6886,7 @@ class AutoMLApp:
                 sg.acceptance_criteria = dlg.result["accept"]
                 sg.safety_goal_description = dlg.result["desc"]
                 refresh_tree()
-                self.update_views()
+                self.refresh_update.update_views()
 
         def del_sg():
             sel = tree.selection()
@@ -7413,7 +6897,7 @@ class AutoMLApp:
             if sg and messagebox.askyesno("Delete", "Delete product goal?"):
                 self.top_events = [t for t in self.top_events if t.unique_id != uid]
                 refresh_tree()
-                self.update_views()
+                self.refresh_update.update_views()
 
         tree.bind("<Double-1>", lambda e: edit_sg())
 
@@ -7460,7 +6944,7 @@ class AutoMLApp:
         """Display Safety Performance Indicators."""
         if hasattr(self, "_spi_tab") and self._spi_tab.winfo_exists():
             self.doc_nb.select(self._spi_tab)
-            self.refresh_safety_performance_indicators()
+            self.refresh_update.refresh_safety_performance_indicators()
             return
         self._spi_tab = self.lifecycle_ui._new_tab("Safety Performance Indicators")
         win = self._spi_tab
@@ -7503,138 +6987,27 @@ class AutoMLApp:
             if new_val is not None:
                 self.push_undo_state()
                 sg.spi_probability = float(new_val)
-                self.refresh_safety_case_table()
-                self.refresh_safety_performance_indicators()
-                self.update_views()
+                self.refresh_update.refresh_safety_case_table()
+                self.refresh_update.refresh_safety_performance_indicators()
+                self.refresh_update.update_views()
 
         btn = ttk.Button(win, text="Edit", command=edit_selected)
         btn.pack(pady=4)
         self._edit_spi_item = edit_selected
 
-        self.refresh_safety_performance_indicators()
+        self.refresh_update.refresh_safety_performance_indicators()
 
     def refresh_safety_performance_indicators(self):
-        """Populate the SPI explorer table."""
-        tree = getattr(self, "_spi_tree", None)
-        if not tree or not getattr(tree, "winfo_exists", lambda: True)():
-            return
-        for iid in list(tree.get_children("")):
-            tree.delete(iid)
-        self._spi_lookup = {}
-
-        manager = getattr(self, "sotif_manager", None)
-        if manager is None:
-            manager = SOTIFManager(self)
-            self.sotif_manager = manager
-        for sg, values in manager.iter_spi_rows():
-            iid = tree.insert("", "end", values=values)
-            self._spi_lookup[iid] = (sg, "SOTIF")
-
-        for sg in getattr(self, "top_events", []):
-            asil = getattr(sg, "safety_goal_asil", "")
-            if asil in PMHF_TARGETS:
-                target = PMHF_TARGETS[asil]
-                v_str = f"{target:.2e}"
-                fusa_prob = getattr(sg, "probability", "")
-                p_str = f"{fusa_prob:.2e}" if fusa_prob not in ("", None) else ""
-                spi_val = ""
-                try:
-                    if fusa_prob not in ("", None):
-                        p_val = float(fusa_prob)
-                        if target > 0 and p_val > 0:
-                            spi_val = f"{math.log10(target / p_val):.2f}"
-                except Exception:
-                    spi_val = ""
-                iid = tree.insert(
-                    "",
-                    "end",
-                    values=[
-                        sg.user_name or f"SG {sg.unique_id}",
-                        v_str,
-                        p_str,
-                        spi_val,
-                        "Target PMHF",
-                        getattr(sg, "acceptance_criteria", ""),
-                    ],
-                )
-                self._spi_lookup[iid] = (sg, "FUSA")
+        return self.refresh_update.refresh_safety_performance_indicators()
 
     def refresh_safety_case_table(self):
-        """Populate the Safety & Security Case table with solution nodes."""
-        tree = getattr(self, "_safety_case_tree", None)
-        if not tree or not getattr(tree, "winfo_exists", lambda: True)():
-            return
-        for iid in list(tree.get_children("")):
-            tree.delete(iid)
-        self._solution_lookup = {}
-        for diag in getattr(self, "all_gsn_diagrams", []):
-            for node in getattr(diag, "nodes", []):
-                if (
-                    getattr(node, "node_type", "").lower() == "solution"
-                    and getattr(node, "is_primary_instance", True)
-                ):
-                    self._solution_lookup[node.unique_id] = (node, diag)
-                    prob = ""
-                    v_target = ""
-                    spi_val = ""
-                    p_val = None
-                    vt_val = None
-                    target = getattr(node, "spi_target", "")
-                    if target:
-                        pg_name, spi_type = self._parse_spi_target(target)
-                        te = None
-                        for candidate in getattr(self, "top_events", []):
-                            if self._product_goal_name(candidate) == pg_name:
-                                te = candidate
-                                break
-                        if te:
-                            if spi_type == "FUSA":
-                                p = getattr(te, "probability", "")
-                                vt = PMHF_TARGETS.get(getattr(te, "safety_goal_asil", ""), "")
-                            else:
-                                p = getattr(te, "spi_probability", "")
-                                vt = getattr(te, "validation_target", "")
-                            if p not in ("", None):
-                                try:
-                                    p_val = float(p)
-                                    prob = f"{p_val:.2e}"
-                                except Exception:
-                                    prob = ""
-                                    p_val = None
-                            if vt not in ("", None):
-                                try:
-                                    vt_val = float(vt)
-                                    v_target = f"{vt_val:.2e}"
-                                except Exception:
-                                    v_target = ""
-                                    vt_val = None
-                            try:
-                                if vt_val not in (None, 0) and p_val not in (None, 0):
-                                    spi_val = f"{math.log10(vt_val / p_val):.2f}"
-                            except Exception:
-                                spi_val = ""
-                    tree.insert(
-                        "",
-                        "end",
-                        values=[
-                            node.user_name,
-                            node.description,
-                            node.work_product,
-                            node.evidence_link,
-                            v_target,
-                            prob,
-                            spi_val,
-                            CHECK_MARK if getattr(node, "evidence_sufficient", False) else "",
-                            getattr(node, "manager_notes", ""),
-                        ],
-                        tags=(node.unique_id,),
-                    )
+        return self.refresh_update.refresh_safety_case_table()
 
     def show_safety_case(self):
         """Display table of all solution nodes from GSN diagrams."""
         if hasattr(self, "_safety_case_tab") and self._safety_case_tab.winfo_exists():
             self.doc_nb.select(self._safety_case_tab)
-            self.refresh_safety_case_table()
+            self.refresh_update.refresh_safety_case_table()
             return
         self._safety_case_tab = self.lifecycle_ui._new_tab("Safety & Security Case")
         win = self._safety_case_tab
@@ -7722,9 +7095,9 @@ class AutoMLApp:
                     if new_val is not None:
                         self.push_undo_state()
                         setattr(te, attr, float(new_val))
-                        self.refresh_safety_case_table()
-                        self.refresh_safety_performance_indicators()
-                        self.update_views()
+                        self.refresh_update.refresh_safety_case_table()
+                        self.refresh_update.refresh_safety_performance_indicators()
+                        self.refresh_update.update_views()
             elif col_name == "Notes":
                 current = tree.set(row, "Notes")
                 new_val = simpledialog.askstring(
@@ -7754,7 +7127,7 @@ class AutoMLApp:
             node, diag = node_diag
             self.push_undo_state()
             GSNElementConfig(win, node, diag)
-            self.refresh_safety_case_table()
+            self.refresh_update.refresh_safety_case_table()
 
         self._edit_safety_case_item = edit_selected
 
@@ -7789,7 +7162,7 @@ class AutoMLApp:
 
         tree.bind("<Button-3>", on_right_click)
 
-        self.refresh_safety_case_table()
+        self.refresh_update.refresh_safety_case_table()
 
     def export_product_goal_requirements(self):
         """Export requirements traced to product goals including their ASIL."""
@@ -9967,7 +9340,7 @@ class AutoMLApp:
             self.safety_mgmt_window.pack(fill=tk.BOTH, expand=True)
 
         # Opening the toolbox can affect menu enablement, so refresh the UI.
-        refresh = getattr(self, "refresh_all", None)
+        refresh = getattr(self.refresh_update, "refresh_all", None)
         if callable(refresh):
             refresh()
 
@@ -10106,13 +9479,7 @@ class AutoMLApp:
         self.root.event_generate('<<StyleChanged>>', when='tail')
 
     def refresh_styles(self, event=None):
-        """Redraw all open diagram windows using current styles."""
-        if getattr(self, 'canvas', None):
-            self.canvas.config(bg=StyleManager.get_instance().canvas_bg)
-        for tab in getattr(self, 'diagram_tabs', {}).values():
-            for child in tab.winfo_children():
-                if hasattr(child, 'redraw'):
-                    child.redraw()
+        return self.refresh_update.refresh_styles(event)
 
     def show_hazard_explorer(self):
         self.risk_app.show_hazard_explorer(self)
@@ -10312,7 +9679,7 @@ class AutoMLApp:
             self._arch_tab = self.lifecycle_ui._new_tab("AutoML Explorer")
             self._arch_window = ArchitectureManagerDialog(self._arch_tab, self)
             self._arch_window.pack(fill=tk.BOTH, expand=True)
-        self.refresh_all()
+        self.refresh_update.refresh_all()
 
     def manage_gsn(self):
         self.gsn_manager.manage_gsn()
@@ -10330,7 +9697,7 @@ class AutoMLApp:
                 self._safety_exp_tab, self, self.safety_mgmt_toolbox
             )
             self._safety_exp_window.pack(fill=tk.BOTH, expand=True)
-        self.refresh_all()
+        self.refresh_update.refresh_all()
 
     def manage_safety_cases(self):
         if not hasattr(self, "safety_case_library"):
@@ -10345,7 +9712,7 @@ class AutoMLApp:
                 self._safety_case_exp_tab, self, self.safety_case_library
             )
             self._safety_case_window.pack(fill=tk.BOTH, expand=True)
-        self.refresh_all()
+        self.refresh_update.refresh_all()
 
 
     def _diagram_copy_strategy1(self):
@@ -10683,7 +10050,7 @@ class AutoMLApp:
                 )
             except AttributeError:
                 pass
-            self.update_views()
+            self.refresh_update.update_views()
             return
         clip_type = getattr(self, "diagram_clipboard_type", None)
         win = self.window_controllers._focused_cbn_window()
@@ -11027,7 +10394,7 @@ class AutoMLApp:
                 self.selected_node.description = new_desc
                 # Propagate the updated description across clones/original.
                 self.sync_nodes_by_id(self.selected_node)
-                self.update_views()
+                self.refresh_update.update_views()
         else:
             messagebox.showwarning("Edit Description", "Select a node first.")
 
@@ -11038,7 +10405,7 @@ class AutoMLApp:
                 self.selected_node.rationale = new_rat
                 # Synchronize rationale changes with related clones.
                 self.sync_nodes_by_id(self.selected_node)
-                self.update_views()
+                self.refresh_update.update_views()
         else:
             messagebox.showwarning("Edit Rationale", "Select a node first.")
 
@@ -11050,7 +10417,7 @@ class AutoMLApp:
                     self.selected_node.quant_value = new_val
                     # Keep all nodes sharing this ID up to date.
                     self.sync_nodes_by_id(self.selected_node)
-                    self.update_views()
+                    self.refresh_update.update_views()
                 else:
                     messagebox.showerror("Error", "Value must be between 1 and 5.")
             except Exception:
@@ -11065,7 +10432,7 @@ class AutoMLApp:
                 self.selected_node.gate_type = new_gt.upper()
                 # Reflect gate type changes everywhere.
                 self.sync_nodes_by_id(self.selected_node)
-                self.update_views()
+                self.refresh_update.update_views()
             else:
                 messagebox.showerror("Error", "Gate type must be AND or OR.")
         else:
@@ -11100,7 +10467,7 @@ class AutoMLApp:
 
         # Sync the changes to all clones.
         self.sync_nodes_by_id(target)
-        self.update_views()
+        self.refresh_update.update_views()
 
     def set_last_saved_state(self):
         """Record the current model state for change detection."""
@@ -11240,7 +10607,7 @@ class AutoMLApp:
             for child in tab.winfo_children():
                 if hasattr(child, "refresh_from_repository"):
                     child.refresh_from_repository()
-        self.refresh_all()
+        self.refresh_update.refresh_all()
         try:
             self.apply_governance_rules()
         except Exception:
@@ -11257,7 +10624,7 @@ class AutoMLApp:
             for child in tab.winfo_children():
                 if hasattr(child, "refresh_from_repository"):
                     child.refresh_from_repository()
-        self.refresh_all()
+        self.refresh_update.refresh_all()
         try:
             self.apply_governance_rules()
         except Exception:
@@ -11711,7 +11078,7 @@ class AutoMLApp:
                 "modified_by": doc.get("modified_by", CURRENT_USER_NAME),
             })
 
-        self.update_failure_list()
+        self.refresh_update.update_failure_list()
 
         node_map = {}
         for te in self.top_events:
@@ -11875,7 +11242,7 @@ class AutoMLApp:
             toolbox.register_loaded_work_product("Risk Assessment", doc.name)
         self.active_hara = self.hara_docs[0] if self.hara_docs else None
         self.hara_entries = self.active_hara.entries if self.active_hara else []
-        self.update_hazard_list()
+        self.refresh_update.update_hazard_list()
 
         self.stpa_docs = []
         for d in data.get("stpas", []):
@@ -12160,7 +11527,7 @@ class AutoMLApp:
             else:
                 self.review_data = None
 
-        self.update_hara_statuses()
+        self.refresh_update.update_hara_statuses()
         self.update_fta_statuses()
         self.versions = data.get("versions", [])
 
@@ -12171,7 +11538,7 @@ class AutoMLApp:
             self.apply_governance_rules()
         except Exception:
             pass
-        self.update_views()
+        self.refresh_update.update_views()
 
     def save_model(self):
         self.project_manager.save_model()
@@ -12528,7 +11895,7 @@ class AutoMLApp:
                 self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
                 self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
                 self.canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
-                self.update_views()
+                self.refresh_update.update_views()
                 self.page_diagram = None
             else:
                 self.window_controllers.open_page_diagram(prev)
@@ -12550,7 +11917,7 @@ class AutoMLApp:
             self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
             self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
             self.canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
-            self.update_views()
+            self.refresh_update.update_views()
             self.page_diagram = None
 
     # --- Review Toolbox Methods ---
@@ -12652,7 +12019,7 @@ class AutoMLApp:
         """Sync safety goal ASILs from risk assessments and update requirement ASILs."""
         self.update_fta_statuses()
         self.sync_hara_to_safety_goals()
-        self.update_hazard_list()
+        self.refresh_update.update_hazard_list()
         self.update_all_requirement_asil()
         self.update_all_validation_criteria()
 
@@ -12666,7 +12033,7 @@ class AutoMLApp:
                 for p in r.participants:
                     p.done = False
                     p.approved = False
-        self.update_hara_statuses()
+        self.refresh_update.update_hara_statuses()
         self.update_fta_statuses()
 
     def invalidate_reviews_for_requirement(self, req_id):
