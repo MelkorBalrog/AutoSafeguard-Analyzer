@@ -1,4 +1,4 @@
-version: 0.2.22
+version: 0.2.26
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1642,10 +1642,13 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.25 - Refactor core into modular mixins for UI setup, events, persistence and analysis utilities.
+- 0.2.27 - Refactor core into modular mixins for UI setup, events, persistence and analysis utilities.
+- 0.2.26 - Import Syncing_And_IDs in fallback path to avoid initialization error.
+- 0.2.25 - Extract page and PAA helpers into dedicated module and delegate from core.
 - 0.2.24 - Move UI lifecycle helpers to dedicated class and delegate calls.
 - 0.2.23 - Correct default style path so governance diagrams and icons retain their colours.
 - 0.2.22 - Re-export add_treeview_scrollbars via gui.utils for legacy compatibility.
+- 0.2.25 - Extracted window opening helpers into dedicated class.
 - 0.2.21 - Expose DIALOG_BG_COLOR via gui.utils and re-export drawing helper for compatibility.
 - 0.2.20 - Re-export logger through gui package to fix DIALOG_BG_COLOR import failure.
 - 0.2.19 - Provide compatibility wrapper for splash screen import.
