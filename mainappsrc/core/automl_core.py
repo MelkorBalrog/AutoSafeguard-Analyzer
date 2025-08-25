@@ -41,16 +41,13 @@ from gui.styles.style_manager import StyleManager
 from gui.toolboxes.review_toolbox import ReviewData, ReviewParticipant, ReviewComment
 from functools import partial
 # Governance helper class
-from mainappsrc.managers.governance_manager import GovernanceManager
 from mainappsrc.managers.paa_manager import PrototypeAssuranceManager
-from mainappsrc.managers.product_goal_manager import ProductGoalManager
 from gui.toolboxes.safety_management_toolbox import SafetyManagementToolbox
 from gui.explorers.safety_case_explorer import SafetyCaseExplorer
 from gui.windows.gsn_diagram_window import GSN_WINDOWS
 from gui.windows.causal_bayesian_network_window import CBN_WINDOWS
 from gui.windows.gsn_config_window import GSNElementConfig
 from mainappsrc.models.gsn import GSNDiagram, GSNModule
-from mainappsrc.managers.gsn_manager import GSNManager
 from mainappsrc.models.gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from gui.utils.closable_notebook import ClosableNotebook
 from gui.controls.mac_button_style import (
@@ -74,6 +71,7 @@ from .editors import (
     SafetyConceptEditorMixin,
     RequirementsEditorMixin,
 )
+from .app_initializer import AppInitializer
 from analysis.mechanisms import (
     DiagnosticMechanism,
     MechanismLibrary,
@@ -174,6 +172,7 @@ import tkinter.font as tkFont
 import builtins
 from mainappsrc.managers.user_manager import UserManager
 from mainappsrc.managers.project_manager import ProjectManager
+from mainappsrc.ui.project_properties_dialog import ProjectPropertiesDialog
 from mainappsrc.managers.sotif_manager import SOTIFManager
 from mainappsrc.managers.cyber_manager import CyberSecurityManager
 from mainappsrc.managers.cta_manager import ControlTreeManager
@@ -232,7 +231,6 @@ else:  # pragma: no cover - fallback for minimal stubs
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from analysis.utils import (
     append_unique_insensitive,
-    update_probability_tables,
     EXPOSURE_PROBABILITIES,
     CONTROLLABILITY_PROBABILITIES,
     SEVERITY_PROBABILITIES,
@@ -390,18 +388,6 @@ class AutoMLApp(
         self.setup_style(root)
         self.lifecycle_ui = AppLifecycleUI(self, root)
         self.labels_styling = Editing_Labels_Styling(self)
-        self.top_events = []
-        self.cta_events = []
-        self.paa_events = []
-        self.fta_root_node = None
-        self.cta_root_node = None
-        self.paa_root_node = None
-        self.analysis_tabs = {}
-        self.shared_product_goals = {}
-        self.product_goal_manager = ProductGoalManager()
-        self.selected_node = None
-        self.clone_offset_counter = {}
-        self._loaded_model_paths = []
         self.root.title("AutoML-Analyzer")
         self.messagebox = messagebox
         self.version = VERSION
@@ -411,112 +397,7 @@ class AutoMLApp(
         self.lifecycle_ui._init_nav_button_style()
         self.setup_services()
         self.setup_icons()
-        self.clipboard_node = None
-        self.diagram_clipboard = None
-        self.diagram_clipboard_type = None
-        self.active_arch_window = None
-        self.cut_mode = False
-        self.page_history = []
-        self.project_properties = {
-            "pdf_report_name": "AutoML-Analyzer PDF Report",
-            "pdf_detailed_formulas": True,
-            "exposure_probabilities": EXPOSURE_PROBABILITIES.copy(),
-            "controllability_probabilities": CONTROLLABILITY_PROBABILITIES.copy(),
-            "severity_probabilities": SEVERITY_PROBABILITIES.copy(),
-        }
-        update_probability_tables(
-            self.project_properties["exposure_probabilities"],
-            self.project_properties["controllability_probabilities"],
-            self.project_properties["severity_probabilities"],
-        )
-        self.item_definition = {"description": "", "assumptions": ""}
-        self.safety_concept = {"functional": "", "technical": "", "cybersecurity": ""}
-        self.mission_profiles = []
-        self.fmeda_components = []
-        self.reliability_analyses = []
-        self.reliability_components = []
-        self.reliability_total_fit = 0.0
-        self.spfm = 0.0
-        self.lpfm = 0.0
-        self.reliability_dc = 0.0
-        # Lists of user-defined faults and malfunctions
-        self.faults: list[str] = []
-        self.malfunctions: list[str] = []
-        self.hazards: list[str] = []
-        self.hazard_severity: dict[str, int] = {}
-        self.failures: list[str] = []
-        self.triggering_conditions: list[str] = []
-        self.functional_insufficiencies: list[str] = []
-        self.triggering_condition_nodes = []
-        self.functional_insufficiency_nodes = []
-        self.hazop_docs = []  # list of HazopDoc
-        self.hara_docs = []   # list of HaraDoc
-        self.stpa_docs = []   # list of StpaDoc
-        self.threat_docs = []  # list of ThreatDoc
-        self.active_hazop = None
-        self.active_hara = None
-        self.active_stpa = None
-        self.active_threat = None
-        self.hazop_entries = []  # backwards compatibility for active doc
-        self.hara_entries = []
-        self.stpa_entries = []
-        self.threat_entries = []
-        self.fi2tc_docs = []  # list of FI2TCDoc
-        self.tc2fi_docs = []  # list of TC2FIDoc
-        self.active_fi2tc = None
-        self.active_tc2fi = None
-        self.cbn_docs = []  # list of CausalBayesianNetworkDoc
-        self.active_cbn = None
-        self.cybersecurity_goals: list[CybersecurityGoal] = []
-        self.arch_diagrams = []
-        self.management_diagrams = []
-        self.gsn_modules = []  # top-level GSN modules
-        self.gsn_diagrams = []  # diagrams not assigned to a module
-        self.gsn_manager = GSNManager(self)
-        # Track open diagram tabs to avoid duplicates
-        self.diagram_tabs: dict[str, ttk.Frame] = {}
-        self.top_events = []
-        self.reviews = []
-        self.review_data = None
-        self.review_window = None
-        self.governance_manager = GovernanceManager(self)
-        self.safety_mgmt_toolbox = SafetyManagementToolbox()
-        self.governance_manager.attach_toolbox(self.safety_mgmt_toolbox)
-        self.probability_reliability = Probability_Reliability(self)
-        self.current_user = ""
-        self.comment_target = None
-        self.undo_manager = UndoRedoManager(self)
-        # Track which work products are currently enabled. Menu entries for
-        # these products remain disabled until the corresponding governance
-        # diagram adds the work product. The mapping stores references to the
-        # menu and entry index for each work product so they can be toggled at
-        # runtime.
-        self.enabled_work_products: set[str] = set()
-        self.work_product_menus: dict[str, list[tuple[tk.Menu, int]]] = {}
-        self.versions = []
-        self.diff_nodes = []
-        self.fi2tc_entries = []
-        self.tc2fi_entries = []
-        self.scenario_libraries = []
-        self.odd_libraries = []
-        self.odd_elements = []
-        self.update_odd_elements()
-        # Provide the drawing helper to dialogs that may be opened later
-        self.fta_drawing_helper = fta_drawing_helper
-
-        # Tree structure helpers
-        self.structure_tree_operations = Structure_Tree_Operations(self)
-
-        self.mechanism_libraries = []
-        self.selected_mechanism_libraries = []
-        self.load_default_mechanisms()
-
-        self.mechanism_libraries = []
-        self.selected_mechanism_libraries = []
-        self.load_default_mechanisms()
-
-        self.mechanism_libraries = []
-        self.load_default_mechanisms()
+        AppInitializer(self).initialize()
 
         menubar = tk.Menu(root)
         file_menu = tk.Menu(menubar, tearoff=0)
@@ -1596,146 +1477,15 @@ class AutoMLApp(
     def sync_cyber_risk_to_goals(self):
         return self.probability_reliability.sync_cyber_risk_to_goals()
 
-
     def add_top_level_event(self):
         return self.safety_analysis.add_top_level_event()
 
     def _build_probability_frame(self, parent, title: str, levels: range, values: dict, row: int, dialog_font):
         return self.probability_reliability._build_probability_frame(parent, title, levels, values, row, dialog_font)
 
-    def _apply_project_properties(
-        self,
-        name: str,
-        detailed: bool,
-        exp_vars: dict,
-        ctrl_vars: dict,
-        sev_vars: dict,
-        smt,
-        freeze: bool,
-    ) -> None:
-        """Persist updated project properties and refresh probability tables."""
-        self.project_properties["pdf_report_name"] = name
-        self.project_properties["pdf_detailed_formulas"] = detailed
-        self.project_properties["exposure_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-        }
-        self.project_properties["controllability_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-        }
-        self.project_properties["severity_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-        }
-        update_probability_tables(
-            self.project_properties["exposure_probabilities"],
-            self.project_properties["controllability_probabilities"],
-            self.project_properties["severity_probabilities"],
-        )
-        if smt:
-            self.governance_manager.freeze_governance_diagrams(freeze)
-
-    def edit_project_properties(self):
-        prop_win = tk.Toplevel(self.root)
-        prop_win.title("Project Properties")
-        prop_win.resizable(False, False)
-        dialog_font = tkFont.Font(family="Arial", size=10)
-
-        ttk.Label(prop_win, text="PDF Report Name:", font=dialog_font).grid(
-            row=0, column=0, padx=10, pady=10, sticky="w"
-        )
-        pdf_entry = ttk.Entry(prop_win, width=40, font=dialog_font)
-        pdf_entry.insert(0, self.project_properties.get("pdf_report_name", "AutoML-Analyzer PDF Report"))
-        pdf_entry.grid(row=0, column=1, padx=10, pady=10)
-
-        # Checkbox to choose between detailed formulas or score results only.
-        var_detailed = tk.BooleanVar(
-            value=self.project_properties.get("pdf_detailed_formulas", True)
-        )
-        chk = ttk.Checkbutton(
-            prop_win,
-            text="Show Detailed Formulas in PDF Report",
-            variable=var_detailed,
-        )
-        chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-
-        smt = getattr(self, "safety_mgmt_toolbox", None)
-        all_frozen = False
-        if smt:
-            diagrams = smt.list_diagrams()
-            all_frozen = diagrams and all(smt.diagram_frozen(d) for d in diagrams)
-        var_freeze = tk.BooleanVar(
-            value=self.project_properties.get("freeze_governance_diagrams", bool(all_frozen))
-        )
-        ttk.Checkbutton(
-            prop_win,
-            text="Freeze Governance Diagrams",
-            variable=var_freeze,
-        ).grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-
-        exp_vars = self._build_probability_frame(
-            prop_win,
-            "Exposure Probabilities P(E|HB)",
-            range(1, 5),
-            self.project_properties.get("exposure_probabilities", {}),
-            3,
-            dialog_font,
-        )
-        ctrl_vars = self._build_probability_frame(
-            prop_win,
-            "Controllability Probabilities P(C|E)",
-            range(1, 4),
-            self.project_properties.get("controllability_probabilities", {}),
-            4,
-            dialog_font,
-        )
-        sev_vars = self._build_probability_frame(
-            prop_win,
-            "Severity Probabilities P(S|C)",
-            range(1, 4),
-            self.project_properties.get("severity_probabilities", {}),
-            5,
-            dialog_font,
-        )
-
-        def save_props() -> None:
-            new_name = pdf_entry.get().strip()
-            if not new_name:
-                messagebox.showwarning(
-                    "Project Properties", "PDF Report Name cannot be empty."
-                )
-                return
-
-            self.project_properties["pdf_report_name"] = new_name
-            self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
-            self.project_properties["exposure_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-            }
-            self.project_properties["controllability_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-            }
-            self.project_properties["severity_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-            }
-            self.project_properties["freeze_governance_diagrams"] = var_freeze.get()
-            update_probability_tables(
-                self.project_properties["exposure_probabilities"],
-                self.project_properties["controllability_probabilities"],
-                self.project_properties["severity_probabilities"],
-            )
-            if smt:
-                self.governance_manager.freeze_governance_diagrams(var_freeze.get())
-            messagebox.showinfo(
-                "Project Properties", "Project properties updated."
-            )
-            prop_win.destroy()
-
-        ttk.Button(prop_win, text="Save", command=save_props, width=10).grid(
-            row=6, column=0, columnspan=2, pady=10
-        )
-        prop_win.update_idletasks()
-        prop_win.minsize(prop_win.winfo_width(), prop_win.winfo_height())
-        prop_win.transient(self.root)
-        prop_win.grab_set()
-        self.root.wait_window(prop_win)
+    def edit_project_properties(self) -> None:
+        """Open the project properties dialog."""
+        ProjectPropertiesDialog(self).show()
 
     def create_diagram_image(self):  # pragma: no cover - delegation
         return self.diagram_renderer.create_diagram_image()
@@ -6620,7 +6370,7 @@ class AutoMLApp(
                 self.project_properties[key] = {
                     int(k): float(v) for k, v in probs.items()
                 }
-        update_probability_tables(
+        self.probability_reliability.update_probability_tables(
             self.project_properties.get("exposure_probabilities"),
             self.project_properties.get("controllability_probabilities"),
             self.project_properties.get("severity_probabilities"),
@@ -7064,7 +6814,7 @@ class AutoMLApp(
             props.get("severity_probabilities") or SEVERITY_PROBABILITIES
         )
         self.project_properties = props
-        update_probability_tables(
+        self.probability_reliability.update_probability_tables(
             self.project_properties["exposure_probabilities"],
             self.project_properties["controllability_probabilities"],
             self.project_properties["severity_probabilities"],

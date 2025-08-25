@@ -21,12 +21,12 @@ from __future__ import annotations
 """Project persistence utilities for AutoMLApp."""
 
 from tkinter import filedialog, simpledialog
+import tkinter as tk
 from gui.dialogs.dialog_utils import askstring_fixed
 from analysis.utils import (
     EXPOSURE_PROBABILITIES,
     CONTROLLABILITY_PROBABILITIES,
     SEVERITY_PROBABILITIES,
-    update_probability_tables,
 )
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from mainappsrc.core import config_utils
@@ -37,6 +37,39 @@ class ProjectManager:
 
     def __init__(self, app: "AutoMLApp") -> None:
         self.app = app
+
+    # ------------------------------------------------------------------
+    def apply_project_properties(
+        self,
+        name: str,
+        detailed: bool,
+        exp_vars: dict[int, tk.Variable],
+        ctrl_vars: dict[int, tk.Variable],
+        sev_vars: dict[int, tk.Variable],
+        freeze: bool,
+    ) -> None:
+        """Persist updated project properties and refresh probability tables."""
+        app = self.app
+        app.project_properties["pdf_report_name"] = name
+        app.project_properties["pdf_detailed_formulas"] = detailed
+        app.project_properties["exposure_probabilities"] = {
+            lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
+        }
+        app.project_properties["controllability_probabilities"] = {
+            lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
+        }
+        app.project_properties["severity_probabilities"] = {
+            lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
+        }
+        app.project_properties["freeze_governance_diagrams"] = freeze
+        update_probability_tables(
+            app.project_properties["exposure_probabilities"],
+            app.project_properties["controllability_probabilities"],
+            app.project_properties["severity_probabilities"],
+        )
+        smt = getattr(app, "safety_mgmt_toolbox", None)
+        if smt:
+            app.governance_manager.freeze_governance_diagrams(freeze)
 
     # ------------------------------------------------------------------
     def new_model(self) -> None:
@@ -88,7 +121,7 @@ class ProjectManager:
             "controllability_probabilities": CONTROLLABILITY_PROBABILITIES.copy(),
             "severity_probabilities": SEVERITY_PROBABILITIES.copy(),
         }
-        update_probability_tables(
+        app.probability_reliability.update_probability_tables(
             app.project_properties["exposure_probabilities"],
             app.project_properties["controllability_probabilities"],
             app.project_properties["severity_probabilities"],
