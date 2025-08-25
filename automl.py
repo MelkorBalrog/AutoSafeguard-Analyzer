@@ -15,9 +15,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""Compatibility alias exposing :mod:`AutoML` as ``automl``.
 
-"""Project version information."""
+This thin wrapper allows legacy imports such as ``import automl``
+while re-exporting all public names from the main :mod:`AutoML` module.
+"""
 
-VERSION = "0.2.52"
+from AutoML import *  # noqa: F401,F403
 
-__all__ = ["VERSION"]

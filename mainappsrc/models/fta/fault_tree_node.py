@@ -295,6 +295,35 @@ class FaultTreeNode:
             node._original_id = None
         return node
 
+    @classmethod
+    def add_basic_event_from_fmea(cls, parent_node, selected):
+        """Create and attach a basic event node from an FMEA/FMEDA entry.
+
+        Parameters
+        ----------
+        parent_node:
+            The :class:`FaultTreeNode` under which the new event will be
+            attached.
+        selected:
+            An object exposing a ``to_dict`` method and optional
+            ``unique_id`` attribute representing the failure mode.
+
+        Returns
+        -------
+        FaultTreeNode
+            The newly created node.
+        """
+
+        data = selected.to_dict()
+        data.pop("unique_id", None)
+        data["children"] = []
+        new_node = cls.from_dict(data, parent_node)
+        if hasattr(selected, "unique_id"):
+            new_node.failure_mode_ref = selected.unique_id
+        parent_node.children.append(new_node)
+        new_node.parents.append(parent_node)
+        return new_node
+
     # ------------------------------------------------------------------
     def clone(self, parent=None):
         """Return a copy of this node referencing the same original."""
