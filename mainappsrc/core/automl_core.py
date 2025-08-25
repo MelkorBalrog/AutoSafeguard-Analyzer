@@ -449,6 +449,7 @@ try:  # pragma: no cover - support direct module import
     from .project_editor_subapp import ProjectEditorSubApp
     from .risk_assessment_subapp import RiskAssessmentSubApp
     from .reliability_subapp import ReliabilitySubApp
+    from .probability_reliability import Probability_Reliability
     from .syncing_and_ids import Syncing_And_IDs
     from .version import VERSION
 except Exception:  # pragma: no cover
@@ -465,6 +466,8 @@ except Exception:  # pragma: no cover
         from mainappsrc.subapps.project_editor_subapp import ProjectEditorSubApp
         from mainappsrc.subapps.risk_assessment_subapp import RiskAssessmentSubApp
         from mainappsrc.subapps.reliability_subapp import ReliabilitySubApp
+        from mainappsrc.core.probability_reliability import Probability_Reliability
+        from mainappsrc.core.syncing_and_ids import Syncing_And_IDs
         from mainappsrc.version import VERSION
 try:  # pragma: no cover
     from .models.fta.fault_tree_node import FaultTreeNode
