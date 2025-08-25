@@ -24,6 +24,13 @@ from __future__ import annotations
 import json
 from typing import Dict, Any, Set
 
+import tkinter as tk
+from tkinter import ttk, simpledialog
+
+from gui.controls import messagebox
+from config.automl_constants import PMHF_TARGETS
+from mainappsrc.models.fta.fault_tree_node import FaultTreeNode
+
 try:  # pragma: no cover - optional dependency
     from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 except Exception:  # pragma: no cover
@@ -135,6 +142,333 @@ class RequirementsManagerSubApp:
         goals = ", ".join(self.get_requirement_goal_names(rid))
         base = self.format_requirement(req)
         return f"{base} (Alloc: {alloc}; SGs: {goals})"
+
+    # ------------------------------------------------------------------
+    def show_safety_goals_matrix(self) -> None:
+        """Display product goals and derived requirements in a tree view."""
+        app = self.app
+        if hasattr(app, "_sg_matrix_tab") and app._sg_matrix_tab.winfo_exists():
+            app.doc_nb.select(app._sg_matrix_tab)
+            return
+        app._sg_matrix_tab = app.lifecycle_ui._new_tab("Product Goals Matrix")
+        win = app._sg_matrix_tab
+        columns = [
+            "ID",
+            "ASIL",
+            "Target PMHF",
+            "CAL",
+            "SafeState",
+            "FTTI",
+            "Acc Rate",
+            "On Hours",
+            "Val Target",
+            "Profile",
+            "Val Desc",
+            "Acceptance",
+            "Description",
+            "Text",
+        ]
+        tree = ttk.Treeview(win, columns=columns, show="tree headings")
+        tree.heading("ID", text="Requirement ID")
+        tree.heading("ASIL", text="ASIL")
+        tree.heading("Target PMHF", text="Target PMHF (1/h)")
+        tree.heading("CAL", text="CAL")
+        tree.heading("SafeState", text="Safe State")
+        tree.heading("FTTI", text="FTTI")
+        tree.heading("Acc Rate", text="Acc Rate (1/h)")
+        tree.heading("On Hours", text="On Hours")
+        tree.heading("Val Target", text="Val Target")
+        tree.heading("Profile", text="Profile")
+        tree.heading("Val Desc", text="Val Desc")
+        tree.heading("Acceptance", text="Acceptance")
+        tree.heading("Description", text="Description")
+        tree.heading("Text", text="Text")
+        tree.column("ID", width=120)
+        tree.column("ASIL", width=60)
+        tree.column("Target PMHF", width=120)
+        tree.column("CAL", width=60)
+        tree.column("SafeState", width=100)
+        tree.column("FTTI", width=80)
+        tree.column("Acc Rate", width=100)
+        tree.column("On Hours", width=100)
+        tree.column("Val Target", width=120)
+        tree.column("Profile", width=120)
+        tree.column("Val Desc", width=200)
+        tree.column("Acceptance", width=200)
+        tree.column("Description", width=200)
+        tree.column("Text", width=300)
+        vsb = ttk.Scrollbar(win, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(win, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        win.columnconfigure(0, weight=1)
+        win.rowconfigure(0, weight=1)
+        for te in app.top_events:
+            sg_text = te.safety_goal_description or (te.user_name or f"SG {te.unique_id}")
+            sg_id = te.user_name or f"SG {te.unique_id}"
+            cal = app.get_cyber_goal_cal(sg_id)
+            asil = te.safety_goal_asil or "QM"
+            target = PMHF_TARGETS.get(asil, 1.0)
+            parent_iid = tree.insert(
+                "",
+                "end",
+                text=sg_text,
+                values=[
+                    sg_id,
+                    te.safety_goal_asil,
+                    f"{target:.1e}",
+                    cal,
+                    te.safe_state,
+                    getattr(te, "ftti", ""),
+                    str(getattr(te, "acceptance_rate", "")),
+                    getattr(te, "operational_hours_on", ""),
+                    getattr(te, "validation_target", ""),
+                    getattr(te, "mission_profile", ""),
+                    getattr(te, "validation_desc", ""),
+                    getattr(te, "acceptance_criteria", ""),
+                    sg_text,
+                    "",
+                ],
+            )
+            reqs = app.collect_requirements_recursive(te)
+            seen_ids = set()
+            for req in reqs:
+                req_id = req.get("id")
+                if req_id in seen_ids:
+                    continue
+                seen_ids.add(req_id)
+                tree.insert(
+                    parent_iid,
+                    "end",
+                    text="",
+                    values=[
+                        req_id,
+                        req.get("asil", ""),
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        req.get("text", ""),
+                    ],
+                )
+
+    # ------------------------------------------------------------------
+    def show_product_goals_editor(self) -> None:
+        """Allow editing of top-level product goals."""
+        app = self.app
+        if hasattr(app, "_sg_tab") and app._sg_tab.winfo_exists():
+            app.doc_nb.select(app._sg_tab)
+            return
+        app._sg_tab = app.lifecycle_ui._new_tab("Product Goals")
+        win = app._sg_tab
+
+        columns = [
+            "ID",
+            "ASIL",
+            "Target PMHF",
+            "Safe State",
+            "FTTI",
+            "Acc Rate",
+            "On Hours",
+            "Val Target",
+            "Profile",
+            "Val Desc",
+            "Acceptance",
+            "Description",
+        ]
+        tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
+        for c in columns:
+            heading = "Target PMHF (1/h)" if c == "Target PMHF" else c
+            tree.heading(c, text=heading)
+            tree.column(
+                c,
+                width=120 if c not in ("Description", "Val Desc", "Acceptance") else 300,
+                anchor="center",
+            )
+        tree.pack(fill=tk.BOTH, expand=True)
+
+        def refresh_tree() -> None:
+            tree.delete(*tree.get_children())
+            for sg in app.top_events:
+                name = sg.safety_goal_description or (sg.user_name or f"SG {sg.unique_id}")
+                sg.safety_goal_asil = app.get_hara_goal_asil(name)
+                pmhf_target = PMHF_TARGETS.get(sg.safety_goal_asil, 1.0)
+                tree.insert(
+                    "",
+                    "end",
+                    iid=sg.unique_id,
+                    values=[
+                        sg.user_name or f"SG {sg.unique_id}",
+                        sg.safety_goal_asil,
+                        f"{pmhf_target:.2e}",
+                        sg.safe_state,
+                        getattr(sg, "ftti", ""),
+                        str(getattr(sg, "acceptance_rate", "")),
+                        getattr(sg, "operational_hours_on", ""),
+                        getattr(sg, "validation_target", ""),
+                        getattr(sg, "mission_profile", ""),
+                        getattr(sg, "validation_desc", ""),
+                        getattr(sg, "acceptance_criteria", ""),
+                        sg.safety_goal_description,
+                    ],
+                )
+
+        class SGDialog(simpledialog.Dialog):
+            def __init__(self, parent, app, title, initial=None):
+                self.app = app
+                self.initial = initial
+                super().__init__(parent, title=title)
+
+            def body(self, master):
+                nb = ttk.Notebook(master)
+                nb.pack(fill=tk.BOTH, expand=True)
+
+                fs_tab = ttk.Frame(nb)
+                sotif_tab = ttk.Frame(nb)
+                cyber_tab = ttk.Frame(nb)
+                nb.add(fs_tab, text="Functional Safety")
+                nb.add(sotif_tab, text="SOTIF")
+                nb.add(cyber_tab, text="Cybersecurity")
+
+                name = getattr(self.initial, "safety_goal_description", "") or getattr(
+                    self.initial, "user_name", ""
+                )
+
+                # --- Functional Safety fields ---
+                ttk.Label(fs_tab, text="ID:").grid(row=0, column=0, sticky="e")
+                self.id_var = tk.StringVar(value=getattr(self.initial, "user_name", ""))
+                self.id_entry = tk.Entry(fs_tab, textvariable=self.id_var)
+                self.id_entry.grid(row=0, column=1, padx=5, pady=5)
+
+                ttk.Label(fs_tab, text="ASIL:").grid(row=1, column=0, sticky="e")
+                self.asil_var = tk.StringVar(value=self.app.get_hara_goal_asil(name))
+                ttk.Label(fs_tab, textvariable=self.asil_var).grid(
+                    row=1, column=1, padx=5, pady=5, sticky="w"
+                )
+
+                ttk.Label(fs_tab, text="Target PMHF (1/h):").grid(row=2, column=0, sticky="e")
+                pmhf = PMHF_TARGETS.get(self.asil_var.get(), 1.0)
+                self.pmhf_var = tk.StringVar(value=f"{pmhf:.2e}")
+                tk.Entry(fs_tab, textvariable=self.pmhf_var, state="readonly").grid(
+                    row=2, column=1, padx=5, pady=5, sticky="w"
+                )
+
+                ttk.Label(fs_tab, text="Safe State:").grid(row=3, column=0, sticky="e")
+                self.state_var = tk.StringVar(value=getattr(self.initial, "safe_state", ""))
+                tk.Entry(fs_tab, textvariable=self.state_var).grid(
+                    row=3, column=1, padx=5, pady=5
+                )
+
+                ttk.Label(fs_tab, text="FTTI:").grid(row=4, column=0, sticky="e")
+                self.ftti_var = tk.StringVar(value=getattr(self.initial, "ftti", ""))
+                tk.Entry(
+                    fs_tab,
+                    textvariable=self.ftti_var,
+                    validate="key",
+                    validatecommand=(
+                        master.register(self.app.validation_consistency.validate_float),
+                        "%P",
+                    ),
+                ).grid(row=4, column=1, padx=5, pady=5)
+
+                ttk.Label(fs_tab, text="Description:").grid(row=5, column=0, sticky="ne")
+                self.desc_text = tk.Text(fs_tab, width=30, height=3, wrap="word")
+                self.desc_text.insert(
+                    "1.0", getattr(self.initial, "safety_goal_description", "")
+                )
+                self.desc_text.grid(row=5, column=1, padx=5, pady=5)
+
+                # --- SOTIF fields ---
+                self.app.sotif_manager.build_goal_dialog(self, sotif_tab, self.initial)
+
+                # --- Cybersecurity fields ---
+                self.cal_var = self.app.cyber_manager.add_goal_dialog_fields(
+                    cyber_tab, name
+                )
+                return self.id_entry
+
+            def apply(self):
+                desc = self.desc_text.get("1.0", "end-1c").strip()
+                sg_name = desc or self.id_var.get().strip()
+                asil = self.app.get_hara_goal_asil(sg_name)
+                self.result = {
+                    "id": self.id_var.get().strip(),
+                    "asil": asil,
+                    "state": self.state_var.get().strip(),
+                    "ftti": self.ftti_var.get().strip(),
+                    "desc": desc,
+                }
+                self.result.update(self.app.sotif_manager.collect_goal_data(self))
+
+        def add_sg() -> None:
+            dlg = SGDialog(win, app, "Add Product Goal")
+            if dlg.result:
+                node = FaultTreeNode(dlg.result["id"], "TOP EVENT")
+                node.safety_goal_asil = dlg.result["asil"]
+                node.safe_state = dlg.result["state"]
+                node.ftti = dlg.result["ftti"]
+                node.acceptance_rate = float(dlg.result.get("accept_rate", 0.0) or 0.0)
+                node.operational_hours_on = float(dlg.result.get("op_hours", 0.0) or 0.0)
+                node.update_validation_target()
+                node.mission_profile = dlg.result.get("profile", "")
+                node.validation_desc = dlg.result["val_desc"]
+                node.acceptance_criteria = dlg.result["accept"]
+                node.safety_goal_description = dlg.result["desc"]
+                app.top_events.append(node)
+                refresh_tree()
+                app.update_views()
+
+        def edit_sg() -> None:
+            sel = tree.selection()
+            if not sel:
+                return
+            uid = int(sel[0])
+            sg = app.find_node_by_id_all(uid)
+            dlg = SGDialog(win, app, "Edit Product Goal", sg)
+            if dlg.result:
+                sg.user_name = dlg.result["id"]
+                sg.safety_goal_asil = dlg.result["asil"]
+                sg.safe_state = dlg.result["state"]
+                sg.ftti = dlg.result["ftti"]
+                sg.acceptance_rate = float(dlg.result.get("accept_rate", 0.0) or 0.0)
+                sg.operational_hours_on = float(dlg.result.get("op_hours", 0.0) or 0.0)
+                sg.update_validation_target()
+                sg.mission_profile = dlg.result.get("profile", "")
+                sg.validation_desc = dlg.result["val_desc"]
+                sg.acceptance_criteria = dlg.result["accept"]
+                sg.safety_goal_description = dlg.result["desc"]
+                refresh_tree()
+                app.update_views()
+
+        def del_sg() -> None:
+            sel = tree.selection()
+            if not sel:
+                return
+            uid = int(sel[0])
+            sg = app.find_node_by_id_all(uid)
+            if sg and messagebox.askyesno("Delete", "Delete product goal?"):
+                app.top_events = [t for t in app.top_events if t.unique_id != uid]
+                refresh_tree()
+                app.update_views()
+
+        tree.bind("<Double-1>", lambda e: edit_sg())
+
+        btn = ttk.Frame(win)
+        btn.pack(fill=tk.X)
+        ttk.Button(btn, text="Add", command=add_sg).pack(side=tk.LEFT)
+        ttk.Button(btn, text="Edit", command=edit_sg).pack(side=tk.LEFT)
+        ttk.Button(btn, text="Delete", command=del_sg).pack(side=tk.LEFT)
+
+        refresh_tree()
 
     # ------------------------------------------------------------------
     def collect_reqs(self, node_dict: Dict[str, Any], target: Dict[str, Any]) -> None:
