@@ -43,6 +43,7 @@ from functools import partial
 # Governance helper class
 from mainappsrc.managers.governance_manager import GovernanceManager
 from mainappsrc.managers.paa_manager import PrototypeAssuranceManager
+from mainappsrc.managers.product_goal_manager import ProductGoalManager
 from gui.toolboxes.safety_management_toolbox import SafetyManagementToolbox
 from gui.explorers.safety_case_explorer import SafetyCaseExplorer
 from gui.windows.gsn_diagram_window import GSN_WINDOWS
@@ -445,6 +446,7 @@ class AutoMLApp(
         self.paa_root_node = None
         self.analysis_tabs = {}
         self.shared_product_goals = {}
+        self.product_goal_manager = ProductGoalManager()
         self.selected_node = None
         self.clone_offset_counter = {}
         self._loaded_model_paths = []
@@ -1614,27 +1616,10 @@ class AutoMLApp(
 
 
     def _update_shared_product_goals(self):
-        groups = {}
-        for te in self.top_events + getattr(self, "cta_events", []) + getattr(self, "paa_events", []):
-            mal = getattr(te, "malfunction", "")
-            if mal:
-                groups.setdefault(mal, []).append(te)
-        self.shared_product_goals = getattr(self, "shared_product_goals", {})
-        for mal, events in groups.items():
-            if len(events) > 1:
-                pg = self.shared_product_goals.get(mal)
-                if not pg:
-                    pg = {"name": events[0].user_name}
-                    self.shared_product_goals[mal] = pg
-                for e in events:
-                    e.user_name = pg["name"]
-                    e.name_readonly = True
-                    e.product_goal = pg
-            else:
-                self.shared_product_goals.pop(mal, None)
-                ev = events[0]
-                ev.name_readonly = False
-                ev.product_goal = None
+        events = self.top_events + getattr(self, "cta_events", []) + getattr(self, "paa_events", [])
+        self.shared_product_goals = self.product_goal_manager.update_shared_product_goals(
+            events, getattr(self, "shared_product_goals", {})
+        )
 
 
     def update_hazard_severity(self, hazard: str, severity: int | str) -> None:
