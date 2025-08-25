@@ -19,37 +19,37 @@ class DiagramRenderer:
 
     # Basic node and subtree drawing -------------------------------------------------
     def draw_node(self, *args, **kwargs):
-        return self.app.draw_node(*args, **kwargs)
+        return self.app.drawing_manager.draw_node(*args, **kwargs)
 
     def draw_subtree(self, *args, **kwargs):
-        return self.app.draw_subtree(*args, **kwargs)
+        return self.app.drawing_manager.draw_subtree(*args, **kwargs)
 
     def draw_subtree_with_filter(self, *args, **kwargs):
-        return self.app.draw_subtree_with_filter(*args, **kwargs)
+        return self.app.drawing_manager.draw_subtree_with_filter(*args, **kwargs)
 
     def draw_connections(self, *args, **kwargs):
-        return self.app.draw_connections(*args, **kwargs)
+        return self.app.drawing_manager.draw_connections(*args, **kwargs)
 
     def draw_connections_subtree(self, *args, **kwargs):
-        return self.app.draw_connections_subtree(*args, **kwargs)
+        return self.app.drawing_manager.draw_connections_subtree(*args, **kwargs)
 
     def draw_node_on_canvas_pdf(self, *args, **kwargs):
-        return self.app.draw_node_on_canvas_pdf(*args, **kwargs)
+        return self.app.drawing_manager.draw_node_on_canvas_pdf(*args, **kwargs)
 
     def draw_node_on_page_canvas(self, *args, **kwargs):
-        return self.app.draw_node_on_page_canvas(*args, **kwargs)
+        return self.app.drawing_manager.draw_node_on_page_canvas(*args, **kwargs)
 
     def draw_page_grid(self, *args, **kwargs):
-        return self.app.draw_page_grid(*args, **kwargs)
+        return self.app.drawing_manager.draw_page_grid(*args, **kwargs)
 
     def draw_page_nodes_subtree(self, *args, **kwargs):
-        return self.app.draw_page_nodes_subtree(*args, **kwargs)
+        return self.app.drawing_manager.draw_page_nodes_subtree(*args, **kwargs)
 
     def draw_page_connections_subtree(self, *args, **kwargs):
-        return self.app.draw_page_connections_subtree(*args, **kwargs)
+        return self.app.drawing_manager.draw_page_connections_subtree(*args, **kwargs)
 
     def draw_page_subtree(self, *args, **kwargs):
-        return self.app.draw_page_subtree(*args, **kwargs)
+        return self.app.drawing_manager.draw_page_subtree(*args, **kwargs)
 
     # Rendering and canvas management ------------------------------------------------
     def render_cause_effect_diagram(self, *args, **kwargs):
