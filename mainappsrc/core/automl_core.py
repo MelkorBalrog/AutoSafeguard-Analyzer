@@ -268,6 +268,10 @@ from gui.dialogs.user_select_dialog import UserSelectDialog
 from gui.dialogs.decomposition_dialog import DecompositionDialog
 from dataclasses import asdict
 from pathlib import Path
+from .ui_setup import UISetupMixin
+from .event_handlers import EventHandlersMixin
+from .persistence_wrappers import PersistenceWrappersMixin
+from .analysis_utils import AnalysisUtilsMixin
 from analysis.mechanisms import (
     DiagnosticMechanism,
     MechanismLibrary,
@@ -539,7 +543,7 @@ from gui.dialogs.edit_node_dialog import EditNodeDialog, DecompositionDialog
 ##########################################
 # Main Application (Parent Diagram)
 ##########################################
-class AutoMLApp:
+class AutoMLApp(UISetupMixin, EventHandlersMixin, PersistenceWrappersMixin, AnalysisUtilsMixin):
     """Main application window for AutoML Analyzer."""
 
     _instance: Optional["AutoMLApp"] = None
@@ -2395,23 +2399,6 @@ class AutoMLApp:
                                text=detailed_eq, anchor="e", fill="gray",
                                font=self.diagram_font)
 
-    def save_diagram_png(self):
-        self.diagram_export_app.save_diagram_png()
-
-    def on_treeview_click(self, event):
-        self.tree_app.on_treeview_click(self, event)
-
-    def on_analysis_tree_double_click(self, event):
-        self.tree_app.on_analysis_tree_double_click(self, event)
-
-    def on_analysis_tree_right_click(self, event):
-        self.tree_app.on_analysis_tree_right_click(self, event)
-
-    def on_analysis_tree_select(self, _event):
-        """Update property view when a tree item is selected."""
-        self.tree_app.on_analysis_tree_select(self, _event)
-
-
     def rename_selected_tree_item(self):
         self.tree_app.rename_selected_tree_item(self)
 
@@ -3058,22 +3045,6 @@ class AutoMLApp:
                             goals.append(te)
                             seen.add(sg_name)
         return goals
-
-    def classify_scenarios(self):
-        """Return two lists of scenario names grouped by category."""
-        use_case = []
-        sotif = []
-        for lib in self.scenario_libraries:
-            for sc in lib.get("scenarios", []):
-                if isinstance(sc, dict):
-                    name = sc.get("name", "")
-                    if sc.get("tcs") or sc.get("fis") or sc.get("tc") or sc.get("fi") or sc.get("type") == "sotif":
-                        sotif.append(name)
-                    else:
-                        use_case.append(name)
-                else:
-                    use_case.append(sc)
-        return {"use_case": use_case, "sotif": sotif}
 
     def get_scenario_exposure(self, name: str) -> int:
         """Return exposure level for the given scenario name."""
@@ -8899,33 +8870,6 @@ class AutoMLApp:
 
         refresh()
 
-    def load_default_mechanisms(self):
-        """Ensure the built-in diagnostic mechanism libraries are present.
-
-        Earlier versions only populated the ISO 26262 Annex D list when no
-        mechanism libraries were loaded at all.  Users that had already saved
-        models therefore never saw the newly introduced PAS 8800 library.  This
-        implementation checks each default library individually and adds any
-        that are missing, also marking them as selected so they appear in the
-        user interface without extra steps.
-        """
-
-        defaults = {
-            "ISO 26262 Annex D": ANNEX_D_MECHANISMS,
-            "PAS 8800": PAS_8800_MECHANISMS,
-        }
-
-        existing = {lib.name: lib for lib in self.mechanism_libraries}
-
-        for name, mechanisms in defaults.items():
-            lib = existing.get(name)
-            if lib is None:
-                lib = MechanismLibrary(name, mechanisms.copy())
-                self.mechanism_libraries.append(lib)
-                existing[name] = lib
-            if lib not in self.selected_mechanism_libraries:
-                self.selected_mechanism_libraries.append(lib)
-
     def manage_mechanism_libraries(self):
         if hasattr(self, "_mech_tab") and self._mech_tab.winfo_exists():
             self.doc_nb.select(self._mech_tab)
@@ -10191,73 +10135,6 @@ class AutoMLApp:
         if getattr(self, "fta_root_node", None):
             self.window_controllers.open_page_diagram(self.fta_root_node)
 
-    def create_cta_diagram(self):
-        """Initialize a CTA diagram and its top-level event."""
-        self.cta_manager.create_diagram()
-
-    def enable_fta_actions(self, enabled: bool) -> None:
-        """Enable or disable FTA-related menu actions."""
-        mode = getattr(self, "diagram_mode", "FTA")
-        if hasattr(self, "fta_menu"):
-            state = tk.NORMAL if enabled else tk.DISABLED
-            for key in (
-                "add_gate",
-                "add_basic_event",
-                "add_gate_from_failure_mode",
-                "add_fault_event",
-            ):
-                self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
-                
-    def enable_paa_actions(self, enabled: bool) -> None:
-        """Enable or disable PAA-related menu actions."""
-        if hasattr(self, "paa_menu"):
-            state = tk.NORMAL if enabled else tk.DISABLED
-            for key in ("add_confidence", "add_robustness"):
-                self.paa_menu.entryconfig(self._paa_menu_indices[key], state=state)
-                
-    def _update_analysis_menus(self,mode=None):
-        """Enable or disable node-adding menu items based on diagram mode."""
-        if mode is None:
-            mode = getattr(self, "diagram_mode", "FTA")
-        self.enable_fta_actions(mode == "FTA")
-        self.cta_manager.enable_actions(mode == "CTA")
-        self.enable_paa_actions(mode == "PAA")
-
-    def _create_paa_tab(self) -> None:
-        """Delegate to :class:`PrototypeAssuranceManager` to create a PAA tab."""
-        self.paa_manager._create_paa_tab()
-
-    def create_paa_diagram(self) -> None:
-        """Delegate to :class:`PrototypeAssuranceManager` for diagram setup."""
-        self.paa_manager.create_paa_diagram()
-
-    @property
-    def paa_manager(self) -> PrototypeAssuranceManager:
-        """Lazily create and return the PAA manager."""
-        if not hasattr(self, "_paa_manager"):
-            self._paa_manager = PrototypeAssuranceManager(self)
-        return self._paa_manager
-
-    def _reset_fta_state(self):
-        """Clear references to the FTA tab and its canvas."""
-        self.canvas_tab = None
-        self.canvas_frame = None
-        self.canvas = None
-        self.hbar = None
-        self.vbar = None
-        self.page_diagram = None
-
-    def ensure_fta_tab(self):
-        """Recreate the FTA tab if it was closed."""
-        mode = getattr(self, "diagram_mode", "FTA")
-        tab_info = self.analysis_tabs.get(mode)
-        if not tab_info or not tab_info["tab"].winfo_exists():
-            self._create_fta_tab(mode)
-        else:
-            self.canvas_tab = tab_info["tab"]
-            self.canvas = tab_info["canvas"]
-            self.hbar = tab_info["hbar"]
-            self.vbar = tab_info["vbar"]
 
 
 
@@ -10266,17 +10143,6 @@ class AutoMLApp:
 
 
 
-
-
-    def _format_diag_title(self, diag) -> str:
-        """Return SysML style title for a diagram tab."""
-        if diag.name:
-            return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK} {diag.name}"
-        return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK}"
-
-    def _create_icon(self, shape: str, color: str) -> tk.PhotoImage:
-        """Delegate icon creation to the shared icon factory."""
-        return create_icon(shape, color)
 
     def open_use_case_diagram(self):
         self.window_controllers.open_use_case_diagram()
@@ -12173,9 +12039,6 @@ class AutoMLApp:
             pass
         self.update_views()
 
-    def save_model(self):
-        self.project_manager.save_model()
-
     def _reset_on_load(self):
         """Close all open windows and clear state before loading a project."""
 
@@ -12246,9 +12109,6 @@ class AutoMLApp:
 
     def _prompt_save_before_load(self):
         return self._prompt_save_before_load_v3()
-
-    def load_model(self):
-        self.project_manager.load_model()
 
 
     def update_global_requirements_from_nodes(self,node):
