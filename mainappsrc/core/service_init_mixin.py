@@ -50,6 +50,7 @@ from mainappsrc.managers.review_manager import ReviewManager
 from mainappsrc.managers.safety_case_manager import SafetyCaseManager
 from mainappsrc.managers.mission_profile_manager import MissionProfileManager
 from mainappsrc.managers.scenario_library_manager import ScenarioLibraryManager
+from mainappsrc.managers.odd_library_manager import OddLibraryManager
 from .versioning_review import Versioning_Review
 from .data_access_queries import DataAccess_Queries
 from .validation_consistency import Validation_Consistency
@@ -117,6 +118,7 @@ class ServiceInitMixin:
         self.safety_case_manager = SafetyCaseManager(self)
         self.mission_profile_manager = MissionProfileManager(self)
         self.scenario_library_manager = ScenarioLibraryManager(self)
+        self.odd_library_manager = OddLibraryManager(self)
         self.drawing_manager = DrawingManager(self)
         self.versioning_review = Versioning_Review(self)
         self.data_access_queries = DataAccess_Queries(self)

@@ -1644,7 +1644,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.55 - Move hazard and ODD validation queries into RiskAssessmentSubApp and wrap core methods.
+- 0.2.55 - Delegate ODD library management to dedicated manager and remove legacy scenario code.
 - 0.2.54 - Initialize undo manager during service setup to prevent project load errors.
 - 0.2.52 - Move product goal UIs into RequirementsManager and add wrapper methods.
 - 0.2.51 - Extract clone-chain resolution into reusable utility.
