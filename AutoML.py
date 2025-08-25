@@ -176,7 +176,7 @@ def _bootstrap() -> object:
 
 def main() -> None:
     """Entry point used by both source and bundled executions."""
-    SplashLauncher(loader=_bootstrap, post_delay=5000).launch()
+    SplashLauncher(loader=_bootstrap, post_delay=50000).launch()
     memory_manager.cleanup()
 
 if __name__ == "__main__":

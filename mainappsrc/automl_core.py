@@ -552,7 +552,7 @@ from gui.dialogs.edit_node_dialog import EditNodeDialog, DecompositionDialog
 ##########################################
 # Main Application (Parent Diagram)
 ##########################################
-class AutoMLApp(AppLifecycleUI):
+class AutoMLApp:
     """Main application window for AutoML Analyzer."""
 
     _instance: Optional["AutoMLApp"] = None
@@ -612,7 +612,7 @@ class AutoMLApp(AppLifecycleUI):
     def __init__(self, root):
         AutoMLApp._instance = self
         self.root = root
-        AppLifecycleUI.__init__(self, root)
+        self.lifecycle_ui = AppLifecycleUI(self, root)
         self.top_events = []
         self.cta_events = []
         self.paa_events = []
@@ -634,7 +634,7 @@ class AutoMLApp(AppLifecycleUI):
         self.style_app = StyleSubApp(root, self.style)
         self.style_app.apply()
         self._btn_imgs = self.style_app.btn_images
-        self._init_nav_button_style()
+        self.lifecycle_ui._init_nav_button_style()
         self.tree_app = TreeSubApp()
         self.project_editor_app = ProjectEditorSubApp()
         self.risk_app = RiskAssessmentSubApp()
@@ -835,7 +835,7 @@ class AutoMLApp(AppLifecycleUI):
             label="Light Mode",
             command=lambda: self.apply_style('pastel.xml'),
         )
-        view_menu.add_command(label="Metrics", command=self.open_metrics_tab)
+        view_menu.add_command(label="Metrics", command=self.lifecycle_ui.open_metrics_tab)
 
         requirements_menu = tk.Menu(menubar, tearoff=0)
         requirements_menu.add_command(
@@ -879,7 +879,7 @@ class AutoMLApp(AppLifecycleUI):
             label="Safety Performance Indicators",
             command=self.show_safety_performance_indicators,
         )
-        self._add_lifecycle_requirements_menu(requirements_menu)
+        self.lifecycle_ui._add_lifecycle_requirements_menu(requirements_menu)
         self.phase_req_menu = tk.Menu(requirements_menu, tearoff=0)
         requirements_menu.add_cascade(
             label="Phase Requirements", menu=self.phase_req_menu
@@ -1169,7 +1169,7 @@ class AutoMLApp(AppLifecycleUI):
         menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="Review", menu=review_menu)
         help_menu = tk.Menu(menubar, tearoff=0)
-        help_menu.add_command(label="About", command=self.show_about)
+        help_menu.add_command(label="About", command=self.lifecycle_ui.show_about)
         menubar.add_cascade(label="Help", menu=help_menu)
 
         root.config(menu=menubar)
@@ -1187,7 +1187,7 @@ class AutoMLApp(AppLifecycleUI):
         self.status_frame = ttk.Frame(root)
         self.status_frame.pack(side=tk.BOTTOM, fill=tk.X)
         self.toggle_log_button = ttk.Button(
-            root, text="Show Logs", command=self.toggle_logs
+            root, text="Show Logs", command=self.lifecycle_ui.toggle_logs
         )
         self.toggle_log_button.pack(side=tk.BOTTOM, fill=tk.X)
         logger.set_toggle_button(self.toggle_log_button)
@@ -1220,7 +1220,7 @@ class AutoMLApp(AppLifecycleUI):
         self._explorer_auto_hide_id = None
         self._explorer_pinned = False
         self._explorer_pin_btn = ttk.Button(
-            self.explorer_pane, text="Pin", command=self.toggle_explorer_pin
+            self.explorer_pane, text="Pin", command=self.lifecycle_ui.toggle_explorer_pin
         )
         self._explorer_pin_btn.pack(anchor="ne")
         self._explorer_tab = ttk.Label(
@@ -1305,10 +1305,10 @@ class AutoMLApp(AppLifecycleUI):
             foreground=[("selected", "white"), ("!selected", "#555555")],
         )
         self.tools_left_btn = ttk.Button(
-            nb_container, text="<", width=2, command=self._select_prev_tool_tab
+            nb_container, text="<", width=2, command=self.lifecycle_ui._select_prev_tool_tab
         )
         self.tools_right_btn = ttk.Button(
-            nb_container, text=">", width=2, command=self._select_next_tool_tab
+            nb_container, text=">", width=2, command=self.lifecycle_ui._select_next_tool_tab
         )
         self.tools_left_btn.pack(side=tk.LEFT, fill=tk.Y)
         self.tools_right_btn.pack(side=tk.RIGHT, fill=tk.Y)
@@ -1341,7 +1341,7 @@ class AutoMLApp(AppLifecycleUI):
         self.tools_nb.add(self.prop_frame, text="Properties")
         tab_id = self.tools_nb.tabs()[-1]
         self._tool_all_tabs.append(tab_id)
-        self._update_tool_tab_visibility()
+        self.lifecycle_ui._update_tool_tab_visibility()
         self._resize_prop_columns()
 
         # Tooltip helper for tabs (text may be clipped)
@@ -1388,7 +1388,7 @@ class AutoMLApp(AppLifecycleUI):
         self.tool_listboxes: dict[str, tk.Listbox] = {}
         self._tool_tab_titles: dict[str, str] = {}
         for cat, names in self.tool_categories.items():
-            self._add_tool_category(cat, names)
+            self.lifecycle_ui._add_tool_category(cat, names)
 
         self.pmhf_var = tk.StringVar(value="")
         self.pmhf_label = ttk.Label(self.analysis_tab, textvariable=self.pmhf_var, foreground="blue")
@@ -1407,7 +1407,7 @@ class AutoMLApp(AppLifecycleUI):
 
         def _wrapped_select(tab_id=None):
             if tab_id is not None:
-                self._make_doc_tab_visible(tab_id)
+                self.lifecycle_ui._make_doc_tab_visible(tab_id)
             return _orig_select(tab_id)
 
         self.doc_nb.select = _wrapped_select
@@ -1415,20 +1415,20 @@ class AutoMLApp(AppLifecycleUI):
             self.doc_frame,
             text="<",
             width=2,
-            command=self._select_prev_tab,
+            command=self.lifecycle_ui._select_prev_tab,
             style="Nav.TButton",
         )
         self._tab_right_btn = ttk.Button(
             self.doc_frame,
             text=">",
             width=2,
-            command=self._select_next_tab,
+            command=self.lifecycle_ui._select_next_tab,
             style="Nav.TButton",
         )
         self._tab_left_btn.pack(side=tk.LEFT, fill=tk.Y)
         self._tab_right_btn.pack(side=tk.RIGHT, fill=tk.Y)
         self.doc_nb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self._update_doc_tab_visibility()
+        self.lifecycle_ui._update_doc_tab_visibility()
         self.main_pane.add(self.doc_frame, stretch="always")
         # Tooltip helper for document tabs
         self._doc_tip = ToolTip(self.doc_nb, "", automatic=False)
@@ -2391,7 +2391,7 @@ class AutoMLApp(AppLifecycleUI):
     def enable_process_area(self, area: str) -> None:
         if area not in self.tool_listboxes:
             self.tool_categories[area] = []
-            self._add_tool_category(area, [])
+            self.lifecycle_ui._add_tool_category(area, [])
 
     def enable_work_product(self, name: str, *, refresh: bool = True) -> None:
         info = self.WORK_PRODUCT_INFO.get(name)
@@ -2566,7 +2566,7 @@ class AutoMLApp(AppLifecycleUI):
 
         for idx, diag in enumerate(self.management_diagrams):
             if getattr(diag, "name", "") == name or getattr(diag, "diag_id", "") == name:
-                self.open_management_window(idx)
+                self.lifecycle_ui.open_management_window(idx)
                 return
 
         for diag in getattr(self, "all_gsn_diagrams", []):
@@ -4934,7 +4934,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_item_def_tab") and self._item_def_tab.winfo_exists():
             self.doc_nb.select(self._item_def_tab)
             return
-        self._item_def_tab = self._new_tab("Item Definition")
+        self._item_def_tab = self.lifecycle_ui._new_tab("Item Definition")
         win = self._item_def_tab
         ttk.Label(win, text="Item Description:").pack(anchor="w")
         self._item_desc_text = tk.Text(win, height=8, wrap="word")
@@ -4956,7 +4956,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_safety_concept_tab") and self._safety_concept_tab.winfo_exists():
             self.doc_nb.select(self._safety_concept_tab)
             return
-        self._safety_concept_tab = self._new_tab("Safety & Security Concept")
+        self._safety_concept_tab = self.lifecycle_ui._new_tab("Safety & Security Concept")
         win = self._safety_concept_tab
         ttk.Label(
             win,
@@ -5008,7 +5008,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_req_tab") and self._req_tab.winfo_exists():
             self.doc_nb.select(self._req_tab)
             return
-        self._req_tab = self._new_tab("Requirements")
+        self._req_tab = self.lifecycle_ui._new_tab("Requirements")
         win = self._req_tab
 
         columns = ["ID", "ASIL", "CAL", "Type", "Status", "Parent", "Trace", "Links", "Text"]
@@ -5395,7 +5395,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_tc_tab") and self._tc_tab.winfo_exists():
             self.doc_nb.select(self._tc_tab)
             return
-        self._tc_tab = self._new_tab("Triggering Conditions")
+        self._tc_tab = self.lifecycle_ui._new_tab("Triggering Conditions")
         win = self._tc_tab
 
         lb = tk.Listbox(win, height=10, width=40)
@@ -5484,7 +5484,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_mal_tab") and self._mal_tab.winfo_exists():
             self.doc_nb.select(self._mal_tab)
             return
-        self._mal_tab = self._new_tab("Malfunctions")
+        self._mal_tab = self.lifecycle_ui._new_tab("Malfunctions")
         win = self._mal_tab
 
         lb = tk.Listbox(win, height=10, width=40)
@@ -5539,7 +5539,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_fault_tab") and self._fault_tab.winfo_exists():
             self.doc_nb.select(self._fault_tab)
             return
-        self._fault_tab = self._new_tab("Faults")
+        self._fault_tab = self.lifecycle_ui._new_tab("Faults")
         win = self._fault_tab
 
         lb = tk.Listbox(win, height=10, width=40)
@@ -5590,7 +5590,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_failure_tab") and self._failure_tab.winfo_exists():
             self.doc_nb.select(self._failure_tab)
             return
-        self._failure_tab = self._new_tab("Failures")
+        self._failure_tab = self.lifecycle_ui._new_tab("Failures")
         win = self._failure_tab
 
         lb = tk.Listbox(win, height=10, width=40)
@@ -5654,7 +5654,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_fi_tab") and self._fi_tab.winfo_exists():
             self.doc_nb.select(self._fi_tab)
             return
-        self._fi_tab = self._new_tab("Functional Insufficiencies")
+        self._fi_tab = self.lifecycle_ui._new_tab("Functional Insufficiencies")
         win = self._fi_tab
 
         lb = tk.Listbox(win, height=10, width=40)
@@ -5714,7 +5714,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_mal_tab") and self._mal_tab.winfo_exists():
             self.doc_nb.select(self._mal_tab)
             return
-        self._mal_tab = self._new_tab("Malfunctions")
+        self._mal_tab = self.lifecycle_ui._new_tab("Malfunctions")
         win = self._mal_tab
 
         lb = tk.Listbox(win, height=10, width=30)
@@ -6392,7 +6392,7 @@ class AutoMLApp(AppLifecycleUI):
         basic_events = self.get_non_basic_failure_modes()
         entries = self.fmea_entries if fmea is None else fmea['entries']
         title = f"FMEA Table - {fmea['name']}" if fmea else "FMEA Table"
-        win = self._new_tab(title)
+        win = self.lifecycle_ui._new_tab(title)
 
         # give the table a nicer look similar to professional FMEA tools
         style = ttk.Style(self.root)
@@ -6845,7 +6845,7 @@ class AutoMLApp(AppLifecycleUI):
                 self.FMEARowDialog(win, be, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
             refresh_tree()
             if fmea is not None:
-                self.touch_doc(fmea)
+                self.lifecycle_ui.touch_doc(fmea)
 
         add_btn.config(command=add_failure_mode)
 
@@ -6860,7 +6860,7 @@ class AutoMLApp(AppLifecycleUI):
                     entries.remove(node)
             refresh_tree()
             if fmea is not None:
-                self.touch_doc(fmea)
+                self.lifecycle_ui.touch_doc(fmea)
 
         remove_btn.config(command=remove_from_fmea)
 
@@ -6877,7 +6877,7 @@ class AutoMLApp(AppLifecycleUI):
                     entries.remove(node)
             refresh_tree()
             if fmea is not None:
-                self.touch_doc(fmea)
+                self.lifecycle_ui.touch_doc(fmea)
 
         del_btn.config(command=delete_failure_mode)
 
@@ -6897,7 +6897,7 @@ class AutoMLApp(AppLifecycleUI):
 
         def on_close():
             if fmea is not None:
-                self.touch_doc(fmea)
+                self.lifecycle_ui.touch_doc(fmea)
                 if fmeda:
                     self.export_fmeda_to_csv(fmea, fmea['file'])
                 else:
@@ -7012,7 +7012,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_sg_matrix_tab") and self._sg_matrix_tab.winfo_exists():
             self.doc_nb.select(self._sg_matrix_tab)
             return
-        self._sg_matrix_tab = self._new_tab("Product Goals Matrix")
+        self._sg_matrix_tab = self.lifecycle_ui._new_tab("Product Goals Matrix")
         win = self._sg_matrix_tab
         columns = [
             "ID",
@@ -7130,7 +7130,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_sg_tab") and self._sg_tab.winfo_exists():
             self.doc_nb.select(self._sg_tab)
             return
-        self._sg_tab = self._new_tab("Product Goals")
+        self._sg_tab = self.lifecycle_ui._new_tab("Product Goals")
         win = self._sg_tab
 
         columns = [
@@ -7350,7 +7350,7 @@ class AutoMLApp(AppLifecycleUI):
             self.doc_nb.select(self._spi_tab)
             self.refresh_safety_performance_indicators()
             return
-        self._spi_tab = self._new_tab("Safety Performance Indicators")
+        self._spi_tab = self.lifecycle_ui._new_tab("Safety Performance Indicators")
         win = self._spi_tab
 
         columns = [
@@ -7524,7 +7524,7 @@ class AutoMLApp(AppLifecycleUI):
             self.doc_nb.select(self._safety_case_tab)
             self.refresh_safety_case_table()
             return
-        self._safety_case_tab = self._new_tab("Safety & Security Case")
+        self._safety_case_tab = self.lifecycle_ui._new_tab("Safety & Security Case")
         win = self._safety_case_tab
 
         columns = [
@@ -8650,7 +8650,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_mp_tab") and self._mp_tab.winfo_exists():
             self.doc_nb.select(self._mp_tab)
             return
-        self._mp_tab = self._new_tab("Mission Profiles")
+        self._mp_tab = self.lifecycle_ui._new_tab("Mission Profiles")
         win = self._mp_tab
         listbox = tk.Listbox(win, height=8, width=40)
         listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -8818,7 +8818,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_mech_tab") and self._mech_tab.winfo_exists():
             self.doc_nb.select(self._mech_tab)
             return
-        self._mech_tab = self._new_tab("Mechanism Libraries")
+        self._mech_tab = self.lifecycle_ui._new_tab("Mechanism Libraries")
         win = self._mech_tab
         lib_lb = tk.Listbox(win, height=8, width=25)
         lib_lb.grid(row=0, column=0, rowspan=4, sticky="nsew")
@@ -9076,7 +9076,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_scen_tab") and self._scen_tab.winfo_exists():
             self.doc_nb.select(self._scen_tab)
             return
-        self._scen_tab = self._new_tab("Scenario Libraries")
+        self._scen_tab = self.lifecycle_ui._new_tab("Scenario Libraries")
         win = self._scen_tab
         lib_lb = tk.Listbox(win, height=8, width=25)
         lib_lb.grid(row=0, column=0, rowspan=4, sticky="nsew")
@@ -9439,7 +9439,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_odd_tab") and self._odd_tab.winfo_exists():
             self.doc_nb.select(self._odd_tab)
             return
-        self._odd_tab = self._new_tab("ODD Libraries")
+        self._odd_tab = self.lifecycle_ui._new_tab("ODD Libraries")
         win = self._odd_tab
         lib_lb = tk.Listbox(win, height=8, width=25)
         lib_lb.grid(row=0, column=0, rowspan=4, sticky="nsew")
@@ -9834,7 +9834,7 @@ class AutoMLApp(AppLifecycleUI):
                 return
             parent = self._safety_mgmt_tab
         else:
-            parent = self._safety_mgmt_tab = self._new_tab(
+            parent = self._safety_mgmt_tab = self.lifecycle_ui._new_tab(
                 "Safety & Security Management"
             )
 
@@ -9874,7 +9874,7 @@ class AutoMLApp(AppLifecycleUI):
                 return
             parent = self._diagram_rules_tab
         else:
-            parent = self._diagram_rules_tab = self._new_tab("Diagram Rules")
+            parent = self._diagram_rules_tab = self.lifecycle_ui._new_tab("Diagram Rules")
 
         from gui.diagram_rules_toolbox import DiagramRulesEditor
 
@@ -9896,7 +9896,7 @@ class AutoMLApp(AppLifecycleUI):
                 return
             parent = self._req_patterns_tab
         else:
-            parent = self._req_patterns_tab = self._new_tab("Requirement Patterns")
+            parent = self._req_patterns_tab = self.lifecycle_ui._new_tab("Requirement Patterns")
 
         from gui.requirement_patterns_toolbox import RequirementPatternsEditor
 
@@ -9920,7 +9920,7 @@ class AutoMLApp(AppLifecycleUI):
                 return
             parent = self._report_template_tab
         else:
-            parent = self._report_template_tab = self._new_tab("Report Template")
+            parent = self._report_template_tab = self.lifecycle_ui._new_tab("Report Template")
 
         from gui.report_template_toolbox import ReportTemplateEditor
 
@@ -9945,7 +9945,7 @@ class AutoMLApp(AppLifecycleUI):
                 return
             parent = self._report_template_mgr_tab
         else:
-            parent = self._report_template_mgr_tab = self._new_tab("Report Templates")
+            parent = self._report_template_mgr_tab = self.lifecycle_ui._new_tab("Report Templates")
 
         from gui.report_template_manager import ReportTemplateManager
 
@@ -10009,7 +10009,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_req_exp_tab") and self._req_exp_tab.winfo_exists():
             self.doc_nb.select(self._req_exp_tab)
         else:
-            self._req_exp_tab = self._new_tab("Requirements Explorer")
+            self._req_exp_tab = self.lifecycle_ui._new_tab("Requirements Explorer")
             self._req_exp_window = RequirementsExplorerWindow(self._req_exp_tab, self)
             self._req_exp_window.pack(fill=tk.BOTH, expand=True)
 
@@ -10197,7 +10197,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_arch_tab") and self._arch_tab.winfo_exists():
             self.doc_nb.select(self._arch_tab)
         else:
-            self._arch_tab = self._new_tab("AutoML Explorer")
+            self._arch_tab = self.lifecycle_ui._new_tab("AutoML Explorer")
             self._arch_window = ArchitectureManagerDialog(self._arch_tab, self)
             self._arch_window.pack(fill=tk.BOTH, expand=True)
         self.refresh_all()
@@ -10213,7 +10213,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_safety_exp_tab") and self._safety_exp_tab.winfo_exists():
             self.doc_nb.select(self._safety_exp_tab)
         else:
-            self._safety_exp_tab = self._new_tab("Safety & Security Management Explorer")
+            self._safety_exp_tab = self.lifecycle_ui._new_tab("Safety & Security Management Explorer")
             self._safety_exp_window = SafetyManagementExplorer(
                 self._safety_exp_tab, self, self.safety_mgmt_toolbox
             )
@@ -10228,7 +10228,7 @@ class AutoMLApp(AppLifecycleUI):
         if hasattr(self, "_safety_case_exp_tab") and self._safety_case_exp_tab.winfo_exists():
             self.doc_nb.select(self._safety_case_exp_tab)
         else:
-            self._safety_case_exp_tab = self._new_tab("Safety & Security Case Explorer")
+            self._safety_case_exp_tab = self.lifecycle_ui._new_tab("Safety & Security Case Explorer")
             self._safety_case_window = SafetyCaseExplorer(
                 self._safety_case_exp_tab, self, self.safety_case_library
             )
