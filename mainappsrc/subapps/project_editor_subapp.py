@@ -25,7 +25,6 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tkFont
 
-from analysis.utils import update_probability_tables
 from gui.controls import messagebox
 
 
@@ -92,7 +91,7 @@ class ProjectEditorSubApp:
         app.project_properties["severity_probabilities"] = {
             lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
         }
-        update_probability_tables(
+        app.probability_reliability.update_probability_tables(
             app.project_properties["exposure_probabilities"],
             app.project_properties["controllability_probabilities"],
             app.project_properties["severity_probabilities"],
@@ -185,7 +184,7 @@ class ProjectEditorSubApp:
                 lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
             }
             app.project_properties["freeze_governance_diagrams"] = var_freeze.get()
-            update_probability_tables(
+            app.probability_reliability.update_probability_tables(
                 app.project_properties["exposure_probabilities"],
                 app.project_properties["controllability_probabilities"],
                 app.project_properties["severity_probabilities"],

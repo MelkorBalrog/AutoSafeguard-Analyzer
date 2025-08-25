@@ -232,7 +232,6 @@ else:  # pragma: no cover - fallback for minimal stubs
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from analysis.utils import (
     append_unique_insensitive,
-    update_probability_tables,
     EXPOSURE_PROBABILITIES,
     CONTROLLABILITY_PROBABILITIES,
     SEVERITY_PROBABILITIES,
@@ -424,7 +423,7 @@ class AutoMLApp(
             "controllability_probabilities": CONTROLLABILITY_PROBABILITIES.copy(),
             "severity_probabilities": SEVERITY_PROBABILITIES.copy(),
         }
-        update_probability_tables(
+        self.probability_reliability.update_probability_tables(
             self.project_properties["exposure_probabilities"],
             self.project_properties["controllability_probabilities"],
             self.project_properties["severity_probabilities"],
@@ -1597,9 +1596,11 @@ class AutoMLApp(
     def sync_cyber_risk_to_goals(self):
         return self.probability_reliability.sync_cyber_risk_to_goals()
 
-
     def add_top_level_event(self):
         return self.safety_analysis.add_top_level_event()
+
+    def _build_probability_frame(self, parent, title: str, levels: range, values: dict, row: int, dialog_font):
+        return self.probability_reliability._build_probability_frame(parent, title, levels, values, row, dialog_font)
 
     def edit_project_properties(self) -> None:
         """Open the project properties dialog."""
@@ -6726,7 +6727,7 @@ class AutoMLApp(
                 self.project_properties[key] = {
                     int(k): float(v) for k, v in probs.items()
                 }
-        update_probability_tables(
+        self.probability_reliability.update_probability_tables(
             self.project_properties.get("exposure_probabilities"),
             self.project_properties.get("controllability_probabilities"),
             self.project_properties.get("severity_probabilities"),
@@ -7170,7 +7171,7 @@ class AutoMLApp(
             props.get("severity_probabilities") or SEVERITY_PROBABILITIES
         )
         self.project_properties = props
-        update_probability_tables(
+        self.probability_reliability.update_probability_tables(
             self.project_properties["exposure_probabilities"],
             self.project_properties["controllability_probabilities"],
             self.project_properties["severity_probabilities"],

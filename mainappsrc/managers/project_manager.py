@@ -27,7 +27,6 @@ from analysis.utils import (
     EXPOSURE_PROBABILITIES,
     CONTROLLABILITY_PROBABILITIES,
     SEVERITY_PROBABILITIES,
-    update_probability_tables,
 )
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from mainappsrc.core import config_utils
@@ -122,7 +121,7 @@ class ProjectManager:
             "controllability_probabilities": CONTROLLABILITY_PROBABILITIES.copy(),
             "severity_probabilities": SEVERITY_PROBABILITIES.copy(),
         }
-        update_probability_tables(
+        app.probability_reliability.update_probability_tables(
             app.project_properties["exposure_probabilities"],
             app.project_properties["controllability_probabilities"],
             app.project_properties["severity_probabilities"],
