@@ -3,7 +3,7 @@ from __future__ import annotations
 """Centralised drawing helpers for AutoML diagrams."""
 
 import tkinter as tk
-from analysis.risk_assessment import AutoML_Helper
+from ..core.config_utils import AutoML_Helper
 from analysis.fmeda_utils import GATE_NODE_TYPES
 from gui.utils.drawing_helper import fta_drawing_helper
 from gui.styles.style_manager import StyleManager
