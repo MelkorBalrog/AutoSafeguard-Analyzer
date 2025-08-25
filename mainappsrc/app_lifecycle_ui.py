@@ -26,13 +26,21 @@ from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 
 
 class AppLifecycleUI:
-    """Collection of UI lifecycle helper methods."""
+    """Collection of UI lifecycle helper methods.
 
-    def __init__(self, root) -> None:
-        # Store the root window for animation callbacks.  All other attributes
-        # are expected to be provided by the subclass that mixes in these
-        # helpers.
+    The class delegates attribute access to *app* so it can be used either as
+    a mixin or as a composed helper instance attached to the main application.
+    """
+
+    def __init__(self, app, root) -> None:
+        # ``app`` provides the primary application object whose attributes are
+        # required by many lifecycle helpers.  ``root`` stores the root window
+        # for animation callbacks.
+        self.app = app
         self.root = root
+
+    def __getattr__(self, name):  # pragma: no cover - simple delegation
+        return getattr(self.app, name)
 
     # ------------------------------------------------------------------
     # Methods migrated from ``AutoMLApp``
