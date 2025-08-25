@@ -11,6 +11,19 @@ older code that expected these objects to live directly under
 # ``from gui.utils import logger`` continues to work.
 from . import logger  # noqa: F401
 
+# Treeview convenience helpers live in the top level ``gui`` package. Importing
+# them here preserves backward compatibility for modules that relied on
+# ``from gui.utils import add_treeview_scrollbars``.
+# ``add_treeview_scrollbars`` is defined in the top-level ``gui`` package. To
+# avoid circular import issues during package initialisation we lazily resolve
+# the real implementation on first use and forward the call.
+def add_treeview_scrollbars(*args, **kwargs):
+    """Forward to :func:`gui.add_treeview_scrollbars` for legacy imports."""
+
+    from .. import add_treeview_scrollbars as _impl
+
+    return _impl(*args, **kwargs)
+
 
 # Default background colour used by dialog windows across the application.
 # This constant is defined here to allow both ``from gui.utils import
@@ -19,4 +32,4 @@ from . import logger  # noqa: F401
 DIALOG_BG_COLOR = "#A9BCE2"
 
 
-__all__ = ["logger", "DIALOG_BG_COLOR"]
+__all__ = ["logger", "DIALOG_BG_COLOR", "add_treeview_scrollbars"]
