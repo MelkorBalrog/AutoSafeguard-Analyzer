@@ -40,6 +40,7 @@ from mainappsrc.models.fta.fault_tree_node import FaultTreeNode
 from mainappsrc.subapps.fta_subapp import FTASubApp
 from mainappsrc.core.fmea_service import FMEAService
 from mainappsrc.managers.fmeda_manager import FMEDAManager
+from gui.windows.fault_prioritization import SelectFaultDialog
 from . import config_utils
 
 
@@ -300,43 +301,48 @@ class SafetyAnalysis_FTA_FMEA(FTASubApp, FMEAService, FMEDAManager):
     def add_fault(self, name: str) -> None:
         self.app.risk_app.add_fault(self.app, name)
 
-    def add_fault_event(self) -> None:
-        app = self.app
-        app.push_undo_state()
-        dialog = app.SelectFaultDialog(app.root, sorted(app.faults), allow_new=True)
+    def _prompt_fault_selection(self, app):
+        dialog = SelectFaultDialog(app.root, sorted(app.faults), allow_new=True)
         fault = dialog.selected
         if fault == "NEW":
             fault = simpledialog.askstring("New Fault", "Name:")
             if not fault:
-                return
+                return None
             fault = fault.strip()
             if not fault:
-                return
+                return None
             self.add_fault(fault)
-        if not fault:
-            return
+        return fault
+
+    def _determine_parent_node(self, app):
         if app.selected_node:
             parent_node = app.selected_node
             if not parent_node.is_primary_instance:
                 messagebox.showwarning(
                     "Invalid Operation", "Cannot add to a clone node. Select the original."
                 )
-                return
-        else:
-            sel = app.analysis_tree.selection()
-            if not sel:
-                messagebox.showwarning(
-                    "No selection", "Select a parent node to paste into."
-                )
-                return
-            try:
-                node_id = int(app.analysis_tree.item(sel[0], "tags")[0])
-            except (IndexError, ValueError):
-                messagebox.showwarning(
-                    "No selection", "Select a parent node from the tree."
-                )
-                return
-            parent_node = app.find_node_by_id_all(node_id)
+                return None
+            return parent_node
+        sel = app.analysis_tree.selection()
+        if not sel:
+            messagebox.showwarning("No selection", "Select a parent node to paste into.")
+            return None
+        try:
+            node_id = int(app.analysis_tree.item(sel[0], "tags")[0])
+        except (IndexError, ValueError):
+            messagebox.showwarning("No selection", "Select a parent node from the tree.")
+            return None
+        return app.find_node_by_id_all(node_id)
+
+    def add_fault_event(self) -> None:
+        app = self.app
+        app.push_undo_state()
+        fault = self._prompt_fault_selection(app)
+        if not fault:
+            return
+        parent_node = self._determine_parent_node(app)
+        if not parent_node:
+            return
         if parent_node.node_type.upper() in [
             "CONFIDENCE LEVEL",
             "ROBUSTNESS SCORE",
@@ -672,8 +678,9 @@ class SafetyAnalysis_FTA_FMEA(FTASubApp, FMEAService, FMEDAManager):
     # ------------------------------------------------------------------
     # Data access wrappers
     # ------------------------------------------------------------------
-    def get_all_gates(self):
-        return self.app.data_access_queries.get_all_gates()
+    def get_all_gates(self, app=None):
+        """Return all gate nodes in the current fault tree model."""
+        return FTASubApp.get_all_gates(self, app or self.app)
 
     def get_all_failure_modes(self):
         return self.app.data_access_queries.get_all_failure_modes()

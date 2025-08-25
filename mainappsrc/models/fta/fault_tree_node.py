@@ -524,7 +524,7 @@ def _resolve_parent_node(app, parent_node):
         except Exception:  # noqa: BLE001 - broad to guard against malformed selections
             messagebox.showwarning("No selection", "Select a parent node from the tree.")
             return None
-        parent_node = app.find_node_by_id_all(node_id)
+    parent_node = app.find_node_by_id_all(node_id)
     return parent_node
 
 ALLOWED_NODE_TYPES = {
@@ -532,7 +532,6 @@ ALLOWED_NODE_TYPES = {
     "CTA": {"TRIGGERING CONDITION", "FUNCTIONAL INSUFFICIENCY"},
     "PAA": {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"},
 }
-
 
 def _infer_diagram_mode(app, event_upper: str) -> str:
     """Infer diagram mode, allowing FTA/CTA nodes when active mode is PAA."""
@@ -546,7 +545,6 @@ def _infer_diagram_mode(app, event_upper: str) -> str:
             return candidate
     return mode
 
-
 def add_node_of_type(app, event_type):
     """Attach a new ``FaultTreeNode`` of ``event_type`` under the current selection."""
 
@@ -556,7 +554,7 @@ def add_node_of_type(app, event_type):
 
     if event_upper not in ALLOWED_NODE_TYPES.get(diag_mode, set()):
         msg = (
-            "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis."
+            f"Only {allowed_nodes} nodes are allowed in Prototype Assurance Analysis."
             if diag_mode == "PAA"
             else f"Node type '{event_type}' is not allowed in {diag_mode} diagrams."
         )
@@ -580,6 +578,8 @@ def add_node_of_type(app, event_type):
         return
 
     new_node = FaultTreeNode("", event_type, parent_node)
+    new_node.x = parent_node.x
+    new_node.y = parent_node.y + 100
     parent_node.children.append(new_node)
     new_node.parents.append(parent_node)
     app.update_views()
