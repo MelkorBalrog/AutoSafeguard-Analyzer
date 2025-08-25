@@ -524,30 +524,41 @@ def _resolve_parent_node(app, parent_node):
         except (IndexError, ValueError):
             messagebox.showwarning("No selection", "Select a parent node from the tree.")
             return None
-        parent_node = app.find_node_by_id_all(node_id)
+    parent_node = app.find_node_by_id_all(node_id)
     return parent_node
+
+ALLOWED_NODE_TYPES = {
+    "FTA": {"GATE", "BASIC EVENT"},
+    "CTA": {"TRIGGERING CONDITION", "FUNCTIONAL INSUFFICIENCY"},
+    "PAA": {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"},
+}
+
+
+def _current_diagram_mode(app):
+    canvas_obj = getattr(app, "canvas", None)
+    canvas_mode = getattr(canvas_obj, "diagram_mode", None)
+    mode = canvas_mode if canvas_mode is not None else getattr(app, "diagram_mode", "FTA")
+    return str(mode).upper()
+
+
+def _validate_node_type(diag_mode, event_upper, event_type):
+    if event_upper in ALLOWED_NODE_TYPES.get(diag_mode, set()):
+        return True
+    msg = (
+        "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis."
+        if diag_mode == "PAA"
+        else f"Node type '{event_type}' is not allowed in {diag_mode} diagrams."
+    )
+    messagebox.showwarning("Invalid", msg)
+    return False
 
 def add_node_of_type(app, event_type):
     """Attach a new ``FaultTreeNode`` of ``event_type`` under the current selection."""
 
     app.push_undo_state()
-    canvas_mode = getattr(getattr(app, "canvas", None), "diagram_mode", None)
-    diag_mode = (canvas_mode or getattr(app, "diagram_mode", "FTA")).upper()
+    diag_mode = _current_diagram_mode(app)
     event_upper = event_type.upper()
-
-    allowed = {
-        "FTA": {"GATE", "BASIC EVENT"},
-        "CTA": {"TRIGGERING CONDITION", "FUNCTIONAL INSUFFICIENCY"},
-        "PAA": {"CONFIDENCE LEVEL", "ROBUSTNESS SCORE"},
-    }
-
-    if event_upper not in allowed.get(diag_mode, set()):
-        msg = (
-            "Only Confidence and Robustness nodes are allowed in Prototype Assurance Analysis."
-            if diag_mode == "PAA"
-            else f"Node type '{event_type}' is not allowed in {diag_mode} diagrams."
-        )
-        messagebox.showwarning("Invalid", msg)
+    if not _validate_node_type(diag_mode, event_upper, event_type):
         return
 
     parent_node = app.selected_node
