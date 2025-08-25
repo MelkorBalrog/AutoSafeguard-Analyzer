@@ -24,6 +24,7 @@ import weakref
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from AutoML import AutoMLApp
+from mainappsrc.core.diagram_clipboard_manager import DiagramClipboardManager
 from gui.gsn_diagram_window import GSNNode, GSNDiagram, GSNDiagramWindow, GSN_WINDOWS
 from gui.architecture import SysMLDiagramWindow, _get_next_id, SysMLObject, ARCH_WINDOWS
 
@@ -57,12 +58,13 @@ def test_copy_paste_respects_active_arch_diagram_when_gsn_exists():
     ARCH_WINDOWS.clear()
     GSN_WINDOWS.clear()
     app = AutoMLApp.__new__(AutoMLApp)
-    app.diagram_clipboard = None
-    app.diagram_clipboard_type = None
+    app.diagram_clipboard = DiagramClipboardManager(app)
+    app.diagram_clipboard.diagram_clipboard = None
+    app.diagram_clipboard.diagram_clipboard_type = None
     app.selected_node = None
     app.root_node = None
-    app.clipboard_node = None
-    app.cut_mode = False
+    app.diagram_clipboard.clipboard_node = None
+    app.diagram_clipboard.cut_mode = False
 
     # Setup GSN window with a selected node
     root = GSNNode("Root", "Goal")
@@ -76,7 +78,10 @@ def test_copy_paste_respects_active_arch_diagram_when_gsn_exists():
     win_gsn.selected_node = child
     win_gsn.focus_get = lambda: None
     win_gsn.winfo_toplevel = lambda: win_gsn
-    win_gsn.copy_selected = lambda: (setattr(app, "diagram_clipboard", child), setattr(app, "diagram_clipboard_type", "GSN"))
+    win_gsn.copy_selected = lambda: (
+        setattr(app.diagram_clipboard, "diagram_clipboard", child),
+        setattr(app.diagram_clipboard, "diagram_clipboard_type", "GSN"),
+    )
     win_gsn.paste_selected = lambda: diag.nodes.append(GSNNode("Extra", "Goal"))
     GSN_WINDOWS.add(weakref.ref(win_gsn))
     app.active_gsn_window = win_gsn
@@ -101,8 +106,8 @@ def test_copy_paste_respects_active_arch_diagram_when_gsn_exists():
     win_arch.objects = [obj]
     win_arch.selected_obj = obj
     win_arch.copy_selected = lambda: (
-        setattr(app, "diagram_clipboard", obj),
-        setattr(app, "diagram_clipboard_type", repo.diagrams[1].diag_type),
+        setattr(app.diagram_clipboard, "diagram_clipboard", obj),
+        setattr(app.diagram_clipboard, "diagram_clipboard_type", repo.diagrams[1].diag_type),
     )
     win_arch.paste_selected = lambda: win_arch.objects.append("pasted")
     app.active_arch_window = win_arch
@@ -112,7 +117,7 @@ def test_copy_paste_respects_active_arch_diagram_when_gsn_exists():
     app.doc_nb = types.SimpleNamespace(select=lambda: "arch", nametowidget=lambda tid: {"gsn": tab_gsn, "arch": tab_arch}[tid])
 
     app.copy_node()
-    assert app.diagram_clipboard is obj
+    assert app.diagram_clipboard.diagram_clipboard is obj
 
     app.paste_node()
     assert win_arch.objects[-1] == "pasted"

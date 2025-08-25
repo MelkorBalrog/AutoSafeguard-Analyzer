@@ -60,10 +60,14 @@ def _setup_window(repo=None, app=None):
     win.font = DummyFont()
     win.selected_obj = None
     if app is None:
-        app = types.SimpleNamespace(
+        app = types.SimpleNamespace()
+        app.diagram_clipboard = types.SimpleNamespace(
             diagram_clipboard=None,
             diagram_clipboard_type=None,
             diagram_clipboard_parent_name=None,
+            clipboard_node=None,
+            cut_mode=False,
+            clipboard_relation=None,
         )
     win.app = app
     return win
@@ -75,7 +79,7 @@ def test_paste_work_product_creates_process_area():
     wp = win._place_work_product("Risk Assessment", 10.0, 0.0, area=area)
     win.selected_obj = wp
     win.copy_selected()
-    assert win.app.diagram_clipboard_parent_name == "Risk Assessment"
+    assert win.app.diagram_clipboard.diagram_clipboard_parent_name == "Risk Assessment"
     win.selected_obj = None
     win.paste_selected()
     areas = [o for o in win.objects if o.obj_type == "System Boundary"]

@@ -991,8 +991,8 @@ class GSNDiagramWindow(tk.Frame):
             return
         snap = self._clone_node(self.selected_node)
         if snap is not None:
-            self.app.diagram_clipboard = snap
-            self.app.diagram_clipboard_type = "GSN"
+            self.app.diagram_clipboard.diagram_clipboard = snap
+            self.app.diagram_clipboard.diagram_clipboard_type = "GSN"
             if self.selected_node.parents:
                 parent = self.selected_node.parents[0]
                 rel = (
@@ -1002,7 +1002,7 @@ class GSNDiagramWindow(tk.Frame):
                 )
             else:
                 rel = "solved"
-            self.app.clipboard_relation = rel
+            self.app.diagram_clipboard.clipboard_relation = rel
 
     def cut_selected(self, _event=None) -> None:
         if not self.app or not self.selected_node:
@@ -1017,15 +1017,15 @@ class GSNDiagramWindow(tk.Frame):
         self.refresh()
 
     def paste_selected(self, _event=None) -> None:
-        if not self.app or not getattr(self.app, "diagram_clipboard", None):
+        if not self.app or not getattr(self.app.diagram_clipboard, "diagram_clipboard", None):
             return
-        clip_type = getattr(self.app, "diagram_clipboard_type", None)
+        clip_type = getattr(self.app.diagram_clipboard, "diagram_clipboard_type", None)
         if clip_type and clip_type != "GSN":
             messagebox.showwarning(
                 "Paste", "Clipboard contains incompatible diagram element."
             )
             return
-        node = self._reconstruct_node(self.app.diagram_clipboard)
+        node = self._reconstruct_node(self.app.diagram_clipboard.diagram_clipboard)
         if not node:
             return
         if node not in self.diagram.nodes:

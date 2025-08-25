@@ -32,6 +32,7 @@ spec.loader.exec_module(automl)
 AutoMLApp = automl.AutoMLApp
 FaultTreeNode = automl.FaultTreeNode
 messagebox = automl.messagebox
+from mainappsrc.core.diagram_clipboard_manager import DiagramClipboardManager
 
 page_spec = importlib.util.spec_from_file_location(
     "page_diagram", repo_root / "mainappsrc/page_diagram.py"
@@ -43,6 +44,7 @@ fta_drawing_helper = page_module.fta_drawing_helper
 
 def _make_app_with_nodes():
     app = AutoMLApp.__new__(AutoMLApp)
+    app.diagram_clipboard = DiagramClipboardManager(app)
     app.top_events = []
     app.root_node = None
     app.selected_node = None
@@ -72,7 +74,7 @@ def test_fta_copy_paste_creates_clone():
     app.selected_node = child
 
     app.copy_node()
-    assert app.clipboard_node is child
+    assert app.diagram_clipboard.clipboard_node is child
 
     app.selected_node = root
     app.paste_node()

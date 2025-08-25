@@ -9604,8 +9604,8 @@ class SysMLDiagramWindow(tk.Frame):
         if self.selected_obj and self.app:
             self.app.active_arch_window = self
             self.app.selected_node = None
-            self.app.clipboard_node = None
-            self.app.cut_mode = False
+            self.app.diagram_clipboard.clipboard_node = None
+            self.app.diagram_clipboard.cut_mode = False
             diag = self.repo.diagrams.get(self.diagram_id)
             if self.selected_obj.obj_type == "System Boundary":
                 children = [
@@ -9615,18 +9615,18 @@ class SysMLDiagramWindow(tk.Frame):
                     and o.properties.get("parent") == str(self.selected_obj.obj_id)
                 ]
                 items = [self.selected_obj, *children]
-                self.app.diagram_clipboard = copy.deepcopy(items)
-                self.app.diagram_clipboard_parent_name = None
+                self.app.diagram_clipboard.diagram_clipboard = copy.deepcopy(items)
+                self.app.diagram_clipboard.diagram_clipboard_parent_name = None
             else:
                 snap = self._clone_object(self.selected_obj)
                 if not snap:
                     return
-                self.app.diagram_clipboard = snap
+                self.app.diagram_clipboard.diagram_clipboard = snap
                 parent_name = None
                 if self.selected_obj.obj_type in ("Work Product", "Task"):
                     parent_name = self._task_parent_name(self.selected_obj)
-                self.app.diagram_clipboard_parent_name = parent_name
-            self.app.diagram_clipboard_type = diag.diag_type if diag else None
+                self.app.diagram_clipboard.diagram_clipboard_parent_name = parent_name
+            self.app.diagram_clipboard.diagram_clipboard_type = diag.diag_type if diag else None
 
     def cut_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
@@ -9634,8 +9634,8 @@ class SysMLDiagramWindow(tk.Frame):
         if self.selected_obj and self.app:
             self.app.active_arch_window = self
             self.app.selected_node = None
-            self.app.clipboard_node = None
-            self.app.cut_mode = True
+            self.app.diagram_clipboard.clipboard_node = None
+            self.app.diagram_clipboard.cut_mode = True
             diag = self.repo.diagrams.get(self.diagram_id)
             if self.selected_obj.obj_type == "System Boundary":
                 children = [
@@ -9645,8 +9645,8 @@ class SysMLDiagramWindow(tk.Frame):
                     and o.properties.get("parent") == str(self.selected_obj.obj_id)
                 ]
                 items = [self.selected_obj, *children]
-                self.app.diagram_clipboard = copy.deepcopy(items)
-                self.app.diagram_clipboard_parent_name = None
+                self.app.diagram_clipboard.diagram_clipboard = copy.deepcopy(items)
+                self.app.diagram_clipboard.diagram_clipboard_parent_name = None
                 for child in children:
                     self.remove_object(child)
                 self.remove_object(self.selected_obj)
@@ -9654,13 +9654,13 @@ class SysMLDiagramWindow(tk.Frame):
                 snap = self._clone_object(self.selected_obj)
                 if not snap:
                     return
-                self.app.diagram_clipboard = snap
+                self.app.diagram_clipboard.diagram_clipboard = snap
                 parent_name = None
                 if self.selected_obj.obj_type in ("Work Product", "Task"):
                     parent_name = self._task_parent_name(self.selected_obj)
-                self.app.diagram_clipboard_parent_name = parent_name
+                self.app.diagram_clipboard.diagram_clipboard_parent_name = parent_name
                 self.remove_object(self.selected_obj)
-            self.app.diagram_clipboard_type = diag.diag_type if diag else None
+            self.app.diagram_clipboard.diagram_clipboard_type = diag.diag_type if diag else None
             self.selected_obj = None
             self._sync_to_repository()
             self.redraw()
@@ -9671,10 +9671,10 @@ class SysMLDiagramWindow(tk.Frame):
             return
         if self.app:
             self.app.active_arch_window = self
-        if self.app and getattr(self.app, "diagram_clipboard", None):
-            if self.app.diagram_clipboard_type:
+        if self.app and getattr(self.app.diagram_clipboard, "diagram_clipboard", None):
+            if self.app.diagram_clipboard.diagram_clipboard_type:
                 diag = self.repo.diagrams.get(self.diagram_id)
-                if diag and diag.diag_type != self.app.diagram_clipboard_type:
+                if diag and diag.diag_type != self.app.diagram_clipboard.diagram_clipboard_type:
                     messagebox.showwarning(
                         "Paste",
                         "Clipboard contains incompatible diagram element.",
@@ -9682,7 +9682,7 @@ class SysMLDiagramWindow(tk.Frame):
                     return
             import copy
 
-            clip = self.app.diagram_clipboard
+            clip = self.app.diagram_clipboard.diagram_clipboard
             if isinstance(clip, list):
                 import copy as _copy
 
@@ -9715,9 +9715,9 @@ class SysMLDiagramWindow(tk.Frame):
                     return
                 if (
                     new_obj.obj_type in ("Work Product", "Task")
-                    and getattr(self.app, "diagram_clipboard_parent_name", None)
+                    and getattr(self.app.diagram_clipboard, "diagram_clipboard_parent_name", None)
                 ):
-                    parent_name = self.app.diagram_clipboard_parent_name
+                    parent_name = self.app.diagram_clipboard.diagram_clipboard_parent_name
                     parent_obj = self._find_or_place_boundary(
                         parent_name, new_obj.x, new_obj.y
                     )

@@ -43,11 +43,14 @@ def test_cross_diagram_clone_keeps_data_in_sync():
     doc1.network.add_node("A", cpd=0.5)
     doc1.positions["A"] = [(0, 0)]
     doc1.types["A"] = "variable"
-    app = types.SimpleNamespace(
-        active_cbn=doc1,
-        cbn_docs=[doc1],
+    app = types.SimpleNamespace(active_cbn=doc1, cbn_docs=[doc1])
+    app.diagram_clipboard = types.SimpleNamespace(
         diagram_clipboard=None,
         diagram_clipboard_type=None,
+        clipboard_node=None,
+        cut_mode=False,
+        clipboard_relation=None,
+        diagram_clipboard_parent_name=None,
     )
     win1 = _make_window(app, doc1)
     win1.selected_node = ("A", 0)

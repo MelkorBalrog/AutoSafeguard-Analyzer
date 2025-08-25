@@ -41,16 +41,13 @@ from gui.styles.style_manager import StyleManager
 from gui.toolboxes.review_toolbox import ReviewData, ReviewParticipant, ReviewComment
 from functools import partial
 # Governance helper class
-from mainappsrc.managers.governance_manager import GovernanceManager
 from mainappsrc.managers.paa_manager import PrototypeAssuranceManager
-from mainappsrc.managers.product_goal_manager import ProductGoalManager
 from gui.toolboxes.safety_management_toolbox import SafetyManagementToolbox
 from gui.explorers.safety_case_explorer import SafetyCaseExplorer
 from gui.windows.gsn_diagram_window import GSN_WINDOWS
 from gui.windows.causal_bayesian_network_window import CBN_WINDOWS
 from gui.windows.gsn_config_window import GSNElementConfig
 from mainappsrc.models.gsn import GSNDiagram, GSNModule
-from mainappsrc.managers.gsn_manager import GSNManager
 from mainappsrc.models.gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from gui.utils.closable_notebook import ClosableNotebook
 from gui.controls.mac_button_style import (
@@ -69,11 +66,13 @@ from .service_init_mixin import ServiceInitMixin
 from .icon_setup_mixin import IconSetupMixin
 from .style_setup_mixin import StyleSetupMixin
 from .page_diagram import PageDiagram
+from .diagram_clipboard_manager import DiagramClipboardManager
 from .editors import (
     ItemDefinitionEditorMixin,
     SafetyConceptEditorMixin,
     RequirementsEditorMixin,
 )
+from .app_initializer import AppInitializer
 from analysis.mechanisms import (
     DiagnosticMechanism,
     MechanismLibrary,
@@ -96,6 +95,7 @@ from mainappsrc.managers.drawing_manager import DrawingManager
 from .versioning_review import Versioning_Review
 from .validation_consistency import Validation_Consistency
 from .reporting_export import Reporting_Export
+from .node_clone_service import NodeCloneService
 from analysis.user_config import (
     load_user_config,
     save_user_config,
@@ -164,6 +164,7 @@ from gui.windows.architecture import (
     ARCH_WINDOWS,
 )
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
+from .undo_manager import UndoRedoManager
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.scenario_description import template_phrases
 from mainappsrc.core.app_lifecycle_ui import AppLifecycleUI
@@ -173,6 +174,7 @@ import tkinter.font as tkFont
 import builtins
 from mainappsrc.managers.user_manager import UserManager
 from mainappsrc.managers.project_manager import ProjectManager
+from mainappsrc.ui.project_properties_dialog import ProjectPropertiesDialog
 from mainappsrc.managers.sotif_manager import SOTIFManager
 from mainappsrc.managers.cyber_manager import CyberSecurityManager
 from mainappsrc.managers.cta_manager import ControlTreeManager
@@ -231,7 +233,6 @@ else:  # pragma: no cover - fallback for minimal stubs
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from analysis.utils import (
     append_unique_insensitive,
-    update_probability_tables,
     EXPOSURE_PROBABILITIES,
     CONTROLLABILITY_PROBABILITIES,
     SEVERITY_PROBABILITIES,
@@ -400,6 +401,7 @@ class AutoMLApp(
         self.product_goal_manager = ProductGoalManager()
         self.selected_node = None
         self.clone_offset_counter = {}
+        self.node_clone_service = NodeCloneService()
         self._loaded_model_paths = []
         self.root.title("AutoML-Analyzer")
         self.messagebox = messagebox
@@ -410,114 +412,7 @@ class AutoMLApp(
         self.lifecycle_ui._init_nav_button_style()
         self.setup_services()
         self.setup_icons()
-        self.clipboard_node = None
-        self.diagram_clipboard = None
-        self.diagram_clipboard_type = None
-        self.active_arch_window = None
-        self.cut_mode = False
-        self.page_history = []
-        self.project_properties = {
-            "pdf_report_name": "AutoML-Analyzer PDF Report",
-            "pdf_detailed_formulas": True,
-            "exposure_probabilities": EXPOSURE_PROBABILITIES.copy(),
-            "controllability_probabilities": CONTROLLABILITY_PROBABILITIES.copy(),
-            "severity_probabilities": SEVERITY_PROBABILITIES.copy(),
-        }
-        update_probability_tables(
-            self.project_properties["exposure_probabilities"],
-            self.project_properties["controllability_probabilities"],
-            self.project_properties["severity_probabilities"],
-        )
-        self.project_properties_manager = ProjectPropertiesManager(self.project_properties)
-        self.item_definition = {"description": "", "assumptions": ""}
-        self.safety_concept = {"functional": "", "technical": "", "cybersecurity": ""}
-        self.mission_profiles = []
-        self.fmeda_components = []
-        self.reliability_analyses = []
-        self.reliability_components = []
-        self.reliability_total_fit = 0.0
-        self.spfm = 0.0
-        self.lpfm = 0.0
-        self.reliability_dc = 0.0
-        # Lists of user-defined faults and malfunctions
-        self.faults: list[str] = []
-        self.malfunctions: list[str] = []
-        self.hazards: list[str] = []
-        self.hazard_severity: dict[str, int] = {}
-        self.failures: list[str] = []
-        self.triggering_conditions: list[str] = []
-        self.functional_insufficiencies: list[str] = []
-        self.triggering_condition_nodes = []
-        self.functional_insufficiency_nodes = []
-        self.hazop_docs = []  # list of HazopDoc
-        self.hara_docs = []   # list of HaraDoc
-        self.stpa_docs = []   # list of StpaDoc
-        self.threat_docs = []  # list of ThreatDoc
-        self.active_hazop = None
-        self.active_hara = None
-        self.active_stpa = None
-        self.active_threat = None
-        self.hazop_entries = []  # backwards compatibility for active doc
-        self.hara_entries = []
-        self.stpa_entries = []
-        self.threat_entries = []
-        self.fi2tc_docs = []  # list of FI2TCDoc
-        self.tc2fi_docs = []  # list of TC2FIDoc
-        self.active_fi2tc = None
-        self.active_tc2fi = None
-        self.cbn_docs = []  # list of CausalBayesianNetworkDoc
-        self.active_cbn = None
-        self.cybersecurity_goals: list[CybersecurityGoal] = []
-        self.arch_diagrams = []
-        self.management_diagrams = []
-        self.gsn_modules = []  # top-level GSN modules
-        self.gsn_diagrams = []  # diagrams not assigned to a module
-        self.gsn_manager = GSNManager(self)
-        # Track open diagram tabs to avoid duplicates
-        self.diagram_tabs: dict[str, ttk.Frame] = {}
-        self.top_events = []
-        self.reviews = []
-        self.review_data = None
-        self.review_window = None
-        self.governance_manager = GovernanceManager(self)
-        self.safety_mgmt_toolbox = SafetyManagementToolbox()
-        self.governance_manager.attach_toolbox(self.safety_mgmt_toolbox)
-        self.probability_reliability = Probability_Reliability(self)
-        self.current_user = ""
-        self.comment_target = None
-        self._undo_stack: list[dict] = []
-        self._redo_stack: list[dict] = []
-        # Track which work products are currently enabled. Menu entries for
-        # these products remain disabled until the corresponding governance
-        # diagram adds the work product. The mapping stores references to the
-        # menu and entry index for each work product so they can be toggled at
-        # runtime.
-        self.enabled_work_products: set[str] = set()
-        self.work_product_menus: dict[str, list[tuple[tk.Menu, int]]] = {}
-        self.versions = []
-        self.diff_nodes = []
-        self.fi2tc_entries = []
-        self.tc2fi_entries = []
-        self.scenario_libraries = []
-        self.odd_libraries = []
-        self.odd_elements = []
-        self.update_odd_elements()
-        # Provide the drawing helper to dialogs that may be opened later
-        self.fta_drawing_helper = fta_drawing_helper
-
-        # Tree structure helpers
-        self.structure_tree_operations = Structure_Tree_Operations(self)
-
-        self.mechanism_libraries = []
-        self.selected_mechanism_libraries = []
-        self.load_default_mechanisms()
-
-        self.mechanism_libraries = []
-        self.selected_mechanism_libraries = []
-        self.load_default_mechanisms()
-
-        self.mechanism_libraries = []
-        self.load_default_mechanisms()
+        AppInitializer(self).initialize()
 
         menubar = tk.Menu(root)
         file_menu = tk.Menu(menubar, tearoff=0)
@@ -1597,146 +1492,15 @@ class AutoMLApp(
     def sync_cyber_risk_to_goals(self):
         return self.probability_reliability.sync_cyber_risk_to_goals()
 
-
     def add_top_level_event(self):
         return self.safety_analysis.add_top_level_event()
 
     def _build_probability_frame(self, parent, title: str, levels: range, values: dict, row: int, dialog_font):
         return self.probability_reliability._build_probability_frame(parent, title, levels, values, row, dialog_font)
 
-    def _apply_project_properties(
-        self,
-        name: str,
-        detailed: bool,
-        exp_vars: dict,
-        ctrl_vars: dict,
-        sev_vars: dict,
-        smt,
-        freeze: bool,
-    ) -> None:
-        """Persist updated project properties and refresh probability tables."""
-        self.project_properties["pdf_report_name"] = name
-        self.project_properties["pdf_detailed_formulas"] = detailed
-        self.project_properties["exposure_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-        }
-        self.project_properties["controllability_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-        }
-        self.project_properties["severity_probabilities"] = {
-            lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-        }
-        update_probability_tables(
-            self.project_properties["exposure_probabilities"],
-            self.project_properties["controllability_probabilities"],
-            self.project_properties["severity_probabilities"],
-        )
-        if smt:
-            self.governance_manager.freeze_governance_diagrams(freeze)
-
-    def edit_project_properties(self):
-        prop_win = tk.Toplevel(self.root)
-        prop_win.title("Project Properties")
-        prop_win.resizable(False, False)
-        dialog_font = tkFont.Font(family="Arial", size=10)
-
-        ttk.Label(prop_win, text="PDF Report Name:", font=dialog_font).grid(
-            row=0, column=0, padx=10, pady=10, sticky="w"
-        )
-        pdf_entry = ttk.Entry(prop_win, width=40, font=dialog_font)
-        pdf_entry.insert(0, self.project_properties.get("pdf_report_name", "AutoML-Analyzer PDF Report"))
-        pdf_entry.grid(row=0, column=1, padx=10, pady=10)
-
-        # Checkbox to choose between detailed formulas or score results only.
-        var_detailed = tk.BooleanVar(
-            value=self.project_properties.get("pdf_detailed_formulas", True)
-        )
-        chk = ttk.Checkbutton(
-            prop_win,
-            text="Show Detailed Formulas in PDF Report",
-            variable=var_detailed,
-        )
-        chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-
-        smt = getattr(self, "safety_mgmt_toolbox", None)
-        all_frozen = False
-        if smt:
-            diagrams = smt.list_diagrams()
-            all_frozen = diagrams and all(smt.diagram_frozen(d) for d in diagrams)
-        var_freeze = tk.BooleanVar(
-            value=self.project_properties.get("freeze_governance_diagrams", bool(all_frozen))
-        )
-        ttk.Checkbutton(
-            prop_win,
-            text="Freeze Governance Diagrams",
-            variable=var_freeze,
-        ).grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-
-        exp_vars = self._build_probability_frame(
-            prop_win,
-            "Exposure Probabilities P(E|HB)",
-            range(1, 5),
-            self.project_properties.get("exposure_probabilities", {}),
-            3,
-            dialog_font,
-        )
-        ctrl_vars = self._build_probability_frame(
-            prop_win,
-            "Controllability Probabilities P(C|E)",
-            range(1, 4),
-            self.project_properties.get("controllability_probabilities", {}),
-            4,
-            dialog_font,
-        )
-        sev_vars = self._build_probability_frame(
-            prop_win,
-            "Severity Probabilities P(S|C)",
-            range(1, 4),
-            self.project_properties.get("severity_probabilities", {}),
-            5,
-            dialog_font,
-        )
-
-        def save_props() -> None:
-            new_name = pdf_entry.get().strip()
-            if not new_name:
-                messagebox.showwarning(
-                    "Project Properties", "PDF Report Name cannot be empty."
-                )
-                return
-
-            self.project_properties["pdf_report_name"] = new_name
-            self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
-            self.project_properties["exposure_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-            }
-            self.project_properties["controllability_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-            }
-            self.project_properties["severity_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-            }
-            self.project_properties["freeze_governance_diagrams"] = var_freeze.get()
-            update_probability_tables(
-                self.project_properties["exposure_probabilities"],
-                self.project_properties["controllability_probabilities"],
-                self.project_properties["severity_probabilities"],
-            )
-            if smt:
-                self.governance_manager.freeze_governance_diagrams(var_freeze.get())
-            messagebox.showinfo(
-                "Project Properties", "Project properties updated."
-            )
-            prop_win.destroy()
-
-        ttk.Button(prop_win, text="Save", command=save_props, width=10).grid(
-            row=6, column=0, columnspan=2, pady=10
-        )
-        prop_win.update_idletasks()
-        prop_win.minsize(prop_win.winfo_width(), prop_win.winfo_height())
-        prop_win.transient(self.root)
-        prop_win.grab_set()
-        self.root.wait_window(prop_win)
+    def edit_project_properties(self) -> None:
+        """Open the project properties dialog."""
+        ProjectPropertiesDialog(self).show()
 
     def create_diagram_image(self):  # pragma: no cover - delegation
         return self.diagram_renderer.create_diagram_image()
@@ -6107,67 +5871,10 @@ class AutoMLApp(
         return False
 
     def copy_node(self):
-        for strat in (
-            self._diagram_copy_strategy1,
-            self._diagram_copy_strategy2,
-            self._diagram_copy_strategy3,
-            self._diagram_copy_strategy4,
-        ):
-            if strat():
-                return
-        node = self.selected_node
-        if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
-            sel = self.analysis_tree.selection()
-            if sel:
-                tags = self.analysis_tree.item(sel[0], "tags")
-                if tags:
-                    node = self.find_node_by_id(self.root_node, int(tags[0]))
-        if node and node != self.root_node:
-            self.clipboard_node = node
-            self.selected_node = node
-            self.cut_mode = False
-            if node.parents:
-                parent = node.parents[0]
-                context_children = getattr(parent, "context_children", [])
-                rel = "context" if node in context_children else "solved"
-            else:
-                rel = "solved"
-            self.clipboard_relation = rel
-            return
-        messagebox.showwarning("Copy", "Select a non-root node to copy.")
+        self.diagram_clipboard.copy_node()
 
     def cut_node(self):
-        """Store the currently selected node for a cut & paste operation."""
-        for strat in (
-            self._diagram_cut_strategy1,
-            self._diagram_cut_strategy2,
-            self._diagram_cut_strategy3,
-            self._diagram_cut_strategy4,
-        ):
-            if strat():
-                return
-        node = self.selected_node
-        if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
-            sel = self.analysis_tree.selection()
-            if sel:
-                tags = self.analysis_tree.item(sel[0], "tags")
-                if tags:
-                    node = self.find_node_by_id(self.root_node, int(tags[0]))
-        if node and node != self.root_node:
-            self.clipboard_node = node
-            self.selected_node = node
-            self.cut_mode = True
-            if node.parents:
-                parent = node.parents[0]
-                context_children = getattr(parent, "context_children", [])
-                rel = "context" if node in context_children else "solved"
-            else:
-                rel = "solved"
-            self.clipboard_relation = rel
-            return
-        if getattr(self, "active_arch_window", None) or ARCH_WINDOWS:
-            return
-        messagebox.showwarning("Cut", "Select a non-root node to cut.")
+        self.diagram_clipboard.cut_node()
 
     # ------------------------------------------------------------------
     def _reset_gsn_clone(self, node):
@@ -6257,129 +5964,7 @@ class AutoMLApp(
         return self.clipboard_node
 
     def paste_node(self):
-        if self.clipboard_node:
-            # NOTE: Paste logic and target resolution chain (selection → focused diagram root → app root)
-            # are final and must not be modified without explicit user approval.
-            target = None
-            sel = self.analysis_tree.selection()
-            if sel:
-                tags = self.analysis_tree.item(sel[0], "tags")
-                if tags:
-                    target = self.find_node_by_id(self.root_node, int(tags[0]))
-            if not target:
-                target = self.selected_node or self.root_node
-            if not target:
-                win = self.window_controllers._focused_gsn_window()
-                if win and getattr(win, "diagram", None):
-                    target = win.diagram.root
-            if not target:
-                win = self.window_controllers._focused_cbn_window()
-                if win and getattr(win, "diagram", None):
-                    target = win.diagram.root
-            if not target:
-                target = self.root_node
-            if not target:
-                win = self.window_controllers._focused_gsn_window()
-                if win and getattr(win, "diagram", None):
-                    target = win.diagram.root
-            if not target:
-                win = self.window_controllers._focused_cbn_window()
-                if win and getattr(win, "diagram", None):
-                    target = win.diagram.root
-            if not target:
-                target = self.root_node
-            if not target:
-                messagebox.showwarning("Paste", "Select a target node to paste into.")
-                return
-            if target.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-                messagebox.showwarning("Paste", "Cannot paste into a base event.")
-                return
-            if not target.is_primary_instance:
-                target = target.original
-            if target.unique_id == self.clipboard_node.unique_id:
-                messagebox.showwarning("Paste", "Cannot paste a node onto itself.")
-                return
-            if self.cut_mode:
-                for child in target.children:
-                    if child.unique_id == self.clipboard_node.unique_id:
-                        messagebox.showwarning("Paste", "This node is already a child of the target.")
-                        return
-            if self.cut_mode:
-                if self.clipboard_node in self.top_events:
-                    self.top_events.remove(self.clipboard_node)
-                for p in list(self.clipboard_node.parents):
-                    if self.clipboard_node in p.children:
-                        p.children.remove(self.clipboard_node)
-                self.clipboard_node.parents = []
-                if self.clipboard_node.node_type.upper() == "TOP EVENT":
-                    self.clipboard_node.node_type = "RIGOR LEVEL"
-                    self.clipboard_node.severity = None
-                    self.clipboard_node.is_page = False
-                    self.clipboard_node.input_subtype = "Failure"
-                self.clipboard_node.is_primary_instance = True
-                relation = getattr(self, "clipboard_relation", "solved")
-                if hasattr(target, "add_child"):
-                    target.add_child(self.clipboard_node, relation=relation)
-                else:
-                    if relation == "context":
-                        target.context_children.append(self.clipboard_node)
-                    else:
-                        target.children.append(self.clipboard_node)
-                    self.clipboard_node.parents.append(target)
-                if isinstance(self.clipboard_node, GSNNode):
-                    old_diag = self._find_gsn_diagram(self.clipboard_node)
-                    new_diag = self._find_gsn_diagram(target)
-                    if old_diag and old_diag is not new_diag and self.clipboard_node in old_diag.nodes:
-                        old_diag.nodes.remove(self.clipboard_node)
-                    if new_diag and self.clipboard_node not in new_diag.nodes:
-                        new_diag.add_node(self.clipboard_node)
-                self.clipboard_node.x = target.x + 100
-                self.clipboard_node.y = target.y + 100
-                self.clipboard_node.display_label = self.clipboard_node.display_label.replace(" (clone)", "")
-                self.clipboard_node = None
-                self.cut_mode = False
-                messagebox.showinfo("Paste", "Node moved successfully (cut & pasted).")
-            else:
-                target_diag = self._find_gsn_diagram(target)
-                node_for_pos = self._prepare_node_for_paste(target)
-                target.children.append(node_for_pos)
-                node_for_pos.parents.append(target)
-                if isinstance(node_for_pos, GSNNode):
-                    if target_diag and node_for_pos not in target_diag.nodes:
-                        target_diag.add_node(node_for_pos)
-                node_for_pos.x = target.x + 100
-                node_for_pos.y = target.y + 100
-                if hasattr(node_for_pos, "display_label"):
-                    node_for_pos.display_label = node_for_pos.display_label.replace(" (clone)", "")
-                messagebox.showinfo("Paste", "Node pasted successfully (copied).")
-            try:
-                AutoML_Helper.calculate_assurance_recursive(
-                    self.root_node,
-                    self.top_events,
-                )
-            except AttributeError:
-                pass
-            self.update_views()
-            return
-        clip_type = getattr(self, "diagram_clipboard_type", None)
-        win = self.window_controllers._focused_cbn_window()
-        if win and getattr(self, "diagram_clipboard", None):
-            if not clip_type or clip_type == "Causal Bayesian Network":
-                if getattr(win, "paste_selected", None):
-                    win.paste_selected()
-                    return
-        win = self.window_controllers._focused_gsn_window()
-        if win and getattr(self, "diagram_clipboard", None):
-            if not clip_type or clip_type == "GSN":
-                if getattr(win, "paste_selected", None):
-                    win.paste_selected()
-                    return
-        win = self.window_controllers._focused_arch_window(clip_type)
-        if win and getattr(self, "diagram_clipboard", None):
-            if getattr(win, "paste_selected", None):
-                win.paste_selected()
-                return
-        messagebox.showwarning("Paste", "Clipboard is empty.")
+        self.diagram_clipboard.paste_node()
 
     def _get_diag_type(self, win):
         repo = getattr(win, "repo", None)
@@ -6392,56 +5977,8 @@ class AutoMLApp(
 
 
     def clone_node_preserving_id(self, node, parent=None):
-        """Return a clone of *node* with a new unique ID.
-
-        The function handles both FaultTreeNode and GSNNode instances.  For
-        FaultTreeNode objects, a new :class:`FaultTreeNode` is created and the
-        relevant attributes are copied across.  For :class:`GSNNode` instances
-        the built-in ``clone`` method is used to ensure GSN-specific fields are
-        preserved.  When *parent* is provided and the node represents a
-        ``Context``, ``Assumption`` or ``Justification`` element the clone is
-        automatically linked to *parent* using an ``in-context-of`` relation.
-        """
-
-        if isinstance(node, GSNNode):
-            if node.node_type not in ALLOWED_AWAY_TYPES:
-                raise ValueError(
-                    "Only Goal, Solution, Context, Assumption, and Justification nodes can be cloned."
-                )
-            # GSN nodes provide their own clone method.  Offset the position of
-            # the cloned node so that it does not overlap the original.
-            clone_parent = (
-                parent
-                if parent and node.node_type in {"Context", "Assumption", "Justification"}
-                else None
-            )
-            new_node = node.clone(clone_parent)
-            new_node.x = node.x + 100
-            new_node.y = node.y + 100
-            return new_node
-
-        # Default behaviour is to treat the node as a FaultTreeNode.  Create a
-        # fresh instance and copy over attributes that exist on the source
-        # object.  ``getattr`` is used to avoid AttributeError if a field is
-        # missing on the source node.
-        new_node = FaultTreeNode(node.user_name, node.node_type)
-        new_node.unique_id = AutoML_Helper.get_next_unique_id()
-        new_node.quant_value = getattr(node, "quant_value", None)
-        new_node.gate_type = getattr(node, "gate_type", None)
-        new_node.description = getattr(node, "description", "")
-        new_node.rationale = getattr(node, "rationale", "")
-        new_node.x = node.x + 100
-        new_node.y = node.y + 100
-        new_node.severity = getattr(node, "severity", None)
-        new_node.input_subtype = getattr(node, "input_subtype", None)
-        new_node.display_label = getattr(node, "display_label", "")
-        new_node.equation = getattr(node, "equation", "")
-        new_node.detailed_equation = getattr(node, "detailed_equation", "")
-        new_node.is_page = getattr(node, "is_page", False)
-        new_node.is_primary_instance = False
-        new_node.original = node if node.is_primary_instance else node.original
-        new_node.children = []
-        return new_node
+        """Delegate cloning to :class:`NodeCloneService`."""
+        return self.node_clone_service.clone_node_preserving_id(node, parent)
 
     def _find_gsn_diagram(self, node):
         """Return the GSN diagram containing ``node`` if known.
@@ -6552,281 +6089,43 @@ class AutoMLApp(
         return current_state != getattr(self, "last_saved_state", None)
 
     # ------------------------------------------------------------
+    # ------------------------------------------------------------
     # Undo support
     # ------------------------------------------------------------
-    def _strip_object_positions(self, data: dict) -> dict:
-        """Return a copy of *data* without concrete object positions."""
-
-        cleaned = json.loads(json.dumps(data))
-
-        def scrub(obj: Any) -> None:
-            if isinstance(obj, dict):
-                for field in ("x", "y", "modified", "modified_by", "modified_by_email"):
-                    obj.pop(field, None)
-                for value in obj.values():
-                    scrub(value)
-            elif isinstance(obj, list):
-                for item in obj:
-                    scrub(item)
-
-        scrub(cleaned)
-        return cleaned
-
     def push_undo_state(self, strategy: str = "v4", sync_repo: bool = True) -> None:
-        """Save the current model state for undo operations."""
-        repo = SysMLRepository.get_instance()
-        if sync_repo:
-            repo.push_undo_state(strategy=strategy, sync_app=False)
-        if not hasattr(self, "_undo_stack"):
-            self._undo_stack = []
-        if not hasattr(self, "_redo_stack"):
-            self._redo_stack = []
-        try:
-            state = self.export_model_data(include_versions=False)
-            stripped = self._strip_object_positions(state)
-        except AttributeError:
-            state = {}
-            stripped = {}
+        self.undo_manager.push_undo_state(strategy=strategy, sync_repo=sync_repo)
 
-        handler = getattr(
-            self, f"_push_undo_state_{strategy}", self._push_undo_state_v1
-        )
-        changed = handler(state, stripped)
-
-        if changed and len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        if changed:
-            self._redo_stack.clear()
-
-    # Variants for push_undo_state
     def _push_undo_state_v1(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack:
-            last = self._undo_stack[-1]
-            if last == state:
-                return False
-            if self._strip_object_positions(last) == stripped:
-                if (
-                    len(self._undo_stack) >= 2
-                    and self._strip_object_positions(self._undo_stack[-2]) == stripped
-                ):
-                    self._undo_stack[-1] = state
-                    return True
-                self._undo_stack.append(state)
-                return True
-        else:
-            self._undo_stack.append(state)
-            return True
-
-        self._undo_stack.append(state)
-        return True
+        return self.undo_manager._push_undo_state_v1(state, stripped)
 
     def _push_undo_state_v2(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack and self._undo_stack[-1] == state:
-            return False
-        if self._undo_stack and self._strip_object_positions(self._undo_stack[-1]) == stripped:
-            if getattr(self, "_last_move_base", None) == stripped:
-                self._undo_stack[-1] = state
-            else:
-                self._undo_stack.append(state)
-                self._last_move_base = stripped
-            return True
-        self._last_move_base = None
-        self._undo_stack.append(state)
-        return True
+        return self.undo_manager._push_undo_state_v2(state, stripped)
 
     def _push_undo_state_v3(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack and self._undo_stack[-1] == state:
-            return False
-        if self._undo_stack and self._strip_object_positions(self._undo_stack[-1]) == stripped:
-            if getattr(self, "_move_run_length", 0):
-                self._undo_stack[-1] = state
-            else:
-                self._undo_stack.append(state)
-            self._move_run_length = getattr(self, "_move_run_length", 0) + 1
-            return True
-        self._move_run_length = 0
-        self._undo_stack.append(state)
-        return True
+        return self.undo_manager._push_undo_state_v3(state, stripped)
 
     def _push_undo_state_v4(self, state: dict, stripped: dict) -> bool:
-        if self._undo_stack and self._undo_stack[-1] == state:
-            return False
-        self._undo_stack.append(state)
-        if len(self._undo_stack) >= 3:
-            s1 = self._strip_object_positions(self._undo_stack[-3])
-            s2 = self._strip_object_positions(self._undo_stack[-2])
-            if s1 == s2 == stripped:
-                self._undo_stack.pop(-2)
-        return True
+        return self.undo_manager._push_undo_state_v4(state, stripped)
 
     def _undo_hotkey(self, event):
         """Keyboard shortcut handler for undo."""
-        self.undo()
+        self.undo_manager.undo()
         return "break"
 
     def _redo_hotkey(self, event):
         """Keyboard shortcut handler for redo."""
-        self.redo()
+        self.undo_manager.redo()
         return "break"
 
     def undo(self, strategy: str = "v4"):
-        """Revert the repository and model data to the previous state."""
-        repo = SysMLRepository.get_instance()
-        handler = getattr(self, f"_undo_{strategy}", self._undo_v1)
-        changed = handler(repo)
-        if not changed:
-            return
-        for tab in getattr(self, "diagram_tabs", {}).values():
-            for child in tab.winfo_children():
-                if hasattr(child, "refresh_from_repository"):
-                    child.refresh_from_repository()
-        self.refresh_all()
-        try:
-            self.apply_governance_rules()
-        except Exception:
-            pass
+        self.undo_manager.undo(strategy=strategy)
 
     def redo(self, strategy: str = "v4"):
-        """Restore the next state from the redo stack."""
-        repo = SysMLRepository.get_instance()
-        handler = getattr(self, f"_redo_{strategy}", self._redo_v1)
-        changed = handler(repo)
-        if not changed:
-            return
-        for tab in getattr(self, "diagram_tabs", {}).values():
-            for child in tab.winfo_children():
-                if hasattr(child, "refresh_from_repository"):
-                    child.refresh_from_repository()
-        self.refresh_all()
-        try:
-            self.apply_governance_rules()
-        except Exception:
-            pass
+        self.undo_manager.redo(strategy=strategy)
 
     def clear_undo_history(self) -> None:
         """Remove all undo and redo history."""
-        self._undo_stack.clear()
-        self._redo_stack.clear()
-        repo = SysMLRepository.get_instance()
-        getattr(repo, "_undo_stack", []).clear()
-        getattr(repo, "_redo_stack", []).clear()
-
-    # Undo/redo variants
-    def _undo_v1(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v1")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                return False
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _undo_v2(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v2")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                return False
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _undo_v3(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v3")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                return False
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _undo_v4(self, repo):
-        if not self._undo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.undo(strategy="v4")
-        if self._undo_stack and self._undo_stack[-1] == current:
-            self._undo_stack.pop()
-            if not self._undo_stack:
-                self._redo_stack.append(current)
-                if len(self._redo_stack) > 20:
-                    self._redo_stack.pop(0)
-                return True
-        state = self._undo_stack.pop()
-        self._redo_stack.append(current)
-        if len(self._redo_stack) > 20:
-            self._redo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v1(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v1")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v2(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v2")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v3(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v3")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
-    def _redo_v4(self, repo):
-        if not self._redo_stack:
-            return False
-        current = self.export_model_data(include_versions=False)
-        repo.redo(strategy="v4")
-        state = self._redo_stack.pop()
-        self._undo_stack.append(current)
-        if len(self._undo_stack) > 20:
-            self._undo_stack.pop(0)
-        self.apply_model_data(state)
-        return True
-
+        self.undo_manager.clear_history()
     def confirm_close(self):
         """Prompt to save if there are unsaved changes before closing."""
         if self.has_unsaved_changes():
@@ -7415,8 +6714,7 @@ class AutoMLApp(
         self.root_node = None
         self.selected_node = None
         self.page_history = []
-        self._undo_stack.clear()
-        self._redo_stack.clear()
+        self.undo_manager.clear_history()
         if getattr(self, "analysis_tree", None):
             self.analysis_tree.delete(*self.analysis_tree.get_children())
 

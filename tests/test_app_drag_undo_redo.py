@@ -19,6 +19,7 @@
 import types
 
 from AutoML import AutoMLApp
+from mainappsrc.core.undo_manager import UndoRedoManager
 
 
 class DummyEvent:
@@ -43,8 +44,7 @@ def test_drag_records_only_endpoints_and_undo_redo():
     app.move_subtree = lambda n, dx, dy: None
     app.sync_nodes_by_id = lambda n: None
     app.redraw_canvas = lambda: None
-    app._undo_stack = []
-    app._redo_stack = []
+    app.undo_manager = UndoRedoManager(app)
     app.export_model_data = lambda include_versions=False: {
         "diagrams": [{"objects": [{"x": node.x, "y": node.y}]}]
     }
@@ -67,7 +67,7 @@ def test_drag_records_only_endpoints_and_undo_redo():
     app.on_canvas_release(DummyEvent(10, 10))
 
     assert node.x == 10.0 and node.y == 10.0
-    assert len(app._undo_stack) == 2
+    assert len(app.undo_manager._undo_stack) == 2
 
     app.undo()
     assert node.x == 0.0 and node.y == 0.0

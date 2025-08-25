@@ -31,6 +31,8 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 from AutoML import AutoMLApp
 import AutoML
+from mainappsrc.core.undo_manager import UndoRedoManager
+from mainappsrc.managers.project_manager import ProjectManager
 
 class DummyNotebook:
     def __init__(self):
@@ -50,6 +52,7 @@ class DummyNotebook:
 
 def _base_app(monkeypatch):
     app = AutoMLApp.__new__(AutoMLApp)
+    app.undo_manager = UndoRedoManager(app)
     app.doc_nb = DummyNotebook()
     app.analysis_tree = MagicMock()
     app.analysis_tree.get_children.return_value = []
@@ -60,23 +63,30 @@ def _base_app(monkeypatch):
     app.activity_windows = [MagicMock()]
     app.block_windows = [MagicMock()]
     app.ibd_windows = [MagicMock()]
-    app._undo_stack = []
-    app._redo_stack = []
     app.diagram_font = MagicMock()
     app.hara_docs = []
     app.hazop_docs = []
     app.fmea_entries = []
+    app.safety_analysis = types.SimpleNamespace(
+        fmeas=[], fmedas=[], _load_fault_tree_events=lambda *a, **k: None
+    )
     app.fmeas = []
     app.fmedas = []
     app.safety_mgmt_toolbox = MagicMock()
     app.safety_mgmt_toolbox.doc_phases = {}
     app.safety_mgmt_toolbox.active_module = None
     app.safety_mgmt_toolbox.register_created_work_product = MagicMock()
+    app.probability_reliability = MagicMock()
+    app.probability_reliability.update_probability_tables = lambda *a, **k: None
+    app.project_manager = ProjectManager(app)
+    app.messagebox = MagicMock()
 
-    monkeypatch.setattr(AutoML, "SysMLRepository", MagicMock())
+    monkeypatch.setattr(AutoML, "SysMLRepository", MagicMock(), raising=False)
     monkeypatch.setattr(AutoML, "AutoMLHelper", MagicMock())
     monkeypatch.setattr(AutoML, "AutoML_Helper", MagicMock(), raising=False)
-    monkeypatch.setattr(AutoML, "update_probability_tables", lambda *a, **k: None)
+    monkeypatch.setattr(
+        AutoML, "update_probability_tables", lambda *a, **k: None, raising=False
+    )
     monkeypatch.setattr(AutoML.messagebox, "askyesnocancel", lambda *a, **k: False)
     return app
 
