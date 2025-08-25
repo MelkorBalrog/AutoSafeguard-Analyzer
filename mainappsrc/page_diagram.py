@@ -16,25 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Utility helpers for the AutoML tool."""
+"""Compatibility wrapper for tests importing ``mainappsrc.page_diagram``."""
 
-from .diagnostics_manager import (
-    AsyncDiagnosticsManager,
-    DiagnosticError,
-    DiagnosticsManagerBase,
-    EventDiagnosticsManager,
-    PassiveDiagnosticsManager,
-    PollingDiagnosticsManager,
-)
-from .trash_eater import TrashEater, manager_eater
+from mainappsrc.core.page_diagram import PageDiagram
+from gui.utils.drawing_helper import fta_drawing_helper
 
-__all__ = [
-    "AsyncDiagnosticsManager",
-    "DiagnosticError",
-    "DiagnosticsManagerBase",
-    "EventDiagnosticsManager",
-    "PassiveDiagnosticsManager",
-    "PollingDiagnosticsManager",
-    "TrashEater",
-    "manager_eater",
-]
+__all__ = ["PageDiagram", "fta_drawing_helper"]
+

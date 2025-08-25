@@ -16,25 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Utility helpers for the AutoML tool."""
+"""Lightweight wrapper exposing launcher utilities for tests.
 
-from .diagnostics_manager import (
-    AsyncDiagnosticsManager,
-    DiagnosticError,
-    DiagnosticsManagerBase,
-    EventDiagnosticsManager,
-    PassiveDiagnosticsManager,
-    PollingDiagnosticsManager,
-)
-from .trash_eater import TrashEater, manager_eater
+The test suite expects an :mod:`automl` module providing functions like
+``ensure_packages`` and ``ensure_ghostscript``.  The main launcher lives in
+``AutoML.py`` with a capitalised name, so this module simply re-exports all of
+its public objects for convenience and to ease test imports.
+"""
 
-__all__ = [
-    "AsyncDiagnosticsManager",
-    "DiagnosticError",
-    "DiagnosticsManagerBase",
-    "EventDiagnosticsManager",
-    "PassiveDiagnosticsManager",
-    "PollingDiagnosticsManager",
-    "TrashEater",
-    "manager_eater",
-]
+from AutoML import *  # noqa: F401,F403
+

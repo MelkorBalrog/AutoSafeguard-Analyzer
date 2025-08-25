@@ -48,6 +48,8 @@ import asyncio
 import queue
 import threading
 import time
+
+from .thread_manager import manager as thread_manager
 from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 
 
@@ -135,8 +137,9 @@ class PollingDiagnosticsManager(DiagnosticsManagerBase):
         if self._thread and self._thread.is_alive():
             return
         self._stop.clear()
-        self._thread = threading.Thread(target=self._run, daemon=True)
-        self._thread.start()
+        self._thread = thread_manager.register(
+            "polling_diagnostics", self._run, daemon=True
+        )
 
     def _run(self) -> None:
         while not self._stop.is_set():
@@ -150,8 +153,9 @@ class PollingDiagnosticsManager(DiagnosticsManagerBase):
 
     def stop(self) -> None:
         self._stop.set()
-        if self._thread:
-            self._thread.join()
+        thread = thread_manager.unregister("polling_diagnostics")
+        if thread:
+            thread.join()
 
 
 class EventDiagnosticsManager(DiagnosticsManagerBase):

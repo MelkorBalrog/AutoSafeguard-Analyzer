@@ -16,25 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Utility helpers for the AutoML tool."""
+import time
 
-from .diagnostics_manager import (
-    AsyncDiagnosticsManager,
-    DiagnosticError,
-    DiagnosticsManagerBase,
-    EventDiagnosticsManager,
-    PassiveDiagnosticsManager,
-    PollingDiagnosticsManager,
-)
-from .trash_eater import TrashEater, manager_eater
+from tools.thread_manager import ThreadManager
 
-__all__ = [
-    "AsyncDiagnosticsManager",
-    "DiagnosticError",
-    "DiagnosticsManagerBase",
-    "EventDiagnosticsManager",
-    "PassiveDiagnosticsManager",
-    "PollingDiagnosticsManager",
-    "TrashEater",
-    "manager_eater",
-]
+
+def test_thread_manager_restarts_dead_thread() -> None:
+    runs = {"count": 0}
+
+    def worker() -> None:
+        runs["count"] += 1
+
+    manager = ThreadManager(interval=0.05)
+    manager.register("t1", worker, daemon=True)
+    time.sleep(0.15)  # allow thread to run and be restarted
+    assert runs["count"] >= 2
+    manager.stop_all()
