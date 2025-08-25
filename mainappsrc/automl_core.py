@@ -16,8 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Project version information."""
+"""Compatibility wrapper for tests importing ``mainappsrc.automl_core``.
 
-VERSION = "0.2.59"
+The project structure exposes the core implementation in
+``mainappsrc.core.automl_core``.  Certain tests expect the module to be
+available directly under :mod:`mainappsrc`, so this file re-exports all symbols
+from the actual location.
+"""
 
-__all__ = ["VERSION"]
+from mainappsrc.core.automl_core import *  # noqa: F401,F403
+

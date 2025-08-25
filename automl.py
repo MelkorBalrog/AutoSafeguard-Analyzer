@@ -16,8 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Project version information."""
+"""Lightweight wrapper exposing launcher utilities for tests.
 
-VERSION = "0.2.59"
+The test suite expects an :mod:`automl` module providing functions like
+``ensure_packages`` and ``ensure_ghostscript``.  The main launcher lives in
+``AutoML.py`` with a capitalised name, so this module simply re-exports all of
+its public objects for convenience and to ease test imports.
+"""
 
-__all__ = ["VERSION"]
+from AutoML import *  # noqa: F401,F403
+
