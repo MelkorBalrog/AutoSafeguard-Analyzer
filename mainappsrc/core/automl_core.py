@@ -370,7 +370,7 @@ from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.scenario_description import template_phrases
 from mainappsrc.core.app_lifecycle_ui import AppLifecycleUI
-from .data_access_queries import DataAccess_Queries
+from mainappsrc.core.editing_labels_styling import Editing_Labels_Styling
 import copy
 import tkinter.font as tkFont
 import builtins
@@ -550,6 +550,7 @@ class AutoMLApp:
     #: titles are truncated with an ellipsis to avoid giant tabs that overflow
     #: the working area.
     MAX_TAB_TEXT_LENGTH = 20
+    GATE_NODE_TYPES = GATE_NODE_TYPES
 
     @property
     def fmedas(self):
@@ -628,6 +629,7 @@ class AutoMLApp:
         AutoMLApp._instance = self
         self.root = root
         self.lifecycle_ui = AppLifecycleUI(self, root)
+        self.labels_styling = Editing_Labels_Styling(self)
         self.top_events = []
         self.cta_events = []
         self.paa_events = []
@@ -1618,6 +1620,72 @@ class AutoMLApp:
     def _new_tab(self, *args, **kwargs):
         return self.lifecycle_ui._new_tab(*args, **kwargs)
 
+    # ------------------------------------------------------------------
+    # Label editing and styling helper wrappers
+    # ------------------------------------------------------------------
+    def edit_controllability(self, *args, **kwargs):
+        return self.labels_styling.edit_controllability(*args, **kwargs)
+
+    def edit_description(self, *args, **kwargs):
+        return self.labels_styling.edit_description(*args, **kwargs)
+
+    def edit_gate_type(self, *args, **kwargs):
+        return self.labels_styling.edit_gate_type(*args, **kwargs)
+
+    def edit_page_flag(self, *args, **kwargs):
+        return self.labels_styling.edit_page_flag(*args, **kwargs)
+
+    def edit_rationale(self, *args, **kwargs):
+        return self.labels_styling.edit_rationale(*args, **kwargs)
+
+    def edit_selected(self, *args, **kwargs):
+        return self.labels_styling.edit_selected(*args, **kwargs)
+
+    def edit_user_name(self, *args, **kwargs):
+        return self.labels_styling.edit_user_name(*args, **kwargs)
+
+    def edit_value(self, *args, **kwargs):
+        return self.labels_styling.edit_value(*args, **kwargs)
+
+    def rename_failure(self, *args, **kwargs):
+        return self.labels_styling.rename_failure(*args, **kwargs)
+
+    def rename_fault(self, *args, **kwargs):
+        return self.labels_styling.rename_fault(*args, **kwargs)
+
+    def rename_functional_insufficiency(self, *args, **kwargs):
+        return self.labels_styling.rename_functional_insufficiency(*args, **kwargs)
+
+    def rename_hazard(self, *args, **kwargs):
+        return self.labels_styling.rename_hazard(*args, **kwargs)
+
+    def rename_malfunction(self, *args, **kwargs):
+        return self.labels_styling.rename_malfunction(*args, **kwargs)
+
+    def rename_selected_tree_item(self, *args, **kwargs):
+        return self.labels_styling.rename_selected_tree_item(*args, **kwargs)
+
+    def rename_triggering_condition(self, *args, **kwargs):
+        return self.labels_styling.rename_triggering_condition(*args, **kwargs)
+
+    def apply_style(self, *args, **kwargs):
+        return self.labels_styling.apply_style(*args, **kwargs)
+
+    def format_failure_mode_label(self, *args, **kwargs):
+        return self.labels_styling.format_failure_mode_label(*args, **kwargs)
+
+    def _resize_prop_columns(self, *args, **kwargs):
+        return self.labels_styling._resize_prop_columns(*args, **kwargs)
+
+    def _spi_label(self, *args, **kwargs):
+        return self.labels_styling._spi_label(*args, **kwargs)
+
+    def _product_goal_name(self, *args, **kwargs):
+        return self.labels_styling._product_goal_name(*args, **kwargs)
+
+    def _create_icon(self, *args, **kwargs):
+        return self.labels_styling._create_icon(*args, **kwargs)
+
     @property
     def fmeas(self):
         service = getattr(self, "fmea_service", None) or self.safety_analysis
@@ -1841,8 +1909,6 @@ class AutoMLApp:
     def delete_triggering_condition(self, name: str) -> None:
         return self.risk_app.delete_triggering_condition(self, name)
 
-    def rename_triggering_condition(self, old: str, new: str) -> None:
-        return self.risk_app.rename_triggering_condition(self, old, new)
 
     def add_functional_insufficiency(self, name: str) -> None:
         return self.risk_app.add_functional_insufficiency(self, name)
@@ -1850,11 +1916,6 @@ class AutoMLApp:
     def delete_functional_insufficiency(self, name: str) -> None:
         return self.risk_app.delete_functional_insufficiency(self, name)
 
-    def rename_functional_insufficiency(self, old: str, new: str) -> None:
-        return self.risk_app.rename_functional_insufficiency(self, old, new)
-
-    def rename_malfunction(self, old: str, new: str) -> None:
-        return self.risk_app.rename_malfunction(self, old, new)
 
     def _update_shared_product_goals(self):
         groups = {}
@@ -1879,17 +1940,10 @@ class AutoMLApp:
                 ev.name_readonly = False
                 ev.product_goal = None
 
-    def rename_hazard(self, old: str, new: str) -> None:
-        return self.risk_app.rename_hazard(self, old, new)
 
     def update_hazard_severity(self, hazard: str, severity: int | str) -> None:
         return self.risk_app.update_hazard_severity(self, hazard, severity)
 
-    def rename_fault(self, old: str, new: str) -> None:
-        return self.risk_app.rename_fault(self, old, new)
-
-    def rename_failure(self, old: str, new: str) -> None:
-        return self.risk_app.rename_failure(self, old, new)
 
     def calculate_fmeda_metrics(self, events):
         """Delegate FMEDA metric calculation to the dedicated helper."""
@@ -1906,27 +1960,6 @@ class AutoMLApp:
     def sync_cyber_risk_to_goals(self):
         return self.probability_reliability.sync_cyber_risk_to_goals()
 
-    def edit_selected(self):
-        sel = self.analysis_tree.selection()
-        target = None
-        if sel:
-            try:
-                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
-            except (IndexError, ValueError):
-                return
-            target = self.find_node_by_id_all(node_id)
-        elif self.selected_node:
-            target = self.selected_node
-        if not target:
-            messagebox.showwarning("No selection", "Select a node to edit.")
-            return
-
-        # If the node is a clone, resolve it to its original.
-        if not target.is_primary_instance and hasattr(target, "original") and target.original:
-            target = target.original
-
-        EditNodeDialog(self.root, target, self)
-        self.update_views()
 
     def add_top_level_event(self):
         new_event = FaultTreeNode("", "TOP EVENT")
@@ -2405,8 +2438,6 @@ class AutoMLApp:
         return self.nav_input.on_analysis_tree_select(_event)
 
 
-    def rename_selected_tree_item(self):
-        self.tree_app.rename_selected_tree_item(self)
 
     def on_tool_list_double_click(self, event):
         return self.nav_input.on_tool_list_double_click(event)
@@ -2521,26 +2552,6 @@ class AutoMLApp:
     # NEVER DELETE OR TOUCH THIS: helper keeps the value column synced with
     # the Properties tab width. Removing this breaks property display.
     # ----------------------------------------------------------------------
-    def _resize_prop_columns(self, event: tk.Event | None = None) -> None:
-        """Resize property view columns so the value column fills the tab."""
-        if not hasattr(self, "prop_view"):
-            return
-
-        # Determine the width of the containing frame rather than the treeview
-        # itself, as the tree may not yet have expanded to the full tab width.
-        container = self.prop_view.master
-        container.update_idletasks()
-        tree_width = container.winfo_width()
-        field_width = self.prop_view.column("field")["width"]
-
-        # If the container hasn't been fully laid out yet (width too small),
-        # try again on the next loop iteration so the value column starts at
-        # the full tab width. DO NOT REMOVE.
-        if tree_width <= field_width + 1:
-            self.prop_view.after(50, self._resize_prop_columns)
-            return
-        new_width = max(tree_width - field_width, 20)
-        self.prop_view.column("value", width=new_width, stretch=True)
 
 
     def on_ctrl_mousewheel(self, event):
@@ -2943,9 +2954,6 @@ class AutoMLApp:
 
     def get_component_name_for_node(self, node):
         return self.data_access_queries.get_component_name_for_node(node)
-
-    def format_failure_mode_label(self, node):
-        return self.data_access_queries.format_failure_mode_label(node)
 
     def get_failure_modes_for_malfunction(self, malfunction: str) -> list[str]:
         return self.data_access_queries.get_failure_modes_for_malfunction(malfunction)
@@ -6716,18 +6724,7 @@ class AutoMLApp:
 
         refresh_tree()
 
-    def _spi_label(self, sg):
-        """Return a human-readable label for a product goal's SPI."""
-        return (
-            getattr(sg, "validation_desc", "")
-            or getattr(sg, "safety_goal_description", "")
-            or getattr(sg, "user_name", "")
-            or f"SG {getattr(sg, 'unique_id', '')}"
-        )
 
-    def _product_goal_name(self, sg) -> str:
-        """Return the display name for a product goal."""
-        return getattr(sg, "user_name", "") or f"SG {getattr(sg, 'unique_id', '')}"
 
     def _parse_spi_target(self, target: str) -> tuple[str, str]:
         """Split ``target`` into product goal name and SPI type."""
@@ -9167,10 +9164,6 @@ class AutoMLApp:
         StyleEditor(self.root)
 
 
-    def apply_style(self, filename: str) -> None:
-        path = Path(__file__).resolve().parent / 'styles' / filename
-        StyleManager.get_instance().load_style(path)
-        self.root.event_generate('<<StyleChanged>>', when='tail')
 
     def refresh_styles(self, event=None):
         """Redraw all open diagram windows using current styles."""
@@ -9328,9 +9321,6 @@ class AutoMLApp:
             return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK} {diag.name}"
         return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK}"
 
-    def _create_icon(self, shape: str, color: str) -> tk.PhotoImage:
-        """Delegate icon creation to the shared icon factory."""
-        return create_icon(shape, color)
 
     def open_use_case_diagram(self):
         self.window_controllers.open_use_case_diagram()
@@ -10066,64 +10056,10 @@ class AutoMLApp:
             except Exception:
                 continue
 
-    def edit_user_name(self):
-        self.user_manager.edit_user_name()
        
-    def edit_description(self):
-        if self.selected_node:
-            new_desc = askstring_fixed(
-                simpledialog,
-                "Edit Description",
-                "Enter new description:",
-                initialvalue=self.selected_node.description,
-            )
-            if new_desc is not None:
-                self.selected_node.description = new_desc
-                # Propagate the updated description across clones/original.
-                self.sync_nodes_by_id(self.selected_node)
-                self.update_views()
-        else:
-            messagebox.showwarning("Edit Description", "Select a node first.")
 
-    def edit_rationale(self):
-        if self.selected_node:
-            new_rat = simpledialog.askstring("Edit Rationale", "Enter new rationale:", initialvalue=self.selected_node.rationale)
-            if new_rat is not None:
-                self.selected_node.rationale = new_rat
-                # Synchronize rationale changes with related clones.
-                self.sync_nodes_by_id(self.selected_node)
-                self.update_views()
-        else:
-            messagebox.showwarning("Edit Rationale", "Select a node first.")
 
-    def edit_value(self):
-        if self.selected_node and self.selected_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-            try:
-                new_val = simpledialog.askfloat("Edit Value", "Enter new value (1-5):", initialvalue=self.selected_node.quant_value)
-                if new_val is not None and 1 <= new_val <= 5:
-                    self.selected_node.quant_value = new_val
-                    # Keep all nodes sharing this ID up to date.
-                    self.sync_nodes_by_id(self.selected_node)
-                    self.update_views()
-                else:
-                    messagebox.showerror("Error", "Value must be between 1 and 5.")
-            except Exception:
-                messagebox.showerror("Error", "Invalid input.")
-        else:
-            messagebox.showwarning("Edit Value", "Select a Confidence or Robustness node.")
 
-    def edit_gate_type(self):
-        if self.selected_node and self.selected_node.node_type.upper() in GATE_NODE_TYPES:
-            new_gt = simpledialog.askstring("Edit Gate Type", "Enter new gate type (AND/OR):", initialvalue=self.selected_node.gate_type)
-            if new_gt is not None and new_gt.upper() in ["AND", "OR"]:
-                self.selected_node.gate_type = new_gt.upper()
-                # Reflect gate type changes everywhere.
-                self.sync_nodes_by_id(self.selected_node)
-                self.update_views()
-            else:
-                messagebox.showerror("Error", "Gate type must be AND or OR.")
-        else:
-            messagebox.showwarning("Edit Gate Type", "Select a gate-type node.")
 
     def edit_severity(self):
         messagebox.showinfo(
@@ -10131,30 +10067,7 @@ class AutoMLApp:
             "Severity is determined from the risk assessment and cannot be edited here.",
         )
 
-    def edit_controllability(self):
-        messagebox.showinfo(
-            "Controllability",
-            "Controllability is determined from the risk assessment and cannot be edited here.",
-        )
 
-    def edit_page_flag(self):
-        if not self.selected_node:
-            messagebox.showwarning("Edit Page Flag", "Select a node first.")
-            return
-        # If this is a clone, update its original.
-        target = self.selected_node if self.selected_node.is_primary_instance else self.selected_node.original
-
-        if target.node_type.upper() in ["TOP EVENT", "BASIC EVENT"]:
-            messagebox.showwarning("Edit Page Flag", "This node type cannot be a page.")
-            return
-
-        # Ask for the new page flag value.
-        response = messagebox.askyesno("Edit Page Flag", f"Should node '{target.name}' be a page gate?")
-        target.is_page = response
-
-        # Sync the changes to all clones.
-        self.sync_nodes_by_id(target)
-        self.update_views()
 
     def set_last_saved_state(self):
         """Record the current model state for change detection."""
