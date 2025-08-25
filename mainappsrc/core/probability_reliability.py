@@ -7,7 +7,6 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.font as tkFont
 
-from AutoML import AutoML_Helper
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from config.automl_constants import PMHF_TARGETS
 
@@ -97,7 +96,7 @@ class Probability_Reliability:
         for te in self.app.top_events:
             asil = getattr(te, "safety_goal_asil", "") or ""
             if asil in PMHF_TARGETS:
-                prob = AutoML_Helper.calculate_probability_recursive(te)
+                prob = self.app.helper.calculate_probability_recursive(te)
                 te.probability = prob
                 pmhf += prob
 
@@ -126,13 +125,14 @@ class Probability_Reliability:
 
     # ------------------------------------------------------------------
     def calculate_overall(self):
+        helper = self.app.helper
         for top_event in self.app.top_events:
-            AutoML_Helper.calculate_assurance_recursive(top_event, self.app.top_events)
+            helper.calculate_assurance_recursive(top_event, self.app.top_events)
         self.app.update_views()
         results = ""
         for top_event in self.app.top_events:
             if top_event.quant_value is not None:
-                disc = AutoML_Helper.discretize_level(top_event.quant_value)
+                disc = helper.discretize_level(top_event.quant_value)
                 results += (
                     f"Top Event {top_event.display_label}\n"
                     f"(Continuous: {top_event.quant_value:.2f}, Discrete: {disc})\n\n"
