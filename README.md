@@ -1642,6 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.51 - Extract clone-chain resolution into reusable utility.
 - 0.2.50 - Extract shared product goal updates into ProductGoalManager.
 - 0.2.49 - Move ``from __future__`` annotations imports to top-level of modules.
 - 0.2.48 - Provide wrapper for 90° connections and serialize SysML diagrams for export.
