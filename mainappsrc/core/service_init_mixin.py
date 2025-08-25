@@ -16,6 +16,7 @@ from .navigation_selection_input import Navigation_Selection_Input
 from mainappsrc.managers.user_manager import UserManager
 from mainappsrc.managers.project_manager import ProjectManager
 from mainappsrc.managers.cyber_manager import CyberSecurityManager
+from mainappsrc.managers.drawing_manager import DrawingManager
 from mainappsrc.subapps.diagram_export_subapp import DiagramExportSubApp
 from mainappsrc.subapps.use_case_diagram_subapp import UseCaseDiagramSubApp
 from mainappsrc.subapps.activity_diagram_subapp import ActivityDiagramSubApp
@@ -89,6 +90,7 @@ class ServiceInitMixin:
         self.cta_manager = ControlTreeManager(self)
         self.requirements_manager = RequirementsManagerSubApp(self)
         self.review_manager = ReviewManager(self)
+        self.drawing_manager = DrawingManager(self)
         self.versioning_review = Versioning_Review(self)
         self.data_access_queries = DataAccess_Queries(self)
         self.validation_consistency = Validation_Consistency(self)

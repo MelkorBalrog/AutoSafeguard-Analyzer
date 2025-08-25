@@ -248,14 +248,7 @@ from functools import partial
 # Governance helper class
 from mainappsrc.managers.governance_manager import GovernanceManager
 from mainappsrc.managers.paa_manager import PrototypeAssuranceManager
-from mainappsrc.subapps.tree_subapp import TreeSubApp
-from mainappsrc.subapps.project_editor_subapp import ProjectEditorSubApp
-from mainappsrc.subapps.risk_assessment_subapp import RiskAssessmentSubApp
-from mainappsrc.subapps.reliability_subapp import ReliabilitySubApp
-from .safety_analysis import SafetyAnalysis_FTA_FMEA
-from .syncing_and_ids import Syncing_And_IDs
 from gui.toolboxes.safety_management_toolbox import SafetyManagementToolbox
-from gui.explorers.safety_management_explorer import SafetyManagementExplorer
 from gui.explorers.safety_case_explorer import SafetyCaseExplorer
 from gui.windows.gsn_diagram_window import GSN_WINDOWS
 from gui.windows.causal_bayesian_network_window import CBN_WINDOWS
@@ -264,7 +257,6 @@ from mainappsrc.models.gsn import GSNDiagram, GSNModule
 from mainappsrc.managers.gsn_manager import GSNManager
 from mainappsrc.models.gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from gui.utils.closable_notebook import ClosableNotebook
-from gui.utils.icon_factory import create_icon
 from gui.controls.mac_button_style import (
     apply_translucid_button_style,
     apply_purplish_button_style,
@@ -284,7 +276,6 @@ from .editors import (
     SafetyConceptEditorMixin,
     RequirementsEditorMixin,
 )
-from .data_access_queries import DataAccess_Queries
 from analysis.mechanisms import (
     DiagnosticMechanism,
     MechanismLibrary,
@@ -550,7 +541,16 @@ from .safety_ui import SafetyUIMixin
 ##########################################
 # Main Application (Parent Diagram)
 ##########################################
-class AutoMLApp(ServiceInitMixin, IconSetupMixin, SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrappersMixin, AnalysisUtilsMixin):
+class AutoMLApp(
+    StyleSetupMixin,
+    ServiceInitMixin,
+    IconSetupMixin,
+    SafetyUIMixin,
+    UISetupMixin,
+    EventHandlersMixin,
+    PersistenceWrappersMixin,
+    AnalysisUtilsMixin,
+):
     """Main application window for AutoML Analyzer."""
 
     _instance: Optional["AutoMLApp"] = None
@@ -753,32 +753,6 @@ class AutoMLApp(ServiceInitMixin, IconSetupMixin, SafetyUIMixin, UISetupMixin, E
         self.update_odd_elements()
         # Provide the drawing helper to dialogs that may be opened later
         self.fta_drawing_helper = fta_drawing_helper
-
-        # Delegated managers
-        self.user_manager = UserManager(self)
-        self.project_manager = ProjectManager(self)
-        self.cyber_manager = CyberSecurityManager(self)
-        self.diagram_export_app = DiagramExportSubApp(self)
-        self.use_case_diagram_app = UseCaseDiagramSubApp(self)
-        self.activity_diagram_app = ActivityDiagramSubApp(self)
-        self.block_diagram_app = BlockDiagramSubApp(self)
-        self.internal_block_diagram_app = InternalBlockDiagramSubApp(self)
-        self.control_flow_diagram_app = ControlFlowDiagramSubApp(self)
-        self.sotif_manager = SOTIFManager(self)
-        self.cta_manager = ControlTreeManager(self)
-        self.requirements_manager = RequirementsManagerSubApp(self)
-        self.review_manager = ReviewManager(self)
-        self.drawing_manager = DrawingManager(self)
-        self.versioning_review = Versioning_Review(self)
-
-        # Centralise data lookups in a dedicated helper
-        self.data_access_queries = DataAccess_Queries(self)
-
-        # Helper for input validation and work product management
-        self.validation_consistency = Validation_Consistency(self)
-
-        # Reporting and export operations
-        self.reporting_export = Reporting_Export(self)
 
         # Tree structure helpers
         self.structure_tree_operations = Structure_Tree_Operations(self)
