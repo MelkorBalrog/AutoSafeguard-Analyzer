@@ -22,6 +22,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from AutoML import AutoMLApp
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
+from mainappsrc.core.undo_manager import UndoRedoManager
 
 
 def test_undo_after_project_load_keeps_project():
@@ -38,8 +39,9 @@ def test_undo_after_project_load_keeps_project():
     app.apply_model_data = lambda d: repo.from_dict(d["sysml_repository"])
     app.refresh_all = lambda: None
     app.diagram_tabs = {}
-    app._undo_stack = [{}]
-    app._redo_stack = [{}]
+    app.undo_manager = UndoRedoManager(app)
+    app.undo_manager._undo_stack = [{}]
+    app.undo_manager._redo_stack = [{}]
     app.undo = AutoMLApp.undo.__get__(app)
     app.clear_undo_history = AutoMLApp.clear_undo_history.__get__(app)
 

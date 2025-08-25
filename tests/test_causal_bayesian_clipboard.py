@@ -44,11 +44,14 @@ def test_cbn_copy_paste_shared_properties_independent_position():
     doc1.network.add_node("B", parents=["A"], cpd={(True,): 0.5, (False,): 0.1})
     doc1.positions["B"] = [(0, 0)]
     doc1.types["B"] = "variable"
-    app = types.SimpleNamespace(
-        active_cbn=doc1,
-        cbn_docs=[doc1],
+    app = types.SimpleNamespace(active_cbn=doc1, cbn_docs=[doc1])
+    app.diagram_clipboard = types.SimpleNamespace(
         diagram_clipboard=None,
         diagram_clipboard_type=None,
+        clipboard_node=None,
+        cut_mode=False,
+        clipboard_relation=None,
+        diagram_clipboard_parent_name=None,
     )
 
     win1 = _make_window(app, doc1)
@@ -61,8 +64,8 @@ def test_cbn_copy_paste_shared_properties_independent_position():
 
     win1.selected_node = ("B", 0)
     win1.copy_selected()
-    assert app.diagram_clipboard == (doc1, "B", 0)
-    assert app.diagram_clipboard_type == "Causal Bayesian Network"
+    assert app.diagram_clipboard.diagram_clipboard == (doc1, "B", 0)
+    assert app.diagram_clipboard.diagram_clipboard_type == "Causal Bayesian Network"
 
     doc2 = CausalBayesianNetworkDoc(name="d2")
     app.cbn_docs.append(doc2)
@@ -97,11 +100,14 @@ def test_cbn_same_diagram_clone_independent_position():
     doc.network.add_node("A", cpd=0.5)
     doc.positions["A"] = [(0, 0)]
     doc.types["A"] = "variable"
-    app = types.SimpleNamespace(
-        active_cbn=doc,
-        cbn_docs=[doc],
+    app = types.SimpleNamespace(active_cbn=doc, cbn_docs=[doc])
+    app.diagram_clipboard = types.SimpleNamespace(
         diagram_clipboard=None,
         diagram_clipboard_type=None,
+        clipboard_node=None,
+        cut_mode=False,
+        clipboard_relation=None,
+        diagram_clipboard_parent_name=None,
     )
     win = _make_window(app, doc)
     win.selected_node = ("A", 0)

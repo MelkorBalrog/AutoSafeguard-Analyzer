@@ -29,6 +29,7 @@ sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 from AutoML import AutoMLApp
 from analysis import CausalBayesianNetwork, CausalBayesianNetworkDoc
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
+from mainappsrc.core.undo_manager import UndoRedoManager
 
 
 def test_cbn_diagram_undo_redo_node_add_and_move():
@@ -40,6 +41,7 @@ def test_cbn_diagram_undo_redo_node_add_and_move():
 
     # Minimal application setup
     app = AutoMLApp.__new__(AutoMLApp)
+    app.undo_manager = UndoRedoManager(app)
     doc = CausalBayesianNetworkDoc("CBN")
     doc.network.add_node("A", cpd=0.5)
     doc.positions["A"] = [(0, 0)]
@@ -48,8 +50,6 @@ def test_cbn_diagram_undo_redo_node_add_and_move():
     app.cbn_docs = [doc]
     app.active_cbn = doc
     app.update_views = lambda: None
-    app._undo_stack = []
-    app._redo_stack = []
 
     def export_model_data(include_versions=False):
         return {

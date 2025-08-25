@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Project version information."""
+"""Compatibility shim for the metrics tab."""
 
-VERSION = "0.2.51"
-
-__all__ = ["VERSION"]
+from gui.toolboxes.metrics_tab import *  # noqa: F401,F403

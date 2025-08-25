@@ -33,6 +33,7 @@ sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 from AutoML import AutoMLApp
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
+from mainappsrc.core.undo_manager import UndoRedoManager
 
 
 def test_governance_diagram_undo_redo_work_product():
@@ -45,8 +46,7 @@ def test_governance_diagram_undo_redo_work_product():
     app.apply_model_data = lambda data: None
     app.refresh_all = lambda: None
     app.diagram_tabs = {}
-    app._undo_stack = []
-    app._redo_stack = []
+    app.undo_manager = UndoRedoManager(app)
     app.enable_work_product = lambda *a, **k: None
     app.refresh_tool_enablement_called = 0
     def refresh_tool_enablement(*args, **kwargs):

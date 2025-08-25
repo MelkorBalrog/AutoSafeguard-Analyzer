@@ -24,6 +24,7 @@ import weakref
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from AutoML import AutoMLApp
+from mainappsrc.core.diagram_clipboard_manager import DiagramClipboardManager
 from gui.architecture import SysMLDiagramWindow, _get_next_id, ARCH_WINDOWS, SysMLObject
 from gui.controls import messagebox
 
@@ -54,12 +55,13 @@ def make_window(app, repo):
 
 def test_paste_without_active_window_uses_clipboard():
     app = AutoMLApp.__new__(AutoMLApp)
-    app.diagram_clipboard = None
-    app.diagram_clipboard_type = None
+    app.diagram_clipboard = DiagramClipboardManager(app)
+    app.diagram_clipboard.diagram_clipboard = None
+    app.diagram_clipboard.diagram_clipboard_type = None
     app.selected_node = None
     app.root_node = None
-    app.clipboard_node = None
-    app.cut_mode = False
+    app.diagram_clipboard.clipboard_node = None
+    app.diagram_clipboard.cut_mode = False
 
     repo = DummyRepo()
     obj = SysMLObject(

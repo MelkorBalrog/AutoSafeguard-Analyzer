@@ -30,14 +30,16 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from mainappsrc.models.gsn import GSNNode, GSNDiagram
 from AutoML import AutoMLApp
+from mainappsrc.core.diagram_clipboard_manager import DiagramClipboardManager
 
 
 def _make_app(root, diagram):
     app = AutoMLApp.__new__(AutoMLApp)
+    app.diagram_clipboard = DiagramClipboardManager(app)
     app.root_node = root
     app.top_events = []
     app.analysis_tree = types.SimpleNamespace(selection=lambda: [], item=lambda *a, **k: {})
-    app.cut_mode = False
+    app.diagram_clipboard.cut_mode = False
     app.selected_node = root
     app.update_views = lambda: None
     app._find_gsn_diagram = lambda n: diagram
@@ -51,7 +53,7 @@ def test_paste_clone_is_away_and_independent():
     diagram = GSNDiagram(root)
 
     app = _make_app(root, diagram)
-    app.clipboard_node = child
+    app.diagram_clipboard.clipboard_node = child
     app.paste_node()
 
     clone = root.children[-1]

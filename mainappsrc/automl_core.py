@@ -16,8 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Project version information."""
+"""Compatibility shim for legacy imports.
 
-VERSION = "0.2.51"
+Provides a stable module path for tests and external tools expecting
+``mainappsrc.automl_core`` at the package root by re-exporting all
+symbols from :mod:`mainappsrc.core.automl_core`.
+"""
 
-__all__ = ["VERSION"]
+from mainappsrc.core.automl_core import *  # noqa: F401,F403

@@ -40,11 +40,14 @@ def _make_window(app, diag):
 def test_gsn_copy_paste_clones_with_independent_positions():
     root1 = GSNNode("A", "Goal", x=0, y=0)
     diag1 = GSNDiagram(root1)
-    app = types.SimpleNamespace(
+    app = types.SimpleNamespace(gsn_diagrams=[diag1], gsn_modules=[])
+    app.diagram_clipboard = types.SimpleNamespace(
         diagram_clipboard=None,
         diagram_clipboard_type=None,
-        gsn_diagrams=[diag1],
-        gsn_modules=[],
+        clipboard_node=None,
+        cut_mode=False,
+        clipboard_relation=None,
+        diagram_clipboard_parent_name=None,
     )
     win1 = _make_window(app, diag1)
 
@@ -55,8 +58,8 @@ def test_gsn_copy_paste_clones_with_independent_positions():
     assert snap1 is snap2 is snap3 is snap4 is root1
     win1.selected_node = root1
     win1.copy_selected()
-    assert app.diagram_clipboard is root1
-    assert app.diagram_clipboard_type == "GSN"
+    assert app.diagram_clipboard.diagram_clipboard is root1
+    assert app.diagram_clipboard.diagram_clipboard_type == "GSN"
 
     root2 = GSNNode("B", "Goal", x=0, y=0)
     diag2 = GSNDiagram(root2)

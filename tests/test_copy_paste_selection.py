@@ -30,6 +30,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from AutoML import AutoMLApp, FaultTreeNode
+from mainappsrc.core.diagram_clipboard_manager import DiagramClipboardManager
 from gui.controls import messagebox
 
 
@@ -46,37 +47,38 @@ class DummyTree:
 class CopyPasteSelectionTests(unittest.TestCase):
     def setUp(self):
         self.app = AutoMLApp.__new__(AutoMLApp)
+        self.app.diagram_clipboard = DiagramClipboardManager(self.app)
         self.app.root_node = FaultTreeNode("root", "TOP EVENT")
         child = FaultTreeNode("child", "GATE", parent=self.app.root_node)
         self.app.root_node.children.append(child)
         self.child = child
         self.app.selected_node = None
-        self.app.clipboard_node = None
+        self.app.diagram_clipboard.clipboard_node = None
         self.app.analysis_tree = DummyTree(child)
         self.app.find_node_by_id = AutoMLApp.find_node_by_id.__get__(self.app)
         self.app.top_events = []
         self.app.update_views = lambda: None
-        self.app.cut_mode = False
+        self.app.diagram_clipboard.cut_mode = False
 
     def test_copy_uses_tree_selection_when_no_selected_node(self):
         self.app.copy_node()
-        self.assertIs(self.app.clipboard_node, self.child)
+        self.assertIs(self.app.diagram_clipboard.clipboard_node, self.child)
 
     def test_cut_uses_tree_selection_when_no_selected_node(self):
         self.app.cut_node()
-        self.assertIs(self.app.clipboard_node, self.child)
-        self.assertTrue(self.app.cut_mode)
+        self.assertIs(self.app.diagram_clipboard.clipboard_node, self.child)
+        self.assertTrue(self.app.diagram_clipboard.cut_mode)
 
     def test_copy_prefers_tree_selection_over_root(self):
         self.app.selected_node = self.app.root_node
         self.app.copy_node()
-        self.assertIs(self.app.clipboard_node, self.child)
+        self.assertIs(self.app.diagram_clipboard.clipboard_node, self.child)
 
     def test_cut_prefers_tree_selection_over_root(self):
         self.app.selected_node = self.app.root_node
         self.app.cut_node()
-        self.assertIs(self.app.clipboard_node, self.child)
-        self.assertTrue(self.app.cut_mode)
+        self.assertIs(self.app.diagram_clipboard.clipboard_node, self.child)
+        self.assertTrue(self.app.diagram_clipboard.cut_mode)
 
     def test_paste_warns_when_clipboard_empty_first(self):
         warnings = []

@@ -35,6 +35,7 @@ from mainappsrc.models.gsn import GSNNode, GSNDiagram
 from AutoML import AutoMLApp
 from config.automl_constants import PMHF_TARGETS
 from analysis.constants import CHECK_MARK
+from mainappsrc.core.undo_manager import UndoRedoManager
 
 
 class DummyTree:
@@ -545,8 +546,7 @@ def test_safety_case_undo_redo_toggle(monkeypatch):
     app.all_gsn_diagrams = [diag]
     app.gsn_diagrams = [diag]
     app.update_views = lambda: None
-    app._undo_stack = []
-    app._redo_stack = []
+    app.undo_manager = UndoRedoManager(app)
 
     def export_model_data(include_versions=False):
         return {
