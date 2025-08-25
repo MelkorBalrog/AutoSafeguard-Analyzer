@@ -1642,7 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.14 - Forward explorer panel helpers via attribute delegation to maintain API compatibility.
+- 0.2.14 - Fade out splash screen symmetrically before launching application.
 - 0.2.13 - Delegate tab motion events to lifecycle UI to prevent missing handler error.
 - 0.2.12 - Fix property initialisation error in safety analysis facade.
 - 0.2.11 - Keep splash screen visible through startup and five-second post-load delay.
