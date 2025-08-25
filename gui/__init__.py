@@ -3,11 +3,16 @@ from __future__ import annotations
 
 """Shared GUI helpers and widget customizations."""
 
+import sys
 import tkinter as tk
 from tkinter import ttk, simpledialog
 
-# Default background color for all dialog windows
-DIALOG_BG_COLOR = "#A9BCE2"
+from .utils import DIALOG_BG_COLOR, logger, drawing_helper
+
+# Re-export selected utilities for backward-compatible import paths such as
+# ``from gui import logger`` or ``from gui import drawing_helper``.
+sys.modules[f"{__name__}.logger"] = logger
+sys.modules[f"{__name__}.drawing_helper"] = drawing_helper
 
 
 _orig_dialog_init = simpledialog.Dialog.__init__
@@ -202,3 +207,4 @@ def _sortable_heading(self, column, option=None, **kw):
 
 
 ttk.Treeview.heading = _sortable_heading
+
