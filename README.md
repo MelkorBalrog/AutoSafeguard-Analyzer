@@ -1644,7 +1644,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.57 - Fix fault tree node addition and expose core modules for unit tests.
+- 0.2.57 - Move PMHF and PAL calculations into FTA and PAA menus, removing Process menu.
 - 0.2.55 - Delegate ODD library management to dedicated manager and remove legacy scenario code.
 - 0.2.54 - Initialize undo manager during service setup to prevent project load errors.
 - 0.2.52 - Move product goal UIs into RequirementsManager and add wrapper methods.

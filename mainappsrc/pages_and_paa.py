@@ -15,11 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""Compatibility shim forwarding to :mod:`mainappsrc.core.page_diagram`."""
+"""Compatibility shim forwarding to :mod:`mainappsrc.core.pages_and_paa`."""
 
-import importlib as _importlib
-
-module = _importlib.import_module("mainappsrc.core.page_diagram")
-globals().update({k: getattr(module, k) for k in dir(module) if not k.startswith("_")})
+from .core.pages_and_paa import *  # noqa: F401,F403
 
 __all__ = [name for name in globals() if not name.startswith("_")]
