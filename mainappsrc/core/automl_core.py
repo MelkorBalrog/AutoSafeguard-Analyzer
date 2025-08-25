@@ -287,7 +287,7 @@ from analysis.mechanisms import (
     ANNEX_D_MECHANISMS,
     PAS_8800_MECHANISMS,
 )
-from config import load_report_template
+from config import load_report_template, load_diagram_rules
 from pathlib import Path
 from collections.abc import Mapping
 import csv
@@ -301,6 +301,7 @@ from mainappsrc.core.window_controllers import WindowControllers
 from mainappsrc.core.navigation_selection_input import Navigation_Selection_Input
 from mainappsrc.core.top_event_workflows import Top_Event_Workflows
 from mainappsrc.managers.review_manager import ReviewManager
+from mainappsrc.managers.drawing_manager import DrawingManager
 from .versioning_review import Versioning_Review
 from mainappsrc.core.diagram_renderer import DiagramRenderer
 from .validation_consistency import Validation_Consistency
@@ -827,6 +828,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         self.cta_manager = ControlTreeManager(self)
         self.requirements_manager = RequirementsManagerSubApp(self)
         self.review_manager = ReviewManager(self)
+        self.drawing_manager = DrawingManager(self)
         self.versioning_review = Versioning_Review(self)
 
         # Centralise data lookups in a dedicated helper
@@ -2103,269 +2105,44 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         prop_win.grab_set()
         self.root.wait_window(prop_win)
 
-    def create_diagram_image(self):
-        return self.reporting_export.create_diagram_image()
+    def create_diagram_image(self):  # pragma: no cover - delegation
+        return self.diagram_renderer.create_diagram_image()
 
     def get_page_nodes(self, node):
         return self.data_access_queries.get_page_nodes(node)
 
-    def capture_page_diagram(self, page_node):
-        return self.pages_and_paa.capture_page_diagram(page_node)
+    def capture_page_diagram(self, page_node):  # pragma: no cover - delegation
+        return self.diagram_renderer.capture_page_diagram(page_node)
+
+    def capture_event_diagram(self, *args, **kwargs):  # pragma: no cover - delegation
+        return self.diagram_renderer.capture_event_diagram(*args, **kwargs)
 
     def capture_gsn_diagram(self, diagram):
-        """Return a PIL Image of the given GSN diagram."""
-        from io import BytesIO
-        from PIL import Image
-        from gui.causal_bayesian_network_window import (
-            CausalBayesianNetworkWindow,
-        )
-
-        temp = tk.Toplevel(self.root)
-        temp.withdraw()
-        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
-        canvas.pack()
-
-        try:
-            diagram.draw(canvas)
-        except Exception:
-            temp.destroy()
-            return None
-
-        canvas.update()
-        bbox = canvas.bbox("all")
-        if not bbox:
-            temp.destroy()
-            return None
-        x, y, x2, y2 = bbox
-        width, height = x2 - x, y2 - y
-        ps = canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
-        ps_bytes = BytesIO(ps.encode("utf-8"))
-        try:
-            img = Image.open(ps_bytes)
-            img.load(scale=3)
-        except Exception:
-            img = None
-        temp.destroy()
-        return img.convert("RGB") if img else None
+        return self.diagram_renderer.capture_gsn_diagram(diagram)
 
     def capture_sysml_diagram(self, diagram):
-        """Return a PIL Image of the given SysML diagram."""
-        from io import BytesIO
-        from PIL import Image
-        from gui.causal_bayesian_network_window import (
-            CausalBayesianNetworkWindow,
-        )
-
-        temp = tk.Toplevel(self.root)
-        temp.withdraw()
-        if diagram.diag_type == "Use Case Diagram":
-            win = UseCaseDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Activity Diagram":
-            win = ActivityDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Block Diagram":
-            win = BlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Internal Block Diagram":
-            win = InternalBlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Control Flow Diagram":
-            win = ControlFlowDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Governance Diagram":
-            win = GovernanceDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        else:
-            temp.destroy()
-            return None
-
-        win.redraw()
-        win.canvas.update()
-        bbox = win.canvas.bbox("all")
-        if not bbox:
-            temp.destroy()
-            return None
-
-        x, y, x2, y2 = bbox
-        width, height = x2 - x, y2 - y
-        ps = win.canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
-        ps_bytes = BytesIO(ps.encode("utf-8"))
-        try:
-            img = Image.open(ps_bytes)
-            img.load(scale=3)
-        except Exception:
-            img = None
-        temp.destroy()
-        return img.convert("RGB") if img else None
+        return self.diagram_renderer.capture_sysml_diagram(diagram)
 
     def capture_cbn_diagram(self, doc):
-        """Return a PIL Image of the given Causal Bayesian Network diagram."""
-        from io import BytesIO
-        from PIL import Image
-        from gui.causal_bayesian_network_window import (
-            CausalBayesianNetworkWindow,
-        )
-
-        temp = tk.Toplevel(self.root)
-        temp.withdraw()
-        try:
-            win = CausalBayesianNetworkWindow(temp, self)
-            win.doc_var.set(doc.name)
-            win.select_doc()
-            win.canvas.update()
-            bbox = win.canvas.bbox("all")
-            if not bbox:
-                temp.destroy()
-                return None
-            x, y, x2, y2 = bbox
-            width, height = x2 - x, y2 - y
-            ps = win.canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
-            ps_bytes = BytesIO(ps.encode("utf-8"))
-            try:
-                img = Image.open(ps_bytes)
-                img.load(scale=3)
-            except Exception:
-                img = None
-        finally:
-            temp.destroy()
-        return img.convert("RGB") if img else None    
+        return self.diagram_renderer.capture_cbn_diagram(doc)
     
     def draw_subtree_with_filter(self, canvas, root_event, visible_nodes):
-        self.draw_connections_subtree(canvas, root_event, set())
-        for n in visible_nodes:
-            self.draw_node_on_canvas_pdf(canvas, n)
+        return self.diagram_renderer.draw_subtree_with_filter(canvas, root_event, visible_nodes)
 
     def draw_subtree(self, canvas, root_event):
-        canvas.delete("all")
-        self.draw_connections_subtree(canvas, root_event, set())
-        for n in self.get_all_nodes(root_event):
-            self.draw_node_on_canvas(canvas, n)
-        canvas.config(scrollregion=canvas.bbox("all"))
+        return self.diagram_renderer.draw_subtree(canvas, root_event)
 
     def draw_connections_subtree(self, canvas, node, drawn_ids):
-        if id(node) in drawn_ids:
-            return
-        drawn_ids.add(id(node))
-        if node.is_page and node.node_type.upper() != "TOP EVENT":
-            return
-        region_width = 100 * self.zoom
-        parent_bottom = (node.x * self.zoom, node.y * self.zoom + 40 * self.zoom)
-        N = len(node.children)
-        for i, child in enumerate(node.children):
-            parent_conn = (node.x * self.zoom - region_width/2 + (i+0.5)*(region_width/N), parent_bottom[1])
-            child_top = (child.x * self.zoom, child.y * self.zoom - 45 * self.zoom)
-            # Call the helper’s method instead of a global function.
-            fta_drawing_helper.draw_90_connection(canvas, parent_conn, child_top,
-                                                  outline_color="dimgray", line_width=1)
-        for child in node.children:
-            self.draw_connections_subtree(canvas, child, drawn_ids)
-            
+        return self.diagram_renderer.draw_connections_subtree(canvas, node, drawn_ids)
+
     def draw_node_on_canvas_pdf(self, canvas, node):
-        # For cloned nodes, use the original's values.
-        if not node.is_primary_instance and hasattr(node, "original") and node.original:
-            base_label = node.original.display_label
-            subtype = node.original.input_subtype or "N/A"
-            equation_text = node.original.equation
-            detailed_eq = node.original.detailed_equation
-        else:
-            base_label = node.display_label
-            subtype = node.input_subtype or "N/A"
-            equation_text = node.equation
-            detailed_eq = node.detailed_equation
-
-        # Extract the score type from the base label.
-        # For example, if the base label is "Required Rigor [4]", score_type becomes "Required Rigor".
-        score_type = base_label.split('[')[0].strip()
-
-        fill_color = self.get_node_fill_color(node, getattr(canvas, "diagram_mode", None))
-        eff_x = node.x * self.zoom
-        eff_y = node.y * self.zoom
-
-        # Decide what to show in the top text based on the configuration.
-        if self.project_properties.get("pdf_detailed_formulas", True):
-            # Detailed mode: show the score type and the node description.
-            top_text = (f"Type: {node.node_type}\n"
-                        f"Score: {score_type}\n"
-                        f"Subtype: {subtype}\n"
-                        f"Desc: {node.description}")
-        else:
-            # Score-only mode: show the discretized metric (as an integer, without decimals).
-            if node.quant_value is not None:
-                # Convert quant_value to float and discretize
-                score_value = float(node.quant_value)
-                discrete = AutoML_Helper.discretize_level(score_value)
-            else:
-                discrete = "N/A"
-            top_text = (f"Type: {node.node_type}\n"
-                        f"{score_type} = {discrete}\n"
-                        f"Subtype: {subtype}")
-
-        bottom_text = node.name
-        node_type_upper = node.node_type.upper()
-
-        if node.is_page:
-            fta_drawing_helper.draw_triangle_shape(canvas, eff_x, eff_y, scale=40 * self.zoom,
-                                                   top_text=top_text,
-                                                   bottom_text=bottom_text,
-                                                   fill=fill_color,
-                                                   outline_color="dimgray",
-                                                   line_width=1,
-                                                   font_obj=self.diagram_font)
-        elif node_type_upper in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-            fta_drawing_helper.draw_circle_event_clone_shape(
-                canvas,
-                eff_x,
-                eff_y,
-                45 * self.zoom,
-                top_text=top_text,
-                bottom_text=bottom_text,
-                fill=fill_color,
-                outline_color="dimgray",
-                line_width=1,
-                font_obj=self.diagram_font,
-            )
-        elif node_type_upper in GATE_NODE_TYPES:
-            if node.gate_type.upper() == "OR":
-                fta_drawing_helper.draw_rotated_or_gate_clone_shape(canvas, eff_x, eff_y,
-                                                                    scale=40 * self.zoom,
-                                                                    top_text=top_text,
-                                                                    bottom_text=bottom_text,
-                                                                    fill=fill_color,
-                                                                    outline_color="dimgray",
-                                                                    line_width=1,
-                                                                    font_obj=self.diagram_font)
-            else:
-                fta_drawing_helper.draw_rotated_and_gate_clone_shape(canvas, eff_x, eff_y,
-                                                                     scale=40 * self.zoom,
-                                                                     top_text=top_text,
-                                                                     bottom_text=bottom_text,
-                                                                     fill=fill_color,
-                                                                     outline_color="dimgray",
-                                                                     line_width=1,
-                                                                     font_obj=self.diagram_font)
-        else:
-            fta_drawing_helper.draw_circle_event_clone_shape(
-                canvas,
-                eff_x,
-                eff_y,
-                45 * self.zoom,
-                top_text=top_text,
-                bottom_text=bottom_text,
-                fill=fill_color,
-                outline_color="dimgray",
-                line_width=1,
-                font_obj=self.diagram_font,
-            )
-
-        # In detailed mode, also draw the equations.
-        if self.project_properties.get("pdf_detailed_formulas", True):
-            canvas.create_text(eff_x - 80 * self.zoom, eff_y - 15 * self.zoom,
-                               text=equation_text, anchor="e", fill="gray",
-                               font=self.diagram_font)
-            canvas.create_text(eff_x - 80 * self.zoom, eff_y + 15 * self.zoom,
-                               text=detailed_eq, anchor="e", fill="gray",
-                               font=self.diagram_font)
+        return self.diagram_renderer.draw_node_on_canvas_pdf(canvas, node)
 
     def rename_selected_tree_item(self):
         self.tree_app.rename_selected_tree_item(self)
 
-    def save_diagram_png(self):
-        self.diagram_export_app.save_diagram_png()
+    def save_diagram_png(self):  # pragma: no cover - delegation
+        return self.diagram_renderer.save_diagram_png()
 
     def on_treeview_click(self, event):
         return self.nav_input.on_treeview_click(event)
@@ -2565,15 +2342,11 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
     def move_subtree(self, node, dx, dy):
         return self.structure_tree_operations.move_subtree(node, dx, dy)
 
-    def zoom_in(self):
-        self.zoom *= 1.2
-        self.diagram_font.config(size=int(8 * self.zoom))
-        self.redraw_canvas()
+    def zoom_in(self):  # pragma: no cover - delegation
+        return self.diagram_renderer.zoom_in()
 
-    def zoom_out(self):
-        self.zoom /= 1.2
-        self.diagram_font.config(size=int(8 * self.zoom))
-        self.redraw_canvas()
+    def zoom_out(self):  # pragma: no cover - delegation
+        return self.diagram_renderer.zoom_out()
 
 
     # ------------------------------------------------------------------
@@ -3265,307 +3038,16 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.structure_tree_operations.insert_node_in_tree(parent_item, node)
 
     def redraw_canvas(self):
-        if not hasattr(self, "canvas") or self.canvas is None or not self.canvas.winfo_exists():
-            return
-        self.canvas.delete("all")
-        if hasattr(self, "fta_drawing_helper"):
-            self.fta_drawing_helper.clear_cache()
-        drawn_ids = set()
-        for top_event in self.top_events:
-            self.draw_connections(top_event, drawn_ids)
-        all_nodes = []
-        for top_event in self.top_events:
-            all_nodes.extend(self.get_all_nodes(top_event))
-        for node in all_nodes:
-            self.draw_node(node)
-        self.canvas.config(scrollregion=self.canvas.bbox("all"))
-
+        return self.diagram_renderer.redraw_canvas()
 
     def create_diagram_image_without_grid(self):
-        return self.reporting_export.create_diagram_image_without_grid()
+        return self.diagram_renderer.create_diagram_image_without_grid()
 
     def draw_connections(self, node, drawn_ids=set()):
-        if id(node) in drawn_ids:
-            return
-        drawn_ids.add(id(node))
-        if node.is_page and node.is_primary_instance:
-            return
-        if node.children:
-            region_width = 100 * self.zoom
-            parent_bottom = (node.x * self.zoom, node.y * self.zoom + 40 * self.zoom)
-            N = len(node.children)
-            for i, child in enumerate(node.children):
-                parent_conn = (node.x * self.zoom - region_width/2 + (i+0.5)*(region_width/N), parent_bottom[1])
-                child_top = (child.x * self.zoom, child.y * self.zoom - 45 * self.zoom)
-                fta_drawing_helper.draw_90_connection(self.canvas, parent_conn, child_top, outline_color="dimgray", line_width=1)
-            for child in node.children:
-                self.draw_connections(child, drawn_ids)
+        return self.diagram_renderer.draw_connections(node, drawn_ids)
 
     def draw_node(self, node):
-        """
-        Draws the given node on the main canvas.
-        For clones, it always uses the original’s non-positional attributes (like display_label,
-        description, etc.) so that any changes to the original are reflected on all clones.
-        """
-        # If the node is a clone, use its original for configuration (non-positional attributes)
-        source = node if node.is_primary_instance else node.original
-
-        # For display purposes, show the clone marker on the clone's display_label.
-        if node.is_primary_instance:
-            display_label = source.display_label
-        else:
-            display_label = source.display_label + " (clone)"
-
-        # Build a short top_text string from the source's attributes.
-        subtype_text = source.input_subtype if source.input_subtype else "N/A"
-        top_text = (
-            f"Type: {source.node_type}\n"
-            f"Subtype: {subtype_text}\n"
-            f"{display_label}\n"
-            f"Desc: {source.description}\n\n"
-            f"Rationale: {source.rationale}"
-        )
-        # For the bottom text, you may choose to display the node's name (which for a clone is
-        # usually the same as the original’s name)
-        bottom_text = source.name
-
-        # Compute the effective position using the clone’s own (positional) values
-        eff_x = node.x * self.zoom
-        eff_y = node.y * self.zoom
-
-        # Highlight if selected or in diff list
-        if node == self.selected_node:
-            outline_color = "red"
-            line_width = 2
-        elif node.unique_id in self.diff_nodes:
-            outline_color = "blue"
-            line_width = 2
-        else:
-            outline_color = "dimgray"
-            line_width = 1
-
-        # Determine the fill color (this function already uses the original's display_label)
-        fill_color = self.get_node_fill_color(node, getattr(canvas, "diagram_mode", None))
-        font_obj = self.diagram_font
-
-        # For shape selection, use the source’s node type and gate type.
-        node_type_upper = source.node_type.upper()
-
-        if not node.is_primary_instance:
-            # For clones, draw them in a “clone” style.
-            if source.is_page:
-                fta_drawing_helper.draw_triangle_shape(
-                    self.canvas,
-                    eff_x,
-                    eff_y,
-                    scale=40 * self.zoom,
-                    top_text=top_text,
-                    bottom_text=bottom_text,
-                    fill=fill_color,
-                    outline_color=outline_color,
-                    line_width=line_width,
-                    font_obj=font_obj,
-                    obj_id=node.unique_id,
-                )
-            elif node_type_upper in GATE_NODE_TYPES:
-                if source.gate_type.upper() == "OR":
-                    fta_drawing_helper.draw_rotated_or_gate_clone_shape(
-                        self.canvas,
-                        eff_x,
-                        eff_y,
-                        scale=40 * self.zoom,
-                        top_text=top_text,
-                        bottom_text=bottom_text,
-                        fill=fill_color,
-                        outline_color=outline_color,
-                        line_width=line_width,
-                        font_obj=font_obj,
-                        obj_id=node.unique_id,
-                    )
-                else:
-                    fta_drawing_helper.draw_rotated_and_gate_clone_shape(
-                        self.canvas,
-                        eff_x,
-                        eff_y,
-                        scale=40 * self.zoom,
-                        top_text=top_text,
-                        bottom_text=bottom_text,
-                        fill=fill_color,
-                        outline_color=outline_color,
-                        line_width=line_width,
-                        font_obj=font_obj,
-                        obj_id=node.unique_id,
-                    )
-            elif node_type_upper in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-                fta_drawing_helper.draw_circle_event_clone_shape(
-                    self.canvas,
-                    eff_x,
-                    eff_y,
-                    45 * self.zoom,
-                    top_text=top_text,
-                    bottom_text=bottom_text,
-                    fill=fill_color,
-                    outline_color=outline_color,
-                    line_width=line_width,
-                    font_obj=font_obj,
-                    obj_id=node.unique_id,
-                )
-            else:
-                fta_drawing_helper.draw_circle_event_clone_shape(
-                    self.canvas,
-                    eff_x,
-                    eff_y,
-                    45 * self.zoom,
-                    top_text=top_text,
-                    bottom_text=bottom_text,
-                    fill=fill_color,
-                    outline_color=outline_color,
-                    line_width=line_width,
-                    font_obj=font_obj,
-                    obj_id=node.unique_id,
-                )
-        else:
-            # Primary node: use normal drawing routines.
-            if node_type_upper in GATE_NODE_TYPES:
-                if source.is_page and source != self.root_node:
-                    fta_drawing_helper.draw_triangle_shape(
-                        self.canvas,
-                        eff_x,
-                        eff_y,
-                        scale=40 * self.zoom,
-                        top_text=top_text,
-                        bottom_text=bottom_text,
-                        fill=fill_color,
-                        outline_color=outline_color,
-                        line_width=line_width,
-                        font_obj=font_obj,
-                        obj_id=node.unique_id,
-                    )
-                else:
-                    if source.gate_type.upper() == "OR":
-                        fta_drawing_helper.draw_rotated_or_gate_shape(
-                            self.canvas,
-                            eff_x,
-                            eff_y,
-                            scale=40 * self.zoom,
-                            top_text=top_text,
-                            bottom_text=bottom_text,
-                            fill=fill_color,
-                            outline_color=outline_color,
-                            line_width=line_width,
-                            font_obj=font_obj,
-                            obj_id=node.unique_id,
-                        )
-                    else:
-                        fta_drawing_helper.draw_rotated_and_gate_shape(
-                            self.canvas,
-                            eff_x,
-                            eff_y,
-                            scale=40 * self.zoom,
-                            top_text=top_text,
-                            bottom_text=bottom_text,
-                            fill=fill_color,
-                            outline_color=outline_color,
-                            line_width=line_width,
-                            font_obj=font_obj,
-                            obj_id=node.unique_id,
-                        )
-            elif node_type_upper in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
-                fta_drawing_helper.draw_circle_event_shape(
-                    self.canvas,
-                    eff_x,
-                    eff_y,
-                    45 * self.zoom,
-                    top_text=top_text,
-                    bottom_text=bottom_text,
-                    fill=fill_color,
-                    outline_color=outline_color,
-                    line_width=line_width,
-                    font_obj=font_obj,
-                    obj_id=node.unique_id,
-                )
-            else:
-                fta_drawing_helper.draw_circle_event_shape(
-                    self.canvas,
-                    eff_x,
-                    eff_y,
-                    45 * self.zoom,
-                    top_text=top_text,
-                    bottom_text=bottom_text,
-                    fill=fill_color,
-                    outline_color=outline_color,
-                    line_width=line_width,
-                    font_obj=font_obj,
-                    obj_id=node.unique_id,
-                )
-
-        # Draw any additional text (such as equations) from the source.
-        if source.equation:
-            self.canvas.create_text(
-                eff_x - 80 * self.zoom, eff_y - 15 * self.zoom,
-                text=source.equation, anchor="e", fill="gray",
-                font=self.diagram_font
-            )
-        if source.detailed_equation:
-            self.canvas.create_text(
-                eff_x - 80 * self.zoom, eff_y + 15 * self.zoom,
-                text=source.detailed_equation, anchor="e", fill="gray",
-                font=self.diagram_font
-            )
-
-        # Finally, if the node appears multiple times, draw a shared marker.
-        if self.occurrence_counts.get(node.unique_id, 0) > 1:
-            marker_x = eff_x + 30 * self.zoom
-            marker_y = eff_y - 30 * self.zoom
-            fta_drawing_helper.draw_shared_marker(self.canvas, marker_x, marker_y, self.zoom)
-
-        if self.review_data:
-            unresolved = any(c.node_id == node.unique_id and not c.resolved for c in self.review_data.comments)
-            if unresolved:
-                self.canvas.create_oval(
-                    eff_x + 35 * self.zoom,
-                    eff_y + 35 * self.zoom,
-                    eff_x + 45 * self.zoom,
-                    eff_y + 45 * self.zoom,
-                    fill='yellow',
-                    outline=StyleManager.get_instance().outline_color,
-                )
-
-        if self.review_data:
-            unresolved = any(c.node_id == node.unique_id and not c.resolved for c in self.review_data.comments)
-            if unresolved:
-                self.canvas.create_oval(
-                    eff_x + 35 * self.zoom,
-                    eff_y + 35 * self.zoom,
-                    eff_x + 45 * self.zoom,
-                    eff_y + 45 * self.zoom,
-                    fill='yellow',
-                    outline=StyleManager.get_instance().outline_color,
-                )
-
-        if self.review_data:
-            unresolved = any(c.node_id == node.unique_id and not c.resolved for c in self.review_data.comments)
-            if unresolved:
-                self.canvas.create_oval(
-                    eff_x + 35 * self.zoom,
-                    eff_y + 35 * self.zoom,
-                    eff_x + 45 * self.zoom,
-                    eff_y + 45 * self.zoom,
-                    fill='yellow',
-                    outline=StyleManager.get_instance().outline_color,
-                )
-
-        if self.review_data:
-            unresolved = any(c.node_id == node.unique_id and not c.resolved for c in self.review_data.comments)
-            if unresolved:
-                self.canvas.create_oval(
-                    eff_x + 35 * self.zoom,
-                    eff_y + 35 * self.zoom,
-                    eff_x + 45 * self.zoom,
-                    eff_y + 45 * self.zoom,
-                    fill='yellow',
-                    outline=StyleManager.get_instance().outline_color,
-                )
+        return self.diagram_renderer.draw_node(node)
 
     def find_node_by_id(self, node, unique_id, visited=None):
         return self.structure_tree_operations.find_node_by_id(node, unique_id, visited)
@@ -5705,74 +5187,6 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
         ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
 
-    def show_common_cause_view(self):
-        win = tk.Toplevel(self.root)
-        win.title("Common Cause Toolbox")
-        var_fmea = tk.BooleanVar(value=True)
-        var_fmeda = tk.BooleanVar(value=True)
-        var_fta = tk.BooleanVar(value=True)
-        chk_frame = ttk.Frame(win)
-        chk_frame.pack(anchor="w")
-        ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree_frame = ttk.Frame(win)
-        tree_frame.pack(fill=tk.BOTH, expand=True)
-        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
-        for c in ["Cause", "Events"]:
-            tree.heading(c, text=c)
-            tree.column(c, width=150)
-        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
-        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
-        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
-        tree_frame.rowconfigure(0, weight=1)
-        tree_frame.columnconfigure(0, weight=1)
-
-        def refresh():
-            tree.delete(*tree.get_children())
-            events_by_cause = {}
-            if var_fmea.get():
-                for fmea in self.fmeas:
-                    for be in fmea["entries"]:
-                        cause = be.description
-                        label = f"{fmea['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fmeda.get():
-                for fmeda in self.fmedas:
-                    for be in fmeda["entries"]:
-                        cause = be.description
-                        label = f"{fmeda['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fta.get():
-                for be in self.get_all_basic_events():
-                    cause = be.description or ""
-                    label = be.user_name or f"BE {be.unique_id}"
-                    events_by_cause.setdefault(cause, set()).add(label)
-            for cause, evts in events_by_cause.items():
-                if len(evts) > 1:
-                    tree.insert("", "end", values=[cause, ", ".join(sorted(evts))])
-
-        refresh()
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Cause", "Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Common cause data exported")
-
-        btn_frame = ttk.Frame(win)
-        btn_frame.pack()
-        ttk.Button(btn_frame, text="Refresh", command=refresh).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(btn_frame, text="Export CSV", command=export_csv).pack(side=tk.LEFT, padx=5, pady=5)
-
     def build_cause_effect_data(self):
         return self.probability_reliability.build_cause_effect_data()
 
@@ -5780,244 +5194,41 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.probability_reliability._build_cause_effect_graph(row)
 
     def render_cause_effect_diagram(self, row):
-        """Render *row* as a PIL image matching the on-screen diagram."""
-        try:
-            from PIL import Image, ImageDraw, ImageFont
-        except Exception:
-            return None
-        import textwrap, math
-
-        nodes, edges, pos = self._build_cause_effect_graph(row)
-        color_map = {
-            "hazard": "#F08080",
-            "malfunction": "#ADD8E6",
-            "failure_mode": "#FFA500",
-            "fault": "#D3D3D3",
-            "fi": "#FFFFE0",
-            "tc": "#90EE90",
-            "attack_path": "#E0FFFF",
-            "threat": "#FFB6C1",
-        }
-
-        scale = 80
-        x_off = 50
-        y_off = 50
-        box_w = 80
-        box_h = 40
-
-        max_x = max(x for x, _ in pos.values())
-        max_y = max(y for _, y in pos.values())
-        width = int(x_off * 2 + scale * max_x + box_w)
-        height = int(y_off * 2 + scale * max_y + box_h)
-
-        img = Image.new("RGB", (width, height), "white")
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.load_default()
-
-        def to_canvas(x: float, y: float) -> tuple[float, float]:
-            return x_off + scale * x, y_off + scale * y
-
-        for u, v in edges:
-            x1, y1 = to_canvas(*pos[u])
-            x2, y2 = to_canvas(*pos[v])
-            draw.line((x1, y1, x2, y2), fill="black")
-            dx, dy = x2 - x1, y2 - y1
-            length = math.hypot(dx, dy) or 1
-            ux, uy = dx / length, dy / length
-            arrow = 10
-            px, py = x2 - arrow * ux, y2 - arrow * uy
-            perp = (-uy, ux)
-            left = (px + perp[0] * arrow / 2, py + perp[1] * arrow / 2)
-            right = (px - perp[0] * arrow / 2, py - perp[1] * arrow / 2)
-            draw.polygon([ (x2, y2), left, right ], fill="black")
-            if hasattr(draw, "text"):
-                draw.text(((x1 + x2) / 2, (y1 + y2) / 2), "caused by", fill="black", font=font, anchor="mm")
-
-        for n, (x, y) in pos.items():
-            label, kind = nodes.get(n, (n, ""))
-            color = color_map.get(kind, "white")
-            cx, cy = to_canvas(x, y)
-            rect = [cx - box_w / 2, cy - box_h / 2, cx + box_w / 2, cy + box_h / 2]
-            draw.rectangle(
-                rect,
-                fill=color,
-                outline=StyleManager.get_instance().outline_color,
-            )
-            text = textwrap.fill(str(label), 20)
-            bbox = draw.multiline_textbbox((0, 0), text, font=font)
-            tw = bbox[2] - bbox[0]
-            th = bbox[3] - bbox[1]
-            draw.multiline_text((cx - tw / 2, cy - th / 2), text, font=font, align="center")
-
-        return img
+        return self.diagram_renderer.render_cause_effect_diagram(row)
 
     def show_cause_effect_chain(self):
-        """Display a table linking hazards to downstream events with an optional diagram."""
-        data = self.build_cause_effect_data()
-        if not data:
-            messagebox.showinfo("Cause & Effect", "No data available")
+        return self.diagram_renderer.show_cause_effect_chain()
+
+    def show_cut_sets(self):
+        """Display minimal cut sets for every top event."""
+        if not self.top_events:
             return
-
         win = tk.Toplevel(self.root)
-        win.title("Cause & Effect Chain")
+        win.title("FTA Cut Sets")
+        columns = ("Top Event", "Cut Set #", "Basic Events")
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for c in columns:
+            tree.heading(c, text=c)
+        tree.pack(fill=tk.BOTH, expand=True)
 
-        nb = ttk.Notebook(win)
-        nb.pack(fill=tk.BOTH, expand=True)
+        for te in self.top_events:
+            nodes_by_id = {}
 
-        table_frame = ttk.Frame(nb)
-        diagram_frame = ttk.Frame(nb)
-        nb.add(table_frame, text="Table")
-        nb.add(diagram_frame, text="Diagram")
+            def map_nodes(n):
+                nodes_by_id[n.unique_id] = n
+                for child in n.children:
+                    map_nodes(child)
 
-        table_frame.columnconfigure(0, weight=1)
-        table_frame.rowconfigure(0, weight=1)
-        diagram_frame.columnconfigure(0, weight=1)
-        diagram_frame.rowconfigure(0, weight=1)
-
-        cols = (
-            "Hazard",
-            "Malfunction",
-            "Threats",
-            "Attack Paths",
-            "Failure Modes",
-            "Faults",
-            "Threat Scenarios",
-            "Attack Paths",
-            "FIs",
-            "TCs",
-        )
-
-        tree = ttk.Treeview(table_frame, columns=cols, show="headings")
-        vsb = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
-        hsb = ttk.Scrollbar(table_frame, orient="horizontal", command=tree.xview)
-        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
-
-        canvas = tk.Canvas(diagram_frame, bg=StyleManager.get_instance().canvas_bg)
-        cvs_vsb = ttk.Scrollbar(diagram_frame, orient="vertical", command=canvas.yview)
-        cvs_hsb = ttk.Scrollbar(diagram_frame, orient="horizontal", command=canvas.xview)
-        canvas.configure(yscrollcommand=cvs_vsb.set, xscrollcommand=cvs_hsb.set)
-        canvas.grid(row=0, column=0, sticky="nsew")
-        cvs_vsb.grid(row=0, column=1, sticky="ns")
-        cvs_hsb.grid(row=1, column=0, sticky="ew")
-
-        row_map = {}
-        for row in data:
-            iid = tree.insert(
-                "",
-                "end",
-                values=(
-                    row["hazard"],
-                    row["malfunction"],
-                    ", ".join(sorted(row["threats"].keys())),
-                    ", ".join(sorted(row["attack_paths"])),
-                    ", ".join(sorted(row["failure_modes"].keys())),
-                    ", ".join(sorted(row["faults"])),
-                    ", ".join(sorted(row["threats"].keys())),
-                    ", ".join(sorted(row["attack_paths"])),
-                    ", ".join(sorted(row["fis"])),
-                    ", ".join(sorted(row["tcs"])),
-                ),
-            )
-            row_map[iid] = row
-
-        def draw_row(row):
-            """Render the cause-and-effect network for *row* on the Tk canvas."""
-            import textwrap
-
-            nodes, edges, pos = self._build_cause_effect_graph(row)
-
-            color_map = {
-                "hazard": "#F08080",       # light coral
-                "malfunction": "#ADD8E6",  # light blue
-                "failure_mode": "#FFA500",  # orange
-                "fault": "#D3D3D3",        # light gray
-                "fi": "#FFFFE0",           # light yellow
-                "tc": "#90EE90",           # light green
-                "attack_path": "#E0FFFF",   # light cyan
-                "threat": "#FFB6C1",       # light pink
-            }
-
-            # Clear any existing drawing
-            canvas.delete("all")
-
-            # Scaling factors to convert the logical layout coordinates to
-            # pixels on the canvas.
-            scale = 80
-            x_off = 50
-            y_off = 50
-            box_w = 80
-            box_h = 40
-
-            def to_canvas(x: float, y: float) -> tuple[float, float]:
-                return x_off + scale * x, y_off + scale * y
-
-            # Draw connections with arrows and labels
-            for u, v in edges:
-                x1, y1 = to_canvas(*pos[u])
-                x2, y2 = to_canvas(*pos[v])
-                canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST, tags="edge")
-                canvas.create_text(
-                    (x1 + x2) / 2,
-                    (y1 + y2) / 2,
-                    text="caused by",
-                    font=("TkDefaultFont", 8),
-                    tags="edge",
+            map_nodes(te)
+            cut_sets = self.calculate_cut_sets(te)
+            te_label = te.user_name or f"Top Event {te.unique_id}"
+            for idx, cs in enumerate(cut_sets, start=1):
+                names = ", ".join(
+                    f"{nodes_by_id[uid].user_name or nodes_by_id[uid].node_type} [{uid}]"
+                    for uid in sorted(cs)
                 )
-
-            # Draw the nodes as rectangles with wrapped text
-            for n, (x, y) in pos.items():
-                label, kind = nodes.get(n, (n, ""))
-                color = color_map.get(kind, "white")
-                cx, cy = to_canvas(x, y)
-                canvas.create_rectangle(
-                    cx - box_w / 2,
-                    cy - box_h / 2,
-                    cx + box_w / 2,
-                    cy + box_h / 2,
-                    fill=color,
-                    outline=StyleManager.get_instance().outline_color,
-                    tags="node",
-                )
-                label = textwrap.fill(str(label), 20)
-                canvas.create_text(
-                    cx,
-                    cy,
-                    text=label,
-                    width=box_w - 10,
-                    font=("TkDefaultFont", 8),
-                    tags="node",
-                )
-
-            canvas.config(scrollregion=canvas.bbox("all"))
-            canvas.xview_moveto(0)
-            canvas.yview_moveto(0)
-            # Ensure the drawing appears immediately in environments where
-            # the Tk event loop has not yet run. Without this call the canvas
-            # may show up blank until the user interacts with the window.
-            canvas.update_idletasks()
-
-        def on_select(event):
-            sel = tree.selection()
-            if sel:
-                row = row_map.get(sel[0])
-                if row:
-                    draw_row(row)
-                    # Automatically show the diagram tab whenever a row is
-                    # selected so the rendered network is visible without the
-                    # user needing to switch tabs manually.
-                    nb.select(diagram_frame)
-
-        tree.bind("<<TreeviewSelect>>", on_select)
-
-        if row_map:
-            first_iid = next(iter(row_map))
-            tree.selection_set(first_iid)
-            draw_row(row_map[first_iid])
-            # Ensure the initial diagram is visible when the window opens.
-            nb.select(diagram_frame)
+                tree.insert("", "end", values=(te_label, idx, names))
+                te_label = ""
 
         def export_csv():
             path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
@@ -6025,10 +5236,54 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
                 return
             with open(path, "w", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(cols)
+                writer.writerow(["Top Event", "Cut Set #", "Basic Events"])
                 for iid in tree.get_children():
                     writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Cause & effect data exported")
+            messagebox.showinfo("Export", "Cut sets exported")
+
+        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
+
+    def show_cut_sets(self):
+        """Display minimal cut sets for every top event."""
+        if not self.top_events:
+            return
+        win = tk.Toplevel(self.root)
+        win.title("FTA Cut Sets")
+        columns = ("Top Event", "Cut Set #", "Basic Events")
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for c in columns:
+            tree.heading(c, text=c)
+        tree.pack(fill=tk.BOTH, expand=True)
+
+        for te in self.top_events:
+            nodes_by_id = {}
+
+            def map_nodes(n):
+                nodes_by_id[n.unique_id] = n
+                for child in n.children:
+                    map_nodes(child)
+
+            map_nodes(te)
+            cut_sets = self.calculate_cut_sets(te)
+            te_label = te.user_name or f"Top Event {te.unique_id}"
+            for idx, cs in enumerate(cut_sets, start=1):
+                names = ", ".join(
+                    f"{nodes_by_id[uid].user_name or nodes_by_id[uid].node_type} [{uid}]"
+                    for uid in sorted(cs)
+                )
+                tree.insert("", "end", values=(te_label, idx, names))
+                te_label = ""
+
+        def export_csv():
+            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
+            if not path:
+                return
+            with open(path, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["Top Event", "Cut Set #", "Basic Events"])
+                for iid in tree.get_children():
+                    writer.writerow(tree.item(iid, "values"))
+            messagebox.showinfo("Export", "Cut sets exported")
 
         ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
 
@@ -6077,296 +5332,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
 
     def show_common_cause_view(self):
-        win = tk.Toplevel(self.root)
-        win.title("Common Cause Toolbox")
-        var_fmea = tk.BooleanVar(value=True)
-        var_fmeda = tk.BooleanVar(value=True)
-        var_fta = tk.BooleanVar(value=True)
-        chk_frame = ttk.Frame(win)
-        chk_frame.pack(anchor="w")
-        ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree_frame = ttk.Frame(win)
-        tree_frame.pack(fill=tk.BOTH, expand=True)
-        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
-        for c in ["Cause", "Events"]:
-            tree.heading(c, text=c)
-            tree.column(c, width=150)
-        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
-        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
-        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
-        tree_frame.rowconfigure(0, weight=1)
-        tree_frame.columnconfigure(0, weight=1)
-
-        def refresh():
-            tree.delete(*tree.get_children())
-            events_by_cause = {}
-            if var_fmea.get():
-                for fmea in self.fmeas:
-                    for be in fmea["entries"]:
-                        cause = be.description
-                        label = f"{fmea['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fmeda.get():
-                for fmeda in self.fmedas:
-                    for be in fmeda["entries"]:
-                        cause = be.description
-                        label = f"{fmeda['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fta.get():
-                for be in self.get_all_basic_events():
-                    cause = be.description or ""
-                    label = be.user_name or f"BE {be.unique_id}"
-                    events_by_cause.setdefault(cause, set()).add(label)
-            for cause, evts in events_by_cause.items():
-                if len(evts) > 1:
-                    tree.insert("", "end", values=[cause, ", ".join(sorted(evts))])
-
-        refresh()
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Cause", "Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Common cause data exported")
-
-        btn_frame = ttk.Frame(win)
-        btn_frame.pack()
-        ttk.Button(btn_frame, text="Refresh", command=refresh).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(btn_frame, text="Export CSV", command=export_csv).pack(side=tk.LEFT, padx=5, pady=5)
-
-    def show_cut_sets(self):
-        """Display minimal cut sets for every top event."""
-        if not self.top_events:
-            return
-        win = tk.Toplevel(self.root)
-        win.title("FTA Cut Sets")
-        columns = ("Top Event", "Cut Set #", "Basic Events")
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for c in columns:
-            tree.heading(c, text=c)
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        for te in self.top_events:
-            nodes_by_id = {}
-
-            def map_nodes(n):
-                nodes_by_id[n.unique_id] = n
-                for child in n.children:
-                    map_nodes(child)
-
-            map_nodes(te)
-            cut_sets = self.calculate_cut_sets(te)
-            te_label = te.user_name or f"Top Event {te.unique_id}"
-            for idx, cs in enumerate(cut_sets, start=1):
-                names = ", ".join(
-                    f"{nodes_by_id[uid].user_name or nodes_by_id[uid].node_type} [{uid}]"
-                    for uid in sorted(cs)
-                )
-                tree.insert("", "end", values=(te_label, idx, names))
-                te_label = ""
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Top Event", "Cut Set #", "Basic Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Cut sets exported")
-
-        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
-
-    def show_common_cause_view(self):
-        win = tk.Toplevel(self.root)
-        win.title("Common Cause Toolbox")
-        var_fmea = tk.BooleanVar(value=True)
-        var_fmeda = tk.BooleanVar(value=True)
-        var_fta = tk.BooleanVar(value=True)
-        chk_frame = ttk.Frame(win)
-        chk_frame.pack(anchor="w")
-        ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree_frame = ttk.Frame(win)
-        tree_frame.pack(fill=tk.BOTH, expand=True)
-        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
-        for c in ["Cause", "Events"]:
-            tree.heading(c, text=c)
-            tree.column(c, width=150)
-        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
-        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
-        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
-        tree_frame.rowconfigure(0, weight=1)
-        tree_frame.columnconfigure(0, weight=1)
-
-        def refresh():
-            tree.delete(*tree.get_children())
-            events_by_cause = {}
-            if var_fmea.get():
-                for fmea in self.fmeas:
-                    for be in fmea["entries"]:
-                        cause = be.description
-                        label = f"{fmea['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fmeda.get():
-                for fmeda in self.fmedas:
-                    for be in fmeda["entries"]:
-                        cause = be.description
-                        label = f"{fmeda['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fta.get():
-                for be in self.get_all_basic_events():
-                    cause = be.description or ""
-                    label = be.user_name or f"BE {be.unique_id}"
-                    events_by_cause.setdefault(cause, set()).add(label)
-            for cause, evts in events_by_cause.items():
-                if len(evts) > 1:
-                    tree.insert("", "end", values=[cause, ", ".join(sorted(evts))])
-
-        refresh()
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Cause", "Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Common cause data exported")
-
-        btn_frame = ttk.Frame(win)
-        btn_frame.pack()
-        ttk.Button(btn_frame, text="Refresh", command=refresh).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(btn_frame, text="Export CSV", command=export_csv).pack(side=tk.LEFT, padx=5, pady=5)
-
-    def show_cut_sets(self):
-        """Display minimal cut sets for every top event."""
-        if not self.top_events:
-            return
-        win = tk.Toplevel(self.root)
-        win.title("FTA Cut Sets")
-        columns = ("Top Event", "Cut Set #", "Basic Events")
-        tree = ttk.Treeview(win, columns=columns, show="headings")
-        for c in columns:
-            tree.heading(c, text=c)
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        for te in self.top_events:
-            nodes_by_id = {}
-
-            def map_nodes(n):
-                nodes_by_id[n.unique_id] = n
-                for child in n.children:
-                    map_nodes(child)
-
-            map_nodes(te)
-            cut_sets = self.calculate_cut_sets(te)
-            te_label = te.user_name or f"Top Event {te.unique_id}"
-            for idx, cs in enumerate(cut_sets, start=1):
-                names = ", ".join(
-                    f"{nodes_by_id[uid].user_name or nodes_by_id[uid].node_type} [{uid}]"
-                    for uid in sorted(cs)
-                )
-                tree.insert("", "end", values=(te_label, idx, names))
-                te_label = ""
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Top Event", "Cut Set #", "Basic Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Cut sets exported")
-
-        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
-
-    def show_common_cause_view(self):
-        win = tk.Toplevel(self.root)
-        win.title("Common Cause Toolbox")
-        var_fmea = tk.BooleanVar(value=True)
-        var_fmeda = tk.BooleanVar(value=True)
-        var_fta = tk.BooleanVar(value=True)
-        chk_frame = ttk.Frame(win)
-        chk_frame.pack(anchor="w")
-        ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
-        ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree_frame = ttk.Frame(win)
-        tree_frame.pack(fill=tk.BOTH, expand=True)
-        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
-        for c in ["Cause", "Events"]:
-            tree.heading(c, text=c)
-            tree.column(c, width=150)
-        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
-        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
-        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
-        tree_frame.rowconfigure(0, weight=1)
-        tree_frame.columnconfigure(0, weight=1)
-
-        def refresh():
-            tree.delete(*tree.get_children())
-            events_by_cause = {}
-            if var_fmea.get():
-                for fmea in self.fmeas:
-                    for be in fmea["entries"]:
-                        cause = be.description
-                        label = f"{fmea['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fmeda.get():
-                for fmeda in self.fmedas:
-                    for be in fmeda["entries"]:
-                        cause = be.description
-                        label = f"{fmeda['name']}:{be.user_name or be.description or be.unique_id}"
-                        events_by_cause.setdefault(cause, set()).add(label)
-            if var_fta.get():
-                for be in self.get_all_basic_events():
-                    cause = be.description or ""
-                    label = be.user_name or f"BE {be.unique_id}"
-                    events_by_cause.setdefault(cause, set()).add(label)
-            for cause, evts in events_by_cause.items():
-                if len(evts) > 1:
-                    tree.insert("", "end", values=[cause, ", ".join(sorted(evts))])
-
-        refresh()
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(["Cause", "Events"])
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Common cause data exported")
-
-        btn_frame = ttk.Frame(win)
-        btn_frame.pack()
-        ttk.Button(btn_frame, text="Refresh", command=refresh).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(btn_frame, text="Export CSV", command=export_csv).pack(side=tk.LEFT, padx=5, pady=5)
+        return self.diagram_renderer.show_common_cause_view()
 
     def manage_mission_profiles(self):
         if hasattr(self, "_mp_tab") and self._mp_tab.winfo_exists():
@@ -7568,7 +6534,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         self.window_controllers.open_arch_window(diag_id)
 
     def open_page_diagram(self, node, push_history=True):
-        return self.pages_and_paa.open_page_diagram(node, push_history)
+        self.window_controllers.open_page_diagram(node, push_history)
 
     def manage_architecture(self):
         return self.open_windows_features.manage_architecture()
@@ -9079,68 +8045,25 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.nav_input.go_back()
 
     def draw_page_subtree(self, page_root):
-        return self.pages_and_paa.draw_page_subtree(page_root)
+        return self.diagram_renderer.draw_page_subtree(page_root)
 
     def draw_page_grid(self):
-        return self.pages_and_paa.draw_page_grid()
+        return self.diagram_renderer.draw_page_grid()
 
     def draw_page_connections_subtree(self, node, visited_ids):
-        return self.pages_and_paa.draw_page_connections_subtree(node, visited_ids)
+        return self.diagram_renderer.draw_page_connections_subtree(node, visited_ids)
 
     def draw_page_nodes_subtree(self, node):
-        return self.pages_and_paa.draw_page_nodes_subtree(node)
+        return self.diagram_renderer.draw_page_nodes_subtree(node)
 
     def draw_node_on_page_canvas(self, *args, **kwargs):
-        return self.pages_and_paa.draw_node_on_page_canvas(*args, **kwargs)
+        return self.diagram_renderer.draw_node_on_page_canvas(*args, **kwargs)
 
     def on_ctrl_mousewheel_page(self, event):
         return self.nav_input.on_ctrl_mousewheel_page(event)
 
     def close_page_diagram(self):
-        if self.page_history:
-            prev = self.page_history.pop()
-            for widget in self.canvas_frame.winfo_children():
-                widget.destroy()
-            if prev is None:
-                self.canvas = tk.Canvas(self.canvas_frame, bg=StyleManager.get_instance().canvas_bg)
-                self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-                self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
-                self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
-                self.vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
-                self.vbar.pack(side=tk.RIGHT, fill=tk.Y)
-                self.canvas.config(xscrollcommand=self.hbar.set, yscrollcommand=self.vbar.set,
-                                   scrollregion=(0, 0, 2000, 2000))
-                self.canvas.bind("<ButtonPress-3>", self.on_right_mouse_press)
-                self.canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
-                self.canvas.bind("<Button-1>", self.on_canvas_click)
-                self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
-                self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-                self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
-                self.canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
-                self.update_views()
-                self.page_diagram = None
-            else:
-                self.window_controllers.open_page_diagram(prev)
-        else:
-            for widget in self.canvas_frame.winfo_children():
-                widget.destroy()
-            self.canvas = tk.Canvas(self.canvas_frame, bg=StyleManager.get_instance().canvas_bg)
-            self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-            self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
-            self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
-            self.vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
-            self.vbar.pack(side=tk.RIGHT, fill=tk.Y)
-            self.canvas.config(xscrollcommand=self.hbar.set, yscrollcommand=self.vbar.set,
-                               scrollregion=(0, 0, 2000, 2000))
-            self.canvas.bind("<ButtonPress-3>", self.on_right_mouse_press)
-            self.canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
-            self.canvas.bind("<Button-1>", self.on_canvas_click)
-            self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
-            self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-            self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
-            self.canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
-            self.update_views()
-            self.page_diagram = None
+        return self.diagram_renderer.close_page_diagram()
 
     # --- Review Toolbox Methods ---
     def start_peer_review(self):
@@ -9164,8 +8087,8 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
     def review_is_closed_for(self, review):
         return self.versioning_review.review_is_closed_for(review)
 
-    def capture_diff_diagram(self, top_event):
-        return self.review_manager.capture_diff_diagram(top_event)
+    def capture_diff_diagram(self, top_event):  # pragma: no cover - delegation
+        return self.diagram_renderer.capture_diff_diagram(top_event)
 
     # --- End Review Toolbox Methods ---
 
