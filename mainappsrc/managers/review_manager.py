@@ -11,7 +11,7 @@ from io import BytesIO, StringIO
 import tkinter as tk
 from tkinter import simpledialog, filedialog
 from gui.controls import messagebox
-from gui.review_toolbox import (
+from gui.toolboxes.review_toolbox import (
     ReviewToolbox,
     ReviewData,
     ReviewParticipant,
@@ -22,8 +22,8 @@ from gui.review_toolbox import (
     ReviewDocumentDialog,
     VersionCompareDialog,
 )
-from gui.dialog_utils import askstring_fixed
-from gui.style_manager import StyleManager
+from gui.utils.dialog_utils import askstring_fixed
+from gui.managers.style_manager import StyleManager
 from analysis.fmeda_utils import GATE_NODE_TYPES
 
 
