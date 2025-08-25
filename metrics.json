@@ -1,0 +1,5118 @@
+{
+  "total_files": 26,
+  "total_loc": 13558,
+  "total_functions": 991,
+  "average_complexity": 4.49,
+  "files": [
+    {
+      "file": "mainappsrc/core/event_dispatcher.py",
+      "loc": 84,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 18,
+          "complexity": 1
+        },
+        {
+          "name": "register_keyboard_shortcuts",
+          "lineno": 24,
+          "complexity": 1
+        },
+        {
+          "name": "register_tab_events",
+          "lineno": 79,
+          "complexity": 1
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/probability_reliability.py",
+      "loc": 329,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 17,
+          "complexity": 1
+        },
+        {
+          "name": "compute_failure_prob",
+          "lineno": 21,
+          "complexity": 14
+        },
+        {
+          "name": "update_basic_event_probabilities",
+          "lineno": 62,
+          "complexity": 2
+        },
+        {
+          "name": "calculate_pmfh",
+          "lineno": 68,
+          "complexity": 21
+        },
+        {
+          "name": "calculate_overall",
+          "lineno": 127,
+          "complexity": 4
+        },
+        {
+          "name": "_build_probability_frame",
+          "lineno": 143,
+          "complexity": 3
+        },
+        {
+          "name": "assurance_level_text",
+          "lineno": 177,
+          "complexity": 1
+        },
+        {
+          "name": "metric_to_text",
+          "lineno": 181,
+          "complexity": 1
+        },
+        {
+          "name": "analyze_common_causes",
+          "lineno": 185,
+          "complexity": 1
+        },
+        {
+          "name": "build_cause_effect_data",
+          "lineno": 189,
+          "complexity": 27
+        },
+        {
+          "name": "_build_cause_effect_graph",
+          "lineno": 267,
+          "complexity": 27
+        },
+        {
+          "name": "sync_cyber_risk_to_goals",
+          "lineno": 373,
+          "complexity": 1
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/diagram_renderer.py",
+      "loc": 66,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 17,
+          "complexity": 1
+        },
+        {
+          "name": "draw_node",
+          "lineno": 21,
+          "complexity": 1
+        },
+        {
+          "name": "draw_subtree",
+          "lineno": 24,
+          "complexity": 1
+        },
+        {
+          "name": "draw_subtree_with_filter",
+          "lineno": 27,
+          "complexity": 1
+        },
+        {
+          "name": "draw_connections",
+          "lineno": 30,
+          "complexity": 1
+        },
+        {
+          "name": "draw_connections_subtree",
+          "lineno": 33,
+          "complexity": 1
+        },
+        {
+          "name": "draw_node_on_canvas_pdf",
+          "lineno": 36,
+          "complexity": 1
+        },
+        {
+          "name": "draw_node_on_page_canvas",
+          "lineno": 39,
+          "complexity": 1
+        },
+        {
+          "name": "draw_page_grid",
+          "lineno": 42,
+          "complexity": 1
+        },
+        {
+          "name": "draw_page_nodes_subtree",
+          "lineno": 45,
+          "complexity": 1
+        },
+        {
+          "name": "draw_page_connections_subtree",
+          "lineno": 48,
+          "complexity": 1
+        },
+        {
+          "name": "draw_page_subtree",
+          "lineno": 51,
+          "complexity": 1
+        },
+        {
+          "name": "render_cause_effect_diagram",
+          "lineno": 55,
+          "complexity": 1
+        },
+        {
+          "name": "redraw_canvas",
+          "lineno": 58,
+          "complexity": 1
+        },
+        {
+          "name": "zoom_in",
+          "lineno": 61,
+          "complexity": 1
+        },
+        {
+          "name": "zoom_out",
+          "lineno": 64,
+          "complexity": 1
+        },
+        {
+          "name": "create_diagram_image",
+          "lineno": 67,
+          "complexity": 1
+        },
+        {
+          "name": "create_diagram_image_without_grid",
+          "lineno": 70,
+          "complexity": 1
+        },
+        {
+          "name": "save_diagram_png",
+          "lineno": 73,
+          "complexity": 1
+        },
+        {
+          "name": "close_page_diagram",
+          "lineno": 76,
+          "complexity": 1
+        },
+        {
+          "name": "capture_event_diagram",
+          "lineno": 80,
+          "complexity": 1
+        },
+        {
+          "name": "capture_page_diagram",
+          "lineno": 83,
+          "complexity": 1
+        },
+        {
+          "name": "capture_diff_diagram",
+          "lineno": 86,
+          "complexity": 1
+        },
+        {
+          "name": "capture_sysml_diagram",
+          "lineno": 89,
+          "complexity": 1
+        },
+        {
+          "name": "capture_cbn_diagram",
+          "lineno": 92,
+          "complexity": 1
+        },
+        {
+          "name": "capture_gsn_diagram",
+          "lineno": 95,
+          "complexity": 1
+        },
+        {
+          "name": "show_cause_effect_chain",
+          "lineno": 99,
+          "complexity": 1
+        },
+        {
+          "name": "show_common_cause_view",
+          "lineno": 102,
+          "complexity": 1
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/reporting_export.py",
+      "loc": 302,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 26,
+          "complexity": 1
+        },
+        {
+          "name": "build_text_report",
+          "lineno": 31,
+          "complexity": 1
+        },
+        {
+          "name": "build_unified_recommendation_table",
+          "lineno": 34,
+          "complexity": 1
+        },
+        {
+          "name": "build_dynamic_recommendations_table",
+          "lineno": 37,
+          "complexity": 1
+        },
+        {
+          "name": "build_base_events_table_html",
+          "lineno": 40,
+          "complexity": 1
+        },
+        {
+          "name": "build_requirement_diff_html",
+          "lineno": 43,
+          "complexity": 1
+        },
+        {
+          "name": "_generate_pdf_report",
+          "lineno": 48,
+          "complexity": 6
+        },
+        {
+          "name": "generate_pdf_report",
+          "lineno": 72,
+          "complexity": 1
+        },
+        {
+          "name": "generate_report",
+          "lineno": 76,
+          "complexity": 3
+        },
+        {
+          "name": "build_html_report",
+          "lineno": 86,
+          "complexity": 6
+        },
+        {
+          "name": "export_model_data",
+          "lineno": 121,
+          "complexity": 39
+        },
+        {
+          "name": "export_product_goal_requirements",
+          "lineno": 246,
+          "complexity": 8
+        },
+        {
+          "name": "export_cybersecurity_goal_requirements",
+          "lineno": 287,
+          "complexity": 1
+        },
+        {
+          "name": "create_diagram_image",
+          "lineno": 290,
+          "complexity": 4
+        },
+        {
+          "name": "create_diagram_image_without_grid",
+          "lineno": 307,
+          "complexity": 10
+        },
+        {
+          "name": "node_to_html",
+          "lineno": 87,
+          "complexity": 6
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/structure_tree_operations.py",
+      "loc": 174,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 11,
+          "complexity": 1
+        },
+        {
+          "name": "insert_node_in_tree",
+          "lineno": 14,
+          "complexity": 6
+        },
+        {
+          "name": "_move_subtree_strategy1",
+          "lineno": 25,
+          "complexity": 3
+        },
+        {
+          "name": "_move_subtree_strategy2",
+          "lineno": 33,
+          "complexity": 3
+        },
+        {
+          "name": "_move_subtree_strategy3",
+          "lineno": 39,
+          "complexity": 3
+        },
+        {
+          "name": "_move_subtree_strategy4",
+          "lineno": 48,
+          "complexity": 3
+        },
+        {
+          "name": "move_subtree",
+          "lineno": 56,
+          "complexity": 3
+        },
+        {
+          "name": "find_node_by_id",
+          "lineno": 69,
+          "complexity": 6
+        },
+        {
+          "name": "is_descendant",
+          "lineno": 83,
+          "complexity": 4
+        },
+        {
+          "name": "remove_node",
+          "lineno": 91,
+          "complexity": 8
+        },
+        {
+          "name": "remove_connection",
+          "lineno": 111,
+          "complexity": 7
+        },
+        {
+          "name": "delete_node_and_subtree",
+          "lineno": 132,
+          "complexity": 5
+        },
+        {
+          "name": "find_node_by_id_all",
+          "lineno": 148,
+          "complexity": 11
+        },
+        {
+          "name": "get_all_nodes_no_filter",
+          "lineno": 171,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_nodes",
+          "lineno": 174,
+          "complexity": 8
+        },
+        {
+          "name": "get_all_nodes_table",
+          "lineno": 196,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_nodes_in_model",
+          "lineno": 199,
+          "complexity": 1
+        },
+        {
+          "name": "node_map_from_data",
+          "lineno": 202,
+          "complexity": 1
+        },
+        {
+          "name": "rec",
+          "lineno": 183,
+          "complexity": 6
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/app_lifecycle_ui.py",
+      "loc": 588,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 36,
+          "complexity": 1
+        },
+        {
+          "name": "__getattr__",
+          "lineno": 43,
+          "complexity": 1
+        },
+        {
+          "name": "show_properties",
+          "lineno": 49,
+          "complexity": 22
+        },
+        {
+          "name": "_add_tool_category",
+          "lineno": 102,
+          "complexity": 3
+        },
+        {
+          "name": "_on_tool_tab_motion",
+          "lineno": 123,
+          "complexity": 4
+        },
+        {
+          "name": "_on_doc_tab_motion",
+          "lineno": 142,
+          "complexity": 4
+        },
+        {
+          "name": "toggle_logs",
+          "lineno": 160,
+          "complexity": 1
+        },
+        {
+          "name": "show_explorer",
+          "lineno": 165,
+          "complexity": 3
+        },
+        {
+          "name": "_animate_explorer_show",
+          "lineno": 178,
+          "complexity": 2
+        },
+        {
+          "name": "hide_explorer",
+          "lineno": 190,
+          "complexity": 4
+        },
+        {
+          "name": "_animate_explorer_hide",
+          "lineno": 201,
+          "complexity": 2
+        },
+        {
+          "name": "_schedule_explorer_hide",
+          "lineno": 214,
+          "complexity": 3
+        },
+        {
+          "name": "_cancel_explorer_hide",
+          "lineno": 223,
+          "complexity": 2
+        },
+        {
+          "name": "toggle_explorer_pin",
+          "lineno": 228,
+          "complexity": 3
+        },
+        {
+          "name": "_limit_explorer_size",
+          "lineno": 237,
+          "complexity": 3
+        },
+        {
+          "name": "touch_doc",
+          "lineno": 244,
+          "complexity": 1
+        },
+        {
+          "name": "_add_lifecycle_requirements_menu",
+          "lineno": 250,
+          "complexity": 1
+        },
+        {
+          "name": "open_metrics_tab",
+          "lineno": 257,
+          "complexity": 1
+        },
+        {
+          "name": "_register_close",
+          "lineno": 264,
+          "complexity": 2
+        },
+        {
+          "name": "_on_tab_close",
+          "lineno": 272,
+          "complexity": 12
+        },
+        {
+          "name": "_on_tab_change",
+          "lineno": 310,
+          "complexity": 25
+        },
+        {
+          "name": "_init_nav_button_style",
+          "lineno": 376,
+          "complexity": 1
+        },
+        {
+          "name": "_update_tool_tab_visibility",
+          "lineno": 392,
+          "complexity": 13
+        },
+        {
+          "name": "_update_doc_tab_visibility",
+          "lineno": 424,
+          "complexity": 13
+        },
+        {
+          "name": "_make_doc_tab_visible",
+          "lineno": 456,
+          "complexity": 4
+        },
+        {
+          "name": "_select_prev_tool_tab",
+          "lineno": 469,
+          "complexity": 5
+        },
+        {
+          "name": "_select_next_tool_tab",
+          "lineno": 486,
+          "complexity": 5
+        },
+        {
+          "name": "_select_prev_tab",
+          "lineno": 503,
+          "complexity": 5
+        },
+        {
+          "name": "_select_next_tab",
+          "lineno": 520,
+          "complexity": 5
+        },
+        {
+          "name": "_new_tab",
+          "lineno": 537,
+          "complexity": 6
+        },
+        {
+          "name": "_truncate_tab_title",
+          "lineno": 565,
+          "complexity": 2
+        },
+        {
+          "name": "open_management_window",
+          "lineno": 571,
+          "complexity": 12
+        },
+        {
+          "name": "_window_has_focus",
+          "lineno": 600,
+          "complexity": 4
+        },
+        {
+          "name": "_window_in_selected_tab",
+          "lineno": 609,
+          "complexity": 6
+        },
+        {
+          "name": "show_about",
+          "lineno": 626,
+          "complexity": 1
+        },
+        {
+          "name": "_reregister_document",
+          "lineno": 638,
+          "complexity": 2
+        },
+        {
+          "name": "_close",
+          "lineno": 265,
+          "complexity": 2
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/safety_analysis.py",
+      "loc": 86,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 24,
+          "complexity": 1
+        },
+        {
+          "name": "create_fta_diagram",
+          "lineno": 33,
+          "complexity": 2
+        },
+        {
+          "name": "auto_generate_fta_diagram",
+          "lineno": 41,
+          "complexity": 1
+        },
+        {
+          "name": "enable_fta_actions",
+          "lineno": 44,
+          "complexity": 4
+        },
+        {
+          "name": "show_cut_sets",
+          "lineno": 56,
+          "complexity": 12
+        },
+        {
+          "name": "update_fta_statuses",
+          "lineno": 105,
+          "complexity": 1
+        },
+        {
+          "name": "update_basic_event_probabilities",
+          "lineno": 108,
+          "complexity": 1
+        },
+        {
+          "name": "update_base_event_requirement_asil",
+          "lineno": 111,
+          "complexity": 1
+        },
+        {
+          "name": "export_csv",
+          "lineno": 88,
+          "complexity": 4
+        },
+        {
+          "name": "map_nodes",
+          "lineno": 72,
+          "complexity": 2
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/fmea_service.py",
+      "loc": 175,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 16,
+          "complexity": 1
+        },
+        {
+          "name": "load_fmeas",
+          "lineno": 22,
+          "complexity": 6
+        },
+        {
+          "name": "show_fmea_list",
+          "lineno": 56,
+          "complexity": 20
+        },
+        {
+          "name": "get_settings_dict",
+          "lineno": 187,
+          "complexity": 1
+        },
+        {
+          "name": "open_selected",
+          "lineno": 91,
+          "complexity": 2
+        },
+        {
+          "name": "add_fmea",
+          "lineno": 100,
+          "complexity": 3
+        },
+        {
+          "name": "delete_fmea",
+          "lineno": 127,
+          "complexity": 5
+        },
+        {
+          "name": "rename_fmea",
+          "lineno": 144,
+          "complexity": 6
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/validation_consistency.py",
+      "loc": 204,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 12,
+          "complexity": 1
+        },
+        {
+          "name": "validate_float",
+          "lineno": 16,
+          "complexity": 7
+        },
+        {
+          "name": "compute_validation_criteria",
+          "lineno": 41,
+          "complexity": 7
+        },
+        {
+          "name": "update_validation_criteria",
+          "lineno": 64,
+          "complexity": 2
+        },
+        {
+          "name": "update_all_validation_criteria",
+          "lineno": 70,
+          "complexity": 2
+        },
+        {
+          "name": "enable_process_area",
+          "lineno": 75,
+          "complexity": 2
+        },
+        {
+          "name": "enable_work_product",
+          "lineno": 81,
+          "complexity": 14
+        },
+        {
+          "name": "can_remove_work_product",
+          "lineno": 118,
+          "complexity": 4
+        },
+        {
+          "name": "disable_work_product",
+          "lineno": 153,
+          "complexity": 25
+        },
+        {
+          "name": "ensure_fta_tab",
+          "lineno": 207,
+          "complexity": 3
+        },
+        {
+          "name": "enable_paa_actions",
+          "lineno": 219,
+          "complexity": 4
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/analysis_utils.py",
+      "loc": 45,
+      "functions": [
+        {
+          "name": "classify_scenarios",
+          "lineno": 15,
+          "complexity": 9
+        },
+        {
+          "name": "load_default_mechanisms",
+          "lineno": 37,
+          "complexity": 5
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/editing_labels_styling.py",
+      "loc": 187,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 26,
+          "complexity": 1
+        },
+        {
+          "name": "__getattr__",
+          "lineno": 29,
+          "complexity": 1
+        },
+        {
+          "name": "edit_controllability",
+          "lineno": 35,
+          "complexity": 1
+        },
+        {
+          "name": "edit_description",
+          "lineno": 41,
+          "complexity": 3
+        },
+        {
+          "name": "edit_gate_type",
+          "lineno": 57,
+          "complexity": 5
+        },
+        {
+          "name": "edit_page_flag",
+          "lineno": 74,
+          "complexity": 4
+        },
+        {
+          "name": "edit_rationale",
+          "lineno": 99,
+          "complexity": 3
+        },
+        {
+          "name": "edit_selected",
+          "lineno": 114,
+          "complexity": 8
+        },
+        {
+          "name": "edit_user_name",
+          "lineno": 140,
+          "complexity": 1
+        },
+        {
+          "name": "edit_value",
+          "lineno": 143,
+          "complexity": 6
+        },
+        {
+          "name": "rename_failure",
+          "lineno": 168,
+          "complexity": 1
+        },
+        {
+          "name": "rename_fault",
+          "lineno": 171,
+          "complexity": 1
+        },
+        {
+          "name": "rename_functional_insufficiency",
+          "lineno": 174,
+          "complexity": 1
+        },
+        {
+          "name": "rename_hazard",
+          "lineno": 177,
+          "complexity": 1
+        },
+        {
+          "name": "rename_malfunction",
+          "lineno": 180,
+          "complexity": 1
+        },
+        {
+          "name": "rename_selected_tree_item",
+          "lineno": 183,
+          "complexity": 1
+        },
+        {
+          "name": "rename_triggering_condition",
+          "lineno": 186,
+          "complexity": 1
+        },
+        {
+          "name": "apply_style",
+          "lineno": 189,
+          "complexity": 1
+        },
+        {
+          "name": "format_failure_mode_label",
+          "lineno": 194,
+          "complexity": 4
+        },
+        {
+          "name": "_resize_prop_columns",
+          "lineno": 203,
+          "complexity": 3
+        },
+        {
+          "name": "_spi_label",
+          "lineno": 224,
+          "complexity": 4
+        },
+        {
+          "name": "_product_goal_name",
+          "lineno": 233,
+          "complexity": 2
+        },
+        {
+          "name": "_create_icon",
+          "lineno": 237,
+          "complexity": 1
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/syncing_and_ids.py",
+      "loc": 157,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 13,
+          "complexity": 1
+        },
+        {
+          "name": "_collect_sync_nodes_strategy1",
+          "lineno": 19,
+          "complexity": 7
+        },
+        {
+          "name": "_collect_sync_nodes_strategy2",
+          "lineno": 38,
+          "complexity": 7
+        },
+        {
+          "name": "_collect_sync_nodes_strategy3",
+          "lineno": 57,
+          "complexity": 10
+        },
+        {
+          "name": "_collect_sync_nodes_strategy4",
+          "lineno": 80,
+          "complexity": 1
+        },
+        {
+          "name": "_collect_sync_nodes",
+          "lineno": 83,
+          "complexity": 4
+        },
+        {
+          "name": "_sync_nodes_by_id_strategy1",
+          "lineno": 101,
+          "complexity": 12
+        },
+        {
+          "name": "_sync_nodes_by_id_strategy2",
+          "lineno": 123,
+          "complexity": 10
+        },
+        {
+          "name": "_sync_nodes_by_id_strategy3",
+          "lineno": 140,
+          "complexity": 13
+        },
+        {
+          "name": "_sync_nodes_by_id_strategy4",
+          "lineno": 162,
+          "complexity": 1
+        },
+        {
+          "name": "sync_nodes_by_id",
+          "lineno": 165,
+          "complexity": 3
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/top_event_workflows.py",
+      "loc": 92,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 19,
+          "complexity": 1
+        },
+        {
+          "name": "create_top_event_for_malfunction",
+          "lineno": 24,
+          "complexity": 3
+        },
+        {
+          "name": "add_gate_from_failure_mode",
+          "lineno": 45,
+          "complexity": 9
+        },
+        {
+          "name": "get_top_event",
+          "lineno": 101,
+          "complexity": 1
+        },
+        {
+          "name": "generate_top_event_summary",
+          "lineno": 104,
+          "complexity": 1
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/page_diagram.py",
+      "loc": 453,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 19,
+          "complexity": 1
+        },
+        {
+          "name": "on_right_mouse_press",
+          "lineno": 45,
+          "complexity": 1
+        },
+        {
+          "name": "on_right_mouse_drag",
+          "lineno": 49,
+          "complexity": 1
+        },
+        {
+          "name": "on_right_mouse_release",
+          "lineno": 53,
+          "complexity": 2
+        },
+        {
+          "name": "find_node_at_position",
+          "lineno": 61,
+          "complexity": 3
+        },
+        {
+          "name": "on_ctrl_mousewheel",
+          "lineno": 69,
+          "complexity": 2
+        },
+        {
+          "name": "get_all_nodes",
+          "lineno": 75,
+          "complexity": 8
+        },
+        {
+          "name": "rc_on_press",
+          "lineno": 96,
+          "complexity": 1
+        },
+        {
+          "name": "rc_on_motion",
+          "lineno": 101,
+          "complexity": 1
+        },
+        {
+          "name": "rc_on_release",
+          "lineno": 105,
+          "complexity": 2
+        },
+        {
+          "name": "show_context_menu",
+          "lineno": 109,
+          "complexity": 8
+        },
+        {
+          "name": "context_edit",
+          "lineno": 145,
+          "complexity": 1
+        },
+        {
+          "name": "context_remove",
+          "lineno": 152,
+          "complexity": 1
+        },
+        {
+          "name": "context_delete",
+          "lineno": 158,
+          "complexity": 1
+        },
+        {
+          "name": "context_copy",
+          "lineno": 164,
+          "complexity": 1
+        },
+        {
+          "name": "context_cut",
+          "lineno": 168,
+          "complexity": 1
+        },
+        {
+          "name": "context_paste",
+          "lineno": 172,
+          "complexity": 1
+        },
+        {
+          "name": "context_edit_page_flag",
+          "lineno": 176,
+          "complexity": 1
+        },
+        {
+          "name": "context_add",
+          "lineno": 181,
+          "complexity": 1
+        },
+        {
+          "name": "context_add_gate_from_failure_mode",
+          "lineno": 187,
+          "complexity": 1
+        },
+        {
+          "name": "context_add_fault_event",
+          "lineno": 193,
+          "complexity": 1
+        },
+        {
+          "name": "on_canvas_click",
+          "lineno": 199,
+          "complexity": 6
+        },
+        {
+          "name": "on_canvas_double_click",
+          "lineno": 219,
+          "complexity": 4
+        },
+        {
+          "name": "on_canvas_drag",
+          "lineno": 235,
+          "complexity": 3
+        },
+        {
+          "name": "on_canvas_release",
+          "lineno": 250,
+          "complexity": 2
+        },
+        {
+          "name": "zoom_in",
+          "lineno": 260,
+          "complexity": 1
+        },
+        {
+          "name": "zoom_out",
+          "lineno": 265,
+          "complexity": 1
+        },
+        {
+          "name": "auto_arrange",
+          "lineno": 270,
+          "complexity": 9
+        },
+        {
+          "name": "redraw_canvas",
+          "lineno": 302,
+          "complexity": 8
+        },
+        {
+          "name": "draw_connections",
+          "lineno": 324,
+          "complexity": 8
+        },
+        {
+          "name": "draw_node",
+          "lineno": 346,
+          "complexity": 19
+        },
+        {
+          "name": "rec",
+          "lineno": 80,
+          "complexity": 7
+        },
+        {
+          "name": "layout",
+          "lineno": 277,
+          "complexity": 3
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/open_windows_features.py",
+      "loc": 329,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 19,
+          "complexity": 1
+        },
+        {
+          "name": "open_reliability_window",
+          "lineno": 23,
+          "complexity": 1
+        },
+        {
+          "name": "open_fmeda_window",
+          "lineno": 26,
+          "complexity": 1
+        },
+        {
+          "name": "open_hazop_window",
+          "lineno": 29,
+          "complexity": 1
+        },
+        {
+          "name": "open_risk_assessment_window",
+          "lineno": 32,
+          "complexity": 1
+        },
+        {
+          "name": "open_stpa_window",
+          "lineno": 35,
+          "complexity": 1
+        },
+        {
+          "name": "open_threat_window",
+          "lineno": 38,
+          "complexity": 1
+        },
+        {
+          "name": "open_fi2tc_window",
+          "lineno": 41,
+          "complexity": 1
+        },
+        {
+          "name": "open_tc2fi_window",
+          "lineno": 44,
+          "complexity": 1
+        },
+        {
+          "name": "open_fault_prioritization_window",
+          "lineno": 47,
+          "complexity": 1
+        },
+        {
+          "name": "open_safety_management_toolbox",
+          "lineno": 51,
+          "complexity": 8
+        },
+        {
+          "name": "open_management_window",
+          "lineno": 88,
+          "complexity": 1
+        },
+        {
+          "name": "manage_architecture",
+          "lineno": 91,
+          "complexity": 3
+        },
+        {
+          "name": "manage_safety_management",
+          "lineno": 101,
+          "complexity": 4
+        },
+        {
+          "name": "manage_mechanism_libraries",
+          "lineno": 119,
+          "complexity": 31
+        },
+        {
+          "name": "refresh_libs",
+          "lineno": 145,
+          "complexity": 2
+        },
+        {
+          "name": "refresh_mechs",
+          "lineno": 151,
+          "complexity": 3
+        },
+        {
+          "name": "hide_tip",
+          "lineno": 172,
+          "complexity": 2
+        },
+        {
+          "name": "show_tip",
+          "lineno": 178,
+          "complexity": 2
+        },
+        {
+          "name": "on_tree_motion",
+          "lineno": 199,
+          "complexity": 4
+        },
+        {
+          "name": "add_lib",
+          "lineno": 209,
+          "complexity": 2
+        },
+        {
+          "name": "edit_lib",
+          "lineno": 216,
+          "complexity": 3
+        },
+        {
+          "name": "del_lib",
+          "lineno": 226,
+          "complexity": 2
+        },
+        {
+          "name": "clone_lib",
+          "lineno": 233,
+          "complexity": 6
+        },
+        {
+          "name": "add_mech",
+          "lineno": 264,
+          "complexity": 5
+        },
+        {
+          "name": "edit_mech",
+          "lineno": 309,
+          "complexity": 5
+        },
+        {
+          "name": "del_mech",
+          "lineno": 352,
+          "complexity": 3
+        },
+        {
+          "name": "body",
+          "lineno": 271,
+          "complexity": 2
+        },
+        {
+          "name": "apply",
+          "lineno": 292,
+          "complexity": 2
+        },
+        {
+          "name": "body",
+          "lineno": 319,
+          "complexity": 2
+        },
+        {
+          "name": "apply",
+          "lineno": 342,
+          "complexity": 2
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/__init__.py",
+      "loc": 0,
+      "functions": []
+    },
+    {
+      "file": "mainappsrc/core/versioning_review.py",
+      "loc": 36,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 14,
+          "complexity": 1
+        },
+        {
+          "name": "add_version",
+          "lineno": 18,
+          "complexity": 1
+        },
+        {
+          "name": "compare_versions",
+          "lineno": 21,
+          "complexity": 1
+        },
+        {
+          "name": "open_review_document",
+          "lineno": 24,
+          "complexity": 1
+        },
+        {
+          "name": "open_review_toolbox",
+          "lineno": 27,
+          "complexity": 1
+        },
+        {
+          "name": "start_joint_review",
+          "lineno": 30,
+          "complexity": 1
+        },
+        {
+          "name": "start_peer_review",
+          "lineno": 33,
+          "complexity": 1
+        },
+        {
+          "name": "merge_review_comments",
+          "lineno": 36,
+          "complexity": 1
+        },
+        {
+          "name": "send_review_email",
+          "lineno": 39,
+          "complexity": 1
+        },
+        {
+          "name": "review_is_closed",
+          "lineno": 42,
+          "complexity": 1
+        },
+        {
+          "name": "review_is_closed_for",
+          "lineno": 45,
+          "complexity": 1
+        },
+        {
+          "name": "invalidate_reviews_for_hara",
+          "lineno": 48,
+          "complexity": 1
+        },
+        {
+          "name": "invalidate_reviews_for_requirement",
+          "lineno": 51,
+          "complexity": 1
+        },
+        {
+          "name": "get_review_targets",
+          "lineno": 54,
+          "complexity": 1
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/editors.py",
+      "loc": 362,
+      "functions": [
+        {
+          "name": "show_item_definition_editor",
+          "lineno": 37,
+          "complexity": 3
+        },
+        {
+          "name": "show_safety_concept_editor",
+          "lineno": 63,
+          "complexity": 3
+        },
+        {
+          "name": "show_requirements_editor",
+          "lineno": 116,
+          "complexity": 60
+        },
+        {
+          "name": "save",
+          "lineno": 53,
+          "complexity": 1
+        },
+        {
+          "name": "save",
+          "lineno": 105,
+          "complexity": 1
+        },
+        {
+          "name": "_get_requirement_allocations",
+          "lineno": 155,
+          "complexity": 6
+        },
+        {
+          "name": "refresh_tree",
+          "lineno": 167,
+          "complexity": 3
+        },
+        {
+          "name": "add_req",
+          "lineno": 196,
+          "complexity": 2
+        },
+        {
+          "name": "edit_req",
+          "lineno": 202,
+          "complexity": 3
+        },
+        {
+          "name": "del_req",
+          "lineno": 212,
+          "complexity": 8
+        },
+        {
+          "name": "link_to_diagram",
+          "lineno": 228,
+          "complexity": 21
+        },
+        {
+          "name": "link_requirement",
+          "lineno": 293,
+          "complexity": 7
+        },
+        {
+          "name": "save_csv",
+          "lineno": 318,
+          "complexity": 6
+        },
+        {
+          "name": "_popup",
+          "lineno": 366,
+          "complexity": 3
+        },
+        {
+          "name": "_on_double",
+          "lineno": 376,
+          "complexity": 2
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/window_controllers.py",
+      "loc": 208,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 33,
+          "complexity": 1
+        },
+        {
+          "name": "open_use_case_diagram",
+          "lineno": 38,
+          "complexity": 1
+        },
+        {
+          "name": "open_activity_diagram",
+          "lineno": 41,
+          "complexity": 1
+        },
+        {
+          "name": "open_block_diagram",
+          "lineno": 44,
+          "complexity": 1
+        },
+        {
+          "name": "open_internal_block_diagram",
+          "lineno": 47,
+          "complexity": 1
+        },
+        {
+          "name": "open_control_flow_diagram",
+          "lineno": 50,
+          "complexity": 1
+        },
+        {
+          "name": "open_causal_bayesian_network_window",
+          "lineno": 53,
+          "complexity": 1
+        },
+        {
+          "name": "open_gsn_diagram",
+          "lineno": 56,
+          "complexity": 1
+        },
+        {
+          "name": "open_arch_window",
+          "lineno": 59,
+          "complexity": 11
+        },
+        {
+          "name": "open_page_diagram",
+          "lineno": 89,
+          "complexity": 5
+        },
+        {
+          "name": "_gsn_window_strategy1",
+          "lineno": 131,
+          "complexity": 4
+        },
+        {
+          "name": "_gsn_window_strategy2",
+          "lineno": 137,
+          "complexity": 5
+        },
+        {
+          "name": "_gsn_window_strategy3",
+          "lineno": 144,
+          "complexity": 3
+        },
+        {
+          "name": "_gsn_window_strategy4",
+          "lineno": 150,
+          "complexity": 4
+        },
+        {
+          "name": "_focused_gsn_window",
+          "lineno": 157,
+          "complexity": 3
+        },
+        {
+          "name": "_cbn_window_strategy1",
+          "lineno": 169,
+          "complexity": 3
+        },
+        {
+          "name": "_cbn_window_strategy2",
+          "lineno": 175,
+          "complexity": 4
+        },
+        {
+          "name": "_cbn_window_strategy3",
+          "lineno": 182,
+          "complexity": 2
+        },
+        {
+          "name": "_cbn_window_strategy4",
+          "lineno": 188,
+          "complexity": 3
+        },
+        {
+          "name": "_focused_cbn_window",
+          "lineno": 195,
+          "complexity": 3
+        },
+        {
+          "name": "_arch_window_strategy1",
+          "lineno": 207,
+          "complexity": 6
+        },
+        {
+          "name": "_arch_window_strategy2",
+          "lineno": 214,
+          "complexity": 7
+        },
+        {
+          "name": "_arch_window_strategy3",
+          "lineno": 222,
+          "complexity": 5
+        },
+        {
+          "name": "_arch_window_strategy4",
+          "lineno": 229,
+          "complexity": 6
+        },
+        {
+          "name": "_focused_arch_window",
+          "lineno": 237,
+          "complexity": 3
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/automl_core.py",
+      "loc": 8835,
+      "functions": [
+        {
+          "name": "format_requirement",
+          "lineno": 501,
+          "complexity": 6
+        },
+        {
+          "name": "_reload_local_config",
+          "lineno": 531,
+          "complexity": 1
+        },
+        {
+          "name": "load_user_data",
+          "lineno": 10134,
+          "complexity": 2
+        },
+        {
+          "name": "main",
+          "lineno": 10142,
+          "complexity": 8
+        },
+        {
+          "name": "fmedas",
+          "lineno": 574,
+          "complexity": 1
+        },
+        {
+          "name": "fmedas",
+          "lineno": 578,
+          "complexity": 1
+        },
+        {
+          "name": "window_controllers",
+          "lineno": 615,
+          "complexity": 2
+        },
+        {
+          "name": "top_event_workflows",
+          "lineno": 621,
+          "complexity": 2
+        },
+        {
+          "name": "__getattr__",
+          "lineno": 626,
+          "complexity": 5
+        },
+        {
+          "name": "__init__",
+          "lineno": 646,
+          "complexity": 11
+        },
+        {
+          "name": "show_properties",
+          "lineno": 1547,
+          "complexity": 1
+        },
+        {
+          "name": "_add_tool_category",
+          "lineno": 1550,
+          "complexity": 1
+        },
+        {
+          "name": "_add_lifecycle_requirements_menu",
+          "lineno": 1553,
+          "complexity": 1
+        },
+        {
+          "name": "_init_nav_button_style",
+          "lineno": 1556,
+          "complexity": 1
+        },
+        {
+          "name": "_limit_explorer_size",
+          "lineno": 1559,
+          "complexity": 1
+        },
+        {
+          "name": "_animate_explorer_show",
+          "lineno": 1562,
+          "complexity": 1
+        },
+        {
+          "name": "_animate_explorer_hide",
+          "lineno": 1565,
+          "complexity": 1
+        },
+        {
+          "name": "_schedule_explorer_hide",
+          "lineno": 1568,
+          "complexity": 1
+        },
+        {
+          "name": "_cancel_explorer_hide",
+          "lineno": 1571,
+          "complexity": 1
+        },
+        {
+          "name": "show_explorer",
+          "lineno": 1574,
+          "complexity": 1
+        },
+        {
+          "name": "hide_explorer",
+          "lineno": 1577,
+          "complexity": 1
+        },
+        {
+          "name": "toggle_explorer_pin",
+          "lineno": 1580,
+          "complexity": 1
+        },
+        {
+          "name": "toggle_logs",
+          "lineno": 1583,
+          "complexity": 1
+        },
+        {
+          "name": "open_metrics_tab",
+          "lineno": 1586,
+          "complexity": 1
+        },
+        {
+          "name": "open_management_window",
+          "lineno": 1589,
+          "complexity": 1
+        },
+        {
+          "name": "_register_close",
+          "lineno": 1592,
+          "complexity": 1
+        },
+        {
+          "name": "_reregister_document",
+          "lineno": 1595,
+          "complexity": 1
+        },
+        {
+          "name": "touch_doc",
+          "lineno": 1598,
+          "complexity": 1
+        },
+        {
+          "name": "show_about",
+          "lineno": 1601,
+          "complexity": 1
+        },
+        {
+          "name": "_window_has_focus",
+          "lineno": 1604,
+          "complexity": 1
+        },
+        {
+          "name": "_window_in_selected_tab",
+          "lineno": 1607,
+          "complexity": 1
+        },
+        {
+          "name": "_on_tab_change",
+          "lineno": 1610,
+          "complexity": 1
+        },
+        {
+          "name": "_on_tab_close",
+          "lineno": 1613,
+          "complexity": 1
+        },
+        {
+          "name": "_on_doc_tab_motion",
+          "lineno": 1616,
+          "complexity": 1
+        },
+        {
+          "name": "_on_tool_tab_motion",
+          "lineno": 1619,
+          "complexity": 1
+        },
+        {
+          "name": "_make_doc_tab_visible",
+          "lineno": 1622,
+          "complexity": 1
+        },
+        {
+          "name": "_update_doc_tab_visibility",
+          "lineno": 1625,
+          "complexity": 1
+        },
+        {
+          "name": "_update_tool_tab_visibility",
+          "lineno": 1628,
+          "complexity": 1
+        },
+        {
+          "name": "_truncate_tab_title",
+          "lineno": 1631,
+          "complexity": 1
+        },
+        {
+          "name": "_select_next_tab",
+          "lineno": 1634,
+          "complexity": 1
+        },
+        {
+          "name": "_select_prev_tab",
+          "lineno": 1637,
+          "complexity": 1
+        },
+        {
+          "name": "_select_next_tool_tab",
+          "lineno": 1640,
+          "complexity": 1
+        },
+        {
+          "name": "_select_prev_tool_tab",
+          "lineno": 1643,
+          "complexity": 1
+        },
+        {
+          "name": "_new_tab",
+          "lineno": 1646,
+          "complexity": 1
+        },
+        {
+          "name": "edit_controllability",
+          "lineno": 1652,
+          "complexity": 1
+        },
+        {
+          "name": "edit_description",
+          "lineno": 1655,
+          "complexity": 1
+        },
+        {
+          "name": "edit_gate_type",
+          "lineno": 1658,
+          "complexity": 1
+        },
+        {
+          "name": "edit_page_flag",
+          "lineno": 1661,
+          "complexity": 1
+        },
+        {
+          "name": "edit_rationale",
+          "lineno": 1664,
+          "complexity": 1
+        },
+        {
+          "name": "edit_selected",
+          "lineno": 1667,
+          "complexity": 1
+        },
+        {
+          "name": "edit_user_name",
+          "lineno": 1670,
+          "complexity": 1
+        },
+        {
+          "name": "edit_value",
+          "lineno": 1673,
+          "complexity": 1
+        },
+        {
+          "name": "rename_failure",
+          "lineno": 1676,
+          "complexity": 1
+        },
+        {
+          "name": "rename_fault",
+          "lineno": 1679,
+          "complexity": 1
+        },
+        {
+          "name": "rename_functional_insufficiency",
+          "lineno": 1682,
+          "complexity": 1
+        },
+        {
+          "name": "rename_hazard",
+          "lineno": 1685,
+          "complexity": 1
+        },
+        {
+          "name": "rename_malfunction",
+          "lineno": 1688,
+          "complexity": 1
+        },
+        {
+          "name": "rename_selected_tree_item",
+          "lineno": 1691,
+          "complexity": 1
+        },
+        {
+          "name": "rename_triggering_condition",
+          "lineno": 1694,
+          "complexity": 1
+        },
+        {
+          "name": "apply_style",
+          "lineno": 1697,
+          "complexity": 1
+        },
+        {
+          "name": "format_failure_mode_label",
+          "lineno": 1700,
+          "complexity": 1
+        },
+        {
+          "name": "_resize_prop_columns",
+          "lineno": 1703,
+          "complexity": 1
+        },
+        {
+          "name": "_spi_label",
+          "lineno": 1706,
+          "complexity": 1
+        },
+        {
+          "name": "_product_goal_name",
+          "lineno": 1709,
+          "complexity": 1
+        },
+        {
+          "name": "_create_icon",
+          "lineno": 1712,
+          "complexity": 1
+        },
+        {
+          "name": "fmeas",
+          "lineno": 1716,
+          "complexity": 2
+        },
+        {
+          "name": "fmeas",
+          "lineno": 1722,
+          "complexity": 2
+        },
+        {
+          "name": "show_fmea_list",
+          "lineno": 1727,
+          "complexity": 1
+        },
+        {
+          "name": "get_requirement_allocation_names",
+          "lineno": 1732,
+          "complexity": 1
+        },
+        {
+          "name": "get_requirement_goal_names",
+          "lineno": 1735,
+          "complexity": 1
+        },
+        {
+          "name": "format_requirement_with_trace",
+          "lineno": 1738,
+          "complexity": 1
+        },
+        {
+          "name": "build_requirement_diff_html",
+          "lineno": 1741,
+          "complexity": 1
+        },
+        {
+          "name": "generate_recommendations_for_top_event",
+          "lineno": 1744,
+          "complexity": 1
+        },
+        {
+          "name": "back_all_pages",
+          "lineno": 1747,
+          "complexity": 1
+        },
+        {
+          "name": "move_top_event_up",
+          "lineno": 1750,
+          "complexity": 1
+        },
+        {
+          "name": "move_top_event_down",
+          "lineno": 1753,
+          "complexity": 1
+        },
+        {
+          "name": "get_top_level_nodes",
+          "lineno": 1756,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_nodes_no_filter",
+          "lineno": 1759,
+          "complexity": 1
+        },
+        {
+          "name": "derive_requirements_for_event",
+          "lineno": 1762,
+          "complexity": 1
+        },
+        {
+          "name": "get_combined_safety_requirements",
+          "lineno": 1765,
+          "complexity": 1
+        },
+        {
+          "name": "get_top_event",
+          "lineno": 1768,
+          "complexity": 1
+        },
+        {
+          "name": "aggregate_safety_requirements",
+          "lineno": 1771,
+          "complexity": 1
+        },
+        {
+          "name": "generate_top_event_summary",
+          "lineno": 1774,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_nodes",
+          "lineno": 1777,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_nodes_table",
+          "lineno": 1780,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_nodes_in_model",
+          "lineno": 1783,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_basic_events",
+          "lineno": 1786,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_gates",
+          "lineno": 1789,
+          "complexity": 1
+        },
+        {
+          "name": "metric_to_text",
+          "lineno": 1792,
+          "complexity": 1
+        },
+        {
+          "name": "assurance_level_text",
+          "lineno": 1795,
+          "complexity": 1
+        },
+        {
+          "name": "calculate_cut_sets",
+          "lineno": 1798,
+          "complexity": 1
+        },
+        {
+          "name": "build_hierarchical_argumentation",
+          "lineno": 1801,
+          "complexity": 1
+        },
+        {
+          "name": "build_hierarchical_argumentation_common",
+          "lineno": 1804,
+          "complexity": 1
+        },
+        {
+          "name": "build_page_argumentation",
+          "lineno": 1807,
+          "complexity": 1
+        },
+        {
+          "name": "build_unified_recommendation_table",
+          "lineno": 1810,
+          "complexity": 1
+        },
+        {
+          "name": "build_dynamic_recommendations_table",
+          "lineno": 1813,
+          "complexity": 1
+        },
+        {
+          "name": "build_base_events_table_html",
+          "lineno": 1816,
+          "complexity": 1
+        },
+        {
+          "name": "get_extra_recommendations_list",
+          "lineno": 1819,
+          "complexity": 1
+        },
+        {
+          "name": "get_extra_recommendations_from_level",
+          "lineno": 1822,
+          "complexity": 1
+        },
+        {
+          "name": "get_recommendation_from_description",
+          "lineno": 1825,
+          "complexity": 1
+        },
+        {
+          "name": "build_argumentation",
+          "lineno": 1828,
+          "complexity": 1
+        },
+        {
+          "name": "auto_create_argumentation",
+          "lineno": 1831,
+          "complexity": 1
+        },
+        {
+          "name": "analyze_common_causes",
+          "lineno": 1834,
+          "complexity": 1
+        },
+        {
+          "name": "build_text_report",
+          "lineno": 1837,
+          "complexity": 1
+        },
+        {
+          "name": "all_children_are_base_events",
+          "lineno": 1840,
+          "complexity": 1
+        },
+        {
+          "name": "build_simplified_fta_model",
+          "lineno": 1843,
+          "complexity": 1
+        },
+        {
+          "name": "auto_generate_fta_diagram",
+          "lineno": 1847,
+          "complexity": 1
+        },
+        {
+          "name": "find_node_by_id_all",
+          "lineno": 1850,
+          "complexity": 1
+        },
+        {
+          "name": "get_hazop_by_name",
+          "lineno": 1853,
+          "complexity": 1
+        },
+        {
+          "name": "get_hara_by_name",
+          "lineno": 1856,
+          "complexity": 1
+        },
+        {
+          "name": "update_hara_statuses",
+          "lineno": 1859,
+          "complexity": 1
+        },
+        {
+          "name": "update_fta_statuses",
+          "lineno": 1862,
+          "complexity": 1
+        },
+        {
+          "name": "get_safety_goal_asil",
+          "lineno": 1865,
+          "complexity": 1
+        },
+        {
+          "name": "get_hara_goal_asil",
+          "lineno": 1868,
+          "complexity": 1
+        },
+        {
+          "name": "get_cyber_goal_cal",
+          "lineno": 1871,
+          "complexity": 1
+        },
+        {
+          "name": "get_top_event_safety_goals",
+          "lineno": 1874,
+          "complexity": 1
+        },
+        {
+          "name": "get_safety_goals_for_malfunctions",
+          "lineno": 1877,
+          "complexity": 8
+        },
+        {
+          "name": "is_malfunction_used",
+          "lineno": 1888,
+          "complexity": 7
+        },
+        {
+          "name": "add_malfunction",
+          "lineno": 1901,
+          "complexity": 1
+        },
+        {
+          "name": "add_fault",
+          "lineno": 1904,
+          "complexity": 1
+        },
+        {
+          "name": "add_failure",
+          "lineno": 1907,
+          "complexity": 1
+        },
+        {
+          "name": "add_hazard",
+          "lineno": 1910,
+          "complexity": 1
+        },
+        {
+          "name": "add_triggering_condition",
+          "lineno": 1913,
+          "complexity": 1
+        },
+        {
+          "name": "delete_triggering_condition",
+          "lineno": 1916,
+          "complexity": 1
+        },
+        {
+          "name": "add_functional_insufficiency",
+          "lineno": 1920,
+          "complexity": 1
+        },
+        {
+          "name": "delete_functional_insufficiency",
+          "lineno": 1923,
+          "complexity": 1
+        },
+        {
+          "name": "_update_shared_product_goals",
+          "lineno": 1927,
+          "complexity": 7
+        },
+        {
+          "name": "update_hazard_severity",
+          "lineno": 1951,
+          "complexity": 1
+        },
+        {
+          "name": "calculate_fmeda_metrics",
+          "lineno": 1955,
+          "complexity": 1
+        },
+        {
+          "name": "compute_fmeda_metrics",
+          "lineno": 1959,
+          "complexity": 1
+        },
+        {
+          "name": "sync_hara_to_safety_goals",
+          "lineno": 1963,
+          "complexity": 1
+        },
+        {
+          "name": "sync_cyber_risk_to_goals",
+          "lineno": 1967,
+          "complexity": 1
+        },
+        {
+          "name": "add_top_level_event",
+          "lineno": 1971,
+          "complexity": 4
+        },
+        {
+          "name": "_build_probability_frame",
+          "lineno": 1994,
+          "complexity": 1
+        },
+        {
+          "name": "_apply_project_properties",
+          "lineno": 1997,
+          "complexity": 8
+        },
+        {
+          "name": "edit_project_properties",
+          "lineno": 2027,
+          "complexity": 12
+        },
+        {
+          "name": "create_diagram_image",
+          "lineno": 2131,
+          "complexity": 1
+        },
+        {
+          "name": "get_page_nodes",
+          "lineno": 2134,
+          "complexity": 1
+        },
+        {
+          "name": "capture_page_diagram",
+          "lineno": 2137,
+          "complexity": 1
+        },
+        {
+          "name": "capture_gsn_diagram",
+          "lineno": 2140,
+          "complexity": 5
+        },
+        {
+          "name": "capture_sysml_diagram",
+          "lineno": 2176,
+          "complexity": 10
+        },
+        {
+          "name": "capture_cbn_diagram",
+          "lineno": 2221,
+          "complexity": 5
+        },
+        {
+          "name": "draw_subtree_with_filter",
+          "lineno": 2253,
+          "complexity": 2
+        },
+        {
+          "name": "draw_subtree",
+          "lineno": 2258,
+          "complexity": 2
+        },
+        {
+          "name": "draw_connections_subtree",
+          "lineno": 2265,
+          "complexity": 6
+        },
+        {
+          "name": "draw_node_on_canvas_pdf",
+          "lineno": 2283,
+          "complexity": 13
+        },
+        {
+          "name": "rename_selected_tree_item",
+          "lineno": 2389,
+          "complexity": 1
+        },
+        {
+          "name": "save_diagram_png",
+          "lineno": 2392,
+          "complexity": 1
+        },
+        {
+          "name": "on_treeview_click",
+          "lineno": 2395,
+          "complexity": 1
+        },
+        {
+          "name": "on_analysis_tree_double_click",
+          "lineno": 2398,
+          "complexity": 1
+        },
+        {
+          "name": "on_analysis_tree_right_click",
+          "lineno": 2401,
+          "complexity": 1
+        },
+        {
+          "name": "on_analysis_tree_select",
+          "lineno": 2404,
+          "complexity": 1
+        },
+        {
+          "name": "on_tool_list_double_click",
+          "lineno": 2407,
+          "complexity": 1
+        },
+        {
+          "name": "_on_toolbox_change",
+          "lineno": 2410,
+          "complexity": 1
+        },
+        {
+          "name": "apply_governance_rules",
+          "lineno": 2413,
+          "complexity": 1
+        },
+        {
+          "name": "refresh_tool_enablement",
+          "lineno": 2417,
+          "complexity": 1
+        },
+        {
+          "name": "update_lifecycle_cb",
+          "lineno": 2420,
+          "complexity": 1
+        },
+        {
+          "name": "_export_toolbox_dict",
+          "lineno": 2423,
+          "complexity": 2
+        },
+        {
+          "name": "on_lifecycle_selected",
+          "lineno": 2431,
+          "complexity": 13
+        },
+        {
+          "name": "enable_process_area",
+          "lineno": 2469,
+          "complexity": 1
+        },
+        {
+          "name": "enable_work_product",
+          "lineno": 2472,
+          "complexity": 1
+        },
+        {
+          "name": "can_remove_work_product",
+          "lineno": 2475,
+          "complexity": 1
+        },
+        {
+          "name": "disable_work_product",
+          "lineno": 2478,
+          "complexity": 1
+        },
+        {
+          "name": "open_work_product",
+          "lineno": 2481,
+          "complexity": 17
+        },
+        {
+          "name": "on_ctrl_mousewheel",
+          "lineno": 2522,
+          "complexity": 1
+        },
+        {
+          "name": "new_model",
+          "lineno": 2525,
+          "complexity": 1
+        },
+        {
+          "name": "compute_occurrence_counts",
+          "lineno": 2528,
+          "complexity": 4
+        },
+        {
+          "name": "get_node_fill_color",
+          "lineno": 2547,
+          "complexity": 4
+        },
+        {
+          "name": "on_right_mouse_press",
+          "lineno": 2566,
+          "complexity": 1
+        },
+        {
+          "name": "on_right_mouse_drag",
+          "lineno": 2569,
+          "complexity": 1
+        },
+        {
+          "name": "on_right_mouse_release",
+          "lineno": 2572,
+          "complexity": 1
+        },
+        {
+          "name": "show_context_menu",
+          "lineno": 2575,
+          "complexity": 1
+        },
+        {
+          "name": "on_canvas_click",
+          "lineno": 2578,
+          "complexity": 1
+        },
+        {
+          "name": "on_canvas_double_click",
+          "lineno": 2581,
+          "complexity": 1
+        },
+        {
+          "name": "on_canvas_drag",
+          "lineno": 2584,
+          "complexity": 1
+        },
+        {
+          "name": "on_canvas_release",
+          "lineno": 2587,
+          "complexity": 1
+        },
+        {
+          "name": "move_subtree",
+          "lineno": 2590,
+          "complexity": 1
+        },
+        {
+          "name": "zoom_in",
+          "lineno": 2593,
+          "complexity": 1
+        },
+        {
+          "name": "zoom_out",
+          "lineno": 2598,
+          "complexity": 1
+        },
+        {
+          "name": "auto_arrange",
+          "lineno": 2607,
+          "complexity": 9
+        },
+        {
+          "name": "get_all_triggering_conditions",
+          "lineno": 2638,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_functional_insufficiencies",
+          "lineno": 2641,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_scenario_names",
+          "lineno": 2644,
+          "complexity": 1
+        },
+        {
+          "name": "get_validation_targets_for_odd",
+          "lineno": 2647,
+          "complexity": 22
+        },
+        {
+          "name": "get_scenario_exposure",
+          "lineno": 2699,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_scenery_names",
+          "lineno": 2702,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_function_names",
+          "lineno": 2706,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_action_names",
+          "lineno": 2709,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_action_labels",
+          "lineno": 2712,
+          "complexity": 1
+        },
+        {
+          "name": "get_use_case_for_function",
+          "lineno": 2715,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_component_names",
+          "lineno": 2718,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_part_names",
+          "lineno": 2721,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_malfunction_names",
+          "lineno": 2724,
+          "complexity": 1
+        },
+        {
+          "name": "get_hazards_for_malfunction",
+          "lineno": 2727,
+          "complexity": 9
+        },
+        {
+          "name": "update_odd_elements",
+          "lineno": 2742,
+          "complexity": 2
+        },
+        {
+          "name": "update_hazard_list",
+          "lineno": 2748,
+          "complexity": 17
+        },
+        {
+          "name": "update_failure_list",
+          "lineno": 2797,
+          "complexity": 4
+        },
+        {
+          "name": "update_triggering_condition_list",
+          "lineno": 2806,
+          "complexity": 9
+        },
+        {
+          "name": "update_functional_insufficiency_list",
+          "lineno": 2822,
+          "complexity": 9
+        },
+        {
+          "name": "get_entry_field",
+          "lineno": 2838,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_failure_modes",
+          "lineno": 2841,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_fmea_entries",
+          "lineno": 2844,
+          "complexity": 1
+        },
+        {
+          "name": "get_non_basic_failure_modes",
+          "lineno": 2847,
+          "complexity": 1
+        },
+        {
+          "name": "get_available_failure_modes_for_gates",
+          "lineno": 2850,
+          "complexity": 4
+        },
+        {
+          "name": "get_failure_mode_node",
+          "lineno": 2860,
+          "complexity": 1
+        },
+        {
+          "name": "get_component_name_for_node",
+          "lineno": 2863,
+          "complexity": 1
+        },
+        {
+          "name": "get_failure_modes_for_malfunction",
+          "lineno": 2866,
+          "complexity": 1
+        },
+        {
+          "name": "get_faults_for_failure_mode",
+          "lineno": 2869,
+          "complexity": 5
+        },
+        {
+          "name": "get_fit_for_fault",
+          "lineno": 2881,
+          "complexity": 6
+        },
+        {
+          "name": "update_views",
+          "lineno": 2897,
+          "complexity": 113
+        },
+        {
+          "name": "update_basic_event_probabilities",
+          "lineno": 3284,
+          "complexity": 1
+        },
+        {
+          "name": "validate_float",
+          "lineno": 3287,
+          "complexity": 7
+        },
+        {
+          "name": "compute_failure_prob",
+          "lineno": 3316,
+          "complexity": 1
+        },
+        {
+          "name": "propagate_failure_mode_attributes",
+          "lineno": 3320,
+          "complexity": 3
+        },
+        {
+          "name": "refresh_model",
+          "lineno": 3331,
+          "complexity": 14
+        },
+        {
+          "name": "refresh_all",
+          "lineno": 3377,
+          "complexity": 7
+        },
+        {
+          "name": "insert_node_in_tree",
+          "lineno": 3399,
+          "complexity": 1
+        },
+        {
+          "name": "redraw_canvas",
+          "lineno": 3402,
+          "complexity": 8
+        },
+        {
+          "name": "create_diagram_image_without_grid",
+          "lineno": 3419,
+          "complexity": 1
+        },
+        {
+          "name": "draw_connections",
+          "lineno": 3422,
+          "complexity": 7
+        },
+        {
+          "name": "draw_node",
+          "lineno": 3439,
+          "complexity": 35
+        },
+        {
+          "name": "find_node_by_id",
+          "lineno": 3705,
+          "complexity": 1
+        },
+        {
+          "name": "is_descendant",
+          "lineno": 3708,
+          "complexity": 1
+        },
+        {
+          "name": "add_node_of_type",
+          "lineno": 3711,
+          "complexity": 16
+        },
+        {
+          "name": "add_basic_event_from_fmea",
+          "lineno": 3787,
+          "complexity": 11
+        },
+        {
+          "name": "add_basic_event_from_fmea",
+          "lineno": 3830,
+          "complexity": 11
+        },
+        {
+          "name": "add_basic_event_from_fmea",
+          "lineno": 3873,
+          "complexity": 11
+        },
+        {
+          "name": "remove_node",
+          "lineno": 3917,
+          "complexity": 1
+        },
+        {
+          "name": "remove_connection",
+          "lineno": 3920,
+          "complexity": 1
+        },
+        {
+          "name": "delete_node_and_subtree",
+          "lineno": 3923,
+          "complexity": 1
+        },
+        {
+          "name": "create_top_event_for_malfunction",
+          "lineno": 3929,
+          "complexity": 1
+        },
+        {
+          "name": "delete_top_events_for_malfunction",
+          "lineno": 3932,
+          "complexity": 9
+        },
+        {
+          "name": "add_gate_from_failure_mode",
+          "lineno": 3955,
+          "complexity": 1
+        },
+        {
+          "name": "add_fault_event",
+          "lineno": 3958,
+          "complexity": 15
+        },
+        {
+          "name": "calculate_overall",
+          "lineno": 4012,
+          "complexity": 1
+        },
+        {
+          "name": "calculate_pmfh",
+          "lineno": 4015,
+          "complexity": 1
+        },
+        {
+          "name": "show_requirements_matrix",
+          "lineno": 4018,
+          "complexity": 58
+        },
+        {
+          "name": "show_fmeda_list",
+          "lineno": 4178,
+          "complexity": 1
+        },
+        {
+          "name": "show_triggering_condition_list",
+          "lineno": 4181,
+          "complexity": 19
+        },
+        {
+          "name": "show_hazard_list",
+          "lineno": 4266,
+          "complexity": 1
+        },
+        {
+          "name": "show_malfunction_editor",
+          "lineno": 4269,
+          "complexity": 11
+        },
+        {
+          "name": "show_fault_list",
+          "lineno": 4324,
+          "complexity": 9
+        },
+        {
+          "name": "show_failure_list",
+          "lineno": 4374,
+          "complexity": 9
+        },
+        {
+          "name": "show_hazard_editor",
+          "lineno": 4429,
+          "complexity": 1
+        },
+        {
+          "name": "show_fault_editor",
+          "lineno": 4432,
+          "complexity": 1
+        },
+        {
+          "name": "show_failure_editor",
+          "lineno": 4436,
+          "complexity": 1
+        },
+        {
+          "name": "show_functional_insufficiency_list",
+          "lineno": 4440,
+          "complexity": 13
+        },
+        {
+          "name": "show_malfunctions_editor",
+          "lineno": 4499,
+          "complexity": 15
+        },
+        {
+          "name": "show_fmea_table",
+          "lineno": 5175,
+          "complexity": 109
+        },
+        {
+          "name": "export_fmea_to_csv",
+          "lineno": 5701,
+          "complexity": 10
+        },
+        {
+          "name": "export_fmeda_to_csv",
+          "lineno": 5717,
+          "complexity": 11
+        },
+        {
+          "name": "show_traceability_matrix",
+          "lineno": 5770,
+          "complexity": 6
+        },
+        {
+          "name": "collect_requirements_recursive",
+          "lineno": 5791,
+          "complexity": 2
+        },
+        {
+          "name": "show_safety_goals_matrix",
+          "lineno": 5797,
+          "complexity": 10
+        },
+        {
+          "name": "show_product_goals_editor",
+          "lineno": 5915,
+          "complexity": 23
+        },
+        {
+          "name": "_parse_spi_target",
+          "lineno": 6108,
+          "complexity": 3
+        },
+        {
+          "name": "get_spi_targets",
+          "lineno": 6115,
+          "complexity": 3
+        },
+        {
+          "name": "show_safety_performance_indicators",
+          "lineno": 6126,
+          "complexity": 9
+        },
+        {
+          "name": "refresh_safety_performance_indicators",
+          "lineno": 6183,
+          "complexity": 14
+        },
+        {
+          "name": "refresh_safety_case_table",
+          "lineno": 6229,
+          "complexity": 21
+        },
+        {
+          "name": "show_safety_case",
+          "lineno": 6300,
+          "complexity": 32
+        },
+        {
+          "name": "export_product_goal_requirements",
+          "lineno": 6461,
+          "complexity": 1
+        },
+        {
+          "name": "generate_phase_requirements",
+          "lineno": 6463,
+          "complexity": 2
+        },
+        {
+          "name": "generate_lifecycle_requirements",
+          "lineno": 6470,
+          "complexity": 2
+        },
+        {
+          "name": "_refresh_phase_requirements_menu",
+          "lineno": 6478,
+          "complexity": 5
+        },
+        {
+          "name": "export_cybersecurity_goal_requirements",
+          "lineno": 6500,
+          "complexity": 1
+        },
+        {
+          "name": "show_cut_sets",
+          "lineno": 6503,
+          "complexity": 12
+        },
+        {
+          "name": "show_common_cause_view",
+          "lineno": 6547,
+          "complexity": 21
+        },
+        {
+          "name": "build_cause_effect_data",
+          "lineno": 6615,
+          "complexity": 1
+        },
+        {
+          "name": "_build_cause_effect_graph",
+          "lineno": 6618,
+          "complexity": 1
+        },
+        {
+          "name": "render_cause_effect_diagram",
+          "lineno": 6621,
+          "complexity": 8
+        },
+        {
+          "name": "show_cause_effect_chain",
+          "lineno": 6693,
+          "complexity": 11
+        },
+        {
+          "name": "show_cut_sets",
+          "lineno": 6874,
+          "complexity": 12
+        },
+        {
+          "name": "show_common_cause_view",
+          "lineno": 6918,
+          "complexity": 21
+        },
+        {
+          "name": "show_cut_sets",
+          "lineno": 6986,
+          "complexity": 12
+        },
+        {
+          "name": "show_common_cause_view",
+          "lineno": 7030,
+          "complexity": 21
+        },
+        {
+          "name": "show_cut_sets",
+          "lineno": 7098,
+          "complexity": 12
+        },
+        {
+          "name": "show_common_cause_view",
+          "lineno": 7142,
+          "complexity": 21
+        },
+        {
+          "name": "manage_mission_profiles",
+          "lineno": 7210,
+          "complexity": 41
+        },
+        {
+          "name": "manage_mechanism_libraries",
+          "lineno": 7351,
+          "complexity": 1
+        },
+        {
+          "name": "manage_scenario_libraries",
+          "lineno": 7354,
+          "complexity": 62
+        },
+        {
+          "name": "manage_odd_libraries",
+          "lineno": 7717,
+          "complexity": 52
+        },
+        {
+          "name": "open_reliability_window",
+          "lineno": 8074,
+          "complexity": 1
+        },
+        {
+          "name": "open_fmeda_window",
+          "lineno": 8077,
+          "complexity": 1
+        },
+        {
+          "name": "open_hazop_window",
+          "lineno": 8080,
+          "complexity": 1
+        },
+        {
+          "name": "open_risk_assessment_window",
+          "lineno": 8083,
+          "complexity": 1
+        },
+        {
+          "name": "open_stpa_window",
+          "lineno": 8086,
+          "complexity": 1
+        },
+        {
+          "name": "open_threat_window",
+          "lineno": 8089,
+          "complexity": 1
+        },
+        {
+          "name": "open_fi2tc_window",
+          "lineno": 8092,
+          "complexity": 1
+        },
+        {
+          "name": "open_tc2fi_window",
+          "lineno": 8095,
+          "complexity": 1
+        },
+        {
+          "name": "open_fault_prioritization_window",
+          "lineno": 8098,
+          "complexity": 1
+        },
+        {
+          "name": "open_safety_management_toolbox",
+          "lineno": 8101,
+          "complexity": 1
+        },
+        {
+          "name": "open_diagram_rules_toolbox",
+          "lineno": 8104,
+          "complexity": 5
+        },
+        {
+          "name": "open_requirement_patterns_toolbox",
+          "lineno": 8126,
+          "complexity": 5
+        },
+        {
+          "name": "open_report_template_toolbox",
+          "lineno": 8150,
+          "complexity": 5
+        },
+        {
+          "name": "open_report_template_manager",
+          "lineno": 8174,
+          "complexity": 5
+        },
+        {
+          "name": "reload_config",
+          "lineno": 8199,
+          "complexity": 8
+        },
+        {
+          "name": "open_search_toolbox",
+          "lineno": 8219,
+          "complexity": 1
+        },
+        {
+          "name": "open_style_editor",
+          "lineno": 8222,
+          "complexity": 1
+        },
+        {
+          "name": "refresh_styles",
+          "lineno": 8228,
+          "complexity": 5
+        },
+        {
+          "name": "show_hazard_explorer",
+          "lineno": 8237,
+          "complexity": 1
+        },
+        {
+          "name": "show_requirements_explorer",
+          "lineno": 8240,
+          "complexity": 3
+        },
+        {
+          "name": "_create_fta_tab",
+          "lineno": 8249,
+          "complexity": 4
+        },
+        {
+          "name": "create_fta_diagram",
+          "lineno": 8307,
+          "complexity": 2
+        },
+        {
+          "name": "create_cta_diagram",
+          "lineno": 8314,
+          "complexity": 1
+        },
+        {
+          "name": "enable_fta_actions",
+          "lineno": 8318,
+          "complexity": 4
+        },
+        {
+          "name": "enable_paa_actions",
+          "lineno": 8331,
+          "complexity": 1
+        },
+        {
+          "name": "_update_analysis_menus",
+          "lineno": 8335,
+          "complexity": 2
+        },
+        {
+          "name": "_create_paa_tab",
+          "lineno": 8343,
+          "complexity": 1
+        },
+        {
+          "name": "create_paa_diagram",
+          "lineno": 8347,
+          "complexity": 1
+        },
+        {
+          "name": "paa_manager",
+          "lineno": 8352,
+          "complexity": 2
+        },
+        {
+          "name": "pages_and_paa",
+          "lineno": 8359,
+          "complexity": 2
+        },
+        {
+          "name": "_reset_fta_state",
+          "lineno": 8367,
+          "complexity": 1
+        },
+        {
+          "name": "ensure_fta_tab",
+          "lineno": 8376,
+          "complexity": 1
+        },
+        {
+          "name": "_format_diag_title",
+          "lineno": 8379,
+          "complexity": 2
+        },
+        {
+          "name": "open_use_case_diagram",
+          "lineno": 8385,
+          "complexity": 1
+        },
+        {
+          "name": "open_activity_diagram",
+          "lineno": 8388,
+          "complexity": 1
+        },
+        {
+          "name": "open_block_diagram",
+          "lineno": 8391,
+          "complexity": 1
+        },
+        {
+          "name": "open_internal_block_diagram",
+          "lineno": 8394,
+          "complexity": 1
+        },
+        {
+          "name": "open_control_flow_diagram",
+          "lineno": 8397,
+          "complexity": 1
+        },
+        {
+          "name": "open_causal_bayesian_network_window",
+          "lineno": 8400,
+          "complexity": 1
+        },
+        {
+          "name": "open_gsn_diagram",
+          "lineno": 8403,
+          "complexity": 1
+        },
+        {
+          "name": "open_arch_window",
+          "lineno": 8406,
+          "complexity": 1
+        },
+        {
+          "name": "open_page_diagram",
+          "lineno": 8409,
+          "complexity": 1
+        },
+        {
+          "name": "manage_architecture",
+          "lineno": 8412,
+          "complexity": 1
+        },
+        {
+          "name": "manage_gsn",
+          "lineno": 8415,
+          "complexity": 1
+        },
+        {
+          "name": "manage_safety_management",
+          "lineno": 8418,
+          "complexity": 1
+        },
+        {
+          "name": "manage_safety_cases",
+          "lineno": 8421,
+          "complexity": 4
+        },
+        {
+          "name": "_diagram_copy_strategy1",
+          "lineno": 8437,
+          "complexity": 4
+        },
+        {
+          "name": "_diagram_copy_strategy2",
+          "lineno": 8447,
+          "complexity": 4
+        },
+        {
+          "name": "_diagram_copy_strategy3",
+          "lineno": 8457,
+          "complexity": 4
+        },
+        {
+          "name": "_diagram_copy_strategy4",
+          "lineno": 8467,
+          "complexity": 5
+        },
+        {
+          "name": "_diagram_cut_strategy1",
+          "lineno": 8478,
+          "complexity": 4
+        },
+        {
+          "name": "_diagram_cut_strategy2",
+          "lineno": 8488,
+          "complexity": 4
+        },
+        {
+          "name": "_diagram_cut_strategy3",
+          "lineno": 8498,
+          "complexity": 4
+        },
+        {
+          "name": "_diagram_cut_strategy4",
+          "lineno": 8508,
+          "complexity": 5
+        },
+        {
+          "name": "copy_node",
+          "lineno": 8519,
+          "complexity": 12
+        },
+        {
+          "name": "cut_node",
+          "lineno": 8549,
+          "complexity": 14
+        },
+        {
+          "name": "_reset_gsn_clone",
+          "lineno": 8583,
+          "complexity": 4
+        },
+        {
+          "name": "_clone_for_paste_strategy1",
+          "lineno": 8597,
+          "complexity": 4
+        },
+        {
+          "name": "_clone_for_paste_strategy2",
+          "lineno": 8607,
+          "complexity": 4
+        },
+        {
+          "name": "_clone_for_paste_strategy3",
+          "lineno": 8617,
+          "complexity": 4
+        },
+        {
+          "name": "_clone_for_paste_strategy4",
+          "lineno": 8628,
+          "complexity": 1
+        },
+        {
+          "name": "_clone_for_paste",
+          "lineno": 8634,
+          "complexity": 5
+        },
+        {
+          "name": "_prepare_node_for_paste",
+          "lineno": 8653,
+          "complexity": 5
+        },
+        {
+          "name": "paste_node",
+          "lineno": 8669,
+          "complexity": 58
+        },
+        {
+          "name": "_get_diag_type",
+          "lineno": 8794,
+          "complexity": 4
+        },
+        {
+          "name": "clone_node_preserving_id",
+          "lineno": 8804,
+          "complexity": 6
+        },
+        {
+          "name": "_find_gsn_diagram",
+          "lineno": 8856,
+          "complexity": 7
+        },
+        {
+          "name": "_copy_attrs_no_xy_strategy1",
+          "lineno": 8882,
+          "complexity": 4
+        },
+        {
+          "name": "_copy_attrs_no_xy_strategy2",
+          "lineno": 8891,
+          "complexity": 5
+        },
+        {
+          "name": "_copy_attrs_no_xy_strategy3",
+          "lineno": 8901,
+          "complexity": 5
+        },
+        {
+          "name": "_copy_attrs_no_xy_strategy4",
+          "lineno": 8912,
+          "complexity": 5
+        },
+        {
+          "name": "_copy_attrs_no_xy",
+          "lineno": 8924,
+          "complexity": 3
+        },
+        {
+          "name": "sync_nodes_by_id",
+          "lineno": 8937,
+          "complexity": 1
+        },
+        {
+          "name": "edit_severity",
+          "lineno": 8947,
+          "complexity": 1
+        },
+        {
+          "name": "set_last_saved_state",
+          "lineno": 8955,
+          "complexity": 1
+        },
+        {
+          "name": "has_unsaved_changes",
+          "lineno": 8959,
+          "complexity": 1
+        },
+        {
+          "name": "_strip_object_positions",
+          "lineno": 8967,
+          "complexity": 6
+        },
+        {
+          "name": "push_undo_state",
+          "lineno": 8985,
+          "complexity": 8
+        },
+        {
+          "name": "_push_undo_state_v1",
+          "lineno": 9012,
+          "complexity": 6
+        },
+        {
+          "name": "_push_undo_state_v2",
+          "lineno": 9033,
+          "complexity": 6
+        },
+        {
+          "name": "_push_undo_state_v3",
+          "lineno": 9047,
+          "complexity": 6
+        },
+        {
+          "name": "_push_undo_state_v4",
+          "lineno": 9061,
+          "complexity": 5
+        },
+        {
+          "name": "_undo_hotkey",
+          "lineno": 9072,
+          "complexity": 1
+        },
+        {
+          "name": "_redo_hotkey",
+          "lineno": 9077,
+          "complexity": 1
+        },
+        {
+          "name": "undo",
+          "lineno": 9082,
+          "complexity": 6
+        },
+        {
+          "name": "redo",
+          "lineno": 9099,
+          "complexity": 6
+        },
+        {
+          "name": "clear_undo_history",
+          "lineno": 9116,
+          "complexity": 1
+        },
+        {
+          "name": "_undo_v1",
+          "lineno": 9125,
+          "complexity": 6
+        },
+        {
+          "name": "_undo_v2",
+          "lineno": 9141,
+          "complexity": 6
+        },
+        {
+          "name": "_undo_v3",
+          "lineno": 9157,
+          "complexity": 6
+        },
+        {
+          "name": "_undo_v4",
+          "lineno": 9173,
+          "complexity": 7
+        },
+        {
+          "name": "_redo_v1",
+          "lineno": 9192,
+          "complexity": 3
+        },
+        {
+          "name": "_redo_v2",
+          "lineno": 9204,
+          "complexity": 3
+        },
+        {
+          "name": "_redo_v3",
+          "lineno": 9216,
+          "complexity": 3
+        },
+        {
+          "name": "_redo_v4",
+          "lineno": 9228,
+          "complexity": 3
+        },
+        {
+          "name": "confirm_close",
+          "lineno": 9240,
+          "complexity": 4
+        },
+        {
+          "name": "export_model_data",
+          "lineno": 9256,
+          "complexity": 1
+        },
+        {
+          "name": "_load_project_properties",
+          "lineno": 9259,
+          "complexity": 4
+        },
+        {
+          "name": "_load_fault_tree_events",
+          "lineno": 9278,
+          "complexity": 11
+        },
+        {
+          "name": "apply_model_data",
+          "lineno": 9302,
+          "complexity": 124
+        },
+        {
+          "name": "_reset_on_load",
+          "lineno": 9837,
+          "complexity": 8
+        },
+        {
+          "name": "_prompt_save_before_load_v1",
+          "lineno": 9884,
+          "complexity": 1
+        },
+        {
+          "name": "_prompt_save_before_load_v2",
+          "lineno": 9889,
+          "complexity": 1
+        },
+        {
+          "name": "_prompt_save_before_load_v3",
+          "lineno": 9894,
+          "complexity": 1
+        },
+        {
+          "name": "_prompt_save_before_load_v4",
+          "lineno": 9898,
+          "complexity": 1
+        },
+        {
+          "name": "_prompt_save_before_load",
+          "lineno": 9905,
+          "complexity": 1
+        },
+        {
+          "name": "update_global_requirements_from_nodes",
+          "lineno": 9909,
+          "complexity": 5
+        },
+        {
+          "name": "_generate_pdf_report",
+          "lineno": 9921,
+          "complexity": 1
+        },
+        {
+          "name": "generate_pdf_report",
+          "lineno": 9924,
+          "complexity": 1
+        },
+        {
+          "name": "generate_report",
+          "lineno": 9927,
+          "complexity": 1
+        },
+        {
+          "name": "build_html_report",
+          "lineno": 9930,
+          "complexity": 1
+        },
+        {
+          "name": "resolve_original",
+          "lineno": 9932,
+          "complexity": 4
+        },
+        {
+          "name": "go_back",
+          "lineno": 9938,
+          "complexity": 1
+        },
+        {
+          "name": "draw_page_subtree",
+          "lineno": 9941,
+          "complexity": 1
+        },
+        {
+          "name": "draw_page_grid",
+          "lineno": 9944,
+          "complexity": 1
+        },
+        {
+          "name": "draw_page_connections_subtree",
+          "lineno": 9947,
+          "complexity": 1
+        },
+        {
+          "name": "draw_page_nodes_subtree",
+          "lineno": 9950,
+          "complexity": 1
+        },
+        {
+          "name": "draw_node_on_page_canvas",
+          "lineno": 9953,
+          "complexity": 1
+        },
+        {
+          "name": "on_ctrl_mousewheel_page",
+          "lineno": 9956,
+          "complexity": 1
+        },
+        {
+          "name": "close_page_diagram",
+          "lineno": 9959,
+          "complexity": 5
+        },
+        {
+          "name": "start_peer_review",
+          "lineno": 10006,
+          "complexity": 1
+        },
+        {
+          "name": "start_joint_review",
+          "lineno": 10009,
+          "complexity": 1
+        },
+        {
+          "name": "open_review_document",
+          "lineno": 10012,
+          "complexity": 1
+        },
+        {
+          "name": "open_review_toolbox",
+          "lineno": 10015,
+          "complexity": 1
+        },
+        {
+          "name": "send_review_email",
+          "lineno": 10018,
+          "complexity": 1
+        },
+        {
+          "name": "review_is_closed",
+          "lineno": 10021,
+          "complexity": 1
+        },
+        {
+          "name": "review_is_closed_for",
+          "lineno": 10024,
+          "complexity": 1
+        },
+        {
+          "name": "capture_diff_diagram",
+          "lineno": 10027,
+          "complexity": 1
+        },
+        {
+          "name": "compute_requirement_asil",
+          "lineno": 10032,
+          "complexity": 3
+        },
+        {
+          "name": "find_safety_goal_node",
+          "lineno": 10042,
+          "complexity": 3
+        },
+        {
+          "name": "compute_validation_criteria",
+          "lineno": 10048,
+          "complexity": 1
+        },
+        {
+          "name": "update_validation_criteria",
+          "lineno": 10051,
+          "complexity": 1
+        },
+        {
+          "name": "update_requirement_asil",
+          "lineno": 10054,
+          "complexity": 2
+        },
+        {
+          "name": "update_all_validation_criteria",
+          "lineno": 10060,
+          "complexity": 1
+        },
+        {
+          "name": "update_all_requirement_asil",
+          "lineno": 10063,
+          "complexity": 3
+        },
+        {
+          "name": "update_base_event_requirement_asil",
+          "lineno": 10069,
+          "complexity": 6
+        },
+        {
+          "name": "ensure_asil_consistency",
+          "lineno": 10083,
+          "complexity": 1
+        },
+        {
+          "name": "invalidate_reviews_for_hara",
+          "lineno": 10091,
+          "complexity": 1
+        },
+        {
+          "name": "invalidate_reviews_for_requirement",
+          "lineno": 10094,
+          "complexity": 1
+        },
+        {
+          "name": "add_version",
+          "lineno": 10097,
+          "complexity": 1
+        },
+        {
+          "name": "compare_versions",
+          "lineno": 10101,
+          "complexity": 1
+        },
+        {
+          "name": "merge_review_comments",
+          "lineno": 10105,
+          "complexity": 1
+        },
+        {
+          "name": "calculate_diff_nodes",
+          "lineno": 10109,
+          "complexity": 1
+        },
+        {
+          "name": "calculate_diff_between",
+          "lineno": 10113,
+          "complexity": 1
+        },
+        {
+          "name": "node_map_from_data",
+          "lineno": 10117,
+          "complexity": 1
+        },
+        {
+          "name": "set_current_user",
+          "lineno": 10121,
+          "complexity": 1
+        },
+        {
+          "name": "get_current_user_role",
+          "lineno": 10124,
+          "complexity": 1
+        },
+        {
+          "name": "focus_on_node",
+          "lineno": 10127,
+          "complexity": 1
+        },
+        {
+          "name": "get_review_targets",
+          "lineno": 10130,
+          "complexity": 1
+        },
+        {
+          "name": "_color",
+          "lineno": 718,
+          "complexity": 2
+        },
+        {
+          "name": "_wrapped_select",
+          "lineno": 1480,
+          "complexity": 2
+        },
+        {
+          "name": "save_props",
+          "lineno": 2090,
+          "complexity": 9
+        },
+        {
+          "name": "_refresh_children",
+          "lineno": 2459,
+          "complexity": 3
+        },
+        {
+          "name": "rec",
+          "lineno": 2535,
+          "complexity": 3
+        },
+        {
+          "name": "layout",
+          "lineno": 2613,
+          "complexity": 3
+        },
+        {
+          "name": "iter_analysis_events",
+          "lineno": 3346,
+          "complexity": 7
+        },
+        {
+          "name": "alloc_from_data",
+          "lineno": 4073,
+          "complexity": 12
+        },
+        {
+          "name": "goals_from_data",
+          "lineno": 4091,
+          "complexity": 21
+        },
+        {
+          "name": "insert_diff",
+          "lineno": 4125,
+          "complexity": 6
+        },
+        {
+          "name": "insert_list_diff",
+          "lineno": 4138,
+          "complexity": 9
+        },
+        {
+          "name": "refresh",
+          "lineno": 4191,
+          "complexity": 2
+        },
+        {
+          "name": "add_tc",
+          "lineno": 4198,
+          "complexity": 2
+        },
+        {
+          "name": "edit_tc",
+          "lineno": 4204,
+          "complexity": 4
+        },
+        {
+          "name": "del_tc",
+          "lineno": 4215,
+          "complexity": 3
+        },
+        {
+          "name": "export_csv",
+          "lineno": 4224,
+          "complexity": 4
+        },
+        {
+          "name": "add_tc",
+          "lineno": 4234,
+          "complexity": 2
+        },
+        {
+          "name": "edit_tc",
+          "lineno": 4240,
+          "complexity": 4
+        },
+        {
+          "name": "del_tc",
+          "lineno": 4250,
+          "complexity": 3
+        },
+        {
+          "name": "refresh",
+          "lineno": 4280,
+          "complexity": 2
+        },
+        {
+          "name": "add",
+          "lineno": 4285,
+          "complexity": 2
+        },
+        {
+          "name": "rename",
+          "lineno": 4291,
+          "complexity": 5
+        },
+        {
+          "name": "delete",
+          "lineno": 4305,
+          "complexity": 3
+        },
+        {
+          "name": "refresh",
+          "lineno": 4335,
+          "complexity": 2
+        },
+        {
+          "name": "add",
+          "lineno": 4340,
+          "complexity": 2
+        },
+        {
+          "name": "rename",
+          "lineno": 4346,
+          "complexity": 3
+        },
+        {
+          "name": "delete",
+          "lineno": 4357,
+          "complexity": 3
+        },
+        {
+          "name": "refresh",
+          "lineno": 4386,
+          "complexity": 2
+        },
+        {
+          "name": "add",
+          "lineno": 4391,
+          "complexity": 2
+        },
+        {
+          "name": "rename",
+          "lineno": 4397,
+          "complexity": 3
+        },
+        {
+          "name": "delete",
+          "lineno": 4408,
+          "complexity": 3
+        },
+        {
+          "name": "refresh",
+          "lineno": 4450,
+          "complexity": 2
+        },
+        {
+          "name": "export_csv",
+          "lineno": 4457,
+          "complexity": 4
+        },
+        {
+          "name": "add_fi",
+          "lineno": 4467,
+          "complexity": 2
+        },
+        {
+          "name": "edit_fi",
+          "lineno": 4473,
+          "complexity": 4
+        },
+        {
+          "name": "del_fi",
+          "lineno": 4483,
+          "complexity": 3
+        },
+        {
+          "name": "add_mal",
+          "lineno": 4512,
+          "complexity": 5
+        },
+        {
+          "name": "edit_mal",
+          "lineno": 4525,
+          "complexity": 6
+        },
+        {
+          "name": "del_mal",
+          "lineno": 4546,
+          "complexity": 3
+        },
+        {
+          "name": "__init__",
+          "lineno": 4566,
+          "complexity": 2
+        },
+        {
+          "name": "body",
+          "lineno": 4576,
+          "complexity": 63
+        },
+        {
+          "name": "apply",
+          "lineno": 4880,
+          "complexity": 33
+        },
+        {
+          "name": "add_existing_requirement",
+          "lineno": 4965,
+          "complexity": 8
+        },
+        {
+          "name": "comment_requirement",
+          "lineno": 4983,
+          "complexity": 2
+        },
+        {
+          "name": "comment_fmea",
+          "lineno": 4994,
+          "complexity": 1
+        },
+        {
+          "name": "add_fault",
+          "lineno": 4999,
+          "complexity": 6
+        },
+        {
+          "name": "add_safety_requirement",
+          "lineno": 5014,
+          "complexity": 8
+        },
+        {
+          "name": "edit_safety_requirement",
+          "lineno": 5047,
+          "complexity": 7
+        },
+        {
+          "name": "delete_safety_requirement",
+          "lineno": 5071,
+          "complexity": 2
+        },
+        {
+          "name": "__init__",
+          "lineno": 5081,
+          "complexity": 1
+        },
+        {
+          "name": "body",
+          "lineno": 5087,
+          "complexity": 4
+        },
+        {
+          "name": "apply",
+          "lineno": 5101,
+          "complexity": 4
+        },
+        {
+          "name": "__init__",
+          "lineno": 5111,
+          "complexity": 1
+        },
+        {
+          "name": "body",
+          "lineno": 5117,
+          "complexity": 2
+        },
+        {
+          "name": "apply",
+          "lineno": 5125,
+          "complexity": 2
+        },
+        {
+          "name": "__init__",
+          "lineno": 5131,
+          "complexity": 1
+        },
+        {
+          "name": "body",
+          "lineno": 5137,
+          "complexity": 3
+        },
+        {
+          "name": "apply",
+          "lineno": 5146,
+          "complexity": 4
+        },
+        {
+          "name": "__init__",
+          "lineno": 5156,
+          "complexity": 2
+        },
+        {
+          "name": "body",
+          "lineno": 5162,
+          "complexity": 4
+        },
+        {
+          "name": "apply",
+          "lineno": 5172,
+          "complexity": 2
+        },
+        {
+          "name": "refresh_tree",
+          "lineno": 5437,
+          "complexity": 39
+        },
+        {
+          "name": "on_double",
+          "lineno": 5578,
+          "complexity": 5
+        },
+        {
+          "name": "add_failure_mode",
+          "lineno": 5592,
+          "complexity": 19
+        },
+        {
+          "name": "remove_from_fmea",
+          "lineno": 5639,
+          "complexity": 5
+        },
+        {
+          "name": "delete_failure_mode",
+          "lineno": 5654,
+          "complexity": 6
+        },
+        {
+          "name": "comment_fmea_entry",
+          "lineno": 5671,
+          "complexity": 3
+        },
+        {
+          "name": "on_close",
+          "lineno": 5685,
+          "complexity": 4
+        },
+        {
+          "name": "refresh_tree",
+          "lineno": 5944,
+          "complexity": 5
+        },
+        {
+          "name": "add_sg",
+          "lineno": 6045,
+          "complexity": 4
+        },
+        {
+          "name": "edit_sg",
+          "lineno": 6063,
+          "complexity": 5
+        },
+        {
+          "name": "del_sg",
+          "lineno": 6085,
+          "complexity": 5
+        },
+        {
+          "name": "edit_selected",
+          "lineno": 6154,
+          "complexity": 5
+        },
+        {
+          "name": "on_double_click",
+          "lineno": 6352,
+          "complexity": 16
+        },
+        {
+          "name": "edit_selected",
+          "lineno": 6408,
+          "complexity": 5
+        },
+        {
+          "name": "export_csv",
+          "lineno": 6428,
+          "complexity": 4
+        },
+        {
+          "name": "on_right_click",
+          "lineno": 6451,
+          "complexity": 2
+        },
+        {
+          "name": "export_csv",
+          "lineno": 6534,
+          "complexity": 4
+        },
+        {
+          "name": "refresh",
+          "lineno": 6573,
+          "complexity": 17
+        },
+        {
+          "name": "export_csv",
+          "lineno": 6599,
+          "complexity": 4
+        },
+        {
+          "name": "to_canvas",
+          "lineno": 6656,
+          "complexity": 1
+        },
+        {
+          "name": "draw_row",
+          "lineno": 6765,
+          "complexity": 3
+        },
+        {
+          "name": "on_select",
+          "lineno": 6841,
+          "complexity": 3
+        },
+        {
+          "name": "export_csv",
+          "lineno": 6861,
+          "complexity": 4
+        },
+        {
+          "name": "export_csv",
+          "lineno": 6905,
+          "complexity": 4
+        },
+        {
+          "name": "refresh",
+          "lineno": 6944,
+          "complexity": 17
+        },
+        {
+          "name": "export_csv",
+          "lineno": 6970,
+          "complexity": 4
+        },
+        {
+          "name": "export_csv",
+          "lineno": 7017,
+          "complexity": 4
+        },
+        {
+          "name": "refresh",
+          "lineno": 7056,
+          "complexity": 17
+        },
+        {
+          "name": "export_csv",
+          "lineno": 7082,
+          "complexity": 4
+        },
+        {
+          "name": "export_csv",
+          "lineno": 7129,
+          "complexity": 4
+        },
+        {
+          "name": "refresh",
+          "lineno": 7168,
+          "complexity": 17
+        },
+        {
+          "name": "export_csv",
+          "lineno": 7194,
+          "complexity": 4
+        },
+        {
+          "name": "refresh",
+          "lineno": 7222,
+          "complexity": 3
+        },
+        {
+          "name": "add_profile",
+          "lineno": 7317,
+          "complexity": 4
+        },
+        {
+          "name": "edit_profile",
+          "lineno": 7325,
+          "complexity": 5
+        },
+        {
+          "name": "delete_profile",
+          "lineno": 7336,
+          "complexity": 4
+        },
+        {
+          "name": "refresh_libs",
+          "lineno": 7390,
+          "complexity": 2
+        },
+        {
+          "name": "refresh_scenarios",
+          "lineno": 7396,
+          "complexity": 4
+        },
+        {
+          "name": "add_lib",
+          "lineno": 7651,
+          "complexity": 2
+        },
+        {
+          "name": "edit_lib",
+          "lineno": 7657,
+          "complexity": 2
+        },
+        {
+          "name": "delete_lib",
+          "lineno": 7666,
+          "complexity": 2
+        },
+        {
+          "name": "add_scen",
+          "lineno": 7673,
+          "complexity": 3
+        },
+        {
+          "name": "edit_scen",
+          "lineno": 7683,
+          "complexity": 3
+        },
+        {
+          "name": "del_scen",
+          "lineno": 7695,
+          "complexity": 3
+        },
+        {
+          "name": "refresh_libs",
+          "lineno": 7739,
+          "complexity": 2
+        },
+        {
+          "name": "refresh_elems",
+          "lineno": 7745,
+          "complexity": 7
+        },
+        {
+          "name": "add_lib",
+          "lineno": 7983,
+          "complexity": 12
+        },
+        {
+          "name": "edit_lib",
+          "lineno": 8010,
+          "complexity": 3
+        },
+        {
+          "name": "delete_lib",
+          "lineno": 8020,
+          "complexity": 2
+        },
+        {
+          "name": "add_elem",
+          "lineno": 8028,
+          "complexity": 2
+        },
+        {
+          "name": "edit_elem",
+          "lineno": 8038,
+          "complexity": 3
+        },
+        {
+          "name": "del_elem",
+          "lineno": 8051,
+          "complexity": 3
+        },
+        {
+          "name": "_search_modules",
+          "lineno": 8870,
+          "complexity": 5
+        },
+        {
+          "name": "scrub",
+          "lineno": 8972,
+          "complexity": 6
+        },
+        {
+          "name": "_visible",
+          "lineno": 2940,
+          "complexity": 1
+        },
+        {
+          "name": "_in_any_module",
+          "lineno": 2948,
+          "complexity": 4
+        },
+        {
+          "name": "_add_module",
+          "lineno": 2954,
+          "complexity": 4
+        },
+        {
+          "name": "_collect_gsn_diagrams",
+          "lineno": 2991,
+          "complexity": 2
+        },
+        {
+          "name": "add_gsn_module",
+          "lineno": 3011,
+          "complexity": 4
+        },
+        {
+          "name": "add_gsn_diagram",
+          "lineno": 3029,
+          "complexity": 2
+        },
+        {
+          "name": "add_pkg",
+          "lineno": 3083,
+          "complexity": 14
+        },
+        {
+          "name": "_ensure_haz_root",
+          "lineno": 3157,
+          "complexity": 2
+        },
+        {
+          "name": "_ensure_risk_root",
+          "lineno": 3199,
+          "complexity": 2
+        },
+        {
+          "name": "_ensure_safety_root",
+          "lineno": 3216,
+          "complexity": 2
+        },
+        {
+          "name": "traverse",
+          "lineno": 4077,
+          "complexity": 5
+        },
+        {
+          "name": "gather",
+          "lineno": 4095,
+          "complexity": 2
+        },
+        {
+          "name": "collect_goal_names",
+          "lineno": 4102,
+          "complexity": 7
+        },
+        {
+          "name": "auto_fault",
+          "lineno": 4635,
+          "complexity": 5
+        },
+        {
+          "name": "mode_sel",
+          "lineno": 4649,
+          "complexity": 6
+        },
+        {
+          "name": "update_sg",
+          "lineno": 4693,
+          "complexity": 9
+        },
+        {
+          "name": "comp_sel",
+          "lineno": 4827,
+          "complexity": 3
+        },
+        {
+          "name": "calculate_fmeda",
+          "lineno": 5250,
+          "complexity": 5
+        },
+        {
+          "name": "add_component",
+          "lineno": 5286,
+          "complexity": 5
+        },
+        {
+          "name": "choose_libs",
+          "lineno": 5355,
+          "complexity": 4
+        },
+        {
+          "name": "load_bom",
+          "lineno": 5377,
+          "complexity": 4
+        },
+        {
+          "name": "__init__",
+          "lineno": 5971,
+          "complexity": 1
+        },
+        {
+          "name": "body",
+          "lineno": 5976,
+          "complexity": 2
+        },
+        {
+          "name": "apply",
+          "lineno": 6032,
+          "complexity": 2
+        },
+        {
+          "name": "map_nodes",
+          "lineno": 6518,
+          "complexity": 2
+        },
+        {
+          "name": "to_canvas",
+          "lineno": 6793,
+          "complexity": 1
+        },
+        {
+          "name": "map_nodes",
+          "lineno": 6889,
+          "complexity": 2
+        },
+        {
+          "name": "map_nodes",
+          "lineno": 7001,
+          "complexity": 2
+        },
+        {
+          "name": "map_nodes",
+          "lineno": 7113,
+          "complexity": 2
+        },
+        {
+          "name": "__init__",
+          "lineno": 7234,
+          "complexity": 1
+        },
+        {
+          "name": "body",
+          "lineno": 7238,
+          "complexity": 8
+        },
+        {
+          "name": "apply",
+          "lineno": 7280,
+          "complexity": 20
+        },
+        {
+          "name": "__init__",
+          "lineno": 7424,
+          "complexity": 2
+        },
+        {
+          "name": "body",
+          "lineno": 7429,
+          "complexity": 6
+        },
+        {
+          "name": "apply",
+          "lineno": 7450,
+          "complexity": 3
+        },
+        {
+          "name": "__init__",
+          "lineno": 7458,
+          "complexity": 2
+        },
+        {
+          "name": "body",
+          "lineno": 7475,
+          "complexity": 23
+        },
+        {
+          "name": "update_description",
+          "lineno": 7579,
+          "complexity": 4
+        },
+        {
+          "name": "load_desc_links",
+          "lineno": 7611,
+          "complexity": 2
+        },
+        {
+          "name": "show_elem",
+          "lineno": 7624,
+          "complexity": 9
+        },
+        {
+          "name": "apply",
+          "lineno": 7636,
+          "complexity": 3
+        },
+        {
+          "name": "__init__",
+          "lineno": 7763,
+          "complexity": 2
+        },
+        {
+          "name": "add_attr_row",
+          "lineno": 7768,
+          "complexity": 2
+        },
+        {
+          "name": "body",
+          "lineno": 7803,
+          "complexity": 19
+        },
+        {
+          "name": "apply",
+          "lineno": 7957,
+          "complexity": 3
+        },
+        {
+          "name": "load_comp",
+          "lineno": 9411,
+          "complexity": 3
+        },
+        {
+          "name": "mech_sel",
+          "lineno": 4772,
+          "complexity": 9
+        },
+        {
+          "name": "refresh_attr_fields",
+          "lineno": 5314,
+          "complexity": 4
+        },
+        {
+          "name": "ok",
+          "lineno": 5332,
+          "complexity": 2
+        },
+        {
+          "name": "ok",
+          "lineno": 5364,
+          "complexity": 3
+        },
+        {
+          "name": "update_dc",
+          "lineno": 7266,
+          "complexity": 5
+        },
+        {
+          "name": "remove_row",
+          "lineno": 7779,
+          "complexity": 2
+        },
+        {
+          "name": "update_metrics",
+          "lineno": 7872,
+          "complexity": 1
+        },
+        {
+          "name": "on_vt_select",
+          "lineno": 7913,
+          "complexity": 5
+        },
+        {
+          "name": "refresh_vt",
+          "lineno": 7933,
+          "complexity": 4
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/pages_and_paa.py",
+      "loc": 206,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 19,
+          "complexity": 1
+        },
+        {
+          "name": "__getattr__",
+          "lineno": 22,
+          "complexity": 1
+        },
+        {
+          "name": "enable_paa_actions",
+          "lineno": 28,
+          "complexity": 4
+        },
+        {
+          "name": "_create_paa_tab",
+          "lineno": 35,
+          "complexity": 1
+        },
+        {
+          "name": "create_paa_diagram",
+          "lineno": 39,
+          "complexity": 1
+        },
+        {
+          "name": "open_page_diagram",
+          "lineno": 46,
+          "complexity": 1
+        },
+        {
+          "name": "draw_page_subtree",
+          "lineno": 50,
+          "complexity": 2
+        },
+        {
+          "name": "draw_page_grid",
+          "lineno": 60,
+          "complexity": 5
+        },
+        {
+          "name": "draw_page_connections_subtree",
+          "lineno": 69,
+          "complexity": 4
+        },
+        {
+          "name": "draw_page_nodes_subtree",
+          "lineno": 92,
+          "complexity": 2
+        },
+        {
+          "name": "draw_node_on_page_canvas",
+          "lineno": 97,
+          "complexity": 8
+        },
+        {
+          "name": "_draw_non_page_node",
+          "lineno": 148,
+          "complexity": 4
+        },
+        {
+          "name": "_draw_review_marker",
+          "lineno": 193,
+          "complexity": 4
+        },
+        {
+          "name": "capture_page_diagram",
+          "lineno": 207,
+          "complexity": 4
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/data_access_queries.py",
+      "loc": 335,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 19,
+          "complexity": 1
+        },
+        {
+          "name": "get_top_level_nodes",
+          "lineno": 25,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_nodes_no_filter",
+          "lineno": 28,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_nodes_table",
+          "lineno": 31,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_nodes_in_model",
+          "lineno": 34,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_basic_events",
+          "lineno": 37,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_gates",
+          "lineno": 40,
+          "complexity": 1
+        },
+        {
+          "name": "get_extra_recommendations_list",
+          "lineno": 43,
+          "complexity": 1
+        },
+        {
+          "name": "get_extra_recommendations_from_level",
+          "lineno": 48,
+          "complexity": 1
+        },
+        {
+          "name": "get_recommendation_from_description",
+          "lineno": 53,
+          "complexity": 1
+        },
+        {
+          "name": "get_top_event_safety_goals",
+          "lineno": 58,
+          "complexity": 1
+        },
+        {
+          "name": "get_cyber_goal_cal",
+          "lineno": 61,
+          "complexity": 1
+        },
+        {
+          "name": "get_page_nodes",
+          "lineno": 67,
+          "complexity": 4
+        },
+        {
+          "name": "get_all_triggering_conditions",
+          "lineno": 75,
+          "complexity": 3
+        },
+        {
+          "name": "get_all_functional_insufficiencies",
+          "lineno": 85,
+          "complexity": 5
+        },
+        {
+          "name": "get_all_scenario_names",
+          "lineno": 97,
+          "complexity": 5
+        },
+        {
+          "name": "get_scenario_exposure",
+          "lineno": 109,
+          "complexity": 9
+        },
+        {
+          "name": "get_all_scenery_names",
+          "lineno": 125,
+          "complexity": 7
+        },
+        {
+          "name": "get_all_function_names",
+          "lineno": 137,
+          "complexity": 4
+        },
+        {
+          "name": "get_all_action_names",
+          "lineno": 145,
+          "complexity": 1
+        },
+        {
+          "name": "get_all_action_labels",
+          "lineno": 149,
+          "complexity": 31
+        },
+        {
+          "name": "get_use_case_for_function",
+          "lineno": 200,
+          "complexity": 12
+        },
+        {
+          "name": "get_all_component_names",
+          "lineno": 221,
+          "complexity": 15
+        },
+        {
+          "name": "get_all_part_names",
+          "lineno": 249,
+          "complexity": 9
+        },
+        {
+          "name": "get_all_malfunction_names",
+          "lineno": 267,
+          "complexity": 3
+        },
+        {
+          "name": "get_entry_field",
+          "lineno": 275,
+          "complexity": 2
+        },
+        {
+          "name": "get_all_failure_modes",
+          "lineno": 280,
+          "complexity": 5
+        },
+        {
+          "name": "get_all_fmea_entries",
+          "lineno": 293,
+          "complexity": 3
+        },
+        {
+          "name": "get_non_basic_failure_modes",
+          "lineno": 301,
+          "complexity": 13
+        },
+        {
+          "name": "get_failure_mode_node",
+          "lineno": 328,
+          "complexity": 3
+        },
+        {
+          "name": "get_component_name_for_node",
+          "lineno": 336,
+          "complexity": 5
+        },
+        {
+          "name": "format_failure_mode_label",
+          "lineno": 346,
+          "complexity": 4
+        },
+        {
+          "name": "get_failure_modes_for_malfunction",
+          "lineno": 355,
+          "complexity": 4
+        },
+        {
+          "name": "get_all_nodes",
+          "lineno": 367,
+          "complexity": 8
+        },
+        {
+          "name": "get_current_user_role",
+          "lineno": 389,
+          "complexity": 1
+        },
+        {
+          "name": "rec",
+          "lineno": 376,
+          "complexity": 6
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/event_handlers.py",
+      "loc": 12,
+      "functions": [
+        {
+          "name": "on_treeview_click",
+          "lineno": 9,
+          "complexity": 1
+        },
+        {
+          "name": "on_analysis_tree_double_click",
+          "lineno": 12,
+          "complexity": 1
+        },
+        {
+          "name": "on_analysis_tree_right_click",
+          "lineno": 15,
+          "complexity": 1
+        },
+        {
+          "name": "on_analysis_tree_select",
+          "lineno": 18,
+          "complexity": 1
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/navigation_selection_input.py",
+      "loc": 201,
+      "functions": [
+        {
+          "name": "__init__",
+          "lineno": 17,
+          "complexity": 1
+        },
+        {
+          "name": "go_back",
+          "lineno": 23,
+          "complexity": 2
+        },
+        {
+          "name": "back_all_pages",
+          "lineno": 29,
+          "complexity": 1
+        },
+        {
+          "name": "focus_on_node",
+          "lineno": 32,
+          "complexity": 6
+        },
+        {
+          "name": "on_canvas_click",
+          "lineno": 48,
+          "complexity": 5
+        },
+        {
+          "name": "on_canvas_double_click",
+          "lineno": 68,
+          "complexity": 7
+        },
+        {
+          "name": "on_canvas_drag",
+          "lineno": 88,
+          "complexity": 3
+        },
+        {
+          "name": "on_canvas_release",
+          "lineno": 103,
+          "complexity": 2
+        },
+        {
+          "name": "on_treeview_click",
+          "lineno": 116,
+          "complexity": 1
+        },
+        {
+          "name": "on_analysis_tree_double_click",
+          "lineno": 119,
+          "complexity": 1
+        },
+        {
+          "name": "on_analysis_tree_right_click",
+          "lineno": 122,
+          "complexity": 1
+        },
+        {
+          "name": "on_analysis_tree_select",
+          "lineno": 125,
+          "complexity": 1
+        },
+        {
+          "name": "on_tool_list_double_click",
+          "lineno": 128,
+          "complexity": 10
+        },
+        {
+          "name": "on_ctrl_mousewheel",
+          "lineno": 156,
+          "complexity": 2
+        },
+        {
+          "name": "on_ctrl_mousewheel_page",
+          "lineno": 163,
+          "complexity": 2
+        },
+        {
+          "name": "on_right_mouse_press",
+          "lineno": 170,
+          "complexity": 1
+        },
+        {
+          "name": "on_right_mouse_drag",
+          "lineno": 175,
+          "complexity": 1
+        },
+        {
+          "name": "on_right_mouse_release",
+          "lineno": 180,
+          "complexity": 2
+        },
+        {
+          "name": "show_context_menu",
+          "lineno": 186,
+          "complexity": 7
+        },
+        {
+          "name": "open_search_toolbox",
+          "lineno": 234,
+          "complexity": 3
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/ui_setup.py",
+      "loc": 82,
+      "functions": [
+        {
+          "name": "enable_fta_actions",
+          "lineno": 19,
+          "complexity": 4
+        },
+        {
+          "name": "enable_paa_actions",
+          "lineno": 32,
+          "complexity": 4
+        },
+        {
+          "name": "_update_analysis_menus",
+          "lineno": 39,
+          "complexity": 2
+        },
+        {
+          "name": "_create_paa_tab",
+          "lineno": 47,
+          "complexity": 1
+        },
+        {
+          "name": "create_paa_diagram",
+          "lineno": 51,
+          "complexity": 1
+        },
+        {
+          "name": "paa_manager",
+          "lineno": 56,
+          "complexity": 2
+        },
+        {
+          "name": "_reset_fta_state",
+          "lineno": 62,
+          "complexity": 1
+        },
+        {
+          "name": "ensure_fta_tab",
+          "lineno": 71,
+          "complexity": 3
+        },
+        {
+          "name": "_format_diag_title",
+          "lineno": 83,
+          "complexity": 2
+        },
+        {
+          "name": "_create_icon",
+          "lineno": 95,
+          "complexity": 1
+        }
+      ]
+    },
+    {
+      "file": "mainappsrc/core/persistence_wrappers.py",
+      "loc": 10,
+      "functions": [
+        {
+          "name": "save_diagram_png",
+          "lineno": 9,
+          "complexity": 1
+        },
+        {
+          "name": "save_model",
+          "lineno": 12,
+          "complexity": 1
+        },
+        {
+          "name": "load_model",
+          "lineno": 15,
+          "complexity": 1
+        }
+      ]
+    }
+  ]
+}
