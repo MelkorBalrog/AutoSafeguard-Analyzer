@@ -1,4 +1,4 @@
-version: 0.2.16
+version: 0.2.17
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1642,6 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.17 - Ensure AutoMLHelper fallback if AutoML module lacks helper export.
 - 0.2.16 - Import PurpleButton lazily in custom messagebox to avoid early circular imports.
 - 0.2.15 - Lazily import messagebox module to resolve circular import.
 - 0.2.14 - Fade out splash screen symmetrically before launching application.
