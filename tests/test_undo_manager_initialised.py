@@ -15,9 +15,19 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""Verify AutoMLApp initialises the undo manager."""
 
-"""Project version information."""
+import tkinter as tk
+import pytest
+from AutoML import AutoMLApp
 
-VERSION = "0.2.54"
 
-__all__ = ["VERSION"]
+def test_undo_manager_initialised():
+    try:
+        root = tk.Tk()
+        root.withdraw()
+    except tk.TclError:
+        pytest.skip("Tk not available")
+    app = AutoMLApp(root)
+    assert hasattr(app, "undo_manager")
+    root.destroy()

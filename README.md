@@ -1,4 +1,4 @@
-version: 0.2.53
+version: 0.2.54
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1644,7 +1644,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.53 - Refactor core functions into dedicated managers for modularity.
+- 0.2.54 - Initialize undo manager during service setup to prevent project load errors.
 - 0.2.52 - Move product goal UIs into RequirementsManager and add wrapper methods.
 - 0.2.51 - Extract clone-chain resolution into reusable utility.
 - 0.2.50 - Extract shared product goal updates into ProductGoalManager.

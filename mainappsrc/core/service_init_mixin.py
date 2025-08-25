@@ -31,6 +31,7 @@ from .safety_analysis import SafetyAnalysis_FTA_FMEA
 from .syncing_and_ids import Syncing_And_IDs
 from .diagram_renderer import DiagramRenderer
 from .navigation_selection_input import Navigation_Selection_Input
+from .undo_manager import UndoRedoManager
 
 from mainappsrc.managers.user_manager import UserManager
 from mainappsrc.managers.project_manager import ProjectManager
@@ -99,7 +100,7 @@ class ServiceInitMixin:
             "open_search_toolbox",
         ):
             setattr(self, _name, getattr(self.nav_input, _name))
-
+        self.undo_manager = UndoRedoManager(self)
         self.user_manager = UserManager(self)
         self.project_manager = ProjectManager(self)
         self.cyber_manager = CyberSecurityManager(self)
