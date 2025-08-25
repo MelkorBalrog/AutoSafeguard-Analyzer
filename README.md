@@ -1,4 +1,4 @@
-version: 0.2.19
+version: 0.2.20
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1642,6 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.20 - Re-export logger through gui package to fix DIALOG_BG_COLOR import failure.
 - 0.2.19 - Provide compatibility wrapper for splash screen import.
 - 0.2.18 - Organized GUI modules into functional subpackages and reduced threat window refresh complexity.
 - 0.2.17 - Ensure AutoMLHelper fallback if AutoML module lacks helper export.
