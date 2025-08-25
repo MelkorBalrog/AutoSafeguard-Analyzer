@@ -16,6 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Compatibility launcher exposing the same interface as ``AutoML.py``."""
+"""Compatibility wrapper for :mod:`mainappsrc.core.page_diagram`."""
 
-from AutoML import *  # noqa: F401,F403
+from mainappsrc.core.page_diagram import (
+    PageDiagram,
+    fta_drawing_helper,
+    GATE_NODE_TYPES,
+)
+
+__all__ = ["PageDiagram", "fta_drawing_helper", "GATE_NODE_TYPES"]

@@ -16,6 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Compatibility launcher exposing the same interface as ``AutoML.py``."""
+"""Compatibility wrapper for :mod:`mainappsrc.core.automl_core`."""
 
-from AutoML import *  # noqa: F401,F403
+from mainappsrc.core.automl_core import *  # noqa: F401,F403
