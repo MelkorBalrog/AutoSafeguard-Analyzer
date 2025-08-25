@@ -1644,7 +1644,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.2.58 - Initialize diagram clipboard manager by default and guard clipboard actions.
+- 0.2.58 - Add requirement editor helpers and CSV export wrapper.
 - 0.2.57 - Map Task toolbox selection to Action elements so governance diagrams support adding tasks.
 - 0.2.56 - Synchronize README version header with source.
 - 0.2.55 - Delegate ODD library management to dedicated manager and remove legacy scenario code.

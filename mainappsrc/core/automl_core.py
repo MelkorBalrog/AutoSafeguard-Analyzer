@@ -1291,6 +1291,24 @@ class AutoMLApp(
     def format_requirement_with_trace(self, req):
         return self.requirements_manager.format_requirement_with_trace(req)
 
+    def add_requirement(self, tree, refresh_cb):
+        return self.requirements_manager.add_requirement(tree, refresh_cb)
+
+    def edit_requirement(self, tree, refresh_cb):
+        return self.requirements_manager.edit_requirement(tree, refresh_cb)
+
+    def delete_requirement(self, tree, refresh_cb):
+        return self.requirements_manager.delete_requirement(tree, refresh_cb)
+
+    def link_requirement(self, tree, refresh_cb):
+        return self.requirements_manager.link_requirement(tree, refresh_cb)
+
+    def unlink_requirement(self, tree, refresh_cb):
+        return self.requirements_manager.unlink_requirement(tree, refresh_cb)
+
+    def export_requirements_to_csv(self):
+        return self.requirements_manager.export_requirements_to_csv()
+
     def build_requirement_diff_html(self, review):
         return self.reporting_export.build_requirement_diff_html(review)
 

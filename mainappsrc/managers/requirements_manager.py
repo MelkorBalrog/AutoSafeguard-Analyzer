@@ -21,17 +21,21 @@ from __future__ import annotations
 
 """Requirement management utilities for AutoML."""
 
+import csv
 import json
 from typing import Dict, Any, Set
 from functools import partial
 
 import tkinter as tk
-from tkinter import ttk, simpledialog
+from tkinter import ttk, simpledialog, filedialog
 
 from gui.controls import messagebox
+from gui.dialogs.req_dialog import ReqDialog
+from gui.toolboxes import _RequirementRelationDialog
 from config.automl_constants import PMHF_TARGETS
 from mainappsrc.models.fta.fault_tree_node import FaultTreeNode
-from analysis.models import ASIL_ORDER, global_requirements
+from analysis.models import ASIL_ORDER, global_requirements, ensure_requirement_defaults
+from gui.windows.architecture import link_requirements, unlink_requirements
 
 try:  # pragma: no cover - optional dependency
     from mainappsrc.models.sysml.sysml_repository import SysMLRepository
@@ -674,3 +678,114 @@ class RequirementsManagerSubApp:
             if n1.get('safe_state','') != n2.get('safe_state',''):
                 lines.append(f"Safe State for {html.escape(label)}: " + html_diff(n1.get('safe_state',''), n2.get('safe_state','')))
         return "<br>".join(lines)
+
+    # ------------------------------------------------------------------
+    # Requirement editor helpers
+    # ------------------------------------------------------------------
+    def add_requirement(self, tree: ttk.Treeview, refresh_cb) -> None:
+        dlg = ReqDialog(self.app.root, title="Add Requirement")
+        if getattr(dlg, "result", None):
+            req = ensure_requirement_defaults(dlg.result)
+            global_requirements[req["id"]] = req
+            refresh_cb()
+
+    def edit_requirement(self, tree: ttk.Treeview, refresh_cb) -> None:
+        sel = tree.selection()
+        if not sel:
+            return
+        rid = tree.item(sel[0], "values")[0]
+        req = global_requirements.get(rid, {"id": rid})
+        dlg = ReqDialog(self.app.root, requirement=req, title="Edit Requirement")
+        if getattr(dlg, "result", None):
+            new_req = ensure_requirement_defaults(dlg.result)
+            if new_req["id"] != rid:
+                global_requirements.pop(rid, None)
+            global_requirements[new_req["id"]] = new_req
+            refresh_cb()
+
+    def delete_requirement(self, tree: ttk.Treeview, refresh_cb) -> None:
+        for item in tree.selection():
+            rid = tree.item(item, "values")[0]
+            global_requirements.pop(rid, None)
+            tree.delete(item)
+        refresh_cb()
+
+    def link_requirement(self, tree: ttk.Treeview, refresh_cb) -> None:
+        sel = tree.selection()
+        if not sel:
+            return
+        rid = tree.item(sel[0], "values")[0]
+        req = global_requirements.get(rid)
+        if not req:
+            return
+        dlg = _RequirementRelationDialog(
+            self.app.root, req, getattr(self.app, "safety_mgmt_toolbox", None)
+        )
+        if getattr(dlg, "result", None):
+            rel, targets = dlg.result
+            for tgt in targets:
+                link_requirements(rid, rel, tgt)
+            refresh_cb()
+
+    def unlink_requirement(self, tree: ttk.Treeview, refresh_cb) -> None:
+        sel = tree.selection()
+        if not sel:
+            return
+        rid = tree.item(sel[0], "values")[0]
+        req = global_requirements.get(rid)
+        if not req:
+            return
+        dlg = _RequirementRelationDialog(
+            self.app.root, req, getattr(self.app, "safety_mgmt_toolbox", None)
+        )
+        if getattr(dlg, "result", None):
+            rel, targets = dlg.result
+            existing = [
+                r.get("id") for r in req.get("relations", []) if r.get("type") == rel
+            ]
+            for tgt in existing:
+                if tgt not in targets:
+                    unlink_requirements(rid, rel, tgt)
+            refresh_cb()
+
+    def export_requirements_to_csv(self) -> None:
+        path = filedialog.asksaveasfilename(
+            defaultextension=".csv", filetypes=[("CSV Files", "*.csv")]
+        )
+        if not path:
+            return
+        with open(path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(
+                [
+                    "ID",
+                    "ASIL",
+                    "CAL",
+                    "Type",
+                    "Status",
+                    "Parent",
+                    "Trace",
+                    "Links",
+                    "Text",
+                ]
+            )
+            for req in global_requirements.values():
+                rid = req.get("id", "")
+                trace = ", ".join(self.get_requirement_allocation_names(rid))
+                links = ", ".join(
+                    f"{r.get('type')} {r.get('id')}" for r in req.get("relations", [])
+                )
+                writer.writerow(
+                    [
+                        rid,
+                        req.get("asil", ""),
+                        req.get("cal", ""),
+                        req.get("req_type", ""),
+                        req.get("status", "draft"),
+                        req.get("parent_id", ""),
+                        trace,
+                        links,
+                        req.get("text", ""),
+                    ]
+                )
+        messagebox.showinfo("Export", "Requirements exported")
