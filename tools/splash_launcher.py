@@ -9,7 +9,7 @@ from types import ModuleType
 from typing import Callable, Optional
 
 from config.automl_constants import AUTHOR, AUTHOR_EMAIL, AUTHOR_LINKEDIN
-from gui.splash_screen import SplashScreen
+from gui.windows.splash_screen import SplashScreen
 from mainappsrc.version import VERSION
 
 

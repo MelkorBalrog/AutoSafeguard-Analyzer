@@ -11,7 +11,7 @@ from typing import Optional
 import tkinter as tk
 from tkinter import ttk
 
-from gui.architecture import (
+from gui.windows.architecture import (
     ARCH_WINDOWS,
     UseCaseDiagramWindow,
     ActivityDiagramWindow,
@@ -20,9 +20,9 @@ from gui.architecture import (
     InternalBlockDiagramWindow,
     ControlFlowDiagramWindow,
 )
-from gui.causal_bayesian_network_window import CBN_WINDOWS
-from gui.gsn_diagram_window import GSN_WINDOWS
-from gui.style_manager import StyleManager
+from gui.windows.causal_bayesian_network_window import CBN_WINDOWS
+from gui.windows.gsn_diagram_window import GSN_WINDOWS
+from gui.styles.style_manager import StyleManager
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from mainappsrc.core.page_diagram import PageDiagram
 

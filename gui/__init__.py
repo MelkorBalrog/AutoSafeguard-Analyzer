@@ -6,7 +6,6 @@ from __future__ import annotations
 import sys
 import tkinter as tk
 from tkinter import ttk, simpledialog
-
 from .utils import DIALOG_BG_COLOR, logger, drawing_helper
 
 # Re-export selected utilities for backward-compatible import paths such as
