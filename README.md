@@ -1,4 +1,4 @@
-version: 0.2.42
+version: 0.2.46
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1642,6 +1642,9 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.46 - Delegate basic event retrieval to FTASubApp to fix invocation mismatch.
+- 0.2.45 - Guard AutoML import in package initialisation to avoid circular reference on startup.
+- 0.2.44 - Import StyleSetupMixin to prevent startup NameError in AutoMLApp.
 - 0.2.43 - Remove duplicate service initialisation and centralise drawing manager.
 - 0.2.42 - Integrate initialization mixins to provide setup_services and icons.
 - 0.2.41 - Guard RoundedButton creation to prevent duplicate element errors.
