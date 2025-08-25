@@ -3,7 +3,16 @@ import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-_DEFAULT_STYLE = Path(__file__).resolve().parent.parent / 'styles' / 'pastel.xml'
+# The default style XML lives in the repository's top level ``styles``
+# directory.  ``style_manager.py`` sits two levels deeper under
+# ``gui/styles`` so ``parents[2]`` resolves to the project root.  The
+# previous implementation only climbed one level which pointed to
+# ``gui/styles/pastel.xml`` – a non-existent path – leaving the
+# ``StyleManager`` with an empty palette.  As a result diagram elements and
+# icons fell back to black or transparent fills.  Correct the path so the
+# pastel style loads and governance diagrams render with their intended
+# colours.
+_DEFAULT_STYLE = Path(__file__).resolve().parents[2] / 'styles' / 'pastel.xml'
 if getattr(sys, 'frozen', False):
     # When packaged by PyInstaller resources live under sys._MEIPASS
     _DEFAULT_STYLE = Path(sys._MEIPASS) / 'styles' / 'pastel.xml'
