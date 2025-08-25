@@ -558,7 +558,23 @@ def add_node_of_type(app, event_type):
     app.push_undo_state()
     diag_mode = _current_diagram_mode(app)
     event_upper = event_type.upper()
-    if not _validate_node_type(diag_mode, event_upper, event_type):
+
+    allowed = {
+        "FTA": {"GATE", "BASIC EVENT"},
+        "CTA": {"TRIGGERING CONDITION", "FUNCTIONAL INSUFFICIENCY"},
+        "PAA": {"GATE", "CONFIDENCE LEVEL", "ROBUSTNESS SCORE"},
+    }
+
+    if event_upper not in allowed.get(diag_mode, set()):
+        allowed_nodes = ", ".join(
+            sorted(name.title() for name in allowed.get(diag_mode, []))
+        )
+        msg = (
+            f"Only {allowed_nodes} nodes are allowed in Prototype Assurance Analysis."
+            if diag_mode == "PAA"
+            else f"Node type '{event_type}' is not allowed in {diag_mode} diagrams."
+        )
+        messagebox.showwarning("Invalid", msg)
         return
 
     parent_node = app.selected_node
