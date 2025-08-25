@@ -272,6 +272,11 @@ from .ui_setup import UISetupMixin
 from .event_handlers import EventHandlersMixin
 from .persistence_wrappers import PersistenceWrappersMixin
 from .analysis_utils import AnalysisUtilsMixin
+from .editors import (
+    ItemDefinitionEditorMixin,
+    SafetyConceptEditorMixin,
+    RequirementsEditorMixin,
+)
 from .data_access_queries import DataAccess_Queries
 from analysis.mechanisms import (
     DiagnosticMechanism,
@@ -838,6 +843,9 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
         # Reporting and export operations
         self.reporting_export = Reporting_Export(self)
+
+        # Tree structure helpers
+        self.structure_tree_operations = Structure_Tree_Operations(self)
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
@@ -4621,7 +4629,6 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         tree_frame.pack(fill=tk.BOTH, expand=True)
 
         refresh_tree()
-
 
     def show_hazard_list(self):
         self.risk_app.show_hazard_list(self)
