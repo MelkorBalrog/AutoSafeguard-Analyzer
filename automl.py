@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
@@ -16,30 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import time
+"""Compatibility wrapper exposing the :mod:`AutoML` launcher as ``automl``."""
 
-import importlib
+from AutoML import *  # noqa: F401,F403
 
-
-# Import core package for testing user data utilities
-automl = importlib.import_module("mainappsrc.core")
-
-
-def test_load_user_data_parallel(monkeypatch):
-    def fake_load_all_users():
-        time.sleep(0.2)
-        return {"u": "e"}
-
-    def fake_load_user_config():
-        time.sleep(0.2)
-        return "name", "email"
-
-    monkeypatch.setattr(automl, "load_all_users", fake_load_all_users)
-    monkeypatch.setattr(automl, "load_user_config", fake_load_user_config)
-
-    start = time.time()
-    users, config = automl.load_user_data()
-    elapsed = time.time() - start
-    assert users == {"u": "e"}
-    assert config == ("name", "email")
-    assert elapsed < 0.35
