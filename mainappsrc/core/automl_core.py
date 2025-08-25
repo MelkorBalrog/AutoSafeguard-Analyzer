@@ -231,7 +231,6 @@ else:  # pragma: no cover - fallback for minimal stubs
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from analysis.utils import (
     append_unique_insensitive,
-    update_probability_tables,
     EXPOSURE_PROBABILITIES,
     CONTROLLABILITY_PROBABILITIES,
     SEVERITY_PROBABILITIES,
@@ -423,7 +422,7 @@ class AutoMLApp(
             "controllability_probabilities": CONTROLLABILITY_PROBABILITIES.copy(),
             "severity_probabilities": SEVERITY_PROBABILITIES.copy(),
         }
-        update_probability_tables(
+        self.probability_reliability.update_probability_tables(
             self.project_properties["exposure_probabilities"],
             self.project_properties["controllability_probabilities"],
             self.project_properties["severity_probabilities"],
@@ -1610,10 +1609,9 @@ class AutoMLApp(
         exp_vars: dict,
         ctrl_vars: dict,
         sev_vars: dict,
-        smt,
         freeze: bool,
     ) -> None:
-        """Persist updated project properties and refresh probability tables."""
+        """Persist project properties and delegate updates to services."""
         self.project_properties["pdf_report_name"] = name
         self.project_properties["pdf_detailed_formulas"] = detailed
         self.project_properties["exposure_probabilities"] = {
@@ -1625,13 +1623,12 @@ class AutoMLApp(
         self.project_properties["severity_probabilities"] = {
             lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
         }
-        update_probability_tables(
+        self.probability_reliability.update_probability_tables(
             self.project_properties["exposure_probabilities"],
             self.project_properties["controllability_probabilities"],
             self.project_properties["severity_probabilities"],
         )
-        if smt:
-            self.governance_manager.freeze_governance_diagrams(freeze)
+        self.governance_manager.freeze_governance_diagrams(freeze)
 
     def edit_project_properties(self):
         prop_win = tk.Toplevel(self.root)
@@ -1704,25 +1701,15 @@ class AutoMLApp(
                 )
                 return
 
-            self.project_properties["pdf_report_name"] = new_name
-            self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
-            self.project_properties["exposure_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-            }
-            self.project_properties["controllability_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-            }
-            self.project_properties["severity_probabilities"] = {
-                lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-            }
             self.project_properties["freeze_governance_diagrams"] = var_freeze.get()
-            update_probability_tables(
-                self.project_properties["exposure_probabilities"],
-                self.project_properties["controllability_probabilities"],
-                self.project_properties["severity_probabilities"],
+            self._apply_project_properties(
+                new_name,
+                var_detailed.get(),
+                exp_vars,
+                ctrl_vars,
+                sev_vars,
+                var_freeze.get(),
             )
-            if smt:
-                self.governance_manager.freeze_governance_diagrams(var_freeze.get())
             messagebox.showinfo(
                 "Project Properties", "Project properties updated."
             )
@@ -6858,7 +6845,7 @@ class AutoMLApp(
                 self.project_properties[key] = {
                     int(k): float(v) for k, v in probs.items()
                 }
-        update_probability_tables(
+        self.probability_reliability.update_probability_tables(
             self.project_properties.get("exposure_probabilities"),
             self.project_properties.get("controllability_probabilities"),
             self.project_properties.get("severity_probabilities"),
@@ -7302,7 +7289,7 @@ class AutoMLApp(
             props.get("severity_probabilities") or SEVERITY_PROBABILITIES
         )
         self.project_properties = props
-        update_probability_tables(
+        self.probability_reliability.update_probability_tables(
             self.project_properties["exposure_probabilities"],
             self.project_properties["controllability_probabilities"],
             self.project_properties["severity_probabilities"],

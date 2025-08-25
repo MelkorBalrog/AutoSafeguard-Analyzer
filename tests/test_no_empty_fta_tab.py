@@ -31,6 +31,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 from AutoML import AutoMLApp
 import AutoML
+from mainappsrc.managers.project_manager import ProjectManager
 
 class DummyNotebook:
     def __init__(self):
@@ -66,17 +67,26 @@ def _base_app(monkeypatch):
     app.hara_docs = []
     app.hazop_docs = []
     app.fmea_entries = []
+    app.safety_analysis = types.SimpleNamespace(
+        fmeas=[], fmedas=[], _load_fault_tree_events=lambda *a, **k: None
+    )
     app.fmeas = []
     app.fmedas = []
     app.safety_mgmt_toolbox = MagicMock()
     app.safety_mgmt_toolbox.doc_phases = {}
     app.safety_mgmt_toolbox.active_module = None
     app.safety_mgmt_toolbox.register_created_work_product = MagicMock()
+    app.probability_reliability = MagicMock()
+    app.probability_reliability.update_probability_tables = lambda *a, **k: None
+    app.project_manager = ProjectManager(app)
+    app.messagebox = MagicMock()
 
-    monkeypatch.setattr(AutoML, "SysMLRepository", MagicMock())
+    monkeypatch.setattr(AutoML, "SysMLRepository", MagicMock(), raising=False)
     monkeypatch.setattr(AutoML, "AutoMLHelper", MagicMock())
     monkeypatch.setattr(AutoML, "AutoML_Helper", MagicMock(), raising=False)
-    monkeypatch.setattr(AutoML, "update_probability_tables", lambda *a, **k: None)
+    monkeypatch.setattr(
+        AutoML, "update_probability_tables", lambda *a, **k: None, raising=False
+    )
     monkeypatch.setattr(AutoML.messagebox, "askyesnocancel", lambda *a, **k: False)
     return app
 
