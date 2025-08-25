@@ -850,6 +850,9 @@ class AutoMLApp(
         # Reporting and export operations
         self.reporting_export = Reporting_Export(self)
 
+        # Tree structure helpers
+        self.structure_tree_operations = Structure_Tree_Operations(self)
+
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
         self.load_default_mechanisms()
