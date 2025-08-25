@@ -254,7 +254,6 @@ from gui.explorers.safety_case_explorer import SafetyCaseExplorer
 from gui.windows.gsn_diagram_window import GSN_WINDOWS
 from gui.windows.causal_bayesian_network_window import CBN_WINDOWS
 from gui.windows.gsn_config_window import GSNElementConfig
-from gui.toolboxes.search_toolbox import SearchToolbox
 from mainappsrc.models.gsn import GSNDiagram, GSNModule
 from mainappsrc.managers.gsn_manager import GSNManager
 from mainappsrc.models.gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
@@ -295,8 +294,11 @@ except Exception:  # pragma: no cover
 from mainappsrc.core.event_dispatcher import EventDispatcher
 from mainappsrc.core.page_diagram import PageDiagram
 from mainappsrc.core.window_controllers import WindowControllers
+from mainappsrc.core.navigation_selection_input import Navigation_Selection_Input
 from mainappsrc.managers.review_manager import ReviewManager
+from .versioning_review import Versioning_Review
 from mainappsrc.core.diagram_renderer import DiagramRenderer
+from .validation_consistency import Validation_Consistency
 from analysis.user_config import (
     load_user_config,
     save_user_config,
@@ -596,6 +598,12 @@ class AutoMLApp:
             self._window_controllers = WindowControllers(self)
         return self._window_controllers
 
+    @property
+    def top_event_workflows(self) -> Top_Event_Workflows:
+        if not hasattr(self, "_top_event_workflows"):
+            self._top_event_workflows = Top_Event_Workflows(self)
+        return self._top_event_workflows
+
     def __getattr__(self, name):  # pragma: no cover - simple delegation
         """Delegate missing attributes to the lifecycle UI helper.
 
@@ -658,6 +666,30 @@ class AutoMLApp:
         self.helper = AutoML_Helper
         # Dedicated renderer for all diagram-related operations.
         self.diagram_renderer = DiagramRenderer(self)
+        # Delegate navigation and selection input handling
+        self.nav_input = Navigation_Selection_Input(self)
+        for _name in (
+            "go_back",
+            "back_all_pages",
+            "focus_on_node",
+            "on_canvas_click",
+            "on_canvas_double_click",
+            "on_canvas_drag",
+            "on_canvas_release",
+            "on_analysis_tree_double_click",
+            "on_analysis_tree_right_click",
+            "on_analysis_tree_select",
+            "on_ctrl_mousewheel",
+            "on_ctrl_mousewheel_page",
+            "on_right_mouse_press",
+            "on_right_mouse_drag",
+            "on_right_mouse_release",
+            "on_tool_list_double_click",
+            "on_treeview_click",
+            "show_context_menu",
+            "open_search_toolbox",
+        ):
+            setattr(self, _name, getattr(self.nav_input, _name))
         # style-aware icons used across tree views
         style_mgr = StyleManager.get_instance()
 
@@ -784,6 +816,7 @@ class AutoMLApp:
         self.cta_manager = ControlTreeManager(self)
         self.requirements_manager = RequirementsManagerSubApp(self)
         self.review_manager = ReviewManager(self)
+        self.versioning_review = Versioning_Review(self)
 
         # Centralise data lookups in a dedicated helper
         self.data_access_queries = DataAccess_Queries(self)
@@ -1611,13 +1644,13 @@ class AutoMLApp:
         return self.requirements_manager.format_requirement_with_trace(req)
 
     def build_requirement_diff_html(self, review):
-        return self.requirements_manager.build_requirement_diff_html(review)
+        return self.reporting_export.build_requirement_diff_html(review)
 
     def generate_recommendations_for_top_event(self, node):
         return self.fta_app.generate_recommendations_for_top_event(self, node)
 
     def back_all_pages(self):
-        return self.fta_app.back_all_pages(self)
+        return self.nav_input.back_all_pages()
 
     def move_top_event_up(self):
         return self.fta_app.move_top_event_up(self)
@@ -1638,13 +1671,13 @@ class AutoMLApp:
         return self.fta_app.get_combined_safety_requirements(self, node)
 
     def get_top_event(self, node):
-        return self.fta_app.get_top_event(self, node)
+        return self.top_event_workflows.get_top_event(node)
 
     def aggregate_safety_requirements(self, node, all_nodes):
         return self.fta_app.aggregate_safety_requirements(self, node, all_nodes)
 
     def generate_top_event_summary(self, top_event):
-        return self.fta_app.generate_top_event_summary(self, top_event)
+        return self.top_event_workflows.generate_top_event_summary(top_event)
 
     def get_all_nodes(self, node=None):
         return self.data_access_queries.get_all_nodes(node)
@@ -1680,7 +1713,13 @@ class AutoMLApp:
         return self.fta_app.build_page_argumentation(self, page_node)
 
     def build_unified_recommendation_table(self):
-        return self.fta_app.build_unified_recommendation_table(self)
+        return self.reporting_export.build_unified_recommendation_table()
+
+    def build_dynamic_recommendations_table(self):
+        return self.reporting_export.build_dynamic_recommendations_table()
+
+    def build_base_events_table_html(self):
+        return self.reporting_export.build_base_events_table_html()
 
     def get_extra_recommendations_list(self, description, level):
         return self.data_access_queries.get_extra_recommendations_list(description, level)
@@ -1701,7 +1740,7 @@ class AutoMLApp:
         return self.fta_app.analyze_common_causes(self, node)
 
     def build_text_report(self, node, indent=0):
-        return self.fta_app.build_text_report(self, node, indent)
+        return self.reporting_export.build_text_report(node, indent)
 
     def all_children_are_base_events(self, node):
         return self.fta_app.all_children_are_base_events(self, node)
@@ -1943,7 +1982,10 @@ class AutoMLApp:
                 width=8,
                 font=dialog_font,
                 validate="key",
-                validatecommand=(parent.register(self.validate_float), "%P"),
+                validatecommand=(
+                    parent.register(self.validation_consistency.validate_float),
+                    "%P",
+                ),
             ).grid(row=0, column=idx * 2 + 1, padx=2, pady=2)
             vars_dict[lvl] = var
         return vars_dict
@@ -2083,17 +2125,7 @@ class AutoMLApp:
         self.root.wait_window(prop_win)
 
     def create_diagram_image(self):
-        self.canvas.update()
-        bbox = self.canvas.bbox("all")
-        if not bbox:
-            return None
-        x, y, w, h = bbox[0], bbox[1], bbox[2]-bbox[0], bbox[3]-bbox[1]
-        ps = self.canvas.postscript(colormode="color", x=x, y=y, width=w, height=h)
-        from io import BytesIO
-        ps_bytes = BytesIO(ps.encode("utf-8"))
-        img = Image.open(ps_bytes)
-        img.load(scale=3)
-        return img.convert("RGB")
+        return self.reporting_export.create_diagram_image()
 
     def get_page_nodes(self, node):
         return self.data_access_queries.get_page_nodes(node)
@@ -2397,47 +2429,23 @@ class AutoMLApp:
         self.diagram_export_app.save_diagram_png()
 
     def on_treeview_click(self, event):
-        self.tree_app.on_treeview_click(self, event)
+        return self.nav_input.on_treeview_click(event)
 
     def on_analysis_tree_double_click(self, event):
-        self.tree_app.on_analysis_tree_double_click(self, event)
+        return self.nav_input.on_analysis_tree_double_click(event)
 
     def on_analysis_tree_right_click(self, event):
-        self.tree_app.on_analysis_tree_right_click(self, event)
+        return self.nav_input.on_analysis_tree_right_click(event)
 
     def on_analysis_tree_select(self, _event):
-        """Update property view when a tree item is selected."""
-        self.tree_app.on_analysis_tree_select(self, _event)
+        return self.nav_input.on_analysis_tree_select(_event)
 
 
     def rename_selected_tree_item(self):
         self.tree_app.rename_selected_tree_item(self)
 
     def on_tool_list_double_click(self, event):
-        lb = event.widget
-        sel = lb.curselection()
-        if not sel:
-            # Tk may trigger a double-click event before updating the
-            # selection, so determine the item from the pointer location.
-            index = lb.nearest(getattr(event, "y", 0))
-            if index is None or index < 0:
-                return
-            lb.selection_clear(0, tk.END)
-            lb.selection_set(index)
-            sel = (index,)
-        name = lb.get(sel[0])
-        analysis_names = self.tool_to_work_product.get(name, set())
-        if isinstance(analysis_names, str):
-            analysis_names = {analysis_names}
-        if analysis_names:
-            enabled = set(getattr(self, "enabled_work_products", set()))
-            if self.safety_mgmt_toolbox:
-                enabled.update(self.safety_mgmt_toolbox.enabled_products())
-            if not any(n in enabled for n in analysis_names):
-                return
-        action = self.tool_actions.get(name)
-        if action:
-            action()
+        return self.nav_input.on_tool_list_double_click(event)
 
     def _on_toolbox_change(self) -> None:
         self.governance_manager._on_toolbox_change()
@@ -2498,157 +2506,17 @@ class AutoMLApp:
             _refresh_children(tab)
 
 
-    def enable_process_area(self, area: str) -> None:
-        if area not in self.tool_listboxes:
-            self.tool_categories[area] = []
-            self.lifecycle_ui._add_tool_category(area, [])
+    def enable_process_area(self, area: str) -> None:  # pragma: no cover - delegation
+        return self.validation_consistency.enable_process_area(area)
 
-    def enable_work_product(self, name: str, *, refresh: bool = True) -> None:
-        info = self.WORK_PRODUCT_INFO.get(name)
-        area = tool_name = method_name = None
-        if info:
-            area, tool_name, method_name = info
-            self.enable_process_area(area)
-            if tool_name not in self.tool_actions:
-                action = getattr(self, method_name, None)
-                if action:
-                    self.tool_actions[tool_name] = action
-                    lb = self.tool_listboxes.get(area)
-                    if lb:
-                        lb.insert(tk.END, tool_name)
-            mapping = getattr(self, "tool_to_work_product", {})
-            existing = mapping.get(tool_name)
-            if isinstance(existing, set):
-                existing.add(name)
-            elif existing:
-                mapping[tool_name] = {existing, name}
-            else:
-                mapping.setdefault(tool_name, set()).add(name)
-        # Enable corresponding menu entry if one was registered
-        for menu, idx in self.work_product_menus.get(name, []):
-            try:
-                menu.entryconfig(idx, state=tk.NORMAL)
-            except tk.TclError:
-                pass
-        self.enabled_work_products.add(name)
-        parent = self.WORK_PRODUCT_PARENTS.get(name)
-        if parent and parent not in self.enabled_work_products:
-            self.enable_work_product(parent, refresh=False)
-        if refresh and hasattr(self, "update_views"):
-            try:
-                self.update_views()
-            except Exception:
-                pass
+    def enable_work_product(self, name: str, *, refresh: bool = True) -> None:  # pragma: no cover - delegation
+        return self.validation_consistency.enable_work_product(name, refresh=refresh)
 
-    # ------------------------------------------------------------------
-    def can_remove_work_product(self, name: str) -> bool:
-        """Return ``True`` if the work product type can be removed.
+    def can_remove_work_product(self, name: str) -> bool:  # pragma: no cover - delegation
+        return self.validation_consistency.can_remove_work_product(name)
 
-        A work product type may only be removed from the governance diagram
-        when there are no existing documents of that type in the project.
-        """
-
-        attr_map = {
-            "HAZOP": "hazop_docs",
-            "Risk Assessment": "hara_docs",
-            "STPA": "stpa_docs",
-            "Threat Analysis": "threat_docs",
-            "FI2TC": "fi2tc_docs",
-            "TC2FI": "tc2fi_docs",
-            "Causal Bayesian Network Analysis": "cbn_docs",
-            "FMEA": "reliability_analyses",
-            "FMEDA": "fmeda_components",
-            "FTA": "top_events",
-            "Prototype Assurance Analysis": "top_events",
-            "Architecture Diagram": "arch_diagrams",
-            "Scenario Library": "scenario_libraries",
-            "ODD": "odd_libraries",
-            "Qualitative Analysis": (
-                "hazop_docs",
-                "stpa_docs",
-                "threat_docs",
-                "fi2tc_docs",
-                "tc2fi_docs",
-                "hara_docs",
-            ),
-            "Mission Profile": "mission_profiles",
-            "Reliability Analysis": "reliability_analyses",
-        }
-        attr = attr_map.get(name)
-        if not attr:
-            return True
-        if isinstance(attr, (tuple, list, set)):
-            return all(not getattr(self, a, []) for a in attr)
-        return not getattr(self, attr, [])
-
-    # ------------------------------------------------------------------
-    def disable_work_product(self, name: str, *, force: bool = False, refresh: bool = True) -> bool:
-        """Disable menu and toolbox entries for the given work product.
-
-        Parameters
-        ----------
-        name:
-            Work product type to disable.
-        force:
-            When ``True`` the work product is hidden even when existing
-            documents of that type remain.
-
-        Returns
-        -------
-        bool
-            ``True`` if the work product was disabled. If ``force`` is
-            ``False`` and existing documents of that type are present the
-            work product remains enabled and ``False`` is returned.
-        """
-
-        if not force and not self.can_remove_work_product(name):
-            return False
-        self.enabled_work_products.discard(name)
-        for menu, idx in self.work_product_menus.get(name, []):
-            state = tk.DISABLED
-            for other, entries in self.work_product_menus.items():
-                if (
-                    other != name
-                    and other in self.enabled_work_products
-                    and (menu, idx) in entries
-                ):
-                    state = tk.NORMAL
-                    break
-            try:
-                menu.entryconfig(idx, state=state)
-            except tk.TclError:
-                pass
-        info = self.WORK_PRODUCT_INFO.get(name)
-        if info:
-            area, tool_name, _ = info
-            if tool_name:
-                still_in_use = False
-                for wp in self.enabled_work_products:
-                    wp_info = self.WORK_PRODUCT_INFO.get(wp)
-                    if wp_info and wp_info[1] == tool_name:
-                        still_in_use = True
-                        break
-                if not still_in_use:
-                    lb = self.tool_listboxes.get(area)
-                    if lb:
-                        for i in range(lb.size()):
-                            if lb.get(i) == tool_name:
-                                lb.delete(i)
-                                break
-                    self.tool_actions.pop(tool_name, None)
-        parent = self.WORK_PRODUCT_PARENTS.get(name)
-        if parent and parent in self.enabled_work_products:
-            if not any(
-                self.WORK_PRODUCT_PARENTS.get(wp) == parent
-                for wp in self.enabled_work_products
-            ):
-                self.disable_work_product(parent, force=True, refresh=False)
-        if refresh and hasattr(self, "update_views"):
-            try:
-                self.update_views()
-            except Exception:
-                pass
-        return True
+    def disable_work_product(self, name: str, *, force: bool = False, refresh: bool = True) -> bool:  # pragma: no cover - delegation
+        return self.validation_consistency.disable_work_product(name, force=force, refresh=refresh)
 
     def open_work_product(self, name: str) -> None:
         """Open a diagram or analysis work product within the application."""
@@ -2712,10 +2580,7 @@ class AutoMLApp:
 
 
     def on_ctrl_mousewheel(self, event):
-        if event.delta > 0:
-            self.zoom_in()
-        else:
-            self.zoom_out()
+        return self.nav_input.on_ctrl_mousewheel(event)
 
     def new_model(self):
         self.project_manager.new_model()
@@ -2759,126 +2624,28 @@ class AutoMLApp:
         return "#FAD7A0"
 
     def on_right_mouse_press(self, event):
-        self.rc_dragged = False
-        self.canvas.scan_mark(event.x, event.y)
+        return self.nav_input.on_right_mouse_press(event)
 
     def on_right_mouse_drag(self, event):
-        self.rc_dragged = True
-        self.canvas.scan_dragto(event.x, event.y, gain=1)
+        return self.nav_input.on_right_mouse_drag(event)
 
     def on_right_mouse_release(self, event):
-        # Use getattr to avoid attribute errors if the press event was not
-        # processed (e.g. when the canvas loses focus).  Also reset the flag so
-        # a stale ``True`` value from a previous drag does not suppress future
-        # context menus.
-        if not getattr(self, "rc_dragged", False):
-            self.show_context_menu(event)
-        self.rc_dragged = False
+        return self.nav_input.on_right_mouse_release(event)
 
     def show_context_menu(self, event):
-        x = self.canvas.canvasx(event.x) / self.zoom
-        y = self.canvas.canvasy(event.y) / self.zoom
-        clicked_node = None
-        for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
-            if (x - n.x)**2 + (y - n.y)**2 < radius**2:
-                clicked_node = n
-                break
-        if not clicked_node:
-            return
-        self.selected_node = clicked_node
-        menu = tk.Menu(self.root, tearoff=0)
-        menu.add_command(label="Edit", command=lambda: self.edit_selected())
-        menu.add_command(label="Remove Connection", command=lambda: self.remove_connection(clicked_node))
-        menu.add_command(label="Delete Node", command=lambda: self.delete_node_and_subtree(clicked_node))
-        menu.add_command(label="Remove Node", command=lambda: self.remove_node())
-        menu.add_command(label="Copy", command=lambda: self.copy_node())
-        menu.add_command(label="Cut", command=lambda: self.cut_node())
-        menu.add_command(label="Paste", command=lambda: self.paste_node())
-        menu.add_separator()
-        menu.add_command(label="Edit User Name", command=lambda: self.user_manager.edit_user_name())
-        menu.add_command(label="Edit Description", command=lambda: self.edit_description())
-        menu.add_command(label="Edit Rationale", command=lambda: self.edit_rationale())
-        menu.add_command(label="Edit Value", command=lambda: self.edit_value())
-        menu.add_command(label="Edit Gate Type", command=lambda: self.edit_gate_type())
-        menu.add_command(label="Edit Severity", command=lambda: self.edit_severity())
-        menu.add_command(label="Edit Controllability", command=lambda: self.edit_controllability())
-        menu.add_command(label="Edit Page Flag", command=lambda: self.edit_page_flag())
-        menu.add_separator()
-        diag_mode = getattr(self.canvas, "diagram_mode", "FTA")
-        if diag_mode == "PAA":
-            menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"))
-            menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"))
-        elif diag_mode == "CTA":
-            menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
-            menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
-        else:
-            menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"))
-            menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"))
-            menu.add_command(label="Add Gate from Failure Mode", command=self.add_gate_from_failure_mode)
-            menu.add_command(label="Add Fault Event", command=self.add_fault_event)
-        menu.tk_popup(event.x_root, event.y_root)
+        return self.nav_input.show_context_menu(event)
 
     def on_canvas_click(self, event):
-        x = self.canvas.canvasx(event.x) / self.zoom
-        y = self.canvas.canvasy(event.y) / self.zoom
-        clicked_node = None
-        for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
-            if (x - n.x)**2 + (y - n.y)**2 < radius**2:
-                clicked_node = n
-                break
-        self.selected_node = clicked_node
-        if clicked_node:
-            self.push_undo_state()
-            self.dragging_node = clicked_node
-            self.drag_offset_x = x - clicked_node.x
-            self.drag_offset_y = y - clicked_node.y
-        else:
-            self.dragging_node = None
-        self.redraw_canvas()
+        return self.nav_input.on_canvas_click(event)
 
     def on_canvas_double_click(self, event):
-        x = self.canvas.canvasx(event.x) / self.zoom
-        y = self.canvas.canvasy(event.y) / self.zoom
-        clicked_node = None
-        for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
-            if (x - n.x)**2 + (y - n.y)**2 < radius**2:
-                clicked_node = n
-                break
-        if clicked_node:
-            if not clicked_node.is_primary_instance:
-                self.window_controllers.open_page_diagram(getattr(clicked_node, "original", clicked_node))
-            else:
-                if clicked_node.is_page:
-                    self.window_controllers.open_page_diagram(clicked_node)
-                else:
-                    EditNodeDialog(self.root, clicked_node, self)
-            self.update_views()
+        return self.nav_input.on_canvas_double_click(event)
 
     def on_canvas_drag(self, event):
-        if self.dragging_node:
-            x = self.canvas.canvasx(event.x) / self.zoom
-            y = self.canvas.canvasy(event.y) / self.zoom
-            new_x = x - self.drag_offset_x
-            new_y = y - self.drag_offset_y
-            dx = new_x - self.dragging_node.x
-            dy = new_y - self.dragging_node.y
-            self.dragging_node.x = new_x
-            self.dragging_node.y = new_y
-            if self.dragging_node.is_primary_instance:
-                self.move_subtree(self.dragging_node, dx, dy)
-            self.redraw_canvas()
+        return self.nav_input.on_canvas_drag(event)
 
     def on_canvas_release(self, event):
-        if self.dragging_node:
-            self.dragging_node.x = round(self.dragging_node.x/self.grid_size)*self.grid_size
-            self.dragging_node.y = round(self.dragging_node.y/self.grid_size)*self.grid_size
-            self.push_undo_state()
-        self.dragging_node = None
-        self.drag_offset_x = 0
-        self.drag_offset_y = 0
+        return self.nav_input.on_canvas_release(event)
 
     def _move_subtree_strategy1(self, node, dx, dy):
         for child in getattr(node, "children", []):
@@ -3646,34 +3413,8 @@ class AutoMLApp:
         for be in self.get_all_basic_events():
             be.failure_prob = self.compute_failure_prob(be)
 
-    def validate_float(self, value):
-        """Return ``True`` if ``value`` resembles a float.
-
-        This validator is tolerant of scientific-notation inputs that are
-        entered incrementally (e.g. ``"1e"`` or ``"1e-"``) to keep the entry
-        widget from rejecting keystrokes during editing.
-        """
-
-        if value in ("", "-", "+", ".", "-.", "+.", "e", "E", "e-", "e+", "E-", "E+"):
-            return True
-        try:
-            float(value)
-            return True
-        except ValueError:
-            lower = value.lower()
-            if lower.endswith("e"):
-                try:
-                    float(lower[:-1])
-                    return True
-                except ValueError:
-                    return False
-            if lower.endswith(("e-", "e+")):
-                try:
-                    float(lower[:-2])
-                    return True
-                except ValueError:
-                    return False
-            return False
+    def validate_float(self, value):  # pragma: no cover - delegation
+        return self.validation_consistency.validate_float(value)
 
     def compute_failure_prob(self, node, failure_mode_ref=None, formula=None):
         """Return probability of failure for ``node`` based on FIT rate.
@@ -3823,29 +3564,7 @@ class AutoMLApp:
 
 
     def create_diagram_image_without_grid(self):
-        if hasattr(self, "canvas") and self.canvas is not None and self.canvas.winfo_exists():
-            target_canvas = self.canvas
-        elif hasattr(self, "page_diagram") and self.page_diagram is not None:
-            target_canvas = self.page_diagram.canvas
-        else:
-            return None
-        grid_items = target_canvas.find_withtag("grid")
-        target_canvas.delete("grid")
-        target_canvas.update()
-        bbox = target_canvas.bbox("all")
-        if not bbox:
-            return None
-        x, y, w, h = bbox[0], bbox[1], bbox[2]-bbox[0], bbox[3]-bbox[1]
-        ps = target_canvas.postscript(colormode="color", x=x, y=y, width=w, height=h)
-        from io import BytesIO
-        ps_bytes = BytesIO(ps.encode("utf-8"))
-        img = Image.open(ps_bytes)
-        img.load(scale=3)
-        if target_canvas == self.canvas:
-            self.redraw_canvas()
-        else:
-            self.page_diagram.redraw_canvas()
-        return img.convert("RGB")
+        return self.reporting_export.create_diagram_image_without_grid()
 
     def draw_connections(self, node, drawn_ids=set()):
         if id(node) in drawn_ids:
@@ -4414,22 +4133,7 @@ class AutoMLApp:
     # Helpers for malfunctions and failure modes
     # ------------------------------------------------------------------
     def create_top_event_for_malfunction(self, name: str) -> None:
-        """Create a new top level event linked to the given malfunction."""
-        self.push_undo_state()
-        new_event = FaultTreeNode("", "TOP EVENT")
-        new_event.x, new_event.y = 300, 200
-        new_event.is_top_event = True
-        new_event.malfunction = name
-        self.top_events.append(new_event)
-        self.root_node = new_event
-        if hasattr(self, "safety_mgmt_toolbox"):
-            analysis = (
-                "Prototype Assurance Analysis"
-                if getattr(self, "diagram_mode", "") == "PAA"
-                else "FTA"
-            )
-            self.safety_mgmt_toolbox.register_created_work_product(analysis, new_event.name)
-        self.update_views()
+        return self.top_event_workflows.create_top_event_for_malfunction(name)
 
     def delete_top_events_for_malfunction(self, name: str) -> None:
         """Remove all FTAs tied to the malfunction ``name``."""
@@ -4455,48 +4159,7 @@ class AutoMLApp:
         self.update_views()
 
     def add_gate_from_failure_mode(self):
-        self.push_undo_state()
-        modes = self.get_available_failure_modes_for_gates()
-        if not modes:
-            messagebox.showinfo("No Failure Modes", "No failure modes available.")
-            return
-        dialog = self.SelectFailureModeDialog(self.root, self, modes)
-        selected = dialog.selected
-        if not selected:
-            return
-        if self.selected_node:
-            parent_node = self.selected_node
-            if not parent_node.is_primary_instance:
-                messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
-                return
-        else:
-            sel = self.analysis_tree.selection()
-            if not sel:
-                messagebox.showwarning("No selection", "Select a parent node to paste into.")
-                return
-            try:
-                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
-            except (IndexError, ValueError):
-                messagebox.showwarning("No selection", "Select a parent node from the tree.")
-                return
-            parent_node = self.find_node_by_id_all(node_id)
-        if parent_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"]:
-            messagebox.showwarning("Invalid", "Base events cannot have children.")
-            return
-        new_node = FaultTreeNode("", "GATE", parent=parent_node)
-        new_node.gate_type = "AND"
-        if hasattr(selected, "unique_id"):
-            new_node.failure_mode_ref = selected.unique_id
-            new_node.description = getattr(selected, "description", "")
-            new_node.user_name = getattr(selected, "user_name", "")
-        else:
-            new_node.description = self.get_entry_field(selected, "description", "")
-            new_node.user_name = self.get_entry_field(selected, "user_name", "")
-        new_node.x = parent_node.x + 100
-        new_node.y = parent_node.y + 100
-        parent_node.children.append(new_node)
-        new_node.parents.append(parent_node)
-        self.update_views()
+        return self.top_event_workflows.add_gate_from_failure_mode()
 
     def add_fault_event(self):
         self.push_undo_state()
@@ -6099,7 +5762,7 @@ class AutoMLApp:
                 }
                 ensure_requirement_defaults(req)
                 global_requirements[custom_id] = req
-            self.app.update_validation_criteria(custom_id)
+            self.app.validation_consistency.update_validation_criteria(custom_id)
             if not hasattr(self.node, "safety_requirements"):
                 self.node.safety_requirements = []
             if not any(r["id"] == custom_id for r in self.node.safety_requirements):
@@ -6125,7 +5788,7 @@ class AutoMLApp:
             current_req["custom_id"] = new_custom_id
             current_req["id"] = new_custom_id
             global_requirements[new_custom_id] = current_req
-            self.app.update_validation_criteria(new_custom_id)
+            self.app.validation_consistency.update_validation_criteria(new_custom_id)
             self.node.safety_requirements[index] = current_req
             self.req_listbox.delete(index)
             desc = format_requirement(current_req, include_id=False)
@@ -7074,7 +6737,10 @@ class AutoMLApp:
                     fs_tab,
                     textvariable=self.ftti_var,
                     validate="key",
-                    validatecommand=(master.register(self.app.validate_float), "%P"),
+                    validatecommand=(
+                        master.register(self.app.validation_consistency.validate_float),
+                        "%P",
+                    ),
                 ).grid(row=4, column=1, padx=5, pady=5)
 
                 ttk.Label(fs_tab, text="Description:").grid(row=5, column=0, sticky="ne")
@@ -7530,27 +7196,7 @@ class AutoMLApp:
         self.refresh_safety_case_table()
 
     def export_product_goal_requirements(self):
-        """Export requirements traced to product goals including their ASIL."""
-        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
-        if not path:
-            return
-
-        columns = ["Product Goal", "PG ASIL", "Safe State", "Requirement ID", "Req ASIL", "Text"]
-        with open(path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(columns)
-            for te in self.top_events:
-                sg_text = te.safety_goal_description or (te.user_name or f"SG {te.unique_id}")
-                sg_asil = te.safety_goal_asil
-                reqs = self.collect_requirements_recursive(te)
-                seen = set()
-                for req in reqs:
-                    rid = req.get("id")
-                    if rid in seen:
-                        continue
-                    seen.add(rid)
-                    writer.writerow([sg_text, sg_asil, te.safe_state, rid, req.get("asil", ""), req.get("text", "")])
-        messagebox.showinfo("Export", "Product goal requirements exported.")
+        return self.reporting_export.export_product_goal_requirements()
     def generate_phase_requirements(self, phase: str) -> None:
         """Generate requirements for all governance diagrams in a phase."""
         self.open_safety_management_toolbox(show_diagrams=False)
@@ -7589,8 +7235,7 @@ class AutoMLApp:
         )
 
     def export_cybersecurity_goal_requirements(self):
-        """Export cybersecurity goals with linked risk assessments."""
-        self.cyber_manager.export_goal_requirements()
+        return self.reporting_export.export_cybersecurity_goal_requirements()
 
     def show_cut_sets(self):
         """Display minimal cut sets for every top event."""
@@ -9825,13 +9470,7 @@ class AutoMLApp:
             pd.redraw_canvas()
 
     def open_search_toolbox(self):
-        """Open the search toolbox in a new working-area tab."""
-        if getattr(self, "search_tab", None) and self.search_tab.winfo_exists():
-            self.doc_nb.select(self.search_tab)
-            return
-        self.search_tab = SearchToolbox(self.doc_nb, self)
-        self.doc_nb.add(self.search_tab, text="Search")
-        self.doc_nb.select(self.search_tab)
+        return self.nav_input.open_search_toolbox()
 
     def open_style_editor(self):
         """Open the diagram style editor window."""
@@ -9946,12 +9585,8 @@ class AutoMLApp:
             ):
                 self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
                 
-    def enable_paa_actions(self, enabled: bool) -> None:
-        """Enable or disable PAA-related menu actions."""
-        if hasattr(self, "paa_menu"):
-            state = tk.NORMAL if enabled else tk.DISABLED
-            for key in ("add_confidence", "add_robustness"):
-                self.paa_menu.entryconfig(self._paa_menu_indices[key], state=state)
+    def enable_paa_actions(self, enabled: bool) -> None:  # pragma: no cover - delegation
+        return self.validation_consistency.enable_paa_actions(enabled)
                 
     def _update_analysis_menus(self,mode=None):
         """Enable or disable node-adding menu items based on diagram mode."""
@@ -9959,7 +9594,7 @@ class AutoMLApp:
             mode = getattr(self, "diagram_mode", "FTA")
         self.enable_fta_actions(mode == "FTA")
         self.cta_manager.enable_actions(mode == "CTA")
-        self.enable_paa_actions(mode == "PAA")
+        self.validation_consistency.enable_paa_actions(mode == "PAA")
 
     def _create_paa_tab(self) -> None:
         """Delegate to :class:`PrototypeAssuranceManager` to create a PAA tab."""
@@ -9985,17 +9620,8 @@ class AutoMLApp:
         self.vbar = None
         self.page_diagram = None
 
-    def ensure_fta_tab(self):
-        """Recreate the FTA tab if it was closed."""
-        mode = getattr(self, "diagram_mode", "FTA")
-        tab_info = self.analysis_tabs.get(mode)
-        if not tab_info or not tab_info["tab"].winfo_exists():
-            self._create_fta_tab(mode)
-        else:
-            self.canvas_tab = tab_info["tab"]
-            self.canvas = tab_info["canvas"]
-            self.hbar = tab_info["hbar"]
-            self.vbar = tab_info["vbar"]
+    def ensure_fta_tab(self):  # pragma: no cover - delegation
+        return self.validation_consistency.ensure_fta_tab()
 
 
 
@@ -11142,196 +10768,7 @@ class AutoMLApp:
 
 
     def export_model_data(self, include_versions=True):
-        # Ensure aggregated ODD elements are up to date
-        self.update_odd_elements()
-        reviews = []
-        for r in getattr(self, "reviews", []):
-            reviews.append({
-                "name": r.name,
-                "description": r.description,
-                "mode": r.mode,
-                "moderators": [asdict(m) for m in r.moderators],
-                "approved": r.approved,
-                "reviewed": getattr(r, 'reviewed', False),
-                "due_date": r.due_date,
-                "closed": r.closed,
-                "participants": [asdict(p) for p in r.participants],
-                "comments": [asdict(c) for c in r.comments],
-                "fta_ids": r.fta_ids,
-                "fmea_names": r.fmea_names,
-                "fmeda_names": getattr(r, 'fmeda_names', []),
-                "hazop_names": getattr(r, 'hazop_names', []),
-                "hara_names": getattr(r, 'hara_names', []),
-                "stpa_names": getattr(r, 'stpa_names', []),
-                "fi2tc_names": getattr(r, 'fi2tc_names', []),
-                "tc2fi_names": getattr(r, 'tc2fi_names', []),
-            })
-        review_data = getattr(self, "review_data", None)
-        current_name = review_data.name if review_data else None
-        repo = SysMLRepository.get_instance()
-        data = {
-            "top_events": [event.to_dict() for event in getattr(self, "top_events", [])],
-            "cta_events": [event.to_dict() for event in getattr(self, "cta_events", [])],
-            "paa_events": [event.to_dict() for event in getattr(self, "paa_events", [])],
-            "fmeas": [
-                {
-                    "name": f["name"],
-                    "file": f["file"],
-                    "entries": [e.to_dict() for e in f["entries"]],
-                    "created": f.get("created", ""),
-                    "author": f.get("author", ""),
-                    "modified": f.get("modified", ""),
-                    "modified_by": f.get("modified_by", ""),
-                }
-                for f in self.fmeas
-            ],
-            "fmedas": [
-                {
-                    "name": d["name"],
-                    "file": d["file"],
-                    "entries": [e.to_dict() for e in d["entries"]],
-                    "bom": d.get("bom", ""),
-                    "created": d.get("created", ""),
-                    "author": d.get("author", ""),
-                    "modified": d.get("modified", ""),
-                    "modified_by": d.get("modified_by", ""),
-                }
-                for d in self.fmedas
-            ],
-            "mechanism_libraries": [
-                {
-                    "name": lib.name,
-                    "mechanisms": [asdict(m) for m in lib.mechanisms],
-                }
-                for lib in self.mechanism_libraries
-            ],
-            "selected_mechanism_libraries": [lib.name for lib in self.selected_mechanism_libraries],
-            "mission_profiles": [
-                {
-                    **asdict(mp),
-                    "duty_cycle": mp.tau_on / (mp.tau_on + mp.tau_off)
-                    if (mp.tau_on + mp.tau_off)
-                    else 0.0,
-                }
-                for mp in self.mission_profiles
-            ],
-            "reliability_analyses": [
-                {
-                    "name": ra.name,
-                    "standard": ra.standard,
-                    "profile": ra.profile,
-                    "components": [asdict(c) for c in ra.components],
-                    "total_fit": ra.total_fit,
-                    "spfm": ra.spfm,
-                    "lpfm": ra.lpfm,
-                    "dc": ra.dc,
-                }
-                for ra in self.reliability_analyses
-            ],
-            "hazops": [
-                {
-                    "name": doc.name,
-                    "entries": [asdict(e) for e in doc.entries],
-                }
-                for doc in self.hazop_docs
-            ],
-            "haras": [
-                {
-                    "name": doc.name,
-                    "hazops": getattr(doc, "hazops", []),
-                    "entries": [asdict(e) for e in doc.entries],
-                    "approved": getattr(doc, "approved", False),
-                    "status": getattr(doc, "status", "draft"),
-                    "stpa": getattr(doc, "stpa", ""),
-                    "threat": getattr(doc, "threat", ""),
-                }
-                for doc in self.hara_docs
-            ],
-            "stpas": [
-                {
-                    "name": doc.name,
-                    "diagram": doc.diagram,
-                    "entries": [asdict(e) for e in doc.entries],
-                }
-                for doc in self.stpa_docs
-            ],
-            "threat_docs": [
-                {
-                    "name": doc.name,
-                    "diagram": doc.diagram,
-                    "entries": [asdict(e) for e in doc.entries],
-                }
-                for doc in self.threat_docs
-            ],
-            "fi2tc_docs": [
-                {"name": doc.name, "entries": doc.entries}
-                for doc in self.fi2tc_docs
-            ],
-            "tc2fi_docs": [
-                {"name": doc.name, "entries": doc.entries}
-                for doc in self.tc2fi_docs
-            ],
-            "cbn_docs": [
-                {
-                    "name": doc.name,
-                    # Copy node and parent collections so undo/redo work correctly
-                    "nodes": list(doc.network.nodes),
-                    "parents": {k: list(v) for k, v in doc.network.parents.items()},
-                    "cpds": {
-                        var: (
-                            cpd
-                            if not isinstance(cpd, Mapping)
-                            else {
-                                "".join("1" if b else "0" for b in key): val
-                                for key, val in cpd.items()
-                            }
-                        )
-                        for var, cpd in doc.network.cpds.items()
-                    },
-                    # Positions and types must also be copied to avoid mutation
-                    "positions": {k: tuple(v) for k, v in doc.positions.items()},
-                    "types": dict(doc.types),
-                }
-                for doc in getattr(self, "cbn_docs", [])
-            ],
-            "scenario_libraries": copy.deepcopy(self.scenario_libraries),
-            "odd_libraries": copy.deepcopy(self.odd_libraries),
-            "faults": self.faults.copy(),
-            "malfunctions": self.malfunctions.copy(),
-            "hazards": self.hazards.copy(),
-            "failures": self.failures.copy(),
-            "project_properties": self.project_properties.copy(),
-            "item_definition": getattr(
-                self, "item_definition", {"description": "", "assumptions": ""}
-            ).copy(),
-            "safety_concept": getattr(
-                self,
-                "safety_concept",
-                {"functional": "", "technical": "", "cybersecurity": ""},
-            ).copy(),
-            "global_requirements": {
-                rid: ensure_requirement_defaults(req.copy())
-                for rid, req in global_requirements.items()
-            },
-            "reviews": reviews,
-            "current_review": current_name,
-            "sysml_repository": repo.to_dict(),
-            "gsn_modules": [m.to_dict() for m in getattr(self, "gsn_modules", [])],
-            "gsn_diagrams": [d.to_dict() for d in getattr(self, "gsn_diagrams", [])],
-            "safety_mgmt_toolbox": self._export_toolbox_dict(),
-            "enabled_work_products": sorted(
-                getattr(self, "enabled_work_products", set())
-            ),
-        }
-        if self.hazop_docs:
-            data["hazop_entries"] = [asdict(e) for e in self.hazop_entries]
-        if self.fi2tc_docs:
-            data["fi2tc_entries"] = copy.deepcopy(self.fi2tc_entries)
-        if self.tc2fi_docs:
-            data["tc2fi_entries"] = copy.deepcopy(self.tc2fi_entries)
-        if include_versions:
-            data["versions"] = self.versions
-        return data
+        return self.reporting_export.export_model_data(include_versions)
 
     def _load_project_properties(self, data: dict) -> None:
         """Load project properties from *data* and normalize probability keys."""
@@ -11386,7 +10823,7 @@ class AutoMLApp:
         current = list(getattr(self, "enabled_work_products", set()))
         for name in current:
             try:
-                self.disable_work_product(name)
+                self.validation_consistency.disable_work_product(name)
             except Exception:
                 pass
         self.enabled_work_products = set()
@@ -11429,7 +10866,7 @@ class AutoMLApp:
 
         for name in data.get("enabled_work_products", []):
             try:
-                self.enable_work_product(name)
+                self.validation_consistency.enable_work_product(name)
             except Exception:
                 self.enabled_work_products.add(name)
 
@@ -12002,78 +11439,16 @@ class AutoMLApp:
             self.update_global_requirements_from_nodes(child)
 
     def _generate_pdf_report(self):
-        """Export a PDF report using a template.
-
-        The user is prompted for an output PDF path and a JSON template
-        describing the report structure.  The template is currently written
-        verbatim to a sibling ``.json`` file so tests can validate the
-        placeholder expansion logic without requiring the reportlab backend.
-        """
-
-        pdf_path = filedialog.asksaveasfilename(
-            defaultextension=".pdf", filetypes=[("PDF", "*.pdf")]
-        )
-        if not pdf_path:
-            return
-
-        template_path = filedialog.askopenfilename(
-            defaultextension=".json", filetypes=[("JSON", "*.json")]
-        )
-        if not template_path:
-            return
-
-        try:
-            with open(template_path, "r", encoding="utf-8") as tpl:
-                template = json.load(tpl)
-            debug_path = Path(pdf_path).with_suffix(".json")
-            with open(debug_path, "w", encoding="utf-8") as dbg:
-                json.dump(template, dbg)
-            messagebox.showinfo("Report", "PDF report generated.")
-        except Exception as exc:  # pragma: no cover - best effort error path
-            messagebox.showerror("Report", f"Failed to generate PDF report: {exc}")
+        return self.reporting_export._generate_pdf_report()
 
     def generate_pdf_report(self):
-        """Public wrapper for :meth:`_generate_pdf_report`."""
-
-        self._generate_pdf_report()
+        return self.reporting_export.generate_pdf_report()
 
     def generate_report(self):
-        path = filedialog.asksaveasfilename(defaultextension=".html", filetypes=[("HTML", "*.html")])
-        if path:
-            html = self.build_html_report()
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(html)
-            messagebox.showinfo("Report", "HTML report generated.")
+        return self.reporting_export.generate_report()
 
     def build_html_report(self):
-        def node_to_html(n):
-            txt = f"{n.name} ({n.node_type}"
-            if n.node_type.upper() in GATE_NODE_TYPES:
-                txt += f", {n.gate_type}"
-            txt += ")"
-            if n.display_label:
-                txt += f" => {n.display_label}"
-            if n.description:
-                txt += f"<br>Desc: {n.description}"
-            if n.rationale:
-                txt += f"<br>Rationale: {n.rationale}"
-            content = f"<details open><summary>{txt}</summary>\n"
-            for c in n.children:
-                content += node_to_html(c)
-            content += "</details>\n"
-            return content
-        return f"""<!DOCTYPE html>
-                    <html>
-                    <head>
-                    <meta charset="UTF-8">
-                    <title>AutoML-Analyzer</title>
-                    <style>body {{ font-family: Arial; }} details {{ margin-left: 20px; }}</style>
-                    </head>
-                    <body>
-                    <h1>AutoML-Analyzer</h1>
-                    {node_to_html(self.root_node)}
-                    </body>
-                    </html>"""
+        return self.reporting_export.build_html_report()
     def resolve_original(self,node):
         # Walk the clone chain until you find a primary instance.
         while not node.is_primary_instance and node.original is not None and node.original != node:
@@ -12081,13 +11456,7 @@ class AutoMLApp:
         return node
 
     def go_back(self):
-        if self.page_history:
-            # Pop one page off the history and open it without pushing the current page again.
-            previous_page = self.page_history.pop()
-            self.window_controllers.open_page_diagram(previous_page, push_history=False)
-        #else:
-            # If history is empty, remain on the current (root) page.
-            #messagebox.showinfo("Back", "You are already at the root page.")
+        return self.nav_input.go_back()
 
     def draw_page_subtree(self, page_root):
         self.page_canvas.delete("all")
@@ -12240,10 +11609,7 @@ class AutoMLApp:
                 )
 
     def on_ctrl_mousewheel_page(self, event):
-        if event.delta > 0:
-            self.page_diagram.zoom_in()
-        else:
-            self.page_diagram.zoom_out()
+        return self.nav_input.on_ctrl_mousewheel_page(event)
 
     def close_page_diagram(self):
         if self.page_history:
@@ -12293,19 +11659,25 @@ class AutoMLApp:
 
     # --- Review Toolbox Methods ---
     def start_peer_review(self):
-        return self.review_manager.start_peer_review()
+        return self.versioning_review.start_peer_review()
 
     def start_joint_review(self):
-        return self.review_manager.start_joint_review()
+        return self.versioning_review.start_joint_review()
 
     def open_review_document(self, review):
-        return self.review_manager.open_review_document(review)
+        return self.versioning_review.open_review_document(review)
 
     def open_review_toolbox(self):
-        return self.review_manager.open_review_toolbox()
+        return self.versioning_review.open_review_toolbox()
 
     def send_review_email(self, review):
-        return self.review_manager.send_review_email(review)
+        return self.versioning_review.send_review_email(review)
+
+    def review_is_closed(self):
+        return self.versioning_review.review_is_closed()
+
+    def review_is_closed_for(self, review):
+        return self.versioning_review.review_is_closed_for(review)
 
     def capture_diff_diagram(self, top_event):
         return self.review_manager.capture_diff_diagram(top_event)
@@ -12328,33 +11700,11 @@ class AutoMLApp:
                 return te
         return None
 
-    def compute_validation_criteria(self, req_id):
-        goals = self.get_requirement_goal_names(req_id)
-        vals = []
-        for g in goals:
-            sg = self.find_safety_goal_node(g)
-            if not sg:
-                continue
-            try:
-                acc = float(getattr(sg, "validation_target", 1.0))
-            except (TypeError, ValueError):
-                acc = 1.0
-            try:
-                sev = float(getattr(sg, "severity", 3)) / 3.0
-            except (TypeError, ValueError):
-                sev = 1.0
-            try:
-                cont = float(getattr(sg, "controllability", 3)) / 3.0
-            except (TypeError, ValueError):
-                cont = 1.0
-            vals.append(acc * sev * cont)
-        return sum(vals) / len(vals) if vals else 0.0
+    def compute_validation_criteria(self, req_id):  # pragma: no cover - delegation
+        return self.validation_consistency.compute_validation_criteria(req_id)
 
-    def update_validation_criteria(self, req_id):
-        req = global_requirements.get(req_id)
-        if not req:
-            return
-        req["validation_criteria"] = self.compute_validation_criteria(req_id)
+    def update_validation_criteria(self, req_id):  # pragma: no cover - delegation
+        return self.validation_consistency.update_validation_criteria(req_id)
 
     def update_requirement_asil(self, req_id):
         req = global_requirements.get(req_id)
@@ -12362,9 +11712,8 @@ class AutoMLApp:
             return
         req["asil"] = self.compute_requirement_asil(req_id)
 
-    def update_all_validation_criteria(self):
-        for rid in global_requirements:
-            self.update_validation_criteria(rid)
+    def update_all_validation_criteria(self):  # pragma: no cover - delegation
+        return self.validation_consistency.update_all_validation_criteria()
 
     def update_all_requirement_asil(self):
         for rid, req in global_requirements.items():
@@ -12392,43 +11741,24 @@ class AutoMLApp:
         self.sync_hara_to_safety_goals()
         self.update_hazard_list()
         self.update_all_requirement_asil()
-        self.update_all_validation_criteria()
+        self.validation_consistency.update_all_validation_criteria()
 
     def invalidate_reviews_for_hara(self, name):
-        """Reopen reviews associated with the given risk assessment."""
-        for r in self.reviews:
-            if name in getattr(r, "hara_names", []):
-                r.closed = False
-                r.approved = False
-                r.reviewed = False
-                for p in r.participants:
-                    p.done = False
-                    p.approved = False
-        self.update_hara_statuses()
-        self.update_fta_statuses()
+        return self.versioning_review.invalidate_reviews_for_hara(name)
 
     def invalidate_reviews_for_requirement(self, req_id):
-        """Reopen reviews that include the given requirement."""
-        for r in self.reviews:
-            if req_id in self.get_requirements_for_review(r):
-                r.closed = False
-                r.approved = False
-                r.reviewed = False
-                for p in r.participants:
-                    p.done = False
-                    p.approved = False
-        self.update_requirement_statuses()
+        return self.versioning_review.invalidate_reviews_for_requirement(req_id)
 
     def add_version(self):
-        return self.review_manager.add_version()
+        return self.versioning_review.add_version()
 
 
     def compare_versions(self):
-        return self.review_manager.compare_versions()
+        return self.versioning_review.compare_versions()
 
 
     def merge_review_comments(self):
-        return self.review_manager.merge_review_comments()
+        return self.versioning_review.merge_review_comments()
 
 
     def calculate_diff_nodes(self, old_data):
@@ -12450,19 +11780,10 @@ class AutoMLApp:
         return self.data_access_queries.get_current_user_role()
 
     def focus_on_node(self, node):
-        self.selected_node = node
-        try:
-            if hasattr(self, "canvas") and self.canvas is not None and self.canvas.winfo_exists():
-                self.redraw_canvas()
-                bbox = self.canvas.bbox("all")
-                if bbox:
-                    self.canvas.xview_moveto(max(0, (node.x * self.zoom - self.canvas.winfo_width()/2) / bbox[2]))
-                    self.canvas.yview_moveto(max(0, (node.y * self.zoom - self.canvas.winfo_height()/2) / bbox[3]))
-        except tk.TclError:
-            pass
+        return self.nav_input.focus_on_node(node)
 
     def get_review_targets(self):
-        return self.review_manager.get_review_targets()
+        return self.versioning_review.get_review_targets()
 
 
 def load_user_data() -> tuple[dict, tuple[str, str]]:
