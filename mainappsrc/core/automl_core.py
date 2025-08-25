@@ -248,13 +248,13 @@ except Exception:  # pragma: no cover
     from mainappsrc.core.probability_reliability import Probability_Reliability
     from mainappsrc.version import VERSION
 try:  # pragma: no cover
-    from .models.fta.fault_tree_node import FaultTreeNode, refresh_tree as fault_tree_refresh, add_node_of_type as _add_node_of_type
+    from .models.fta.fault_tree_node import FaultTreeNode, add_failure_mode as ft_add_failure_mode, refresh_tree as fault_tree_refresh, add_node_of_type as _add_node_of_type
 except Exception:  # pragma: no cover
     import os, sys
     base = os.path.dirname(__file__)
     sys.path.append(base)
     sys.path.append(os.path.dirname(base))
-    from models.fta.fault_tree_node import FaultTreeNode, refresh_tree as fault_tree_refresh, add_node_of_type as _add_node_of_type
+    from models.fta.fault_tree_node import FaultTreeNode, add_failure_mode as ft_add_failure_mode, refresh_tree as fault_tree_refresh, add_node_of_type as _add_node_of_type
 
 from .structure_tree_operations import Structure_Tree_Operations
 
@@ -3051,49 +3051,16 @@ class AutoMLApp(
         tree.bind("<Double-1>", on_double)
 
         def add_failure_mode():
-            dialog = SelectBaseEventDialog(win, basic_events, allow_new=True)
-            node = dialog.selected
-            if node == "NEW":
-                node = FaultTreeNode("", "Basic Event")
-                entries.append(node)
-                mechs = []
-                for lib in selected_libs:
-                    mechs.extend(lib.mechanisms)
-                comp_name = getattr(node, "fmea_component", "")
-                is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
-                FMEARowDialog(win, node, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
-            elif node:
-                # gather all failure modes under the same component/parent
-                if node.parents:
-                    parent_id = node.parents[0].unique_id
-                    related = [
-                        be
-                        for be in basic_events
-                        if be.parents and be.parents[0].unique_id == parent_id
-                    ]
-                else:
-                    comp = getattr(node, "fmea_component", "")
-                    related = [
-                        be
-                        for be in basic_events
-                        if not be.parents and getattr(be, "fmea_component", "") == comp
-                    ]
-                if node not in related:
-                    related.append(node)
-                existing_ids = {be.unique_id for be in entries}
-                for be in related:
-                    if be.unique_id not in existing_ids:
-                        entries.append(be)
-                        existing_ids.add(be.unique_id)
-                    mechs = []
-                    for lib in selected_libs:
-                        mechs.extend(lib.mechanisms)
-                    comp_name = self.get_component_name_for_node(be)
-                is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
-                FMEARowDialog(win, be, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
-            refresh_tree()
-            if fmea is not None:
-                self.lifecycle_ui.touch_doc(fmea)
+            ft_add_failure_mode(
+                core=self,
+                win=win,
+                basic_events=basic_events,
+                entries=entries,
+                selected_libs=selected_libs,
+                refresh_tree=refresh_tree,
+                fmea=fmea,
+                fmeda=fmeda,
+            )
 
         add_btn.config(command=add_failure_mode)
 
