@@ -248,13 +248,13 @@ except Exception:  # pragma: no cover
     from mainappsrc.core.probability_reliability import Probability_Reliability
     from mainappsrc.version import VERSION
 try:  # pragma: no cover
-    from .models.fta.fault_tree_node import FaultTreeNode, add_node_of_type as _add_node_of_type
+    from .models.fta.fault_tree_node import FaultTreeNode, refresh_tree as fault_tree_refresh, add_node_of_type as _add_node_of_type
 except Exception:  # pragma: no cover
     import os, sys
     base = os.path.dirname(__file__)
     sys.path.append(base)
     sys.path.append(os.path.dirname(base))
-    from models.fta.fault_tree_node import FaultTreeNode, add_node_of_type as _add_node_of_type
+    from models.fta.fault_tree_node import FaultTreeNode, refresh_tree as fault_tree_refresh, add_node_of_type as _add_node_of_type
 
 from .structure_tree_operations import Structure_Tree_Operations
 
@@ -3338,30 +3338,7 @@ class AutoMLApp(
         tree.pack(fill=tk.BOTH, expand=True)
 
         def refresh_tree():
-            tree.delete(*tree.get_children())
-            for sg in self.top_events:
-                name = sg.safety_goal_description or (sg.user_name or f"SG {sg.unique_id}")
-                sg.safety_goal_asil = self.get_hara_goal_asil(name)
-                pmhf_target = PMHF_TARGETS.get(sg.safety_goal_asil, 1.0)
-                tree.insert(
-                    "",
-                    "end",
-                    iid=sg.unique_id,
-                    values=[
-                        sg.user_name or f"SG {sg.unique_id}",
-                        sg.safety_goal_asil,
-                        f"{pmhf_target:.2e}",
-                        sg.safe_state,
-                        getattr(sg, "ftti", ""),
-                        str(getattr(sg, "acceptance_rate", "")),
-                        getattr(sg, "operational_hours_on", ""),
-                        getattr(sg, "validation_target", ""),
-                        getattr(sg, "mission_profile", ""),
-                        getattr(sg, "validation_desc", ""),
-                        getattr(sg, "acceptance_criteria", ""),
-                        sg.safety_goal_description,
-                    ],
-                )
+            fault_tree_refresh(self, tree)
 
         class SGDialog(simpledialog.Dialog):
             def __init__(self, parent, app, title, initial=None):

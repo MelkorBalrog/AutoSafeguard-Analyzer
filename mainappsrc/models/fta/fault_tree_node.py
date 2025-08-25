@@ -343,6 +343,35 @@ class FaultTreeNode:
         return clone
 
 
+def refresh_tree(app, tree):
+    """Populate a Treeview with the application's top events."""
+    from config.automl_constants import PMHF_TARGETS
+
+    tree.delete(*tree.get_children())
+    for sg in app.top_events:
+        name = sg.safety_goal_description or (sg.user_name or f"SG {sg.unique_id}")
+        sg.safety_goal_asil = app.get_hara_goal_asil(name)
+        pmhf_target = PMHF_TARGETS.get(sg.safety_goal_asil, 1.0)
+        tree.insert(
+            "",
+            "end",
+            iid=sg.unique_id,
+            values=[
+                sg.user_name or f"SG {sg.unique_id}",
+                sg.safety_goal_asil,
+                f"{pmhf_target:.2e}",
+                sg.safe_state,
+                getattr(sg, "ftti", ""),
+                str(getattr(sg, "acceptance_rate", "")),
+                getattr(sg, "operational_hours_on", ""),
+                getattr(sg, "validation_target", ""),
+                getattr(sg, "mission_profile", ""),
+                getattr(sg, "validation_desc", ""),
+                getattr(sg, "acceptance_criteria", ""),
+                sg.safety_goal_description,
+            ],
+        )
+
 def add_node_of_type(app, event_type):
     """Create and attach a node of ``event_type`` to the current selection."""
     app.push_undo_state()
