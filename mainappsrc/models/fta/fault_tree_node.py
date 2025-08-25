@@ -297,7 +297,7 @@ class FaultTreeNode:
         return node
 
     @classmethod
-    def add_basic_event_from_fmea(cls, parent_node, selected):
+    def create_basic_event_from_fmea(cls, parent_node, selected):
         """Create and attach a basic event node from an FMEA/FMEDA entry.
 
         Parameters
