@@ -16,7 +16,7 @@ class GovernanceActionsTests(unittest.TestCase):
         target = self.repo.create_diagram("Governance Diagram", name="Tgt")
         explorer = ArchitectureManagerDialog.__new__(ArchitectureManagerDialog)
         explorer.repo = self.repo
-        with mock.patch("gui.messagebox.showerror"):
+        with mock.patch("gui.controls.messagebox.showerror"):
             explorer._drop_on_diagram(f"diag_{src.diag_id}", target)
         obj = target.objects[0]
         elem = self.repo.elements[obj["element_id"]]

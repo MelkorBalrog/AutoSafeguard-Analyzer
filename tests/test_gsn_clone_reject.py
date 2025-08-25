@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from mainappsrc.models.gsn.nodes import GSNNode
 from mainappsrc.models.gsn.diagram import GSNDiagram
 from AutoML import AutoMLApp, AutoML_Helper
-from gui import messagebox
+from gui.controls import messagebox
 
 
 def test_clone_rejects_unsupported_types():

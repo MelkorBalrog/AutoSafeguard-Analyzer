@@ -3,8 +3,8 @@ from tkinter import ttk, simpledialog
 from pathlib import Path
 import json
 from config import load_diagram_rules, validate_diagram_rules
-from gui import messagebox
-from gui.mac_button_style import apply_translucid_button_style
+from gui.controls import messagebox
+from gui.controls.mac_button_style import apply_translucid_button_style
 
 
 class MultiSelectDialog(simpledialog.Dialog):

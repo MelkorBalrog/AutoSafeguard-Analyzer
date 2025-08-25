@@ -5,7 +5,7 @@ import json
 import sys
 import shutil
 
-from gui import messagebox
+from gui.controls import messagebox
 
 
 class ReportTemplateManager(tk.Frame):

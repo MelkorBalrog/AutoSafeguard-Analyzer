@@ -2,9 +2,10 @@
 import tkinter as tk
 from tkinter import ttk, simpledialog
 
-from gui.mac_button_style import apply_purplish_button_style
+from gui.controls.mac_button_style import apply_purplish_button_style
 
-from gui import messagebox, add_treeview_scrollbars
+from gui.controls import messagebox
+from gui import add_treeview_scrollbars
 from gui.toolboxes import configure_table_style
 from analysis.models import (
     AttackPath,

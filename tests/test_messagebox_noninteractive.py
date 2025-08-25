@@ -1,4 +1,4 @@
-from gui import messagebox
+from gui.controls import messagebox
 
 
 def test_showinfo_does_not_popup(monkeypatch):

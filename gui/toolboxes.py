@@ -1,7 +1,8 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog
-from gui import messagebox, format_name_with_phase, add_treeview_scrollbars
+from gui.controls import messagebox
+from gui import format_name_with_phase, add_treeview_scrollbars
 import csv
 import copy
 import textwrap
@@ -9,7 +10,7 @@ import uuid
 from typing import Callable
 
 from gui.tooltip import ToolTip
-from gui.button_utils import add_hover_highlight
+from gui.controls.button_utils import add_hover_highlight
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.models import (
     ReliabilityComponent,
@@ -40,7 +41,7 @@ from analysis.models import (
 from analysis.safety_management import ACTIVE_TOOLBOX, SAFETY_ANALYSIS_WORK_PRODUCTS
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
-from gui.mac_button_style import apply_translucid_button_style
+from gui.controls.mac_button_style import apply_translucid_button_style
 from gui.icon_factory import create_icon
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui.architecture import (

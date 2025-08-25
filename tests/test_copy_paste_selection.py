@@ -12,7 +12,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from AutoML import AutoMLApp, FaultTreeNode
-from gui import messagebox
+from gui.controls import messagebox
 
 
 class DummyTree:

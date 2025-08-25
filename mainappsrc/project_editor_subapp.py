@@ -7,7 +7,7 @@ from tkinter import ttk
 from tkinter import font as tkFont
 
 from analysis.utils import update_probability_tables
-from gui import messagebox
+from gui.controls import messagebox
 
 
 class ProjectEditorSubApp:

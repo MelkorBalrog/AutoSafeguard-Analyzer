@@ -12,7 +12,8 @@ import datetime
 import tkinter as tk
 from tkinter import ttk
 
-from gui import logger, messagebox
+from gui import logger
+from gui.controls import messagebox
 from gui.architecture import (
     ActivityDiagramWindow,
     BlockDiagramWindow,
