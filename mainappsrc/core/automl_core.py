@@ -296,6 +296,7 @@ from mainappsrc.core.page_diagram import PageDiagram
 from mainappsrc.core.window_controllers import WindowControllers
 from mainappsrc.core.navigation_selection_input import Navigation_Selection_Input
 from mainappsrc.managers.review_manager import ReviewManager
+from .versioning_review import Versioning_Review
 from mainappsrc.core.diagram_renderer import DiagramRenderer
 from .validation_consistency import Validation_Consistency
 from analysis.user_config import (
@@ -816,6 +817,7 @@ class AutoMLApp:
         self.cta_manager = ControlTreeManager(self)
         self.requirements_manager = RequirementsManagerSubApp(self)
         self.review_manager = ReviewManager(self)
+        self.versioning_review = Versioning_Review(self)
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
@@ -11920,19 +11922,25 @@ class AutoMLApp:
 
     # --- Review Toolbox Methods ---
     def start_peer_review(self):
-        return self.review_manager.start_peer_review()
+        return self.versioning_review.start_peer_review()
 
     def start_joint_review(self):
-        return self.review_manager.start_joint_review()
+        return self.versioning_review.start_joint_review()
 
     def open_review_document(self, review):
-        return self.review_manager.open_review_document(review)
+        return self.versioning_review.open_review_document(review)
 
     def open_review_toolbox(self):
-        return self.review_manager.open_review_toolbox()
+        return self.versioning_review.open_review_toolbox()
 
     def send_review_email(self, review):
-        return self.review_manager.send_review_email(review)
+        return self.versioning_review.send_review_email(review)
+
+    def review_is_closed(self):
+        return self.versioning_review.review_is_closed()
+
+    def review_is_closed_for(self, review):
+        return self.versioning_review.review_is_closed_for(review)
 
     def capture_diff_diagram(self, top_event):
         return self.review_manager.capture_diff_diagram(top_event)
@@ -11999,40 +12007,21 @@ class AutoMLApp:
         self.validation_consistency.update_all_validation_criteria()
 
     def invalidate_reviews_for_hara(self, name):
-        """Reopen reviews associated with the given risk assessment."""
-        for r in self.reviews:
-            if name in getattr(r, "hara_names", []):
-                r.closed = False
-                r.approved = False
-                r.reviewed = False
-                for p in r.participants:
-                    p.done = False
-                    p.approved = False
-        self.update_hara_statuses()
-        self.update_fta_statuses()
+        return self.versioning_review.invalidate_reviews_for_hara(name)
 
     def invalidate_reviews_for_requirement(self, req_id):
-        """Reopen reviews that include the given requirement."""
-        for r in self.reviews:
-            if req_id in self.get_requirements_for_review(r):
-                r.closed = False
-                r.approved = False
-                r.reviewed = False
-                for p in r.participants:
-                    p.done = False
-                    p.approved = False
-        self.update_requirement_statuses()
+        return self.versioning_review.invalidate_reviews_for_requirement(req_id)
 
     def add_version(self):
-        return self.review_manager.add_version()
+        return self.versioning_review.add_version()
 
 
     def compare_versions(self):
-        return self.review_manager.compare_versions()
+        return self.versioning_review.compare_versions()
 
 
     def merge_review_comments(self):
-        return self.review_manager.merge_review_comments()
+        return self.versioning_review.merge_review_comments()
 
 
     def calculate_diff_nodes(self, old_data):
@@ -12057,7 +12046,7 @@ class AutoMLApp:
         return self.nav_input.focus_on_node(node)
 
     def get_review_targets(self):
-        return self.review_manager.get_review_targets()
+        return self.versioning_review.get_review_targets()
 
 
 def load_user_data() -> tuple[dict, tuple[str, str]]:
