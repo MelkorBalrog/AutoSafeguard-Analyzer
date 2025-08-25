@@ -1,4 +1,4 @@
-version: 0.2.11
+version: 0.2.12
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1642,6 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.12 - Fix property initialisation error in safety analysis facade.
 - 0.2.11 - Keep splash screen visible through startup and five-second post-load delay.
 - 0.2.10 - Hold splash screen for five seconds after initialisation completes.
 - 0.2.9 - Display splash screen during dependency checks and startup.
