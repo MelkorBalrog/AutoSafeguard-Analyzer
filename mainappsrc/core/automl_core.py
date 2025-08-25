@@ -262,23 +262,6 @@ from gui.toolboxes import (
 )
 
 
-def format_requirement(req, include_id=True):
-    """Return a formatted requirement string without empty ASIL/CAL fields."""
-    parts = []
-    if include_id and req.get("id"):
-        parts.append(f"[{req['id']}]")
-    if req.get("req_type"):
-        parts.append(f"[{req['req_type']}]")
-    asil = req.get("asil")
-    if asil:
-        parts.append(f"[{asil}]")
-    cal = req.get("cal")
-    if cal:
-        parts.append(f"[{cal}]")
-    parts.append(req.get("text", ""))
-    return " ".join(parts)
-
-
 from pathlib import Path
 from gui.dialogs.user_info_dialog import UserInfoDialog
 
@@ -1410,6 +1393,10 @@ class AutoMLApp(
 
     def get_requirement_goal_names(self, req_id):
         return self.requirements_manager.get_requirement_goal_names(req_id)
+
+    def format_requirement(self, req, include_id=True):
+        """Return a formatted requirement string without empty ASIL/CAL fields."""
+        return self.requirements_manager.format_requirement(req, include_id)
 
     def format_requirement_with_trace(self, req):
         return self.requirements_manager.format_requirement_with_trace(req)

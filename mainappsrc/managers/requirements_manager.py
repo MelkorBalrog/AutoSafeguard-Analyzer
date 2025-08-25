@@ -112,12 +112,28 @@ class RequirementsManagerSubApp:
         return sorted(goals)
 
     # ------------------------------------------------------------------
+    def format_requirement(self, req: Dict[str, Any], include_id: bool = True) -> str:
+        """Return a formatted requirement string without empty ASIL/CAL fields."""
+        parts: list[str] = []
+        if include_id and req.get("id"):
+            parts.append(f"[{req['id']}]")
+        if req.get("req_type"):
+            parts.append(f"[{req['req_type']}]")
+        asil = req.get("asil")
+        if asil:
+            parts.append(f"[{asil}]")
+        cal = req.get("cal")
+        if cal:
+            parts.append(f"[{cal}]")
+        parts.append(req.get("text", ""))
+        return " ".join(parts)
+
+    # ------------------------------------------------------------------
     def format_requirement_with_trace(self, req: Dict[str, Any]) -> str:
-        from .AutoML import format_requirement  # local import to avoid circular
         rid = req.get("id", "")
         alloc = ", ".join(self.get_requirement_allocation_names(rid))
         goals = ", ".join(self.get_requirement_goal_names(rid))
-        base = format_requirement(req)
+        base = self.format_requirement(req)
         return f"{base} (Alloc: {alloc}; SGs: {goals})"
 
     # ------------------------------------------------------------------
