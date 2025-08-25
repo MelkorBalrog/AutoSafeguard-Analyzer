@@ -381,6 +381,8 @@ class FaultTreeNode:
                 return
             try:
                 node_id = int(core.analysis_tree.item(sel[0], "tags")[0])
+            except Exception:
+                return
 
 def add_failure_mode(
     core,

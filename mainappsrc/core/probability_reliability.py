@@ -400,5 +400,51 @@ class Probability_Reliability:
         return nodes, edges, pos
 
     # ------------------------------------------------------------------
+    def render_cause_effect_diagram(self, row):
+        """Render *row* as a PIL image matching the on-screen diagram."""
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+        except Exception:
+            return None
+        import textwrap, math
+
+        nodes, edges, pos = self._build_cause_effect_graph(row)
+        color_map = {
+            "hazard": "#F08080",
+            "malfunction": "#ADD8E6",
+            "failure_mode": "#FFA500",
+            "fault": "#D3D3D3",
+            "fi": "#FFFFE0",
+            "tc": "#E6E6FA",
+            "threat": "#FFC0CB",
+            "attack_path": "#FFFACD",
+        }
+
+        width = (max(x for x, _ in pos.values()) + 1) * 200
+        height = (max(y for _, y in pos.values()) + 1) * 100
+        img = Image.new("RGB", (width, height), "white")
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.load_default()
+
+        for u, v in edges:
+            x1, y1 = pos[u]
+            x2, y2 = pos[v]
+            draw.line((x1 * 200 + 100, y1 * 100 + 50, x2 * 200 + 100, y2 * 100 + 50), fill="black")
+
+        for key, (label, typ) in nodes.items():
+            x, y = pos[key]
+            cx, cy = x * 200 + 100, y * 100 + 50
+            r = 40
+            fill = color_map.get(typ, "#FFFFFF")
+            draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=fill, outline="black")
+            text = textwrap.fill(str(label), 20)
+            bbox = draw.multiline_textbbox((0, 0), text, font=font)
+            tw = bbox[2] - bbox[0]
+            th = bbox[3] - bbox[1]
+            draw.multiline_text((cx - tw / 2, cy - th / 2), text, font=font, align="center")
+
+        return img
+
+    # ------------------------------------------------------------------
     def sync_cyber_risk_to_goals(self):
         return self.app.risk_app.sync_cyber_risk_to_goals(self.app)
