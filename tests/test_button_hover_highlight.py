@@ -6,7 +6,7 @@ from tkinter import ttk
 import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from gui.button_utils import add_hover_highlight
+from gui.controls.button_utils import add_hover_highlight
 
 
 def _sum_rgb(value):

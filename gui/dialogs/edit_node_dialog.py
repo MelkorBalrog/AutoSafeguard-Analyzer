@@ -6,8 +6,8 @@ import tkinter as tk
 from tkinter import ttk, simpledialog
 import tkinter.font as tkFont
 
-from gui import messagebox
-from gui.mac_button_style import apply_purplish_button_style
+from gui.controls import messagebox
+from gui.controls.mac_button_style import apply_purplish_button_style
 from analysis.models import (
     global_requirements,
     ensure_requirement_defaults,

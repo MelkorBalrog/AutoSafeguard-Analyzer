@@ -2,7 +2,7 @@ import types
 
 from mainappsrc.models.gsn import GSNNode, GSNDiagram
 from AutoML import AutoMLApp, AutoML_Helper
-from gui import messagebox
+from gui.controls import messagebox
 
 
 def test_paste_node_creates_clone():

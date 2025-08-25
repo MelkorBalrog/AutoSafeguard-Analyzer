@@ -2,9 +2,9 @@
 import tkinter as tk
 from tkinter import simpledialog, ttk
 
-from gui.mac_button_style import apply_purplish_button_style
+from gui.controls.mac_button_style import apply_purplish_button_style
 
-from gui import messagebox
+from gui.controls import messagebox
 from gui.toolboxes import ToolTip
 from gui.table_controller import TableController
 from analysis.models import ThreatDoc, ThreatEntry

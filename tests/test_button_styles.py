@@ -1,6 +1,6 @@
 import sys, pathlib
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from gui.mac_button_style import (
+from gui.controls.mac_button_style import (
     apply_purplish_button_style,
     apply_translucid_button_style,
 )

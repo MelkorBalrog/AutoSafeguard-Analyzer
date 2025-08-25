@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, simpledialog
 
-from gui.mac_button_style import apply_purplish_button_style
+from gui.controls.mac_button_style import apply_purplish_button_style
 
 
 class UserInfoDialog(simpledialog.Dialog):

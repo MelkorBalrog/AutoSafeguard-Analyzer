@@ -238,8 +238,9 @@ if parent not in sys.path:
 from typing import Any, Optional
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui.dialog_utils import askstring_fixed
-from gui import messagebox, logger, add_treeview_scrollbars
-from gui.button_utils import enable_listbox_hover_highlight
+from gui.controls import messagebox
+from gui import logger, add_treeview_scrollbars
+from gui.controls.button_utils import enable_listbox_hover_highlight
 from gui.tooltip import ToolTip
 from gui.style_manager import StyleManager
 from gui.review_toolbox import ReviewData, ReviewParticipant, ReviewComment
@@ -262,7 +263,7 @@ except ImportError:  # pragma: no cover
 from mainappsrc.models.gsn.nodes import GSNNode, ALLOWED_AWAY_TYPES
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
-from gui.mac_button_style import (
+from gui.controls.mac_button_style import (
     apply_translucid_button_style,
     apply_purplish_button_style,
 )
@@ -608,6 +609,26 @@ class AutoMLApp:
         if not hasattr(self, "_window_controllers"):
             self._window_controllers = WindowControllers(self)
         return self._window_controllers
+
+    def __getattr__(self, name):  # pragma: no cover - simple delegation
+        """Delegate missing attributes to the lifecycle UI helper.
+
+        ``AppLifecycleUI`` now hosts a number of UI-centric helpers that were
+        previously methods on :class:`AutoMLApp`.  Existing code (and tests)
+        still expect these helpers to be accessible directly from the main
+        application instance.  This ``__getattr__`` implementation forwards
+        such attribute lookups to ``self.lifecycle_ui`` when the attribute
+        exists there, preserving backwards compatibility without replicating
+        numerous wrapper methods.
+        """
+
+        ui = self.__dict__.get("lifecycle_ui")
+        if ui and (
+            name in ui.__dict__
+            or any(name in cls.__dict__ for cls in ui.__class__.mro())
+        ):
+            return getattr(ui, name)
+        raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
 
     def __init__(self, root):
         AutoMLApp._instance = self

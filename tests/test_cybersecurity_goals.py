@@ -41,7 +41,7 @@ class CybersecurityGoalTests(unittest.TestCase):
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
         tmp.close()
         with mock.patch("tkinter.filedialog.asksaveasfilename", return_value=tmp.name), \
-             mock.patch("gui.messagebox.showinfo"):
+             mock.patch("gui.controls.messagebox.showinfo"):
             AutoMLApp.export_cybersecurity_goal_requirements(app)
 
         with open(tmp.name, newline="") as f:

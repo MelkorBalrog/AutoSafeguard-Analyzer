@@ -5,7 +5,7 @@ import pytest
 from tkinter import ttk
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from gui.button_utils import set_uniform_button_width
+from gui.controls.button_utils import set_uniform_button_width
 
 
 def test_uniform_width_for_capsule_button():

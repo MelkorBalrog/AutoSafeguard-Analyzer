@@ -1,4 +1,4 @@
-from gui import messagebox
+from gui.controls import messagebox
 from gui.architecture import ArchitectureManagerDialog
 from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 

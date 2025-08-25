@@ -28,7 +28,7 @@ def _collect_button_styles(dialog_cls, monkeypatch):
     def fake_apply(style=None):
         applied["called"] += 1
 
-    import gui.mac_button_style as mbs
+    import gui.controls.mac_button_style as mbs
 
     monkeypatch.setattr(automl.ttk, "Button", DummyButton)
     monkeypatch.setattr(automl.ttk, "Frame", DummyFrame)

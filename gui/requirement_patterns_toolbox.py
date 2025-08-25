@@ -10,8 +10,8 @@ from config import (
     load_requirement_patterns,
     validate_requirement_patterns,
 )
-from gui import messagebox
-from gui.mac_button_style import apply_translucid_button_style
+from gui.controls import messagebox
+from gui.controls.mac_button_style import apply_translucid_button_style
 
 
 PLACEHOLDER_COLORS = {

@@ -33,7 +33,8 @@ class DiagramSelectDialog(simpledialog.Dialog):  # pragma: no cover - requires t
         self.selection = self.var.get()
 
 from analysis.safety_case import SafetyCaseLibrary, SafetyCase
-from gui import messagebox, format_name_with_phase
+from gui.controls import messagebox
+from gui import format_name_with_phase
 from gui.safety_case_table import SafetyCaseTable
 from gui.icon_factory import create_icon
 from gui.style_manager import StyleManager
