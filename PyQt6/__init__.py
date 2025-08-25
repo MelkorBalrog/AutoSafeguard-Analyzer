@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Project version information."""
+"""Placeholder PyQt6 package for test environment."""
 
-VERSION = "0.2.55"
-
-__all__ = ["VERSION"]
+raise ImportError("PyQt6 is not available")

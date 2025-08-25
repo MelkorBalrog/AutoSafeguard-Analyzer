@@ -16,8 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Project version information."""
+"""Compatibility wrapper for PageDiagram."""
 
-VERSION = "0.2.55"
+import sys
+from pathlib import Path
 
-__all__ = ["VERSION"]
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from mainappsrc.core.page_diagram import *  # noqa: F401,F403
+from mainappsrc.core.page_diagram import fta_drawing_helper, __all__ as _core_all  # re-export
+
+__all__ = [*_core_all, "fta_drawing_helper"]
