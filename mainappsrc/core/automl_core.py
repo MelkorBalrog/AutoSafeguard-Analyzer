@@ -298,6 +298,7 @@ from mainappsrc.core.window_controllers import WindowControllers
 from mainappsrc.core.top_event_workflows import Top_Event_Workflows
 from mainappsrc.managers.review_manager import ReviewManager
 from mainappsrc.core.diagram_renderer import DiagramRenderer
+from .validation_consistency import Validation_Consistency
 from analysis.user_config import (
     load_user_config,
     save_user_config,
@@ -666,8 +667,8 @@ class AutoMLApp:
         self.helper = AutoML_Helper
         # Dedicated renderer for all diagram-related operations.
         self.diagram_renderer = DiagramRenderer(self)
-        # Reporting and export utilities
-        self.reporting_export = Reporting_Export(self)
+        # Validation and consistency helpers
+        self.validation_consistency = Validation_Consistency(self)
         # style-aware icons used across tree views
         style_mgr = StyleManager.get_instance()
 
@@ -1956,7 +1957,10 @@ class AutoMLApp:
                 width=8,
                 font=dialog_font,
                 validate="key",
-                validatecommand=(parent.register(self.validate_float), "%P"),
+                validatecommand=(
+                    parent.register(self.validation_consistency.validate_float),
+                    "%P",
+                ),
             ).grid(row=0, column=idx * 2 + 1, padx=2, pady=2)
             vars_dict[lvl] = var
         return vars_dict
@@ -2506,157 +2510,17 @@ class AutoMLApp:
             _refresh_children(tab)
 
 
-    def enable_process_area(self, area: str) -> None:
-        if area not in self.tool_listboxes:
-            self.tool_categories[area] = []
-            self.lifecycle_ui._add_tool_category(area, [])
+    def enable_process_area(self, area: str) -> None:  # pragma: no cover - delegation
+        return self.validation_consistency.enable_process_area(area)
 
-    def enable_work_product(self, name: str, *, refresh: bool = True) -> None:
-        info = self.WORK_PRODUCT_INFO.get(name)
-        area = tool_name = method_name = None
-        if info:
-            area, tool_name, method_name = info
-            self.enable_process_area(area)
-            if tool_name not in self.tool_actions:
-                action = getattr(self, method_name, None)
-                if action:
-                    self.tool_actions[tool_name] = action
-                    lb = self.tool_listboxes.get(area)
-                    if lb:
-                        lb.insert(tk.END, tool_name)
-            mapping = getattr(self, "tool_to_work_product", {})
-            existing = mapping.get(tool_name)
-            if isinstance(existing, set):
-                existing.add(name)
-            elif existing:
-                mapping[tool_name] = {existing, name}
-            else:
-                mapping.setdefault(tool_name, set()).add(name)
-        # Enable corresponding menu entry if one was registered
-        for menu, idx in self.work_product_menus.get(name, []):
-            try:
-                menu.entryconfig(idx, state=tk.NORMAL)
-            except tk.TclError:
-                pass
-        self.enabled_work_products.add(name)
-        parent = self.WORK_PRODUCT_PARENTS.get(name)
-        if parent and parent not in self.enabled_work_products:
-            self.enable_work_product(parent, refresh=False)
-        if refresh and hasattr(self, "update_views"):
-            try:
-                self.update_views()
-            except Exception:
-                pass
+    def enable_work_product(self, name: str, *, refresh: bool = True) -> None:  # pragma: no cover - delegation
+        return self.validation_consistency.enable_work_product(name, refresh=refresh)
 
-    # ------------------------------------------------------------------
-    def can_remove_work_product(self, name: str) -> bool:
-        """Return ``True`` if the work product type can be removed.
+    def can_remove_work_product(self, name: str) -> bool:  # pragma: no cover - delegation
+        return self.validation_consistency.can_remove_work_product(name)
 
-        A work product type may only be removed from the governance diagram
-        when there are no existing documents of that type in the project.
-        """
-
-        attr_map = {
-            "HAZOP": "hazop_docs",
-            "Risk Assessment": "hara_docs",
-            "STPA": "stpa_docs",
-            "Threat Analysis": "threat_docs",
-            "FI2TC": "fi2tc_docs",
-            "TC2FI": "tc2fi_docs",
-            "Causal Bayesian Network Analysis": "cbn_docs",
-            "FMEA": "reliability_analyses",
-            "FMEDA": "fmeda_components",
-            "FTA": "top_events",
-            "Prototype Assurance Analysis": "top_events",
-            "Architecture Diagram": "arch_diagrams",
-            "Scenario Library": "scenario_libraries",
-            "ODD": "odd_libraries",
-            "Qualitative Analysis": (
-                "hazop_docs",
-                "stpa_docs",
-                "threat_docs",
-                "fi2tc_docs",
-                "tc2fi_docs",
-                "hara_docs",
-            ),
-            "Mission Profile": "mission_profiles",
-            "Reliability Analysis": "reliability_analyses",
-        }
-        attr = attr_map.get(name)
-        if not attr:
-            return True
-        if isinstance(attr, (tuple, list, set)):
-            return all(not getattr(self, a, []) for a in attr)
-        return not getattr(self, attr, [])
-
-    # ------------------------------------------------------------------
-    def disable_work_product(self, name: str, *, force: bool = False, refresh: bool = True) -> bool:
-        """Disable menu and toolbox entries for the given work product.
-
-        Parameters
-        ----------
-        name:
-            Work product type to disable.
-        force:
-            When ``True`` the work product is hidden even when existing
-            documents of that type remain.
-
-        Returns
-        -------
-        bool
-            ``True`` if the work product was disabled. If ``force`` is
-            ``False`` and existing documents of that type are present the
-            work product remains enabled and ``False`` is returned.
-        """
-
-        if not force and not self.can_remove_work_product(name):
-            return False
-        self.enabled_work_products.discard(name)
-        for menu, idx in self.work_product_menus.get(name, []):
-            state = tk.DISABLED
-            for other, entries in self.work_product_menus.items():
-                if (
-                    other != name
-                    and other in self.enabled_work_products
-                    and (menu, idx) in entries
-                ):
-                    state = tk.NORMAL
-                    break
-            try:
-                menu.entryconfig(idx, state=state)
-            except tk.TclError:
-                pass
-        info = self.WORK_PRODUCT_INFO.get(name)
-        if info:
-            area, tool_name, _ = info
-            if tool_name:
-                still_in_use = False
-                for wp in self.enabled_work_products:
-                    wp_info = self.WORK_PRODUCT_INFO.get(wp)
-                    if wp_info and wp_info[1] == tool_name:
-                        still_in_use = True
-                        break
-                if not still_in_use:
-                    lb = self.tool_listboxes.get(area)
-                    if lb:
-                        for i in range(lb.size()):
-                            if lb.get(i) == tool_name:
-                                lb.delete(i)
-                                break
-                    self.tool_actions.pop(tool_name, None)
-        parent = self.WORK_PRODUCT_PARENTS.get(name)
-        if parent and parent in self.enabled_work_products:
-            if not any(
-                self.WORK_PRODUCT_PARENTS.get(wp) == parent
-                for wp in self.enabled_work_products
-            ):
-                self.disable_work_product(parent, force=True, refresh=False)
-        if refresh and hasattr(self, "update_views"):
-            try:
-                self.update_views()
-            except Exception:
-                pass
-        return True
+    def disable_work_product(self, name: str, *, force: bool = False, refresh: bool = True) -> bool:  # pragma: no cover - delegation
+        return self.validation_consistency.disable_work_product(name, force=force, refresh=refresh)
 
     def open_work_product(self, name: str) -> None:
         """Open a diagram or analysis work product within the application."""
@@ -3914,34 +3778,8 @@ class AutoMLApp:
         for be in self.get_all_basic_events():
             be.failure_prob = self.compute_failure_prob(be)
 
-    def validate_float(self, value):
-        """Return ``True`` if ``value`` resembles a float.
-
-        This validator is tolerant of scientific-notation inputs that are
-        entered incrementally (e.g. ``"1e"`` or ``"1e-"``) to keep the entry
-        widget from rejecting keystrokes during editing.
-        """
-
-        if value in ("", "-", "+", ".", "-.", "+.", "e", "E", "e-", "e+", "E-", "E+"):
-            return True
-        try:
-            float(value)
-            return True
-        except ValueError:
-            lower = value.lower()
-            if lower.endswith("e"):
-                try:
-                    float(lower[:-1])
-                    return True
-                except ValueError:
-                    return False
-            if lower.endswith(("e-", "e+")):
-                try:
-                    float(lower[:-2])
-                    return True
-                except ValueError:
-                    return False
-            return False
+    def validate_float(self, value):  # pragma: no cover - delegation
+        return self.validation_consistency.validate_float(value)
 
     def compute_failure_prob(self, node, failure_mode_ref=None, formula=None):
         """Return probability of failure for ``node`` based on FIT rate.
@@ -6289,7 +6127,7 @@ class AutoMLApp:
                 }
                 ensure_requirement_defaults(req)
                 global_requirements[custom_id] = req
-            self.app.update_validation_criteria(custom_id)
+            self.app.validation_consistency.update_validation_criteria(custom_id)
             if not hasattr(self.node, "safety_requirements"):
                 self.node.safety_requirements = []
             if not any(r["id"] == custom_id for r in self.node.safety_requirements):
@@ -6315,7 +6153,7 @@ class AutoMLApp:
             current_req["custom_id"] = new_custom_id
             current_req["id"] = new_custom_id
             global_requirements[new_custom_id] = current_req
-            self.app.update_validation_criteria(new_custom_id)
+            self.app.validation_consistency.update_validation_criteria(new_custom_id)
             self.node.safety_requirements[index] = current_req
             self.req_listbox.delete(index)
             desc = format_requirement(current_req, include_id=False)
@@ -7264,7 +7102,10 @@ class AutoMLApp:
                     fs_tab,
                     textvariable=self.ftti_var,
                     validate="key",
-                    validatecommand=(master.register(self.app.validate_float), "%P"),
+                    validatecommand=(
+                        master.register(self.app.validation_consistency.validate_float),
+                        "%P",
+                    ),
                 ).grid(row=4, column=1, padx=5, pady=5)
 
                 ttk.Label(fs_tab, text="Description:").grid(row=5, column=0, sticky="ne")
@@ -10115,12 +9956,8 @@ class AutoMLApp:
             ):
                 self.fta_menu.entryconfig(self._fta_menu_indices[key], state=state)
                 
-    def enable_paa_actions(self, enabled: bool) -> None:
-        """Enable or disable PAA-related menu actions."""
-        if hasattr(self, "paa_menu"):
-            state = tk.NORMAL if enabled else tk.DISABLED
-            for key in ("add_confidence", "add_robustness"):
-                self.paa_menu.entryconfig(self._paa_menu_indices[key], state=state)
+    def enable_paa_actions(self, enabled: bool) -> None:  # pragma: no cover - delegation
+        return self.validation_consistency.enable_paa_actions(enabled)
                 
     def _update_analysis_menus(self,mode=None):
         """Enable or disable node-adding menu items based on diagram mode."""
@@ -10128,7 +9965,7 @@ class AutoMLApp:
             mode = getattr(self, "diagram_mode", "FTA")
         self.enable_fta_actions(mode == "FTA")
         self.cta_manager.enable_actions(mode == "CTA")
-        self.enable_paa_actions(mode == "PAA")
+        self.validation_consistency.enable_paa_actions(mode == "PAA")
 
     def _create_paa_tab(self) -> None:
         """Delegate to :class:`PrototypeAssuranceManager` to create a PAA tab."""
@@ -10154,17 +9991,8 @@ class AutoMLApp:
         self.vbar = None
         self.page_diagram = None
 
-    def ensure_fta_tab(self):
-        """Recreate the FTA tab if it was closed."""
-        mode = getattr(self, "diagram_mode", "FTA")
-        tab_info = self.analysis_tabs.get(mode)
-        if not tab_info or not tab_info["tab"].winfo_exists():
-            self._create_fta_tab(mode)
-        else:
-            self.canvas_tab = tab_info["tab"]
-            self.canvas = tab_info["canvas"]
-            self.hbar = tab_info["hbar"]
-            self.vbar = tab_info["vbar"]
+    def ensure_fta_tab(self):  # pragma: no cover - delegation
+        return self.validation_consistency.ensure_fta_tab()
 
 
 
@@ -11366,7 +11194,7 @@ class AutoMLApp:
         current = list(getattr(self, "enabled_work_products", set()))
         for name in current:
             try:
-                self.disable_work_product(name)
+                self.validation_consistency.disable_work_product(name)
             except Exception:
                 pass
         self.enabled_work_products = set()
@@ -11409,7 +11237,7 @@ class AutoMLApp:
 
         for name in data.get("enabled_work_products", []):
             try:
-                self.enable_work_product(name)
+                self.validation_consistency.enable_work_product(name)
             except Exception:
                 self.enabled_work_products.add(name)
 
@@ -12246,33 +12074,11 @@ class AutoMLApp:
                 return te
         return None
 
-    def compute_validation_criteria(self, req_id):
-        goals = self.get_requirement_goal_names(req_id)
-        vals = []
-        for g in goals:
-            sg = self.find_safety_goal_node(g)
-            if not sg:
-                continue
-            try:
-                acc = float(getattr(sg, "validation_target", 1.0))
-            except (TypeError, ValueError):
-                acc = 1.0
-            try:
-                sev = float(getattr(sg, "severity", 3)) / 3.0
-            except (TypeError, ValueError):
-                sev = 1.0
-            try:
-                cont = float(getattr(sg, "controllability", 3)) / 3.0
-            except (TypeError, ValueError):
-                cont = 1.0
-            vals.append(acc * sev * cont)
-        return sum(vals) / len(vals) if vals else 0.0
+    def compute_validation_criteria(self, req_id):  # pragma: no cover - delegation
+        return self.validation_consistency.compute_validation_criteria(req_id)
 
-    def update_validation_criteria(self, req_id):
-        req = global_requirements.get(req_id)
-        if not req:
-            return
-        req["validation_criteria"] = self.compute_validation_criteria(req_id)
+    def update_validation_criteria(self, req_id):  # pragma: no cover - delegation
+        return self.validation_consistency.update_validation_criteria(req_id)
 
     def update_requirement_asil(self, req_id):
         req = global_requirements.get(req_id)
@@ -12280,9 +12086,8 @@ class AutoMLApp:
             return
         req["asil"] = self.compute_requirement_asil(req_id)
 
-    def update_all_validation_criteria(self):
-        for rid in global_requirements:
-            self.update_validation_criteria(rid)
+    def update_all_validation_criteria(self):  # pragma: no cover - delegation
+        return self.validation_consistency.update_all_validation_criteria()
 
     def update_all_requirement_asil(self):
         for rid, req in global_requirements.items():
@@ -12310,7 +12115,7 @@ class AutoMLApp:
         self.sync_hara_to_safety_goals()
         self.update_hazard_list()
         self.update_all_requirement_asil()
-        self.update_all_validation_criteria()
+        self.validation_consistency.update_all_validation_criteria()
 
     def invalidate_reviews_for_hara(self, name):
         """Reopen reviews associated with the given risk assessment."""
