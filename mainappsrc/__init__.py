@@ -48,5 +48,8 @@ from .core.automl_core import AutoMLApp
 from .core.page_diagram import PageDiagram
 from .managers.fmeda_manager import FMEDAManager
 from .core.diagram_renderer import DiagramRenderer
+import importlib as _importlib
 
-__all__ = ["AutoMLApp", "PageDiagram", "FMEDAManager", "DiagramRenderer"]
+AutoML = _importlib.import_module("AutoML")
+
+__all__ = ["AutoMLApp", "PageDiagram", "FMEDAManager", "DiagramRenderer", "AutoML"]
