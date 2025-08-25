@@ -287,8 +287,7 @@ from analysis.mechanisms import (
     ANNEX_D_MECHANISMS,
     PAS_8800_MECHANISMS,
 )
-from config import load_diagram_rules, load_report_template
-from analysis.requirement_rule_generator import regenerate_requirement_patterns
+from config import load_report_template
 from pathlib import Path
 from collections.abc import Mapping
 import csv
@@ -524,18 +523,25 @@ def _reload_local_config() -> None:
     # Regenerate requirement patterns whenever diagram rules change
     regenerate_requirement_patterns()
 
-##########################################
-# Global Unique ID Counter for Nodes
-##########################################
-unique_node_id_counter = 1
+from . import config_utils
+
+# Expose configuration helpers and global state
+_CONFIG_PATH = config_utils._CONFIG_PATH
+GATE_NODE_TYPES = config_utils.GATE_NODE_TYPES
+_PATTERN_PATH = config_utils._PATTERN_PATH
+_REPORT_TEMPLATE_PATH = config_utils._REPORT_TEMPLATE_PATH
+_reload_local_config = config_utils._reload_local_config
+unique_node_id_counter = config_utils.unique_node_id_counter
+AutoML_Helper = config_utils.AutoML_Helper
 import uuid
-AutoML_Helper = AutoMLHelper()
 
 ##########################################
 # Edit Dialog 
 ##########################################
 from gui.dialogs.edit_node_dialog import EditNodeDialog, DecompositionDialog
 from gui.dialogs.fmea_row_dialog import FMEARowDialog
+from gui.dialogs.req_dialog import ReqDialog
+from gui.dialogs.select_base_event_dialog import SelectBaseEventDialog
 from .safety_ui import SafetyUIMixin
 
 ##########################################
@@ -628,6 +634,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
     def __init__(self, root):
         AutoMLApp._instance = self
         self.root = root
+        self.setup_style(root)
         self.lifecycle_ui = AppLifecycleUI(self, root)
         self.labels_styling = Editing_Labels_Styling(self)
         self.top_events = []
@@ -647,6 +654,68 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         self.zoom = 1.0
         self.rc_dragged = False
         self.diagram_font = tkFont.Font(family="Arial", size=int(8 * self.zoom))
+        self.lifecycle_ui._init_nav_button_style()
+        self.tree_app = TreeSubApp()
+        self.project_editor_app = ProjectEditorSubApp()
+        self.risk_app = RiskAssessmentSubApp()
+        self.reliability_app = ReliabilitySubApp()
+        self.open_windows_features = Open_Windows_Features(self)
+        # Unified FTA/FMEA/FMEMA helper
+        self.safety_analysis = SafetyAnalysis_FTA_FMEA(self)
+        # Backwards compatible aliases
+        self.fta_app = self.safety_analysis
+        self.fmea_service = self.safety_analysis
+        self.fmeda_manager = self.safety_analysis
+        # Risk assessment helpers also provide FMEDA metric calculations,
+        # expose through ``fmeda`` pointing at the combined safety helper.
+        self.fmeda = self.safety_analysis
+        self.helper = AutoML_Helper
+        self.syncing_and_ids = Syncing_And_IDs(self)
+        # Dedicated renderer for all diagram-related operations.
+        self.diagram_renderer = DiagramRenderer(self)
+        # Delegate navigation and selection input handling
+        self.nav_input = Navigation_Selection_Input(self)
+        for _name in (
+            "go_back",
+            "back_all_pages",
+            "focus_on_node",
+            "on_canvas_click",
+            "on_canvas_double_click",
+            "on_canvas_drag",
+            "on_canvas_release",
+            "on_analysis_tree_double_click",
+            "on_analysis_tree_right_click",
+            "on_analysis_tree_select",
+            "on_ctrl_mousewheel",
+            "on_ctrl_mousewheel_page",
+            "on_right_mouse_press",
+            "on_right_mouse_drag",
+            "on_right_mouse_release",
+            "on_tool_list_double_click",
+            "on_treeview_click",
+            "show_context_menu",
+            "open_search_toolbox",
+        ):
+            setattr(self, _name, getattr(self.nav_input, _name))
+        # style-aware icons used across tree views
+        style_mgr = StyleManager.get_instance()
+
+        def _color(name: str, fallback: str = "black") -> str:
+            c = style_mgr.get_color(name)
+            return fallback if c == "#FFFFFF" else c
+
+        self.pkg_icon = self._create_icon("folder", _color("Lifecycle Phase", "#b8860b"))
+        self.gsn_module_icon = self.pkg_icon
+        self.gsn_diagram_icon = self._create_icon("rect", "#4682b4")
+        # small icons for diagram types shown in explorers
+        self.diagram_icons = {
+            "Use Case Diagram": self._create_icon("usecase_diag", _color("Use Case Diagram", "blue")),
+            "Activity Diagram": self._create_icon("activity_diag", _color("Activity Diagram", "green")),
+            "Governance Diagram": self._create_icon("activity_diag", _color("Governance Diagram", "green")),
+            "Block Diagram": self._create_icon("block_diag", _color("Block Diagram", "orange")),
+            "Internal Block Diagram": self._create_icon("ibd_diag", _color("Internal Block Diagram", "purple")),
+            "Control Flow Diagram": self._create_icon("activity_diag", _color("Control Flow Diagram", "red")),
+        }
         self.setup_style(root)
         self.setup_services()
         self.setup_icons()
@@ -3305,7 +3374,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         # Update the main explorer and propagate model changes
         self.update_views()
         # Regenerate requirement patterns for any model change
-        regenerate_requirement_patterns()
+        config_utils.regenerate_requirement_patterns()
         # Refresh GSN views separately via the manager
         self.gsn_manager.refresh()
         # Refresh any secondary windows that may be open
@@ -3716,7 +3785,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         if not events:
             messagebox.showinfo("No Failure Modes", "No FMEA or FMEDA failure modes available.")
             return
-        dialog = self.SelectBaseEventDialog(self.root, events)
+        dialog = SelectBaseEventDialog(self.root, events)
         selected = dialog.selected
         if not selected:
             return
@@ -3759,7 +3828,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         if not events:
             messagebox.showinfo("No Failure Modes", "No FMEA or FMEDA failure modes available.")
             return
-        dialog = self.SelectBaseEventDialog(self.root, events)
+        dialog = SelectBaseEventDialog(self.root, events)
         selected = dialog.selected
         if not selected:
             return
@@ -3802,7 +3871,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         if not events:
             messagebox.showinfo("No Failure Modes", "No FMEA or FMEDA failure modes available.")
             return
-        dialog = self.SelectBaseEventDialog(self.root, events)
+        dialog = SelectBaseEventDialog(self.root, events)
         selected = dialog.selected
         if not selected:
             return
@@ -4250,106 +4319,6 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
                 )
             style.configure("ReqEditor.Treeview", rowheight=20 * max_lines)
 
-        class ReqDialog(simpledialog.Dialog):
-            def __init__(self, parent, title, initial=None):
-                self.initial = initial or {}
-                super().__init__(parent, title=title)
-
-            def body(self, master):
-                ttk.Label(master, text="ID:").grid(row=0, column=0, sticky="e")
-                self.id_var = tk.StringVar(value=self.initial.get("id", ""))
-                tk.Entry(master, textvariable=self.id_var).grid(row=0, column=1, padx=5, pady=5)
-
-                ttk.Label(master, text="Type:").grid(row=1, column=0, sticky="e")
-                self.type_var = tk.StringVar(value=self.initial.get("req_type", "vehicle"))
-                self.type_cb = ttk.Combobox(
-                    master,
-                    textvariable=self.type_var,
-                    values=REQUIREMENT_TYPE_OPTIONS,
-                    state="readonly",
-                    width=20,
-                )
-                self.type_cb.grid(row=1, column=1, padx=5, pady=5)
-                self.type_cb.bind("<<ComboboxSelected>>", self._toggle_fields)
-
-                self.asil_label = ttk.Label(master, text="ASIL:")
-                self.asil_label.grid(row=2, column=0, sticky="e")
-                self.asil_var = tk.StringVar(value=self.initial.get("asil", "QM"))
-                self.asil_combo = ttk.Combobox(master, textvariable=self.asil_var, values=ASIL_LEVEL_OPTIONS, state="readonly", width=8)
-                self.asil_combo.grid(row=2, column=1, padx=5, pady=5)
-
-                self.cal_label = ttk.Label(master, text="CAL:")
-                self.cal_label.grid(row=3, column=0, sticky="e")
-                self.cal_var = tk.StringVar(value=self.initial.get("cal", CAL_LEVEL_OPTIONS[0]))
-                self.cal_combo = ttk.Combobox(master, textvariable=self.cal_var, values=CAL_LEVEL_OPTIONS, state="readonly", width=8)
-                self.cal_combo.grid(row=3, column=1, padx=5, pady=5)
-                self._toggle_fields()
-
-                ttk.Label(master, text="Parent ID:").grid(row=4, column=0, sticky="e")
-                self.parent_var = tk.StringVar(value=self.initial.get("parent_id", ""))
-                tk.Entry(master, textvariable=self.parent_var).grid(row=4, column=1, padx=5, pady=5)
-
-                ttk.Label(master, text="Status:").grid(row=5, column=0, sticky="e")
-                self.status_var = tk.StringVar(value=self.initial.get("status", "draft"))
-                ttk.Combobox(master, textvariable=self.status_var,
-                             values=["draft", "in review", "peer reviewed", "pending approval", "approved"],
-                             state="readonly").grid(row=5, column=1, padx=5, pady=5)
-
-                ttk.Label(master, text="Text:").grid(row=6, column=0, sticky="e")
-                self.text_var = tk.StringVar(value=self.initial.get("text", ""))
-                tk.Entry(master, textvariable=self.text_var, width=40).grid(row=6, column=1, padx=5, pady=5)
-                return master
-
-            def apply(self):
-                rid = self.id_var.get().strip() or str(uuid.uuid4())
-                req_type = self.type_var.get().strip()
-                self.result = {
-                    "id": rid,
-                    "req_type": req_type,
-                    "parent_id": self.parent_var.get().strip(),
-                    "status": self.status_var.get().strip(),
-                    "text": self.text_var.get().strip(),
-                }
-                if req_type not in (
-                    "operational",
-                    "functional modification",
-                    "production",
-                    "service",
-                    "product",
-                    "legal",
-                    "organizational",
-                ):
-                    self.result["asil"] = self.asil_var.get().strip()
-                    self.result["cal"] = self.cal_var.get().strip()
-
-            def validate(self):
-                rid = self.id_var.get().strip()
-                if rid and rid != self.initial.get("id") and rid in global_requirements:
-                    messagebox.showerror("ID", "ID already exists")
-                    return False
-                return True
-
-            def _toggle_fields(self, event=None):
-                req_type = self.type_var.get()
-                hide = req_type in (
-                    "operational",
-                    "functional modification",
-                    "production",
-                    "service",
-                    "product",
-                    "legal",
-                    "organizational",
-                )
-                widgets = [self.asil_label, self.asil_combo, self.cal_label, self.cal_combo]
-                if hide:
-                    for w in widgets:
-                        w.grid_remove()
-                else:
-                    self.asil_label.grid(row=2, column=0, sticky="e")
-                    self.asil_combo.grid(row=2, column=1, padx=5, pady=5)
-                    self.cal_label.grid(row=3, column=0, sticky="e")
-                    self.cal_combo.grid(row=3, column=1, padx=5, pady=5)
-
         def add_req():
             dlg = ReqDialog(win, "Add Requirement")
             if dlg.result:
@@ -4557,36 +4526,6 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
     def show_hazard_list(self):
         self.risk_app.show_hazard_list(self)
-
-    class SelectBaseEventDialog(simpledialog.Dialog):
-        def __init__(self, parent, events, allow_new=False):
-            self.events = events
-            self.allow_new = allow_new
-            self.selected = None
-            super().__init__(parent, title="Select Base Event")
-
-        def body(self, master):
-            self.listbox = tk.Listbox(master, height=10, width=40)
-            self._visible_events = []
-            for be in self.events:
-                desc = getattr(be, "description", "").strip()
-                if not desc:
-                    continue
-                self._visible_events.append(be)
-                self.listbox.insert(tk.END, desc)
-            if self.allow_new:
-                self.listbox.insert(tk.END, "<Create New Failure Mode>")
-            self.listbox.grid(row=0, column=0, padx=5, pady=5)
-            return self.listbox
-
-        def apply(self):
-            sel = self.listbox.curselection()
-            if sel:
-                idx = sel[0]
-                if self.allow_new and idx == len(self._visible_events):
-                    self.selected = "NEW"
-                else:
-                    self.selected = self._visible_events[idx]
 
     class SelectFailureModeDialog(simpledialog.Dialog):
         def __init__(self, parent, app, modes):
@@ -5071,7 +5010,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         tree.bind("<Double-1>", on_double)
 
         def add_failure_mode():
-            dialog = self.SelectBaseEventDialog(win, basic_events, allow_new=True)
+            dialog = SelectBaseEventDialog(win, basic_events, allow_new=True)
             node = dialog.selected
             if node == "NEW":
                 node = FaultTreeNode("", "Basic Event")
@@ -9347,8 +9286,8 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
 
         global AutoML_Helper, unique_node_id_counter
         SysMLRepository.reset_instance()
-        AutoML_Helper = AutoMLHelper()
-        unique_node_id_counter = 1
+        AutoML_Helper = config_utils.AutoML_Helper = AutoMLHelper()
+        unique_node_id_counter = config_utils.unique_node_id_counter = 1
 
         self.top_events = []
         self.cta_events = []
@@ -9649,7 +9588,7 @@ def main():
     set_current_user(name, email)
     # Create a fresh helper each session:
     global AutoML_Helper
-    AutoML_Helper = AutoMLHelper()
+    AutoML_Helper = config_utils.AutoML_Helper = AutoMLHelper()
 
     # Show and maximize the main window after login
     root.deiconify()
