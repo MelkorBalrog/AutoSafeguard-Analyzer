@@ -358,7 +358,6 @@ from gui.windows.architecture import (
     ControlFlowDiagramWindow,
     GovernanceDiagramWindow,
     ArchitectureManagerDialog,
-    parse_behaviors,
     link_requirement_to_object,
     unlink_requirement_from_object,
     link_requirements,
@@ -369,6 +368,7 @@ from mainappsrc.models.sysml.sysml_repository import SysMLRepository
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.scenario_description import template_phrases
 from mainappsrc.core.app_lifecycle_ui import AppLifecycleUI
+from .data_access_queries import DataAccess_Queries
 import copy
 import tkinter.font as tkFont
 import builtins
@@ -784,6 +784,9 @@ class AutoMLApp:
         self.cta_manager = ControlTreeManager(self)
         self.requirements_manager = RequirementsManagerSubApp(self)
         self.review_manager = ReviewManager(self)
+
+        # Centralise data lookups in a dedicated helper
+        self.data_access_queries = DataAccess_Queries(self)
 
         self.mechanism_libraries = []
         self.selected_mechanism_libraries = []
@@ -1623,10 +1626,10 @@ class AutoMLApp:
         return self.fta_app.move_top_event_down(self)
 
     def get_top_level_nodes(self):
-        return self.fta_app.get_top_level_nodes(self)
+        return self.data_access_queries.get_top_level_nodes()
 
     def get_all_nodes_no_filter(self, node):
-        return self.fta_app.get_all_nodes_no_filter(self, node)
+        return self.data_access_queries.get_all_nodes_no_filter(node)
 
     def derive_requirements_for_event(self, event):
         return self.fta_app.derive_requirements_for_event(self, event)
@@ -1644,19 +1647,19 @@ class AutoMLApp:
         return self.fta_app.generate_top_event_summary(self, top_event)
 
     def get_all_nodes(self, node=None):
-        return self.fta_app.get_all_nodes(self, node)
+        return self.data_access_queries.get_all_nodes(node)
 
     def get_all_nodes_table(self, root_node):
-        return self.fta_app.get_all_nodes_table(self, root_node)
+        return self.data_access_queries.get_all_nodes_table(root_node)
 
     def get_all_nodes_in_model(self):
-        return self.fta_app.get_all_nodes_in_model(self)
+        return self.data_access_queries.get_all_nodes_in_model()
 
     def get_all_basic_events(self):
-        return self.fta_app.get_all_basic_events(self)
+        return self.data_access_queries.get_all_basic_events()
 
     def get_all_gates(self):
-        return self.fta_app.get_all_gates(self)
+        return self.data_access_queries.get_all_gates()
 
     def metric_to_text(self, metric_type, value):
         return self.fta_app.metric_to_text(self, metric_type, value)
@@ -1680,13 +1683,13 @@ class AutoMLApp:
         return self.fta_app.build_unified_recommendation_table(self)
 
     def get_extra_recommendations_list(self, description, level):
-        return self.fta_app.get_extra_recommendations_list(self, description, level)
+        return self.data_access_queries.get_extra_recommendations_list(description, level)
 
     def get_extra_recommendations_from_level(self, description, level):
-        return self.fta_app.get_extra_recommendations_from_level(self, description, level)
+        return self.data_access_queries.get_extra_recommendations_from_level(description, level)
 
     def get_recommendation_from_description(self, description, level):
-        return self.fta_app.get_recommendation_from_description(self, description, level)
+        return self.data_access_queries.get_recommendation_from_description(description, level)
 
     def build_argumentation(self, node):
         return self.fta_app.build_argumentation(self, node)
@@ -1751,10 +1754,10 @@ class AutoMLApp:
         return self.risk_app.get_hara_goal_asil(self, sg_name)
 
     def get_cyber_goal_cal(self, goal_id):
-        return self.risk_app.get_cyber_goal_cal(self, goal_id)
+        return self.data_access_queries.get_cyber_goal_cal(goal_id)
 
     def get_top_event_safety_goals(self, node):
-        return self.risk_app.get_top_event_safety_goals(self, node)
+        return self.data_access_queries.get_top_event_safety_goals(node)
 
     def get_safety_goals_for_malfunctions(self, malfunctions: list[str]) -> list[str]:
         """Return safety goal names for given malfunctions."""
@@ -2093,12 +2096,7 @@ class AutoMLApp:
         return img.convert("RGB")
 
     def get_page_nodes(self, node):
-        result = []
-        if node.is_page and node != self.root_node:
-            result.append(node)
-        for child in node.children:
-            result.extend(self.get_page_nodes(child))
-        return result
+        return self.data_access_queries.get_page_nodes(node)
 
     def capture_page_diagram(self, page_node):
         """
@@ -2972,40 +2970,13 @@ class AutoMLApp:
 
 
     def get_all_triggering_conditions(self):
-        """Return all triggering condition nodes."""
-        nodes = [
-            n
-            for n in self.get_all_nodes_in_model()
-            if n.node_type.upper() == "TRIGGERING CONDITION"
-        ]
-        nodes.extend(self.triggering_condition_nodes)
-        unique = {n.unique_id: n for n in nodes}
-        return list(unique.values())
+        return self.data_access_queries.get_all_triggering_conditions()
 
     def get_all_functional_insufficiencies(self):
-        """Return all functional insufficiency nodes."""
-        nodes = [
-            n
-            for n in self.get_all_nodes_in_model()
-            if n.node_type.upper() == "FUNCTIONAL INSUFFICIENCY"
-            or (getattr(n, "input_subtype", "") or "").lower() == "functional insufficiency"
-        ]
-        nodes.extend(self.functional_insufficiency_nodes)
-        unique = {n.unique_id: n for n in nodes}
-        return list(unique.values())
+        return self.data_access_queries.get_all_functional_insufficiencies()
 
     def get_all_scenario_names(self):
-        """Return the list of scenario names from all scenario libraries."""
-        names = []
-        for lib in self.scenario_libraries:
-            for sc in lib.get("scenarios", []):
-                if isinstance(sc, dict):
-                    name = sc.get("name", "")
-                else:
-                    name = sc
-                if name:
-                    names.append(name)
-        return names
+        return self.data_access_queries.get_all_scenario_names()
 
     def get_validation_targets_for_odd(self, element_name):
         """Return product goals linked to scenarios using ``element_name``.
@@ -3076,181 +3047,32 @@ class AutoMLApp:
         return {"use_case": use_case, "sotif": sotif}
 
     def get_scenario_exposure(self, name: str) -> int:
-        """Return exposure level for the given scenario name."""
-        name = (name or "").strip()
-        for lib in self.scenario_libraries:
-            for sc in lib.get("scenarios", []):
-                if isinstance(sc, dict):
-                    sc_name = (sc.get("name", "") or "").strip()
-                    if sc_name == name:
-                        try:
-                            return int(sc.get("exposure", 1))
-                        except (TypeError, ValueError):
-                            return 1
-                else:
-                    if str(sc).strip() == name:
-                        return 1
-        return 1
+        return self.data_access_queries.get_scenario_exposure(name)
 
     def get_all_scenery_names(self):
-        """Return the list of scenery/ODD element names."""
-        names = []
-        for lib in self.odd_libraries:
-            for el in lib.get("elements", []):
-                if isinstance(el, dict):
-                    name = el.get("name") or el.get("element") or el.get("id")
-                else:
-                    name = str(el)
-                if name:
-                    names.append(name)
-        return names
+        return self.data_access_queries.get_all_scenery_names()
 
 
     def get_all_function_names(self):
-        """Return unique function names from HAZOP entries."""
-        names = set()
-        for doc in getattr(self, "hazop_docs", []):
-            for e in doc.entries:
-                if getattr(e, "function", ""):
-                    names.add(e.function)
-        return sorted(names)
+        return self.data_access_queries.get_all_function_names()
 
     def get_all_action_names(self):
-        """Return names of all actions and activity diagrams."""
-        repo = SysMLRepository.get_instance()
-        return repo.get_activity_actions()
+        return self.data_access_queries.get_all_action_names()
 
     def get_all_action_labels(self) -> list[str]:
-        """Return actions and activities with implementing block names."""
-        repo = SysMLRepository.get_instance()
-
-        # Map diagram IDs to the block implementing them
-        diag_block: dict[str, str] = {}
-
-        # Internal block diagrams are linked directly to their father block
-        for diag in repo.visible_diagrams().values():
-            if diag.diag_type != "Internal Block Diagram":
-                continue
-            blk_id = getattr(diag, "father", None) or next(
-                (eid for eid, did in repo.element_diagrams.items() if did == diag.diag_id),
-                None,
-            )
-            if blk_id and blk_id in repo.elements:
-                diag_block[diag.diag_id] = repo.elements[blk_id].name or blk_id
-
-        # Activity diagrams may be referenced as behaviors of blocks
-        for elem in repo.elements.values():
-            if elem.elem_type != "Block":
-                continue
-            for beh in parse_behaviors(elem.properties.get("behaviors", "")):
-                if repo.diagram_visible(beh.diagram) and beh.diagram not in diag_block:
-                    diag_block[beh.diagram] = elem.name or elem.elem_id
-
-        labels: set[str] = set()
-
-        for diag in repo.visible_diagrams().values():
-            if diag.diag_type != "Activity Diagram":
-                continue
-            blk = diag_block.get(diag.diag_id, "")
-            name = diag.name or diag.diag_id
-            labels.add(f"{name} : {blk}" if blk else name)
-            for obj in getattr(diag, "objects", []):
-                typ = obj.get("obj_type") or obj.get("type")
-                if typ not in ("Action Usage", "Action", "CallBehaviorAction"):
-                    continue
-                action_name = obj.get("properties", {}).get("name", "")
-                elem_id = obj.get("element_id")
-                if not action_name and elem_id and elem_id in repo.elements:
-                    action_name = repo.elements[elem_id].name
-                if not action_name:
-                    continue
-                view_id = None
-                if elem_id and elem_id in repo.elements:
-                    view_id = repo.elements[elem_id].properties.get("view")
-                if not view_id:
-                    view_id = obj.get("properties", {}).get("view")
-                blk_name = diag_block.get(view_id, "")
-                if not blk_name and elem_id:
-                    linked = repo.get_linked_diagram(elem_id)
-                    blk_name = diag_block.get(linked, "")
-                labels.add(f"{action_name} : {blk_name}" if blk_name else action_name)
-
-        return sorted(labels)
+        return self.data_access_queries.get_all_action_labels()
 
     def get_use_case_for_function(self, func: str) -> str:
-        """Return the use case (activity diagram name) implementing a function."""
-        repo = SysMLRepository.get_instance()
-        for diag in repo.visible_diagrams().values():
-            if diag.diag_type != "Activity Diagram":
-                continue
-            if diag.name == func:
-                return diag.name
-            for obj in diag.objects:
-                name = obj.get("properties", {}).get("name", "")
-                if not name:
-                    elem_id = obj.get("element_id")
-                    if elem_id and elem_id in repo.elements:
-                        name = repo.elements[elem_id].name
-                if name == func:
-                    return diag.name
-            for elem_id in getattr(diag, "elements", []):
-                elem = repo.elements.get(elem_id)
-                if elem and elem.name == func:
-                    return diag.name
-        return ""
+        return self.data_access_queries.get_use_case_for_function(func)
 
     def get_all_component_names(self):
-        """Return unique component names from analyses, including FTA failure modes."""
-        names = set()
-        for doc in getattr(self, "hazop_docs", []):
-            names.update(e.component for e in doc.entries if getattr(e, "component", ""))
-        names.update(c.name for c in self.reliability_components)
-        names.update(self.get_all_part_names())
-        for be in self.get_all_basic_events():
-            comp = self.get_component_name_for_node(be)
-            if comp:
-                names.add(comp)
-        for entry in self.fmea_entries:
-            comp = getattr(entry, "fmea_component", "")
-            if comp:
-                names.add(comp)
-        for doc in self.fmeas:
-            for e in doc.get("entries", []):
-                comp = getattr(e, "fmea_component", "")
-                if comp:
-                    names.add(comp)
-        for doc in self.fmedas:
-            for e in doc.get("entries", []):
-                comp = getattr(e, "fmea_component", "")
-                if comp:
-                    names.add(comp)
-        return sorted(n for n in names if n)
+        return self.data_access_queries.get_all_component_names()
 
     def get_all_part_names(self) -> list[str]:
-        """Return component names from all internal block diagrams."""
-        repo = SysMLRepository.get_instance()
-        names = set()
-        for diag in repo.visible_diagrams().values():
-            if diag.diag_type != "Internal Block Diagram":
-                continue
-            for obj in getattr(diag, "objects", []):
-                if obj.get("obj_type") != "Part":
-                    continue
-                comp = obj.get("properties", {}).get("component", "")
-                if not comp:
-                    eid = obj.get("element_id")
-                    if eid and eid in repo.elements:
-                        comp = repo.elements[eid].properties.get("component", "")
-                if comp:
-                    names.add(comp)
-        return sorted(names)
+        return self.data_access_queries.get_all_part_names()
 
     def get_all_malfunction_names(self):
-        """Return unique malfunction names from HAZOP entries."""
-        names = set()
-        for doc in getattr(self, "hazop_docs", []):
-            names.update(e.malfunction for e in doc.entries if getattr(e, "malfunction", ""))
-        return sorted(names)
+        return self.data_access_queries.get_all_malfunction_names()
 
     def get_hazards_for_malfunction(self, malfunction: str, hazop_names=None) -> list[str]:
         """Return hazards linked to the malfunction in the given HAZOPs."""
@@ -3364,57 +3186,16 @@ class AutoMLApp:
         self.functional_insufficiencies = names
 
     def get_entry_field(self, entry, field, default=""):
-        """Retrieve attribute or dict value from an entry."""
-        if isinstance(entry, dict):
-            return entry.get(field, default)
-        return getattr(entry, field, default)
+        return self.data_access_queries.get_entry_field(entry, field, default)
 
     def get_all_failure_modes(self):
-        """Return list of all failure mode nodes from FTA, FMEAs and FMEDAs."""
-        modes = list(self.get_all_basic_events())
-        for doc in self.fmea_entries:
-            modes.append(doc)
-        for f in self.fmeas:
-            modes.extend(f.get("entries", []))
-        for d in self.fmedas:
-            modes.extend(d.get("entries", []))
-        unique = {}
-        for m in modes:
-            unique[getattr(m, "unique_id", id(m))] = m
-        return list(unique.values())
+        return self.data_access_queries.get_all_failure_modes()
 
     def get_all_fmea_entries(self):
-        """Return every FMEA and FMEDA entry across the project."""
-        entries = list(self.fmea_entries)
-        for f in self.fmeas:
-            entries.extend(f.get("entries", []))
-        for d in self.fmedas:
-            entries.extend(d.get("entries", []))
-        return entries
+        return self.data_access_queries.get_all_fmea_entries()
 
     def get_non_basic_failure_modes(self):
-        """Return failure modes from gate nodes, FMEAs and FMEDAs."""
-        modes = [
-            g
-            for g in self.get_all_gates()
-            if (
-                g.node_type.upper() != "TOP EVENT"
-                and not g.is_page
-                and not any(p.is_page for p in getattr(g, "parents", []))
-                and getattr(g, "description", "").strip()
-            )
-        ]
-        for entry in self.fmea_entries:
-            if getattr(entry, "description", "").strip():
-                modes.append(entry)
-        for f in self.fmeas:
-            modes.extend([e for e in f.get("entries", []) if getattr(e, "description", "").strip()])
-        for d in self.fmedas:
-            modes.extend([e for e in d.get("entries", []) if getattr(e, "description", "").strip()])
-        unique = {}
-        for m in modes:
-            unique[getattr(m, "unique_id", id(m))] = m
-        return list(unique.values())
+        return self.data_access_queries.get_non_basic_failure_modes()
 
     def get_available_failure_modes_for_gates(self, current_gate=None):
         """Return failure modes not already used by other gates."""
@@ -3427,35 +3208,16 @@ class AutoMLApp:
         return [m for m in modes if getattr(m, "unique_id", None) not in used]
 
     def get_failure_mode_node(self, node):
-        ref = getattr(node, "failure_mode_ref", None)
-        if ref:
-            n = self.find_node_by_id_all(ref)
-            if n:
-                return n
-        return node
+        return self.data_access_queries.get_failure_mode_node(node)
 
     def get_component_name_for_node(self, node):
-        """Return component name for the given failure mode node."""
-        src = self.get_failure_mode_node(node)
-        parent = src.parents[0] if src.parents else None
-        if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES:
-            if getattr(parent, "user_name", ""):
-                return parent.user_name
-        return getattr(src, "fmea_component", "")
+        return self.data_access_queries.get_component_name_for_node(node)
 
     def format_failure_mode_label(self, node):
-        comp = self.get_component_name_for_node(node)
-        label = node.description if node.description else (node.user_name or f"Node {node.unique_id}")
-        return f"{comp}: {label}" if comp else label
+        return self.data_access_queries.format_failure_mode_label(node)
 
     def get_failure_modes_for_malfunction(self, malfunction: str) -> list[str]:
-        """Return labels of basic events linked to the given malfunction."""
-        result = []
-        for be in self.get_all_basic_events():
-            mals = [m.strip() for m in getattr(be, "fmeda_malfunction", "").split(";") if m.strip()]
-            if malfunction in mals:
-                result.append(self.format_failure_mode_label(be))
-        return result
+        return self.data_access_queries.get_failure_modes_for_malfunction(malfunction)
 
     def get_faults_for_failure_mode(self, failure_mode_node) -> list[str]:
         """Return fault names causing the given failure mode."""
@@ -3485,30 +3247,6 @@ class AutoMLApp:
                 total += value
         return total
 
-
-
-    def get_all_nodes(self, node=None):
-        if node is None:
-            result = []
-            for te in self.top_events:
-                result.extend(self.get_all_nodes(te))
-            return result
-
-        visited = set()
-        def rec(n):
-            if n.unique_id in visited:
-                return []
-            visited.add(n.unique_id)
-            # ---- Remove or comment out any code that returns [] if n is a page or if a parent is a page
-            if n != self.root_node and any(parent.is_page for parent in n.parents):
-                return []
-
-            result = [n]
-            for c in n.children:
-                result.extend(rec(c))
-            return result
-
-        return rec(node)
 
     def update_views(self):
         self.refresh_model()
@@ -12709,7 +12447,7 @@ class AutoMLApp:
         self.user_manager.set_current_user()
 
     def get_current_user_role(self):
-        return self.user_manager.get_current_user_role()
+        return self.data_access_queries.get_current_user_role()
 
     def focus_on_node(self, node):
         self.selected_node = node

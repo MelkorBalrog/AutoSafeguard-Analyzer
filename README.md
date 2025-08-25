@@ -1642,6 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.25 - Move data access helpers to dedicated `DataAccess_Queries` class.
 - 0.2.24 - Move UI lifecycle helpers to dedicated class and delegate calls.
 - 0.2.23 - Correct default style path so governance diagrams and icons retain their colours.
 - 0.2.22 - Re-export add_treeview_scrollbars via gui.utils for legacy compatibility.
