@@ -287,7 +287,7 @@ from analysis.mechanisms import (
     ANNEX_D_MECHANISMS,
     PAS_8800_MECHANISMS,
 )
-from config import load_report_template
+from config import load_report_template, load_diagram_rules
 from pathlib import Path
 from collections.abc import Mapping
 import csv
@@ -2128,120 +2128,16 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.data_access_queries.get_page_nodes(node)
 
     def capture_page_diagram(self, page_node):
-        return self.pages_and_paa.capture_page_diagram(page_node)
+        return self.capture_manager.capture_page_diagram(page_node)
 
     def capture_gsn_diagram(self, diagram):
-        """Return a PIL Image of the given GSN diagram."""
-        from io import BytesIO
-        from PIL import Image
-        from gui.causal_bayesian_network_window import (
-            CausalBayesianNetworkWindow,
-        )
-
-        temp = tk.Toplevel(self.root)
-        temp.withdraw()
-        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
-        canvas.pack()
-
-        try:
-            diagram.draw(canvas)
-        except Exception:
-            temp.destroy()
-            return None
-
-        canvas.update()
-        bbox = canvas.bbox("all")
-        if not bbox:
-            temp.destroy()
-            return None
-        x, y, x2, y2 = bbox
-        width, height = x2 - x, y2 - y
-        ps = canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
-        ps_bytes = BytesIO(ps.encode("utf-8"))
-        try:
-            img = Image.open(ps_bytes)
-            img.load(scale=3)
-        except Exception:
-            img = None
-        temp.destroy()
-        return img.convert("RGB") if img else None
+        return self.capture_manager.capture_gsn_diagram(diagram)
 
     def capture_sysml_diagram(self, diagram):
-        """Return a PIL Image of the given SysML diagram."""
-        from io import BytesIO
-        from PIL import Image
-        from gui.causal_bayesian_network_window import (
-            CausalBayesianNetworkWindow,
-        )
-
-        temp = tk.Toplevel(self.root)
-        temp.withdraw()
-        if diagram.diag_type == "Use Case Diagram":
-            win = UseCaseDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Activity Diagram":
-            win = ActivityDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Block Diagram":
-            win = BlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Internal Block Diagram":
-            win = InternalBlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Control Flow Diagram":
-            win = ControlFlowDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "Governance Diagram":
-            win = GovernanceDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        else:
-            temp.destroy()
-            return None
-
-        win.redraw()
-        win.canvas.update()
-        bbox = win.canvas.bbox("all")
-        if not bbox:
-            temp.destroy()
-            return None
-
-        x, y, x2, y2 = bbox
-        width, height = x2 - x, y2 - y
-        ps = win.canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
-        ps_bytes = BytesIO(ps.encode("utf-8"))
-        try:
-            img = Image.open(ps_bytes)
-            img.load(scale=3)
-        except Exception:
-            img = None
-        temp.destroy()
-        return img.convert("RGB") if img else None
+        return self.capture_manager.capture_sysml_diagram(diagram)
 
     def capture_cbn_diagram(self, doc):
-        """Return a PIL Image of the given Causal Bayesian Network diagram."""
-        from io import BytesIO
-        from PIL import Image
-        from gui.causal_bayesian_network_window import (
-            CausalBayesianNetworkWindow,
-        )
-
-        temp = tk.Toplevel(self.root)
-        temp.withdraw()
-        try:
-            win = CausalBayesianNetworkWindow(temp, self)
-            win.doc_var.set(doc.name)
-            win.select_doc()
-            win.canvas.update()
-            bbox = win.canvas.bbox("all")
-            if not bbox:
-                temp.destroy()
-                return None
-            x, y, x2, y2 = bbox
-            width, height = x2 - x, y2 - y
-            ps = win.canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
-            ps_bytes = BytesIO(ps.encode("utf-8"))
-            try:
-                img = Image.open(ps_bytes)
-                img.load(scale=3)
-            except Exception:
-                img = None
-        finally:
-            temp.destroy()
-        return img.convert("RGB") if img else None    
+        return self.capture_manager.capture_cbn_diagram(doc)
     
     def draw_subtree_with_filter(self, canvas, root_event, visible_nodes):
         return self.drawing_manager.draw_subtree_with_filter(canvas, root_event, visible_nodes)
@@ -7348,7 +7244,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         self.window_controllers.open_arch_window(diag_id)
 
     def open_page_diagram(self, node, push_history=True):
-        return self.pages_and_paa.open_page_diagram(node, push_history)
+        self.window_controllers.open_page_diagram(node, push_history)
 
     def manage_architecture(self):
         return self.open_windows_features.manage_architecture()
@@ -8966,7 +8862,7 @@ class AutoMLApp(SafetyUIMixin, UISetupMixin, EventHandlersMixin, PersistenceWrap
         return self.versioning_review.review_is_closed_for(review)
 
     def capture_diff_diagram(self, top_event):
-        return self.review_manager.capture_diff_diagram(top_event)
+        return self.capture_manager.capture_diff_diagram(top_event)
 
     # --- End Review Toolbox Methods ---
 
