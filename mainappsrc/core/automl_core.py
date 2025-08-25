@@ -748,6 +748,7 @@ class AutoMLApp:
         self.governance_manager = GovernanceManager(self)
         self.safety_mgmt_toolbox = SafetyManagementToolbox()
         self.governance_manager.attach_toolbox(self.safety_mgmt_toolbox)
+        self.probability_reliability = Probability_Reliability(self)
         self.current_user = ""
         self.comment_target = None
         self._undo_stack: list[dict] = []
@@ -1659,10 +1660,10 @@ class AutoMLApp:
         return self.fta_app.get_all_gates(self)
 
     def metric_to_text(self, metric_type, value):
-        return self.fta_app.metric_to_text(self, metric_type, value)
+        return self.probability_reliability.metric_to_text(metric_type, value)
 
     def assurance_level_text(self, level):
-        return self.fta_app.assurance_level_text(level)
+        return self.probability_reliability.assurance_level_text(level)
 
     def calculate_cut_sets(self, node):
         return self.fta_app.calculate_cut_sets(self, node)
@@ -1695,7 +1696,7 @@ class AutoMLApp:
         return self.fta_app.auto_create_argumentation(self, node, suppress_top_event_recommendations)
 
     def analyze_common_causes(self, node):
-        return self.fta_app.analyze_common_causes(self, node)
+        return self.probability_reliability.analyze_common_causes(node)
 
     def build_text_report(self, node, indent=0):
         return self.fta_app.build_text_report(self, node, indent)
@@ -1861,8 +1862,7 @@ class AutoMLApp:
         return self.risk_app.sync_hara_to_safety_goals(self)
 
     def sync_cyber_risk_to_goals(self):
-        """Synchronise cyber risk results with cybersecurity goals."""
-        return self.risk_app.sync_cyber_risk_to_goals(self)
+        return self.probability_reliability.sync_cyber_risk_to_goals()
 
     def edit_selected(self):
         sel = self.analysis_tree.selection()
@@ -1909,41 +1909,8 @@ class AutoMLApp:
         self._update_shared_product_goals()
         self.update_views()
 
-    def _build_probability_frame(
-        self,
-        parent,
-        title: str,
-        levels: range,
-        values: dict,
-        row: int,
-        dialog_font: tkFont.Font,
-    ) -> dict:
-        """Create a labelled frame of probability entries.
-
-        Returns a mapping of level -> ``StringVar`` for the entered values.
-        """
-        try:
-            frame = ttk.LabelFrame(parent, text=title, style="Toolbox.TLabelframe")
-        except TypeError:
-            frame = ttk.LabelFrame(parent, text=title)
-        frame.grid(row=row, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
-
-        vars_dict: dict[int, tk.StringVar] = {}
-        for idx, lvl in enumerate(levels):
-            ttk.Label(frame, text=f"{lvl}:", font=dialog_font).grid(
-                row=0, column=idx * 2, padx=2, pady=2
-            )
-            var = tk.StringVar(value=str(values.get(lvl, 0.0)))
-            ttk.Entry(
-                frame,
-                textvariable=var,
-                width=8,
-                font=dialog_font,
-                validate="key",
-                validatecommand=(parent.register(self.validate_float), "%P"),
-            ).grid(row=0, column=idx * 2 + 1, padx=2, pady=2)
-            vars_dict[lvl] = var
-        return vars_dict
+    def _build_probability_frame(self, parent, title: str, levels: range, values: dict, row: int, dialog_font):
+        return self.probability_reliability._build_probability_frame(parent, title, levels, values, row, dialog_font)
 
     def _apply_project_properties(
         self,
@@ -3898,15 +3865,7 @@ class AutoMLApp:
                 self.canvas.delete("all")
 
     def update_basic_event_probabilities(self):
-        """Update failure probabilities for all basic events.
-
-        The calculation uses the selected probability formula on each
-        event or its associated failure mode. The FIT rate of the failure
-        mode is converted to a failure rate in events per hour, then the
-        probability is derived for the mission profile time ``tau``.
-        """
-        for be in self.get_all_basic_events():
-            be.failure_prob = self.compute_failure_prob(be)
+        return self.probability_reliability.update_basic_event_probabilities()
 
     def validate_float(self, value):
         """Return ``True`` if ``value`` resembles a float.
@@ -3936,44 +3895,9 @@ class AutoMLApp:
                 except ValueError:
                     return False
             return False
-
     def compute_failure_prob(self, node, failure_mode_ref=None, formula=None):
-        """Return probability of failure for ``node`` based on FIT rate.
+        return self.probability_reliability.compute_failure_prob(node, failure_mode_ref=failure_mode_ref, formula=formula)
 
-        When the constant formula is selected the ``failure_prob`` value
-        stored on the node is returned directly so users can specify an
-        arbitrary probability.
-        """
-        tau = 1.0
-        if self.mission_profiles:
-            tau = self.mission_profiles[0].tau
-        if tau <= 0:
-            tau = 1.0
-        fm = self.find_node_by_id_all(failure_mode_ref) if failure_mode_ref else self.get_failure_mode_node(node)
-        if getattr(node, "fault_ref", "") and failure_mode_ref is None and getattr(node, "failure_mode_ref", None) is None:
-            fit = self.get_fit_for_fault(node.fault_ref)
-        else:
-            fit = getattr(fm, "fmeda_fit", getattr(node, "fmeda_fit", 0.0))
-        t = tau
-        formula = formula or getattr(node, "prob_formula", getattr(fm, "prob_formula", "linear"))
-        f = str(formula).strip().lower()
-        if f == "constant":
-            try:
-                return float(getattr(node, "failure_prob", 0.0))
-            except (TypeError, ValueError):
-                return 0.0
-        if fit <= 0:
-            return 0.0
-        comp_name = self.get_component_name_for_node(fm)
-        qty = next((c.quantity for c in self.reliability_components
-                     if c.name == comp_name), 1)
-        if qty <= 0:
-            qty = 1
-        lam = (fit / qty) / 1e9
-        if f == "exponential":
-            return 1 - math.exp(-lam * t)
-        else:
-            return lam * t
 
     def propagate_failure_mode_attributes(self, fm_node):
         """Update basic events referencing ``fm_node`` and recompute probability."""
@@ -4815,71 +4739,10 @@ class AutoMLApp:
         self.update_views()
 
     def calculate_overall(self):
-        for top_event in self.top_events:
-            AutoML_Helper.calculate_assurance_recursive(top_event, self.top_events)
-        self.update_views()
-        results = ""
-        for top_event in self.top_events:
-            if top_event.quant_value is not None:
-                disc = AutoML_Helper.discretize_level(top_event.quant_value)
-                results += (f"Top Event {top_event.display_label}\n"
-                            f"(Continuous: {top_event.quant_value:.2f}, Discrete: {disc})\n\n")
-        messagebox.showinfo("Calculation", results.strip())
+        return self.probability_reliability.calculate_overall()
 
     def calculate_pmfh(self):
-        self.update_basic_event_probabilities()
-        spf = 0.0
-        lpf = 0.0
-        for be in self.get_all_basic_events():
-            fm = self.get_failure_mode_node(be)
-            fit = getattr(be, "fmeda_fit", None)
-            if fit is None or fit == 0.0:
-                fit = getattr(fm, "fmeda_fit", 0.0)
-                if (not fit) and getattr(be, "fault_ref", "") and getattr(be, "failure_mode_ref", None) is None:
-                    fault = be.fault_ref
-                    for entry in self.get_all_fmea_entries():
-                        causes = [c.strip() for c in getattr(entry, "fmea_cause", "").split(";") if c.strip()]
-                        if fault in causes:
-                            fit += getattr(entry, "fmeda_fit", 0.0)
-            dc = getattr(be, "fmeda_diag_cov", getattr(fm, "fmeda_diag_cov", 0.0))
-            if be.fmeda_fault_type == "permanent":
-                spf += fit * (1 - dc)
-            else:
-                lpf += fit * (1 - dc)
-        self.spfm = spf
-        self.lpfm = lpf
-
-        pmhf = 0.0
-        for te in self.top_events:
-            asil = getattr(te, "safety_goal_asil", "") or ""
-            if asil in PMHF_TARGETS:
-                prob = AutoML_Helper.calculate_probability_recursive(te)
-                te.probability = prob
-                pmhf += prob
-
-        self.update_views()
-        lines = [f"Total PMHF: {pmhf:.2e}"]
-        overall_ok = True
-        for te in self.top_events:
-            asil = getattr(te, "safety_goal_asil", "") or ""
-            if asil not in PMHF_TARGETS:
-                continue
-            target = PMHF_TARGETS.get(asil, 1.0)
-            ok = te.probability <= target
-            overall_ok = overall_ok and ok
-            symbol = CHECK_MARK if ok else CROSS_MARK
-            lines.append(
-                f"{te.user_name or te.display_label}: {te.probability:.2e} <= {target:.1e} {symbol}"
-            )
-        self.pmhf_var.set("\n".join(lines))
-        self.pmhf_label.config(
-            foreground="green" if overall_ok else "red",
-            font=("Segoe UI", 10, "bold"),
-        )
-
-        # Update any open tables showing safety performance information
-        self.refresh_safety_case_table()
-        self.refresh_safety_performance_indicators()
+        return self.probability_reliability.calculate_pmfh()
 
     def show_requirements_matrix(self):
         """Display a matrix table of requirements vs. basic events."""
@@ -7967,207 +7830,10 @@ class AutoMLApp:
         ttk.Button(btn_frame, text="Export CSV", command=export_csv).pack(side=tk.LEFT, padx=5, pady=5)
 
     def build_cause_effect_data(self):
-        """Collect cause and effect chain information."""
-        rows = {}
-        # Map hazards to malfunctions from risk assessment entries
-        for doc in self.hara_docs:
-            for e in doc.entries:
-                haz = e.hazard.strip()
-                mal = e.malfunction.strip()
-                if not haz or not mal:
-                    continue
-                key = (haz, mal)
-                info = rows.setdefault(
-                    key,
-                    {
-                        "hazard": haz,
-                        "malfunction": mal,
-                        "fis": set(),
-                        "tcs": set(),
-                        # Store a mapping of failure mode label -> set of
-                        # faults that cause it.  Keeping the association lets
-                        # us draw edges from a malfunction to its failure
-                        # modes and then on to their underlying faults rather
-                        # than connecting all faults directly to the
-                        # malfunction.
-                        "failure_modes": {},
-                        # Maintain a flat set of all faults so the table view
-                        # can continue to show a comma separated list.
-                        "faults": set(),
-                        # Track threat scenarios and associated attack paths
-                        "threats": {},
-                        "attack_paths": set(),
-                    },
-                )
-                info = rows[key]
-                cyber = getattr(e, "cyber", None)
-                if cyber:
-                    threat = getattr(cyber, "threat_scenario", "").strip()
-                    if threat:
-                        paths = [
-                            p.get("path", "").strip()
-                            for p in getattr(cyber, "attack_paths", [])
-                            if p.get("path", "").strip()
-                        ]
-                        info["threats"].setdefault(threat, set()).update(paths)
-                        info["attack_paths"].update(paths)
-
-        # Add FI/TC info per hazard
-        for doc in self.fi2tc_docs + self.tc2fi_docs:
-            for e in doc.entries:
-                haz = e.get("vehicle_effect", "").strip()
-                if not haz:
-                    continue
-                fis = [f.strip() for f in e.get("functional_insufficiencies", "").split(";") if f.strip()]
-                tcs = [t.strip() for t in e.get("triggering_conditions", "").split(";") if t.strip()]
-                for (hz, mal), info in rows.items():
-                    if hz == haz:
-                        info["fis"].update(fis)
-                        info["tcs"].update(tcs)
-
-        # Add failure modes and faults per malfunction from FMEDA links
-        for be in self.get_all_basic_events():
-            mals = [m.strip() for m in getattr(be, "fmeda_malfunction", "").split(";") if m.strip()]
-            for (hz, mal), info in rows.items():
-                if mal in mals:
-                    fm_label = self.format_failure_mode_label(be)
-                    faults = set(self.get_faults_for_failure_mode(be))
-                    info["failure_modes"].setdefault(fm_label, set()).update(faults)
-                    info["faults"].update(faults)
-
-        # Include FTA basic events linked via their top event malfunction
-        for te in self.top_events:
-            te_mal = getattr(te, "malfunction", "").strip()
-            if not te_mal:
-                continue
-            basic_nodes = [n for n in self.get_all_nodes_table(te) if n.node_type.upper() == "BASIC EVENT"]
-            for be in basic_nodes:
-                for (hz, mal), info in rows.items():
-                    if mal == te_mal:
-                        fm_label = self.format_failure_mode_label(be)
-                        faults = set(self.get_faults_for_failure_mode(be))
-                        fault = getattr(be, "fault_ref", "") or getattr(be, "description", "")
-                        if fault:
-                            faults.add(fault)
-                        info["failure_modes"].setdefault(fm_label, set()).update(faults)
-                        info["faults"].update(faults)
-
-        return sorted(rows.values(), key=lambda r: (r["hazard"].lower(), r["malfunction"].lower()))
+        return self.probability_reliability.build_cause_effect_data()
 
     def _build_cause_effect_graph(self, row):
-        """Return nodes, edges and positions for a cause-and-effect diagram.
-
-        The layout mirrors the on-screen diagram so exports remain consistent
-        with what users see in the application."""
-        nodes: dict[str, tuple[str, str]] = {}
-        edges: list[tuple[str, str]] = []
-
-        haz_label = row["hazard"]
-        mal_label = row["malfunction"]
-        haz_id = f"haz:{haz_label}"
-        mal_id = f"mal:{mal_label}"
-        nodes[haz_id] = (haz_label, "hazard")
-        nodes[mal_id] = (mal_label, "malfunction")
-        edges.append((haz_id, mal_id))
-
-        for fm, faults in sorted(row.get("failure_modes", {}).items()):
-            fm_id = f"fm:{fm}"
-            nodes[fm_id] = (fm, "failure_mode")
-            edges.append((mal_id, fm_id))
-            for fault in sorted(faults):
-                fault_id = f"fault:{fault}"
-                nodes[fault_id] = (fault, "fault")
-                edges.append((fm_id, fault_id))
-        for fi in sorted(row.get("fis", [])):
-            fi_id = f"fi:{fi}"
-            nodes[fi_id] = (fi, "fi")
-            edges.append((haz_id, fi_id))
-        for tc in sorted(row.get("tcs", [])):
-            tc_id = f"tc:{tc}"
-            nodes[tc_id] = (tc, "tc")
-            edges.append((haz_id, tc_id))
-
-        for threat, paths in sorted(row.get("threats", {}).items()):
-            thr_id = f"thr:{threat}"
-            nodes[thr_id] = (threat, "threat")
-            edges.append((mal_id, thr_id))
-            for path in sorted(paths):
-                ap_id = f"ap:{path}"
-                nodes[ap_id] = (path, "attack_path")
-                edges.append((thr_id, ap_id))
-
-        pos = {haz_id: (0, 0), mal_id: (4, 0)}
-        y_fm = 0
-        for fm, faults in sorted(row.get("failure_modes", {}).items()):
-            fm_y = y_fm * 4
-            pos[f"fm:{fm}"] = (8, fm_y)
-            y_fault = fm_y
-            for fault in sorted(faults):
-                pos[f"fault:{fault}"] = (12, y_fault)
-                y_fault += 2
-            y_fm += 1
-        y_fi = -2
-        for fi in sorted(row.get("fis", [])):
-            pos[f"fi:{fi}"] = (2, y_fi)
-            y_fi -= 2
-        y_tc = y_fi
-        for tc in sorted(row.get("tcs", [])):
-            pos[f"tc:{tc}"] = (2, y_tc)
-            y_tc -= 2
-        y_ts = y_tc
-        for ts, paths in sorted(row.get("threats", {}).items()):
-            pos[f"threat:{ts}"] = (2, y_ts)
-            y_ap = y_ts
-            for ap in sorted(paths):
-                pos[f"ap:{ap}"] = (3, y_ap)
-                y_ap -= 2
-            y_ts = min(y_ts, y_ap) - 2
-
-        # Place threat scenarios at the same horizontal level as failure modes
-        # and attack paths aligned with faults so both safety and cybersecurity
-        # events appear on comparable tiers.
-        y_item = y_fm * 4
-        for threat, paths in sorted(row.get("threats", {}).items()):
-            thr_y = y_item
-            pos[f"thr:{threat}"] = (8, thr_y)
-            y_path = thr_y
-            for path in sorted(paths):
-                pos[f"ap:{path}"] = (12, y_path)
-                y_path += 2
-            y_item += 4
-
-        y_thr = y_fm
-        for threat, paths in sorted(row.get("threats", {}).items()):
-            thr_y = y_thr * 4
-            pos[f"thr:{threat}"] = (8, thr_y)
-            y_ap = thr_y
-            for path in sorted(paths):
-                pos[f"ap:{path}"] = (12, y_ap)
-                y_ap += 2
-            y_thr += 1
-
-        # Drop any nodes that were never connected by an edge.  Occasionally
-        # stale placeholders like a lone "threat" label can slip into the node
-        # or position dictionaries; filtering them out keeps the diagram clean
-        # and avoids drawing disconnected white boxes.
-        used_nodes: set[str] = set()
-        for u, v in edges:
-            used_nodes.add(u)
-            used_nodes.add(v)
-        for key in list(nodes.keys()):
-            if key not in used_nodes:
-                nodes.pop(key, None)
-        for key in list(pos.keys()):
-            if key not in used_nodes:
-                pos.pop(key, None)
-
-        min_x = min(x for x, _ in pos.values())
-        min_y = min(y for _, y in pos.values())
-        if min_x < 0 or min_y < 0:
-            for key, (x, y) in list(pos.items()):
-                pos[key] = (x - min_x, y - min_y)
-
-        return nodes, edges, pos
+        return self.probability_reliability._build_cause_effect_graph(row)
 
     def render_cause_effect_diagram(self, row):
         """Render *row* as a PIL image matching the on-screen diagram."""

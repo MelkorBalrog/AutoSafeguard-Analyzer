@@ -1,4 +1,4 @@
-version: 0.2.22
+version: 0.2.25
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1642,6 +1642,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.2.25 - Extract probability and reliability helpers into dedicated service class.
 - 0.2.24 - Move UI lifecycle helpers to dedicated class and delegate calls.
 - 0.2.23 - Correct default style path so governance diagrams and icons retain their colours.
 - 0.2.22 - Re-export add_treeview_scrollbars via gui.utils for legacy compatibility.
