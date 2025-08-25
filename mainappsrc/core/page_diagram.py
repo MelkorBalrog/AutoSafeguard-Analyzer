@@ -167,7 +167,7 @@ class PageDiagram:
         menu.tk_popup(event.x_root, event.y_root)
 
     def context_edit(self, node):
-        from .AutoML import EditNodeDialog
+        from gui.dialogs.edit_node_dialog import EditNodeDialog
 
         EditNodeDialog(self.canvas, node, self.app)
         self.redraw_canvas()
@@ -251,7 +251,7 @@ class PageDiagram:
                 if clicked_node.is_page:
                     self.app.window_controllers.open_page_diagram(clicked_node)
                 else:
-                    from .AutoML import EditNodeDialog
+                    from gui.dialogs.edit_node_dialog import EditNodeDialog
 
                     EditNodeDialog(self.app.root, clicked_node, self.app)
             self.app.update_views()
