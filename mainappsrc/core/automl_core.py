@@ -248,6 +248,7 @@ from functools import partial
 # Governance helper class
 from mainappsrc.managers.governance_manager import GovernanceManager
 from mainappsrc.managers.paa_manager import PrototypeAssuranceManager
+from mainappsrc.subapps.tree_subapp import TreeSubApp
 from gui.toolboxes.safety_management_toolbox import SafetyManagementToolbox
 from gui.explorers.safety_management_explorer import SafetyManagementExplorer
 from gui.explorers.safety_case_explorer import SafetyCaseExplorer
